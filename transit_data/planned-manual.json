@@ -1,0 +1,106 @@
+[
+  {
+    "ref": "M1BX", "kind": "subway", "color": "#EE2229", "scope": "planned", "approx": true,
+    "official": "M1B Extension · Kirazlı – Halkalı", "status": "Under construction",
+    "stations": [
+      {"name":"Kirazlı","lat":41.062,"lng":28.840},
+      {"name":"Yenimahalle","lat":41.045,"lng":28.808},
+      {"name":"Halkalı","lat":41.027,"lng":28.776}
+    ],
+    "paths": [[[41.062,28.840],[41.045,28.808],[41.027,28.776]]]
+  },
+  {
+    "ref": "M7W", "kind": "subway", "color": "#F490B3", "scope": "planned", "approx": true,
+    "official": "M7 3rd Stage · Mahmutbey – Esenyurt", "status": "Under construction",
+    "stations": [
+      {"name":"Mahmutbey","lat":41.075,"lng":28.835},
+      {"name":"Bağcışehir","lat":41.065,"lng":28.760},
+      {"name":"Bahçeşehir","lat":41.058,"lng":28.690},
+      {"name":"Esenyurt Meydan","lat":41.034,"lng":28.673}
+    ],
+    "paths": [[[41.075,28.835],[41.065,28.760],[41.058,28.690],[41.034,28.673]]]
+  },
+  {
+    "ref": "M9X", "kind": "subway", "color": "#FCD10D", "scope": "planned", "approx": true,
+    "official": "M9 South Extension · Ataköy – Yeşilköy", "status": "Under construction",
+    "stations": [
+      {"name":"Ataköy","lat":40.985,"lng":28.862},
+      {"name":"Yeşilyurt","lat":40.968,"lng":28.836},
+      {"name":"Yeşilköy","lat":40.961,"lng":28.823}
+    ],
+    "paths": [[[40.985,28.862],[40.968,28.836],[40.961,28.823]]]
+  },
+  {
+    "ref": "HVL", "kind": "subway", "color": "#8E5CC0", "scope": "planned", "approx": true,
+    "official": "Halkalı – İstanbul Havalimanı Connector", "status": "Planned",
+    "stations": [
+      {"name":"Halkalı","lat":41.027,"lng":28.776},
+      {"name":"İkitelli Sanayi","lat":41.073,"lng":28.797},
+      {"name":"Başakşehir","lat":41.095,"lng":28.804},
+      {"name":"Kayaşehir","lat":41.110,"lng":28.789},
+      {"name":"İstanbul Havalimanı","lat":41.262,"lng":28.748}
+    ],
+    "paths": [[[41.027,28.776],[41.073,28.797],[41.095,28.804],[41.110,28.789],[41.190,28.770],[41.262,28.748]]]
+  },
+  {
+    "ref": "İTÜ–Kağıthane", "kind": "subway", "color": "#7FB069", "scope": "planned", "approx": true,
+    "official": "İTÜ – Kağıthane Metro Line (project stage)", "status": "Planned",
+    "stations": [
+      {"name":"İTÜ-Ayazağa","lat":41.1045,"lng":29.0235},
+      {"name":"Seyrantepe","lat":41.1086,"lng":28.9986},
+      {"name":"Kağıthane","lat":41.0846,"lng":28.9694}
+    ],
+    "paths": [[[41.1045,29.0235],[41.1086,28.9986],[41.0846,28.9694]]]
+  },
+  {
+    "ref": "Seyrantepe–Alibeyköy", "kind": "subway", "color": "#E09F3E", "scope": "planned", "approx": true,
+    "official": "Seyrantepe – Alibeyköy Metro Line (project stage)", "status": "Planned",
+    "stations": [
+      {"name":"Seyrantepe","lat":41.1086,"lng":28.9986},
+      {"name":"Çağlayan","lat":41.0900,"lng":28.9650},
+      {"name":"Alibeyköy","lat":41.0779,"lng":28.9466}
+    ],
+    "paths": [[[41.1086,28.9986],[41.0900,28.9650],[41.0779,28.9466]]]
+  },
+  {
+    "ref": "Sultangazi–Arnavutköy", "kind": "subway", "color": "#9E6B9E", "scope": "planned", "approx": true,
+    "official": "Sultangazi – Arnavutköy Metro Line (project stage)", "status": "Planned",
+    "stations": [
+      {"name":"Sultangazi","lat":41.1064,"lng":28.8707},
+      {"name":"Habipler","lat":41.1380,"lng":28.8200},
+      {"name":"Arnavutköy","lat":41.1845,"lng":28.7407}
+    ],
+    "paths": [[[41.1064,28.8707],[41.1380,28.8200],[41.1845,28.7407]]]
+  },
+  {
+    "ref": "Vezneciler–Sultangazi", "kind": "subway", "color": "#5B8C85", "scope": "planned", "approx": true,
+    "official": "Vezneciler – Sultangazi Metro Line (project stage)", "status": "Planned",
+    "stations": [
+      {"name":"Vezneciler","lat":41.0132,"lng":28.9590},
+      {"name":"Edirnekapı","lat":41.0345,"lng":28.9355},
+      {"name":"Sultançiftliği","lat":41.0780,"lng":28.8900},
+      {"name":"Sultangazi","lat":41.1064,"lng":28.8707}
+    ],
+    "paths": [[[41.0132,28.9590],[41.0345,28.9355],[41.0780,28.8900],[41.1064,28.8707]]]
+  },
+  {
+    "ref": "M2 Sefaköy", "kind": "subway", "color": "#059A4D", "scope": "planned", "approx": true,
+    "official": "M2 Extension · Yenikapı – Sefaköy", "status": "Planned",
+    "stations": [
+      {"name":"Yenikapı","lat":41.0050,"lng":28.9500},
+      {"name":"Yedikule","lat":40.9930,"lng":28.9220},
+      {"name":"Zeytinburnu","lat":40.9950,"lng":28.9020},
+      {"name":"Sefaköy","lat":40.9935,"lng":28.7950}
+    ],
+    "paths": [[[41.0050,28.9500],[40.9930,28.9220],[40.9950,28.9020],[40.9935,28.7950]]]
+  },
+  {
+    "ref": "T Esenler–Davutpaşa", "kind": "tram", "color": "#C77DAE", "scope": "planned", "approx": true,
+    "official": "Esenler – Davutpaşa Tramway (project stage)", "status": "Planned",
+    "stations": [
+      {"name":"Esenler","lat":41.0438,"lng":28.8760},
+      {"name":"Davutpaşa","lat":41.0210,"lng":28.8960}
+    ],
+    "paths": [[[41.0438,28.8760],[41.0210,28.8960]]]
+  }
+]

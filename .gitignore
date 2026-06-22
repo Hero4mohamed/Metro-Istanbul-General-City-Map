@@ -1,0 +1,16 @@
+# Large/regenerable raw Overpass dumps & scraped pages (re-fetch via *.overpassql)
+transit_data/network.json
+transit_data/planned.json
+transit_data/ferry.json
+transit_data/piers.json
+transit_data/bus-probe.json
+transit_data/inventory.json
+transit_data/*-probe.json
+transit_data/proje*.html
+transit_data/proj_*.html
+transit_data/scan*.cjs
+
+# OS / editor cruft
+.DS_Store
+Thumbs.db
+node_modules/
