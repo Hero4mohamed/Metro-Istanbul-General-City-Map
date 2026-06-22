@@ -5,7 +5,7 @@ Metrobüs and ferries) on a real dark basemap, with animated "live" carriages,
 multimodal trip planning, a searchable İETT bus directory, and a Vision & Expansion
 tab showing official future projects.
 
-**Live site:** _(GitHub Pages URL appears here once Pages is enabled)_
+**Live site:** https://hero4mohamed.github.io/Metro-Istanbul-General-City-Map/
 
 It's a single self-contained file — open [`index.html`](index.html) in any modern
 browser (it needs internet for the map tiles, the Leaflet library, and on-demand
