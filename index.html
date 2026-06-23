@@ -223,6 +223,9 @@
   .warn-icon span{display:flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:50%;
     background:var(--wc,#E5484D);color:#fff;font-size:12px;box-shadow:0 0 0 2px #0B0F19,0 0 12px -2px var(--wc,#E5484D);animation:wpulse 1.6s infinite;}
   @keyframes wpulse{0%,100%{transform:scale(1);}50%{transform:scale(1.18);}}
+  /* animated hazard-tape style for closed line sections */
+  path.hazard-flow{animation:hazflow 0.85s linear infinite;filter:drop-shadow(0 0 2px rgba(0,0,0,.6));}
+  @keyframes hazflow{to{stroke-dashoffset:-22;}}
   .leaflet-tooltip.lt b{color:#fff;}
   @media (max-width:760px){.controls{width:228px;}.station{width:228px;}.topbar{max-width:200px;}}
 </style>
@@ -1267,6 +1270,7 @@ function frame(now){
 const SEV_COLOR = { major:'#E5484D', partial:'#F5A623', minor:'#FFD400' };
 const SEV_LABEL = { major:'Major', partial:'Partial', minor:'Minor' };
 const disruptionLayer = L.layerGroup().addTo(map);   // always visible, above lines
+const hazardRenderer = L.svg({ padding:0.5 });       // SVG so the dash animation (CSS) works
 // affected coord path(s) to grey-out: a segment between two stations, or the whole line
 function disruptionPaths(d){
   const line = lineByRef[d.ref]; if(!line) return [];
@@ -1303,15 +1307,19 @@ function renderDisruptionMarkers(){
   DISRUPTIONS.forEach(d=>{
     const col = SEV_COLOR[d.severity] || SEV_COLOR.major;
     const line = lineByRef[d.ref];
-    // grey-out the affected section; weight scales with zoom so it never blobs out
+    // mark the affected section as an animated "hazard tape": darkened track +
+    // flowing dashes in the severity (danger) colour. Weight scales with zoom.
     disruptionPaths(d).forEach(coords=>{
       if(coords.length<2) return;
       const base = (line && KIND[line.kind] && KIND[line.kind].weight) || 4;
       const gw = Math.max(2.5, (base+5) * lineScale(z));
-      const grey = L.polyline(coords, { color:'#8b9099', weight:gw, opacity:0.9, lineCap:'round', lineJoin:'round' });
-      grey.bindTooltip(disrTip(d), { sticky:true, className:'lt' });
-      grey.on('click', ()=> openDisruption(d));
-      grey.addTo(disruptionLayer); grey.bringToFront();
+      const dark = L.polyline(coords, { renderer:hazardRenderer, color:'#23272f', weight:gw+1.5,
+                              opacity:0.85, lineCap:'round', lineJoin:'round', interactive:false });
+      const haz = L.polyline(coords, { renderer:hazardRenderer, color:col, weight:gw,
+                              opacity:0.95, lineCap:'butt', dashArray:'10,12', className:'hazard-flow' });
+      haz.bindTooltip(disrTip(d), { sticky:true, className:'lt' });
+      haz.on('click', ()=> openDisruption(d));
+      dark.addTo(disruptionLayer); haz.addTo(disruptionLayer); haz.bringToFront();
     });
     // warning marker(s): fixed screen size, gently smaller when zoomed out
     disruptionPoints(d).forEach(p=>{
