@@ -198,6 +198,25 @@
   .exp-s.plan{background:rgba(138,148,168,.2);color:var(--muted);}
   .lp-src{font-size:9px;color:var(--dim);margin-top:10px;border-top:1px solid var(--stroke);padding-top:8px;line-height:1.5;}
   .hint{position:fixed;bottom:12px;right:14px;z-index:900;font-size:9.5px;color:var(--dim);padding:7px 12px;pointer-events:none;max-width:300px;}
+
+  /* Announcements panel (bottom-left) */
+  .announce{position:fixed;left:14px;bottom:14px;width:300px;z-index:980;padding:0;overflow:hidden;}
+  .ann-h{display:flex;align-items:center;justify-content:space-between;padding:11px 14px;cursor:pointer;font-size:11px;letter-spacing:.6px;font-weight:800;color:var(--text);}
+  .ann-h .ann-count{font-size:9px;color:#04130b;background:var(--gold);border-radius:10px;padding:1px 7px;margin-left:4px;font-weight:800;}
+  .ann-toggle{background:none;border:none;color:var(--muted);font-size:13px;cursor:pointer;transition:transform .2s;}
+  .announce.collapsed .ann-toggle{transform:rotate(-90deg);}
+  .announce.collapsed .ann-body{display:none;}
+  .ann-body{max-height:34vh;overflow-y:auto;padding:0 12px 12px;display:flex;flex-direction:column;gap:6px;}
+  .ann-item{display:flex;gap:8px;align-items:flex-start;padding:7px 9px;border-radius:9px;background:rgba(255,255,255,.03);border:1px solid var(--stroke);border-left:3px solid var(--muted);font-size:10.5px;line-height:1.35;}
+  .ann-item.ok{border-left-color:var(--accent);}
+  .ann-item.wip{border-left-color:var(--gold);}
+  .ann-item.plan{border-left-color:#8893A8;}
+  .ann-item .ann-ic{flex:none;font-size:12px;line-height:1.1;}
+  .ann-item .ann-tx{flex:1;color:var(--text);}
+  .ann-item .ann-tx b{font-weight:700;}
+  .ann-item .ann-tx small{display:block;color:var(--muted);font-size:9.5px;margin-top:1px;}
+  .ann-foot{font-size:9px;color:var(--dim);padding-top:3px;border-top:1px solid var(--stroke);margin-top:2px;line-height:1.5;}
+  .ann-foot a{color:var(--accent);text-decoration:none;}
   @media (max-width:760px){.controls{width:228px;}.station{width:228px;}.topbar{max-width:200px;}}
 </style>
 </head>
@@ -316,6 +335,14 @@
   <div class="lp-src">Metadata aligned with İBB / Metro İstanbul records · dates are official projections</div>
 </div>
 
+<div class="announce glass" id="announce">
+  <div class="ann-h" id="annHead">
+    <span>📢 Announcements <span class="ann-count" id="annCount"></span></span>
+    <button class="ann-toggle" id="annToggle" title="collapse">▾</button>
+  </div>
+  <div class="ann-body" id="annBody"></div>
+</div>
+
 <div class="hint glass">Drag to pan · Scroll to zoom · Click a <b>station</b> or a <b>line</b> for details</div>
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
@@ -338,18 +365,20 @@ const BUS_DIR = __BUS_JSON__;
 const KIND = {
   subway:   { speed:70, weight:4.5, dash:null,    label:"Metro" },
   marmaray: { speed:95, weight:5,   dash:null,    label:"Marmaray" },
+  suburban: { speed:80, weight:4,   dash:null,    label:"Banliyö (Suburban)" },
   tram:     { speed:32, weight:3.5, dash:null,    label:"Tram" },
   funicular:{ speed:28, weight:3.5, dash:null,    label:"Funicular" },
   metrobus: { speed:42, weight:3.5, dash:"7,6",   label:"Metrobüs (BRT)" },
   ferry:    { speed:26, weight:1.5, dash:"1,7",   label:"Ferry (Vapur)" }
 };
-const GROUP_ORDER = ["subway","marmaray","tram","funicular","metrobus","ferry"];
+const GROUP_ORDER = ["subway","marmaray","suburban","tram","funicular","metrobus","ferry"];
 const DWELL = 4;             // seconds dwell at each station (sim time)
 const TRANSFER_MIN = 4;      // walking-transfer penalty (minutes)
 // typical Metro İstanbul service hours / headways (per mode)
 const SCHEDULE = {
   subway:   { hours:'06:00 – 00:00', freq:'every 4–10 min' },
   marmaray: { hours:'06:00 – 00:00', freq:'every 5–15 min' },
+  suburban: { hours:'06:00 – 00:00', freq:'every 15–30 min' },
   tram:     { hours:'06:00 – 00:00', freq:'every 5–10 min' },
   funicular:{ hours:'07:00 – 00:00', freq:'every 3–5 min' },
   metrobus: { hours:'24 hours',      freq:'every 1–4 min' },
@@ -630,7 +659,7 @@ function spawnTrains(){
   let id = 0;
   liveLines.forEach(line => {
     const km = KIND[line.kind];
-    const spacing = { subway:3200, marmaray:4500, tram:1800, funicular:1500, metrobus:2600, ferry:6000 }[line.kind] || 3000;
+    const spacing = { subway:3200, marmaray:4500, suburban:4000, tram:1800, funicular:1500, metrobus:2600, ferry:6000 }[line.kind] || 3000;
     const count = Math.max(2, Math.round(line._len / spacing));
     for(let i=0;i<count;i++){
       const dir = (i%2===0)?1:-1;
@@ -1225,6 +1254,29 @@ function frame(now){
   boardAcc+=dt; if(boardAcc>0.25){ if(selected) renderBoard(); boardAcc=0; }
   requestAnimationFrame(frame);
 }
+/* ---- Announcements panel: network construction/expansion + live-status link ---- */
+function renderAnnouncements(){
+  const items = [];
+  // recent opening (current)
+  items.push({ cls:'ok', ic:'✓', title:'M11 İstanbul Havalimanı Line — fully open',
+               sub:'Gayrettepe – Halkalı · opened Jun 2026' });
+  // construction & planned works, from the official project data
+  visionLines.forEach(l=>{
+    const uc = /constr|test/i.test(l.status||'');
+    const parts = (l.official || l.ref).split('·');
+    items.push({ cls: uc?'wip':'plan', ic: uc?'🚧':'📐',
+      title: parts[0].trim() + ' — ' + (l.status || 'Planned'),
+      sub: (parts[1] ? parts[1].trim() : '') + (l.approx ? ' · approx.' : '') });
+  });
+  document.getElementById('annCount').textContent = items.length;
+  document.getElementById('annBody').innerHTML =
+    items.map(it=>`<div class="ann-item ${it.cls}"><span class="ann-ic">${it.ic}</span>
+      <span class="ann-tx"><b>${it.title}</b>${it.sub?`<small>${it.sub}</small>`:''}</span></div>`).join('')
+    + `<div class="ann-foot">Construction &amp; expansion from official İBB / Metro İstanbul project data. Live service status &amp; faults: <a href="https://www.metro.istanbul/SeferDurumlari/SeferDetaylari" target="_blank" rel="noopener">metro.istanbul ↗</a></div>`;
+}
+document.getElementById('annHead').addEventListener('click', ()=>
+  document.getElementById('announce').classList.toggle('collapsed'));
+
 function init(){
   populateSelects();
   sizeCanvas();
@@ -1236,6 +1288,7 @@ function init(){
   applyZoomStyling();         // size lines/markers for the initial zoom
   renderPlanLists();          // restore saved history + favourites
   updateFavBtn();
+  renderAnnouncements();
   requestAnimationFrame(frame);
 }
 init();

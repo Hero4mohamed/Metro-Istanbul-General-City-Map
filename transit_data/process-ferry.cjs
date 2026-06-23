@@ -32,6 +32,28 @@ function buildChains(ways, tol){
   }
   return ch;
 }
+// merge ALL chains of a relation into one continuous path (greedy nearest-endpoint).
+// OSM island/long ferry routes are split into fragments (separate open-water ways);
+// this joins them so e.g. Kabataş→Kadıköy→…→Büyükada becomes one smooth line.
+function stitchAll(ways){
+  let ch = buildChains(ways, 80).filter(c=>c.length>=2);
+  if(!ch.length) return [];
+  ch.sort((a,b)=>chainLen(b)-chainLen(a));
+  let path = ch.shift();
+  while(ch.length){
+    const pa=path[0], pb=path[path.length-1];
+    let bi=-1, bd=Infinity, bend='end', bflip=false;
+    for(let i=0;i<ch.length;i++){
+      const c=ch[i], ca=c[0], cb=c[c.length-1];
+      const cand=[[meters(pb,ca),'end',false],[meters(pb,cb),'end',true],[meters(pa,cb),'start',false],[meters(pa,ca),'start',true]];
+      for(const [d,end,flip] of cand){ if(d<bd){ bd=d; bi=i; bend=end; bflip=flip; } }
+    }
+    let c=ch.splice(bi,1)[0];
+    if(bflip) c=c.slice().reverse();
+    path = (bend==='end') ? path.concat(c) : c.concat(path);
+  }
+  return path;
+}
 function simplify(pts,eps){ if(pts.length<3)return pts; const sq=eps*eps; const keep=new Array(pts.length).fill(false);
   keep[0]=keep[pts.length-1]=true; const st=[[0,pts.length-1]];
   const sd=(p,a,b)=>{const x=a[0],y=a[1];let dx=b[0]-x,dy=b[1]-y; if(dx||dy){const t=((p[0]-x)*dx+(p[1]-y)*dy)/(dx*dx+dy*dy);
@@ -78,8 +100,12 @@ try {
   fraw.elements.filter(e=>e.type==='relation').forEach(rel=>{
     const ways=(rel.members||[]).filter(m=>m.type==='way'&&m.geometry).map(m=>m.geometry.map(g=>[g.lat,g.lon]));
     if(!ways.length) return;
-    const c = buildChains(ways,80).sort((a,b)=>chainLen(b)-chainLen(a))[0];
-    if(c && c.length>=2) relPaths.push({ coords:c, a:c[0], b:c[c.length-1], len:chainLen(c) });
+    // candidate A: longest single connected chain (best for short/continuous routes e.g. Haliç)
+    const chains = buildChains(ways,80).sort((a,b)=>chainLen(b)-chainLen(a));
+    const longest = chains[0];
+    if(longest && longest.length>=2) relPaths.push({ coords:longest, a:longest[0], b:longest[longest.length-1], len:chainLen(longest) });
+    // candidate B: all fragments joined (best for split island/long routes e.g. Adalar)
+    if(chains.length>1){ const full=stitchAll(ways); if(full.length>=2) relPaths.push({ coords:full, a:full[0], b:full[full.length-1], len:chainLen(full) }); }
   });
 } catch(e){ /* ferry.json optional */ }
 
