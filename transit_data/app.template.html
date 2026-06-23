@@ -207,13 +207,13 @@
   .announce.collapsed .ann-toggle{transform:rotate(-90deg);}
   .announce.collapsed .ann-body{display:none;}
   .ann-body{max-height:34vh;overflow-y:auto;padding:0 12px 12px;display:flex;flex-direction:column;gap:6px;}
-  .ann-item{display:flex;gap:8px;align-items:flex-start;padding:7px 9px;border-radius:9px;background:rgba(255,255,255,.03);border:1px solid var(--stroke);border-left:3px solid var(--muted);font-size:10.5px;line-height:1.35;}
-  .ann-item.ok{border-left-color:var(--accent);}
-  .ann-item.wip{border-left-color:var(--gold);}
-  .ann-item.plan{border-left-color:#8893A8;}
-  .ann-item .ann-ic{flex:none;font-size:12px;line-height:1.1;}
-  .ann-item .ann-tx{flex:1;color:var(--text);}
-  .ann-item .ann-tx b{font-weight:700;}
+  .ann-item{display:block;padding:8px 9px;border-radius:9px;background:rgba(255,255,255,.03);border:1px solid var(--stroke);border-left:3px solid var(--muted);}
+  .ann-row1{display:flex;align-items:center;gap:6px;margin-bottom:3px;flex-wrap:wrap;}
+  .ann-line{font-size:9px;font-weight:800;color:#fff;padding:2px 6px;border-radius:5px;flex:none;}
+  .ann-sev{font-size:8px;font-weight:800;color:#fff;padding:2px 6px;border-radius:10px;flex:none;text-transform:uppercase;letter-spacing:.5px;}
+  .ann-ttl{font-size:11px;font-weight:700;color:var(--text);}
+  .ann-msg{font-size:10px;color:var(--muted);line-height:1.4;}
+  .ann-until{font-size:9.5px;color:var(--gold);margin-top:3px;font-weight:600;}
   .ann-item .ann-tx small{display:block;color:var(--muted);font-size:9.5px;margin-top:1px;}
   .ann-foot{font-size:9px;color:var(--dim);padding-top:3px;border-top:1px solid var(--stroke);margin-top:2px;line-height:1.5;}
   .ann-foot a{color:var(--accent);text-decoration:none;}
@@ -1265,18 +1265,32 @@ function frame(now){
 }
 /* ---- Announcements: live disruptions (faults / closures) + map warning markers ---- */
 const SEV_COLOR = { major:'#E5484D', partial:'#F5A623', minor:'#FFD400' };
+const SEV_LABEL = { major:'Major', partial:'Partial', minor:'Minor' };
 const disruptionLayer = L.layerGroup().addTo(map);   // always visible, above lines
+// affected coord path(s) to grey-out: a segment between two stations, or the whole line
+function disruptionPaths(d){
+  const line = lineByRef[d.ref]; if(!line) return [];
+  if(d.scope==='segment' && d.from && d.to){
+    const a = line.stations.find(s=>fold(s.name)===fold(d.from));
+    const b = line.stations.find(s=>fold(s.name)===fold(d.to));
+    if(a && b && a._s!=null && b._s!=null) return [ subPath(line, a._s, b._s) ];
+  }
+  if(d.scope==='line' && line.coords) return [ line.coords ];
+  return [];
+}
 function disruptionPoints(d){
   const line = lineByRef[d.ref]; const pts = [];
   if(d.scope==='stations' && d.stations && line){
-    d.stations.forEach(nm=>{
-      let st = line.stations.find(s=>fold(s.name)===fold(nm)) || stationList.find(c=>fold(c.name)===fold(nm));
-      if(st) pts.push([st.lat, st.lng]);
-    });
-  } else if(line && line.coords && line.coords.length){
-    pts.push(line.coords[Math.floor(line.coords.length/2)]);   // whole-line fault → midpoint
+    d.stations.forEach(nm=>{ const st=line.stations.find(s=>fold(s.name)===fold(nm))||stationList.find(c=>fold(c.name)===fold(nm)); if(st) pts.push([st.lat,st.lng]); });
+  } else {
+    const paths = disruptionPaths(d);
+    if(paths.length && paths[0].length) { const c=paths[0]; pts.push(c[Math.floor(c.length/2)]); }
+    else if(line && line.coords && line.coords.length) pts.push(line.coords[Math.floor(line.coords.length/2)]);
   }
   return pts;
+}
+function disrTip(d){
+  return `<b>⚠ ${d.ref} · ${d.title}</b><br>${d.message}${d.until?'<br>⏱ until '+fmtLaunch(d.until):''}`;
 }
 function openDisruption(d){
   const pts = disruptionPoints(d);
@@ -1286,22 +1300,44 @@ function renderDisruptionMarkers(){
   disruptionLayer.clearLayers();
   DISRUPTIONS.forEach(d=>{
     const col = SEV_COLOR[d.severity] || SEV_COLOR.major;
+    const line = lineByRef[d.ref];
+    // grey-out the affected section (segment or whole line); hovering it shows the closure
+    disruptionPaths(d).forEach(coords=>{
+      if(coords.length<2) return;
+      const base = (line && KIND[line.kind] && KIND[line.kind].weight) || 4;
+      const grey = L.polyline(coords, { color:'#8b9099', weight:base+6, opacity:0.9, lineCap:'round', lineJoin:'round' });
+      grey.bindTooltip(disrTip(d), { sticky:true, className:'lt' });
+      grey.on('click', ()=> openDisruption(d));
+      grey.addTo(disruptionLayer); grey.bringToFront();
+    });
+    // pulsing warning marker(s) at the affected spot
     disruptionPoints(d).forEach(p=>{
       const icon = L.divIcon({ className:'warn-icon', html:`<span style="--wc:${col}">⚠</span>`, iconSize:[22,22], iconAnchor:[11,11] });
       const mk = L.marker(p, { icon, zIndexOffset:2000 });
-      mk.bindTooltip(`<b>${d.ref} · ${d.title}</b><br>${d.message}${d.until?'<br>Until '+fmtLaunch(d.until):''}`, { className:'lt', direction:'top', offset:[0,-8] });
+      mk.bindTooltip(disrTip(d), { className:'lt', direction:'top', offset:[0,-8] });
       mk.on('click', ()=> openDisruption(d));
       mk.addTo(disruptionLayer);
     });
   });
 }
+function untilText(d){
+  if(!d.until) return '';
+  const days = Math.ceil((Date.parse(d.until+'T23:59:59') - Date.now())/86400000);
+  const rel = days>0 ? ` · ${days} day${days!==1?'s':''} left` : (days===0?' · ends today':' · ended');
+  return 'until ' + fmtLaunch(d.until) + rel;
+}
 function renderAnnouncements(){
   document.getElementById('annCount').textContent = DISRUPTIONS.length;
   const rows = DISRUPTIONS.map(d=>{
     const col = SEV_COLOR[d.severity] || SEV_COLOR.major;
-    return `<div class="ann-item" data-id="${d.id}" style="border-left-color:${col}">
-      <span class="ann-ic">⚠</span>
-      <span class="ann-tx"><b>${d.ref} · ${d.title}</b><small>${d.message}${d.until?' — until '+fmtLaunch(d.until):''}</small></span></div>`;
+    return `<div class="ann-item" data-id="${d.id}" style="border-left-color:${col};cursor:pointer">
+      <div class="ann-row1">
+        <span class="ann-line" style="background:${colorForLine(d.ref)}">${d.ref}</span>
+        <span class="ann-sev" style="background:${col}">${SEV_LABEL[d.severity]||''}</span>
+        <span class="ann-ttl">${d.title}</span>
+      </div>
+      <div class="ann-msg">${d.message}</div>
+      ${d.until?`<div class="ann-until">⏱ ${untilText(d)}</div>`:''}</div>`;
   }).join('');
   const body = document.getElementById('annBody');
   body.innerHTML = (DISRUPTIONS.length ? rows : '<div class="ann-none">✓ No reported disruptions — network running normally.</div>')
