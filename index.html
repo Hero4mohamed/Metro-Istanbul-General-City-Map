@@ -1298,21 +1298,26 @@ function openDisruption(d){
 }
 function renderDisruptionMarkers(){
   disruptionLayer.clearLayers();
+  const z = map.getZoom();
+  const isz = Math.round(22 * Math.max(0.6, markerScale(z)));   // ⚠ shrinks a bit when zoomed out
   DISRUPTIONS.forEach(d=>{
     const col = SEV_COLOR[d.severity] || SEV_COLOR.major;
     const line = lineByRef[d.ref];
-    // grey-out the affected section (segment or whole line); hovering it shows the closure
+    // grey-out the affected section; weight scales with zoom so it never blobs out
     disruptionPaths(d).forEach(coords=>{
       if(coords.length<2) return;
       const base = (line && KIND[line.kind] && KIND[line.kind].weight) || 4;
-      const grey = L.polyline(coords, { color:'#8b9099', weight:base+6, opacity:0.9, lineCap:'round', lineJoin:'round' });
+      const gw = Math.max(2.5, (base+5) * lineScale(z));
+      const grey = L.polyline(coords, { color:'#8b9099', weight:gw, opacity:0.9, lineCap:'round', lineJoin:'round' });
       grey.bindTooltip(disrTip(d), { sticky:true, className:'lt' });
       grey.on('click', ()=> openDisruption(d));
       grey.addTo(disruptionLayer); grey.bringToFront();
     });
-    // pulsing warning marker(s) at the affected spot
+    // warning marker(s): fixed screen size, gently smaller when zoomed out
     disruptionPoints(d).forEach(p=>{
-      const icon = L.divIcon({ className:'warn-icon', html:`<span style="--wc:${col}">⚠</span>`, iconSize:[22,22], iconAnchor:[11,11] });
+      const icon = L.divIcon({ className:'warn-icon',
+        html:`<span style="--wc:${col};width:${isz}px;height:${isz}px;font-size:${Math.round(isz*0.55)}px">⚠</span>`,
+        iconSize:[isz,isz], iconAnchor:[isz/2,isz/2] });
       const mk = L.marker(p, { icon, zIndexOffset:2000 });
       mk.bindTooltip(disrTip(d), { className:'lt', direction:'top', offset:[0,-8] });
       mk.on('click', ()=> openDisruption(d));
@@ -1320,6 +1325,7 @@ function renderDisruptionMarkers(){
     });
   });
 }
+map.on('zoomend', renderDisruptionMarkers);   // re-size grey overlays + warnings on zoom
 function untilText(d){
   if(!d.until) return '';
   const days = Math.ceil((Date.parse(d.until+'T23:59:59') - Date.now())/86400000);
