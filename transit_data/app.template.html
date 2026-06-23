@@ -217,6 +217,13 @@
   .ann-item .ann-tx small{display:block;color:var(--muted);font-size:9.5px;margin-top:1px;}
   .ann-foot{font-size:9px;color:var(--dim);padding-top:3px;border-top:1px solid var(--stroke);margin-top:2px;line-height:1.5;}
   .ann-foot a{color:var(--accent);text-decoration:none;}
+  .ann-item{cursor:pointer;}
+  .ann-none{font-size:11px;color:var(--accent);padding:8px 9px;}
+  /* map warning markers for disruptions */
+  .warn-icon span{display:flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:50%;
+    background:var(--wc,#E5484D);color:#fff;font-size:12px;box-shadow:0 0 0 2px #0B0F19,0 0 12px -2px var(--wc,#E5484D);animation:wpulse 1.6s infinite;}
+  @keyframes wpulse{0%,100%{transform:scale(1);}50%{transform:scale(1.18);}}
+  .leaflet-tooltip.lt b{color:#fff;}
   @media (max-width:760px){.controls{width:228px;}.station{width:228px;}.topbar{max-width:200px;}}
 </style>
 </head>
@@ -360,6 +367,8 @@
 const NETWORK = __NETWORK_JSON__;
 /* --- Bus directory: every İETT line {ref,from,to,id,op} (geometry fetched on demand) --- */
 const BUS_DIR = __BUS_JSON__;
+/* --- Live disruptions: faults / closures / suspensions (editable transit_data/disruptions.json) --- */
+const DISRUPTIONS = __DISRUPTIONS_JSON__;
 
 /* --- line kind metadata: travel speed (km/h) + render style --- */
 const KIND = {
@@ -1254,25 +1263,52 @@ function frame(now){
   boardAcc+=dt; if(boardAcc>0.25){ if(selected) renderBoard(); boardAcc=0; }
   requestAnimationFrame(frame);
 }
-/* ---- Announcements panel: network construction/expansion + live-status link ---- */
-function renderAnnouncements(){
-  const items = [];
-  // recent opening (current)
-  items.push({ cls:'ok', ic:'✓', title:'M11 İstanbul Havalimanı Line — fully open',
-               sub:'Gayrettepe – Halkalı · opened Jun 2026' });
-  // construction & planned works, from the official project data
-  visionLines.forEach(l=>{
-    const uc = /constr|test/i.test(l.status||'');
-    const parts = (l.official || l.ref).split('·');
-    items.push({ cls: uc?'wip':'plan', ic: uc?'🚧':'📐',
-      title: parts[0].trim() + ' — ' + (l.status || 'Planned'),
-      sub: (parts[1] ? parts[1].trim() : '') + (l.approx ? ' · approx.' : '') });
+/* ---- Announcements: live disruptions (faults / closures) + map warning markers ---- */
+const SEV_COLOR = { major:'#E5484D', partial:'#F5A623', minor:'#FFD400' };
+const disruptionLayer = L.layerGroup().addTo(map);   // always visible, above lines
+function disruptionPoints(d){
+  const line = lineByRef[d.ref]; const pts = [];
+  if(d.scope==='stations' && d.stations && line){
+    d.stations.forEach(nm=>{
+      let st = line.stations.find(s=>fold(s.name)===fold(nm)) || stationList.find(c=>fold(c.name)===fold(nm));
+      if(st) pts.push([st.lat, st.lng]);
+    });
+  } else if(line && line.coords && line.coords.length){
+    pts.push(line.coords[Math.floor(line.coords.length/2)]);   // whole-line fault → midpoint
+  }
+  return pts;
+}
+function openDisruption(d){
+  const pts = disruptionPoints(d);
+  if(pts.length) map.flyTo(pts[0], Math.max(map.getZoom(),13), { duration:0.6 });
+}
+function renderDisruptionMarkers(){
+  disruptionLayer.clearLayers();
+  DISRUPTIONS.forEach(d=>{
+    const col = SEV_COLOR[d.severity] || SEV_COLOR.major;
+    disruptionPoints(d).forEach(p=>{
+      const icon = L.divIcon({ className:'warn-icon', html:`<span style="--wc:${col}">⚠</span>`, iconSize:[22,22], iconAnchor:[11,11] });
+      const mk = L.marker(p, { icon, zIndexOffset:2000 });
+      mk.bindTooltip(`<b>${d.ref} · ${d.title}</b><br>${d.message}${d.until?'<br>Until '+fmtLaunch(d.until):''}`, { className:'lt', direction:'top', offset:[0,-8] });
+      mk.on('click', ()=> openDisruption(d));
+      mk.addTo(disruptionLayer);
+    });
   });
-  document.getElementById('annCount').textContent = items.length;
-  document.getElementById('annBody').innerHTML =
-    items.map(it=>`<div class="ann-item ${it.cls}"><span class="ann-ic">${it.ic}</span>
-      <span class="ann-tx"><b>${it.title}</b>${it.sub?`<small>${it.sub}</small>`:''}</span></div>`).join('')
-    + `<div class="ann-foot">Construction &amp; expansion from official İBB / Metro İstanbul project data. Live service status &amp; faults: <a href="https://www.metro.istanbul/SeferDurumlari/SeferDetaylari" target="_blank" rel="noopener">metro.istanbul ↗</a></div>`;
+}
+function renderAnnouncements(){
+  document.getElementById('annCount').textContent = DISRUPTIONS.length;
+  const rows = DISRUPTIONS.map(d=>{
+    const col = SEV_COLOR[d.severity] || SEV_COLOR.major;
+    return `<div class="ann-item" data-id="${d.id}" style="border-left-color:${col}">
+      <span class="ann-ic">⚠</span>
+      <span class="ann-tx"><b>${d.ref} · ${d.title}</b><small>${d.message}${d.until?' — until '+fmtLaunch(d.until):''}</small></span></div>`;
+  }).join('');
+  const body = document.getElementById('annBody');
+  body.innerHTML = (DISRUPTIONS.length ? rows : '<div class="ann-none">✓ No reported disruptions — network running normally.</div>')
+    + `<div class="ann-foot">Reported service faults &amp; closures. Live official status: <a href="https://www.metro.istanbul/SeferDurumlari/SeferDetaylari" target="_blank" rel="noopener">metro.istanbul ↗</a></div>`;
+  body.querySelectorAll('.ann-item').forEach(el => el.addEventListener('click', ()=>{
+    const d = DISRUPTIONS.find(x=>x.id===el.dataset.id); if(d) openDisruption(d);
+  }));
 }
 document.getElementById('annHead').addEventListener('click', ()=>
   document.getElementById('announce').classList.toggle('collapsed'));
@@ -1289,6 +1325,7 @@ function init(){
   renderPlanLists();          // restore saved history + favourites
   updateFavBtn();
   renderAnnouncements();
+  renderDisruptionMarkers();
   requestAnimationFrame(frame);
 }
 init();

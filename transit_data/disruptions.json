@@ -1,0 +1,21 @@
+[
+  {
+    "id": "b2-works-2026",
+    "ref": "B2",
+    "scope": "line",
+    "severity": "major",
+    "title": "B2 service suspended",
+    "message": "B2 Halkalı–Bahçeşehir is not operating due to engineering works.",
+    "until": "2026-08-31"
+  },
+  {
+    "id": "m7-closures-2026",
+    "ref": "M7",
+    "scope": "stations",
+    "severity": "partial",
+    "stations": ["Kağıthane", "Çağlayan"],
+    "title": "M7 station closures",
+    "message": "Kağıthane and Çağlayan stations are temporarily closed; trains pass without stopping.",
+    "until": "2026-07-15"
+  }
+]
