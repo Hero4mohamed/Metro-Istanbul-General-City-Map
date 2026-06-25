@@ -396,6 +396,29 @@ const SCHEDULE = {
   metrobus: { hours:'24 hours',      freq:'every 1–4 min' },
   ferry:    { hours:'06:30 – 21:00', freq:'every 15–40 min' }
 };
+// Per-line accurate timings: commercial speed (km/h) drives realistic live ETAs;
+// peak–offpeak headway (min) drives how often trains arrive + the panel frequency.
+const LINE_TIMING = {
+  'M1A':{spd:34,peak:5,off:10}, 'M1B':{spd:34,peak:6,off:10},
+  'M2':{spd:38,peak:4,off:9},  'M2S':{spd:30,peak:6,off:12},
+  'M3':{spd:35,peak:5,off:10}, 'M4':{spd:38,peak:4,off:8}, 'M5':{spd:38,peak:4,off:8},
+  'M6':{spd:30,peak:6,off:10}, 'M7':{spd:36,peak:5,off:9}, 'M8':{spd:38,peak:5,off:9},
+  'M9':{spd:36,peak:6,off:10}, 'M11':{spd:50,peak:8,off:12},
+  'Marmaray':{spd:50,peak:5,off:12},
+  'B2':{spd:45,peak:15,off:30,hours:'06:00 – 23:00'},
+  'T1':{spd:18,peak:5,off:10}, 'T2':{spd:10,peak:15,off:20,hours:'07:00 – 21:00'},
+  'T3':{spd:12,peak:12,off:20,hours:'07:00 – 21:00'}, 'T4':{spd:20,peak:7,off:12},
+  'T5':{spd:22,peak:6,off:10}, 'T6':{spd:22,peak:8,off:15},
+  'F1':{spd:25,peak:4,off:5},  'F2':{spd:18,peak:5,off:7}, 'F3':{spd:25,peak:5,off:8}, 'F4':{spd:25,peak:5,off:8},
+  'Metrobüs':{spd:40,peak:1,off:4,hours:'24 hours'}
+};
+const HW_FALLBACK = { subway:8, marmaray:10, suburban:20, tram:10, funicular:6, metrobus:3, ferry:25 };
+function lineTiming(ref){
+  const t = LINE_TIMING[ref], kind = lineByRef[ref] && lineByRef[ref].kind;
+  if(t) return { spd:t.spd, hwMin:(t.peak+t.off)/2, hours:t.hours||'06:00 – 00:00', freq:`every ${t.peak}–${t.off} min` };
+  const s = SCHEDULE[kind] || SCHEDULE.subway;
+  return { spd:(KIND[kind]&&KIND[kind].speed)||40, hwMin:HW_FALLBACK[kind]||10, hours:s.hours, freq:s.freq };
+}
 
 /* --- geo helpers --- */
 const R = 6371000;
@@ -670,18 +693,16 @@ function spawnTrains(){
   trains.length = 0;
   let id = 0;
   liveLines.forEach(line => {
-    const km = KIND[line.kind];
-    const spacing = { subway:3200, marmaray:4500, suburban:4000, tram:1800, funicular:1500, metrobus:2600, ferry:6000 }[line.kind] || 3000;
-    const count = Math.max(2, Math.round(line._len / spacing));
+    const tm = lineTiming(line.ref);
+    const mps = tm.spd * 1000/3600;                       // commercial speed (m/s)
+    // trains needed so arrivals match the real headway: 2 dirs × (one-way time / headway)
+    const traverseMin = (line._len/1000) / tm.spd * 60;
+    let count = Math.round(2 * traverseMin / tm.hwMin);
+    count = Math.max(2, Math.min(count, 18));
     for(let i=0;i<count;i++){
       const dir = (i%2===0)?1:-1;
       const s = (line._len) * (i/count) * 0.96 + 30;
-      // find next stop index in travel direction
-      const tr = {
-        id:id++, line, ref:line.ref, color:line.color,
-        speed: km.speed*1000/3600,   // m/s
-        s, dir, dwell:0, state:"run"
-      };
+      const tr = { id:id++, line, ref:line.ref, color:line.color, speed:mps, s, dir, dwell:0, state:"run" };
       tr.targetIdx = nextStopIndex(line, s, dir);
       trains.push(tr);
     }
@@ -849,8 +870,8 @@ function openStation(reg){
   // operating hours / frequency per serving line (official-style timetable)
   const svc = [...reg.lines].map(ref=>{
     const ln=lineByRef[ref]; if(!ln) return '';
-    const s=SCHEDULE[ln.kind]||SCHEDULE.subway;
-    return `<div class="svc-row"><span class="svc-cd" style="background:${ln.color}">${ref}</span><span class="svc-tx"><b>${s.hours}</b> · ${s.freq}</span></div>`;
+    const tm=lineTiming(ref);
+    return `<div class="svc-row"><span class="svc-cd" style="background:${ln.color}">${ref}</span><span class="svc-tx"><b>${tm.freq}</b> · ${tm.hours}</span></div>`;
   }).filter(Boolean).join('');
   document.getElementById('stnService').innerHTML = svc ? `<div class="bt">Service hours</div>${svc}` : '';
   document.getElementById('stn').classList.add('show');
