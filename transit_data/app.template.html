@@ -372,6 +372,9 @@ const NETWORK = __NETWORK_JSON__;
 const BUS_DIR = __BUS_JSON__;
 /* --- Live disruptions: faults / closures / suspensions (editable transit_data/disruptions.json) --- */
 const DISRUPTIONS = __DISRUPTIONS_JSON__;
+/* --- Bus routing graph: per İETT line ordered stops [[lat,lng,name],...] for the trip planner --- */
+const BUS_GRAPH = __BUSGRAPH_JSON__;
+const BUS_COLOR = '#E8A33D';
 
 /* --- line kind metadata: travel speed (km/h) + render style --- */
 const KIND = {
@@ -558,26 +561,70 @@ for(let i=0;i<allKeys.length;i++){
   }
 }
 
+// ---- buses in the routing graph (multimodal planning) ----
+const BUS_SPEED = 18;     // km/h commercial city-bus average
+const BUS_DWELL = 0.45;   // minutes per stop
+BUS_GRAPH.forEach((line, li) => {
+  const st = line.stops;
+  for(let i=0;i<st.length;i++){
+    G['b'+li+'_'+i] = [];
+    nodeMeta['b'+li+'_'+i] = { ref:line.ref, idx:i, name: st[i][2] || (line.ref+' durağı'), lat:st[i][0], lng:st[i][1], kind:'bus' };
+  }
+  for(let i=0;i<st.length-1;i++){
+    const a='b'+li+'_'+i, b='b'+li+'_'+(i+1);
+    const dm = metersBetween([st[i][0],st[i][1]],[st[i+1][0],st[i+1][1]]);
+    const w = (dm/1000)/BUS_SPEED*60 + BUS_DWELL;
+    G[a].push({to:b,w}); G[b].push({to:a,w});
+  }
+});
+// walking transfers involving buses (bus↔bus & bus↔rail) via a spatial grid, capped per stop
+(function(){
+  const CELL = 0.0022, grid = new Map(), all = Object.keys(nodeMeta);
+  for(const k of all){ const m=nodeMeta[k]; const ck=Math.round(m.lat/CELL)+'_'+Math.round(m.lng/CELL);
+    let arr=grid.get(ck); if(!arr){ arr=[]; grid.set(ck,arr); } arr.push(k); }
+  const TR = 170;
+  for(const k of all){
+    const m=nodeMeta[k]; if(m.kind!=='bus') continue;
+    const ci=Math.round(m.lat/CELL), cj=Math.round(m.lng/CELL), cands=[];
+    for(let di=-1;di<=1;di++) for(let dj=-1;dj<=1;dj++){
+      const arr=grid.get((ci+di)+'_'+(cj+dj)); if(!arr) continue;
+      for(const k2 of arr){ if(k2===k) continue; const m2=nodeMeta[k2]; if(m2.ref===m.ref) continue;
+        const dd=metersBetween([m.lat,m.lng],[m2.lat,m2.lng]); if(dd<TR) cands.push([dd,k2]); }
+    }
+    cands.sort((a,b)=>a[0]-b[0]);
+    for(let n=0;n<Math.min(cands.length,5);n++){ const dd=cands[n][0], k2=cands[n][1], w=TRANSFER_MIN+dd/80;
+      G[k].push({to:k2,w}); G[k2].push({to:k,w}); }
+  }
+})();
+
+// binary min-heap (graph is now ~15k nodes → linear-scan Dijkstra too slow)
+function MinHeap(){ this.a=[]; }
+MinHeap.prototype.push=function(k,p){ const a=this.a; a.push([p,k]); let i=a.length-1;
+  while(i>0){ const par=(i-1)>>1; if(a[par][0]<=a[i][0]) break; const t=a[par];a[par]=a[i];a[i]=t; i=par; } };
+MinHeap.prototype.pop=function(){ const a=this.a; if(!a.length) return null; const top=a[0], last=a.pop();
+  if(a.length){ a[0]=last; let i=0; const n=a.length; while(true){ let l=2*i+1,r=2*i+2,s=i;
+    if(l<n&&a[l][0]<a[s][0])s=l; if(r<n&&a[r][0]<a[s][0])s=r; if(s===i)break; const t=a[s];a[s]=a[i];a[i]=t; i=s; } }
+  return top; };
+
 function dijkstra(oName, dName){
   if(fold(oName)===fold(dName)) return null;
-  const dist={}, prev={}, done={};
-  for(const k in G) dist[k]=Infinity;
-  (nameNodes[fold(oName)]||[]).forEach(k=>{dist[k]=0; prev[k]=null;});
   const dest = new Set(nameNodes[fold(dName)]||[]);
+  if(!dest.size) return null;
+  const dist={}, prev={}, done={}, h=new MinHeap();
+  (nameNodes[fold(oName)]||[]).forEach(k=>{ dist[k]=0; prev[k]=null; h.push(k,0); });
+  let end=null;
   while(true){
-    let u=null, best=Infinity;
-    for(const k in dist) if(!done[k] && dist[k]<best){best=dist[k]; u=k;}
-    if(u===null) break;
-    if(dest.has(u)) break;
-    done[u]=true;
-    for(const e of G[u]){ if(done[e.to]) continue; const nd=dist[u]+e.w; if(nd<dist[e.to]){dist[e.to]=nd; prev[e.to]=u;} }
+    const top=h.pop(); if(!top) break;
+    const du=top[0], u=top[1];
+    if(done[u]) continue; done[u]=true;
+    if(dest.has(u)){ end=u; break; }
+    const adj=G[u]||[];
+    for(const e of adj){ if(done[e.to]) continue; const nd=du+e.w;
+      if(dist[e.to]===undefined || nd<dist[e.to]){ dist[e.to]=nd; prev[e.to]=u; h.push(e.to,nd); } }
   }
-  let end=null, ed=Infinity;
-  dest.forEach(k=>{ if(dist[k]<ed){ed=dist[k]; end=k;} });
-  if(end===null||ed===Infinity) return null;
-  const path=[]; let cur=end;
-  while(cur!=null){ path.unshift(cur); cur=prev[cur]; }
-  return { path, total:ed };
+  if(end===null) return null;
+  const path=[]; let cur=end; while(cur!=null){ path.unshift(cur); cur=prev[cur]; }
+  return { path, total:dist[end] };
 }
 
 /* ===========================================================================
@@ -1054,20 +1101,32 @@ function buildItinerary(res){
   const p = res.path.map(k=>nodeMeta[k]);
   const steps=[], segs=[]; let i=0;
   while(i<p.length){
-    const ref=p[i].ref; let j=i;
-    while(j+1<p.length && p[j+1].ref===ref) j++;
+    const ref=p[i].ref, isBus=p[i].kind==='bus'; let j=i;
+    while(j+1<p.length && p[j+1].ref===ref && (p[j+1].kind==='bus')===isBus) j++;
     if(j>i){
-      segs.push({ ref, s0:p[i].s, s1:p[j].s });
-      steps.push({type:"ride", ref, from:p[i].name, to:p[j].name, stops:Math.abs(p[j].idx-p[i].idx)});
+      if(isBus){
+        const coords=[]; for(let k=i;k<=j;k++) coords.push([p[k].lat,p[k].lng]);
+        segs.push({ ref, bus:true, coords });
+      } else {
+        segs.push({ ref, s0:p[i].s, s1:p[j].s });
+      }
+      steps.push({type:"ride", ref, bus:isBus, from:p[i].name, to:p[j].name, stops:Math.abs(p[j].idx-p[i].idx)});
     } else if(steps.length===0){
-      steps.push({type:"ride", ref, from:p[i].name, to:p[i].name, stops:0});
+      steps.push({type:"ride", ref, bus:isBus, from:p[i].name, to:p[i].name, stops:0});
     }
-    if(j+1<p.length) steps.push({type:"transfer", at:p[j+1].name, ref:p[j+1].ref});
+    if(j+1<p.length) steps.push({type:"transfer", at:p[j+1].name, ref:p[j+1].ref, bus:p[j+1].kind==='bus'});
     i=j+1;
   }
-  return { steps, segs, total:res.total,
-           transfers:steps.filter(s=>s.type==="transfer").length,
-           stops:steps.filter(s=>s.type==="ride").reduce((a,s)=>a+s.stops,0) };
+  // collapse consecutive transfers (pass-through stops): keep first location, final target line
+  const cleaned=[];
+  for(const s of steps){
+    const prev=cleaned[cleaned.length-1];
+    if(s.type==='transfer' && prev && prev.type==='transfer'){ prev.ref=s.ref; prev.bus=s.bus; }
+    else cleaned.push(s);
+  }
+  return { steps:cleaned, segs, total:res.total,
+           transfers:cleaned.filter(s=>s.type==="transfer").length,
+           stops:cleaned.filter(s=>s.type==="ride").reduce((a,s)=>a+s.stops,0) };
 }
 function runRoute(){
   const o=document.getElementById('selO').value, d=document.getElementById('selD').value;
@@ -1087,24 +1146,26 @@ function runRoute(){
   // draw highlight following the track
   const allPts=[];
   it.segs.forEach(seg=>{
-    const line=lineByRef[seg.ref];
-    const pts=subPath(line, seg.s0, seg.s1);
+    const pts = seg.bus ? seg.coords : subPath(lineByRef[seg.ref], seg.s0, seg.s1);
+    if(!pts || pts.length<2) return;
+    const col = seg.bus ? BUS_COLOR : lineByRef[seg.ref].color;
     L.polyline(pts,{color:"#fff",weight:9,opacity:.85,lineCap:'round'}).addTo(routeLayer);
-    L.polyline(pts,{color:line.color,weight:4.5,opacity:1,lineCap:'round'}).addTo(routeLayer);
+    L.polyline(pts,{color:col,weight:4.5,opacity:1,lineCap:'round',dashArray: seg.bus?'2,8':null}).addTo(routeLayer);
     pts.forEach(p=>allPts.push(p));
   });
   if(allPts.length) map.fitBounds(L.latLngBounds(allPts).pad(0.25));
   stepsEl.innerHTML = it.steps.map(s=>{
     if(s.type==="ride"){
-      const c=colorForLine(s.ref);
+      const c = s.bus ? BUS_COLOR : colorForLine(s.ref);
+      const label = s.bus ? 'Bus' : KIND[lineByRef[s.ref].kind].label;
       return `<div class="step"><div class="rail"><span class="nd" style="border-color:${c}"></span><span class="pipe" style="background:${c}"></span></div>
-        <div class="tx"><div class="nm"><span class="badge" style="background:${c}">${s.ref}</span>${KIND[lineByRef[s.ref].kind].label}</div>
+        <div class="tx"><div class="nm"><span class="badge" style="background:${c}">${s.bus?'🚌 '+s.ref:s.ref}</span>${label}</div>
         <div class="mt">${s.from} → ${s.to} · ${s.stops} stop${s.stops!==1?'s':''}</div></div></div>`;
     } else {
-      const c=colorForLine(s.ref);
+      const c = s.bus ? BUS_COLOR : colorForLine(s.ref);
       return `<div class="step"><div class="rail"><span class="nd" style="border-color:var(--gold)"></span><span class="pipe" style="background:var(--gold)"></span></div>
         <div class="tx"><div class="nm" style="color:var(--gold)">⇄ Transfer at ${s.at}</div>
-        <div class="mt">walk to <span class="badge" style="background:${c}">${s.ref}</span> · +${TRANSFER_MIN} min</div></div></div>`;
+        <div class="mt">walk to <span class="badge" style="background:${c}">${s.bus?'🚌 '+s.ref:s.ref}</span> · +${TRANSFER_MIN} min</div></div></div>`;
     }
   }).join("");
   out.classList.add('show');

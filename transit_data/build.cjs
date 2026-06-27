@@ -11,15 +11,17 @@ const ferry   = JSON.parse(fs.readFileSync(path.join(DIR, 'ferry-lines.json'), '
 const planned = JSON.parse(fs.readFileSync(path.join(DIR, 'planned-lines.json'), 'utf8'));
 const manual  = JSON.parse(fs.readFileSync(path.join(DIR, 'planned-manual.json'), 'utf8'));  // hand-placed approx lines
 const buses   = JSON.parse(fs.readFileSync(path.join(DIR, 'bus-directory.json'), 'utf8'));
+const busGraph= JSON.parse(fs.readFileSync(path.join(DIR, 'bus-graph.json'), 'utf8'));        // bus stops for routing
 const disrupt = JSON.parse(fs.readFileSync(path.join(DIR, 'disruptions.json'), 'utf8'));     // live faults/closures
 const data = JSON.stringify(active.concat(b2, ferry, planned, manual));
 
-for (const t of ['__NETWORK_JSON__','__BUS_JSON__','__DISRUPTIONS_JSON__'])
+for (const t of ['__NETWORK_JSON__','__BUS_JSON__','__BUSGRAPH_JSON__','__DISRUPTIONS_JSON__'])
   if (!template.includes(t)) { console.error('token missing:', t); process.exit(1); }
 const html = template.replace('__NETWORK_JSON__', data)
                      .replace('__BUS_JSON__', JSON.stringify(buses))
+                     .replace('__BUSGRAPH_JSON__', JSON.stringify(busGraph))
                      .replace('__DISRUPTIONS_JSON__', JSON.stringify(disrupt));
-console.log('ACTIVE:', active.length, ' B2:', b2.length, ' FERRY:', ferry.length, ' PLANNED:', planned.length, ' MANUAL:', manual.length, ' BUSES:', buses.length, ' DISRUPTIONS:', disrupt.length);
+console.log('ACTIVE:', active.length, ' B2:', b2.length, ' FERRY:', ferry.length, ' PLANNED:', planned.length, ' MANUAL:', manual.length, ' BUSES:', buses.length, ' BUSGRAPH:', busGraph.length, ' DISRUPTIONS:', disrupt.length);
 
 const outPath = path.join(ROOT, 'index.html');   // GitHub Pages serves the repo-root index.html
 fs.writeFileSync(outPath, html);
