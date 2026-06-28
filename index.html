@@ -1259,14 +1259,80 @@ function buildItinerary(res){
            transfers:cleaned.filter(s=>s.type==="transfer").length,
            stops:cleaned.filter(s=>s.type==="ride").reduce((a,s)=>a+s.stops,0) };
 }
-function drawWalkLeg(a,b){
-  L.polyline([a,b],{color:'#9fb0c0',weight:3,opacity:.85,dashArray:'1,7',lineCap:'round'}).addTo(routeLayer);
+/* ---- on-demand REAL geometry: bus road shape (Overpass) + walking paths (OSRM foot) ----
+   Nothing is embedded — each leg of a found route is fetched live and cached, so the
+   straight placeholder lines get replaced by true road / footpath geometry.            */
+const busIdByRef = (()=>{ const m={}; (typeof BUS_DIR!=='undefined'?BUS_DIR:[]).forEach(d=>{ if(d.ref && !(d.ref in m)) m[d.ref]=d.id; }); return m; })();
+const busGeoCache={}, footCache={};
+let routeToken=0;
+function _stitchBus(ways){                               // member ways → one ordered polyline
+  if(!ways.length) return [];
+  const path = ways[0].geometry.map(g=>[g.lat,g.lon]);
+  for(let i=1;i<ways.length;i++){
+    let seg = ways[i].geometry.map(g=>[g.lat,g.lon]); if(seg.length<2) continue;
+    const last=path[path.length-1];
+    if(metersBetween(last,seg[seg.length-1]) < metersBetween(last,seg[0])) seg=seg.reverse();
+    if(metersBetween(path[path.length-1],seg[0])<5) seg=seg.slice(1);
+    for(const q of seg) path.push(q);
+  }
+  return path;
+}
+function _nearestIdx(poly,pt){ let bi=0,bd=Infinity; for(let i=0;i<poly.length;i++){ const dd=metersBetween(poly[i],pt); if(dd<bd){bd=dd;bi=i;} } return bi; }
+function _busPortion(full,a,b){                          // slice the road shape to boarding→alighting
+  if(!full||full.length<2) return null;
+  const i=_nearestIdx(full,a), j=_nearestIdx(full,b); if(i===j) return null;
+  let s=full.slice(Math.min(i,j),Math.max(i,j)+1); if(i>j) s=s.reverse(); return s;
+}
+async function fetchBusGeom(ref){
+  if(ref in busGeoCache) return busGeoCache[ref];
+  const id=busIdByRef[ref]; if(!id) return busGeoCache[ref]=null;
+  try{
+    const q=`[out:json][timeout:60];relation(${id});out geom;`;
+    const r=await fetch('https://overpass-api.de/api/interpreter',{method:'POST',body:q});
+    const j=await r.json(); const rel=(j.elements||[]).find(e=>e.type==='relation');
+    const ways=(rel?rel.members:[]).filter(m=>m.type==='way'&&m.geometry);
+    const full=_stitchBus(ways); return busGeoCache[ref]= full.length>1?full:null;
+  }catch(e){ return busGeoCache[ref]=null; }
+}
+async function fetchFoot(a,b){                           // FOSSGIS public OSRM foot profile
+  const key=a[0].toFixed(4)+','+a[1].toFixed(4)+'|'+b[0].toFixed(4)+','+b[1].toFixed(4);
+  if(key in footCache) return footCache[key];
+  try{
+    const u=`https://routing.openstreetmap.de/routed-foot/route/v1/foot/${a[1]},${a[0]};${b[1]},${b[0]}?overview=full&geometries=geojson`;
+    const r=await fetch(u); const j=await r.json();
+    if(j.code!=='Ok'||!j.routes||!j.routes[0]) return footCache[key]=null;
+    return footCache[key]={ pts:j.routes[0].geometry.coordinates.map(c=>[c[1],c[0]]), dur:j.routes[0].duration };
+  }catch(e){ return footCache[key]=null; }
+}
+function drawWalkPath(pts){ return L.polyline(pts,{color:'#9fb0c0',weight:3,opacity:.9,dashArray:'1,7',lineCap:'round'}).addTo(routeLayer); }
+function drawWalkLeg(a,b){ return drawWalkPath([a,b]); }
+function drawBusPath(pts,dashed){
+  const w=L.polyline(pts,{color:'#fff',weight:7,opacity:.7,lineCap:'round',lineJoin:'round'}).addTo(routeLayer);
+  const c=L.polyline(pts,{color:BUS_COLOR,weight:4,opacity:1,lineCap:'round',lineJoin:'round',dashArray:dashed?'2,8':null}).addTo(routeLayer);
+  return [w,c];
+}
+// progressively swap straight placeholders for real geometry (aborts if a newer route runs)
+async function upgradeRoute(legs, token){
+  const note=document.getElementById('refineNote');
+  for(const leg of legs){
+    if(token!==routeToken) return;
+    let real=null;
+    if(leg.kind==='bus'){ const full=await fetchBusGeom(leg.ref); if(full) real=_busPortion(full,leg.a,leg.b); }
+    else { const fr=await fetchFoot(leg.a,leg.b); if(fr&&fr.pts.length>1) real=fr.pts; }
+    if(token!==routeToken) return;
+    if(real&&real.length>1){
+      leg.placeholders.forEach(p=>routeLayer.removeLayer(p));
+      leg.placeholders = leg.kind==='bus' ? drawBusPath(real,false) : [drawWalkPath(real)];
+    }
+  }
+  if(note && token===routeToken) note.remove();
 }
 function runRoute(){
   const o=resolveTyped('O'), d=resolveTyped('D');
   renderEndpoints();
   const out=document.getElementById('rout'), stepsEl=document.getElementById('rSteps');
   routeLayer.clearLayers();
+  const token=++routeToken;     // invalidate any geometry fetches still in flight
   if(!o || !d){ out.classList.add('show');
     document.getElementById('rEta').textContent='–'; document.getElementById('rStops').textContent='–'; document.getElementById('rTr').textContent='–';
     stepsEl.innerHTML='<div class="none">Search a start &amp; destination, or tap 📍 to drop a point on the map.</div>'; updateFavBtn(); return; }
@@ -1278,19 +1344,28 @@ function runRoute(){
   document.getElementById('rEta').textContent=Math.round(it.total);
   document.getElementById('rStops').textContent=it.stops;
   document.getElementById('rTr').textContent=it.transfers;
-  // draw highlight following the track
-  const allPts=[];
-  // access-walk legs: origin → first boarding stop, last alighting stop → destination
-  const firstStop=[nodeMeta[res.path[0]].lat, nodeMeta[res.path[0]].lng];
-  const lastStop=[nodeMeta[res.path[res.path.length-1]].lat, nodeMeta[res.path[res.path.length-1]].lng];
-  if(res.oWalk>0.5){ drawWalkLeg([o.lat,o.lng], firstStop); allPts.push([o.lat,o.lng], firstStop); }
-  if(res.dWalk>0.5){ drawWalkLeg(lastStop, [d.lat,d.lng]); allPts.push(lastStop, [d.lat,d.lng]); }
+  // draw straight placeholders now; collect upgradeable legs to fetch real geometry for
+  const allPts=[], legs=[];
+  const pm=res.path.map(k=>nodeMeta[k]);
+  const firstStop=[pm[0].lat,pm[0].lng], lastStop=[pm[pm.length-1].lat,pm[pm.length-1].lng];
+  if(res.oWalk>0.5){ const a=[o.lat,o.lng]; legs.push({kind:'walk',a,b:firstStop,placeholders:[drawWalkLeg(a,firstStop)]}); allPts.push(a,firstStop); }
+  if(res.dWalk>0.5){ const b=[d.lat,d.lng]; legs.push({kind:'walk',a:lastStop,b,placeholders:[drawWalkLeg(lastStop,b)]}); allPts.push(lastStop,b); }
+  // transfer walks: every boundary where the line/mode changes along the path
+  { let i=0; while(i<pm.length){ const ref=pm[i].ref, bus=pm[i].kind==='bus'; let j=i;
+      while(j+1<pm.length && pm[j+1].ref===ref && (pm[j+1].kind==='bus')===bus) j++;
+      if(j+1<pm.length){ const a=[pm[j].lat,pm[j].lng], b=[pm[j+1].lat,pm[j+1].lng];
+        if(metersBetween(a,b)>25){ legs.push({kind:'walk',a,b,placeholders:[drawWalkLeg(a,b)]}); allPts.push(a,b); } }
+      i=j+1; } }
   it.segs.forEach(seg=>{
     const pts = seg.bus ? seg.coords : subPath(lineByRef[seg.ref], seg.s0, seg.s1);
     if(!pts || pts.length<2) return;
-    const col = seg.bus ? BUS_COLOR : lineByRef[seg.ref].color;
-    L.polyline(pts,{color:"#fff",weight:9,opacity:.85,lineCap:'round'}).addTo(routeLayer);
-    L.polyline(pts,{color:col,weight:4.5,opacity:1,lineCap:'round',dashArray: seg.bus?'2,8':null}).addTo(routeLayer);
+    if(seg.bus){
+      legs.push({kind:'bus', ref:seg.ref, a:pts[0], b:pts[pts.length-1], placeholders:drawBusPath(pts,true)});
+    } else {
+      const col=lineByRef[seg.ref].color;
+      L.polyline(pts,{color:"#fff",weight:9,opacity:.85,lineCap:'round'}).addTo(routeLayer);
+      L.polyline(pts,{color:col,weight:4.5,opacity:1,lineCap:'round'}).addTo(routeLayer);
+    }
     pts.forEach(p=>allPts.push(p));
   });
   if(allPts.length) map.fitBounds(L.latLngBounds(allPts).pad(0.25));
@@ -1312,6 +1387,12 @@ function runRoute(){
         <div class="mt">walk to <span class="badge" style="background:${c}">${s.bus?'🚌 '+s.ref:s.ref}</span> · +${TRANSFER_MIN} min</div></div></div>`;
     }
   }).join("");
+  if(legs.length){
+    const note=document.createElement('div'); note.className='none'; note.id='refineNote';
+    note.textContent='⏳ Loading real road & footpath geometry…';
+    stepsEl.insertBefore(note, stepsEl.firstChild);
+    upgradeRoute(legs, token);
+  }
   out.classList.add('show');
   recordPlan(o, d, { eta: Math.round(it.total), stops: it.stops, transfers: it.transfers });
   updateFavBtn();
