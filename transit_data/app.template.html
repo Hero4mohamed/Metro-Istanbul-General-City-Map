@@ -100,6 +100,20 @@
   select{width:100%;padding:9px 10px;border-radius:10px;background:rgba(8,11,18,.85);color:var(--text);
     border:1px solid var(--stroke-2);font-family:var(--font);font-size:12px;outline:none;cursor:pointer;}
   select:focus{border-color:var(--accent);}
+  .ac{position:relative;}
+  .ac-input{width:100%;padding:9px 32px 9px 10px;border-radius:10px;background:rgba(8,11,18,.85);color:var(--text);
+    border:1px solid var(--stroke-2);font-family:var(--font);font-size:12px;outline:none;}
+  .ac-input:focus{border-color:var(--accent);}
+  .ac-pin{position:absolute;right:4px;top:3px;width:26px;height:26px;border:none;background:transparent;cursor:pointer;font-size:13px;border-radius:7px;opacity:.7;}
+  .ac-pin:hover{opacity:1;background:rgba(255,255,255,.07);}
+  .ac-pin.armed{background:rgba(54,208,122,.25);opacity:1;}
+  .ac-list{position:absolute;left:0;right:0;top:38px;z-index:30;background:rgba(10,14,22,.98);border:1px solid var(--stroke-2);
+    border-radius:10px;max-height:230px;overflow-y:auto;display:none;box-shadow:0 14px 36px -10px rgba(0,0,0,.8);}
+  .ac-list.show{display:block;}
+  .ac-item{padding:7px 10px;font-size:11.5px;cursor:pointer;border-bottom:1px solid rgba(255,255,255,.04);display:flex;align-items:center;gap:7px;}
+  .ac-item:hover,.ac-item.sel{background:rgba(54,208,122,.12);}
+  .ac-item .ac-dot{width:7px;height:7px;border-radius:50%;flex:none;}
+  .ac-item small{color:var(--dim);margin-left:auto;font-size:9px;text-transform:uppercase;letter-spacing:.5px;}
   .btn{width:100%;padding:11px;border:none;border-radius:11px;cursor:pointer;font-family:var(--font);font-size:12px;
     font-weight:700;letter-spacing:.5px;color:#04130b;background:linear-gradient(135deg,#3ee387,#16a35a);
     box-shadow:0 6px 18px -6px rgba(54,208,122,.7);transition:.15s;}
@@ -223,9 +237,9 @@
   .warn-icon span{display:flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:50%;
     background:var(--wc,#E5484D);color:#fff;font-size:12px;box-shadow:0 0 0 2px #0B0F19,0 0 12px -2px var(--wc,#E5484D);animation:wpulse 1.6s infinite;}
   @keyframes wpulse{0%,100%{transform:scale(1);}50%{transform:scale(1.18);}}
-  /* animated hazard-tape style for closed line sections */
-  path.hazard-flow{animation:hazflow 0.85s linear infinite;filter:drop-shadow(0 0 2px rgba(0,0,0,.6));}
-  @keyframes hazflow{to{stroke-dashoffset:-22;}}
+  /* closed line-section: thin dotted overlay with a soft, slow pulse (subtle) */
+  path.hazard-flow{animation:hazpulse 2.6s ease-in-out infinite;}
+  @keyframes hazpulse{0%,100%{opacity:.45;}50%{opacity:.9;}}
   .leaflet-tooltip.lt b{color:#fff;}
   @media (max-width:760px){.controls{width:228px;}.station{width:228px;}.topbar{max-width:200px;}}
 </style>
@@ -291,9 +305,15 @@
 
   <div class="card glass" id="cardPlanner">
     <div class="sec">Trip Planner</div>
-    <div class="field"><label>Origin</label><select id="selO"></select></div>
+    <div class="field"><label>From</label>
+      <div class="ac"><input id="selO" class="ac-input" type="text" placeholder="Search any stop or place…" autocomplete="off">
+        <button class="ac-pin" data-for="O" title="Pick point on map">📍</button>
+        <div class="ac-list" id="acO"></div></div></div>
     <div class="swapb"><button id="swap" title="Swap">⇅</button></div>
-    <div class="field"><label>Destination</label><select id="selD"></select></div>
+    <div class="field"><label>To</label>
+      <div class="ac"><input id="selD" class="ac-input" type="text" placeholder="Search any stop or place…" autocomplete="off">
+        <button class="ac-pin" data-for="D" title="Pick point on map">📍</button>
+        <div class="ac-list" id="acD"></div></div></div>
     <button class="btn" id="route">◇ Find Optimal Path</button>
     <button class="btn ghost" id="clear">Clear</button>
     <div class="route-out" id="rout">
@@ -625,6 +645,51 @@ function dijkstra(oName, dName){
   if(end===null) return null;
   const path=[]; let cur=end; while(cur!=null){ path.unshift(cur); cur=prev[cur]; }
   return { path, total:dist[end] };
+}
+
+// ---- spatial index for arbitrary-point (door-to-door) routing + place search ----
+const GCELL = 0.0022, nodeGrid = new Map();
+for(const k in nodeMeta){ const m=nodeMeta[k]; const ck=Math.round(m.lat/GCELL)+'_'+Math.round(m.lng/GCELL);
+  let a=nodeGrid.get(ck); if(!a){ a=[]; nodeGrid.set(ck,a); } a.push(k); }
+function nearbyNodes(lat,lng,radius,cap){
+  const ci=Math.round(lat/GCELL), cj=Math.round(lng/GCELL), rings=Math.ceil(radius/180)+1, out=[];
+  for(let di=-rings;di<=rings;di++) for(let dj=-rings;dj<=rings;dj++){
+    const a=nodeGrid.get((ci+di)+'_'+(cj+dj)); if(!a) continue;
+    for(const k of a){ const m=nodeMeta[k]; const d=metersBetween([lat,lng],[m.lat,m.lng]); if(d<=radius) out.push([k,d]); }
+  }
+  out.sort((a,b)=>a[1]-b[1]); return out.slice(0, cap||12);
+}
+// searchable places: unique named stops across rail + ferry + bus (rail wins name clashes)
+const PLACES = (()=>{ const seen=new Set(), arr=[];
+  for(const k in nodeMeta){ const m=nodeMeta[k]; if(!m.name) continue;
+    if(m.kind==='bus' && m.name===m.ref+' durağı') continue;       // skip auto-named placeholder stops
+    const f=fold(m.name); if(seen.has(f)) continue; seen.add(f);
+    arr.push({ name:m.name, lat:m.lat, lng:m.lng, ref:m.ref, bus:m.kind==='bus', _f:f }); }
+  arr.sort((a,b)=>a.name.localeCompare(b.name,'tr')); return arr; })();
+const WALK = 80;      // metres / minute
+const ACCESS = 1100;  // max access-walk to the first/last stop (m)
+// route between two arbitrary points (or selected stops): walk to nearby stops → Dijkstra → walk out
+function routeXY(o, d){
+  const srcs = nearbyNodes(o.lat,o.lng,ACCESS,12);
+  const dArr = nearbyNodes(d.lat,d.lng,ACCESS,12);
+  if(!srcs.length || !dArr.length) return null;
+  const dsts = new Map(); dArr.forEach(([k,dist])=> dsts.set(k, dist/WALK));
+  const dist={}, prev={}, done={}, h=new MinHeap();
+  srcs.forEach(([k,mm])=>{ const w=mm/WALK; if(dist[k]===undefined||w<dist[k]){ dist[k]=w; prev[k]=null; h.push(k,w); } });
+  let best=Infinity, bestEnd=null;
+  while(true){ const top=h.pop(); if(!top) break; const du=top[0], u=top[1];
+    if(done[u]) continue; done[u]=true; if(du>best) break;
+    if(dsts.has(u)){ const tot=du+dsts.get(u); if(tot<best){ best=tot; bestEnd=u; } }
+    const adj=G[u]||[]; for(const e of adj){ if(done[e.to]) continue; const nd=du+e.w;
+      if(dist[e.to]===undefined||nd<dist[e.to]){ dist[e.to]=nd; prev[e.to]=u; h.push(e.to,nd); } }
+  }
+  if(bestEnd===null) return null;
+  const path=[]; let cur=bestEnd; while(cur!=null){ path.unshift(cur); cur=prev[cur]; }
+  const first=nodeMeta[path[0]], lastN=nodeMeta[bestEnd];
+  return { path, total:best,
+           oWalk: metersBetween([o.lat,o.lng],[first.lat,first.lng])/WALK,
+           dWalk: metersBetween([lastN.lat,lastN.lng],[d.lat,d.lng])/WALK,
+           origin:o, dest:d };
 }
 
 /* ===========================================================================
@@ -1047,30 +1112,90 @@ function lsSet(k,v){ try{ localStorage.setItem(k, JSON.stringify(v)); }catch(e){
 let planHistory = lsGet(LS_HIST);
 let planFavs = lsGet(LS_FAV);
 const attrEsc = s => (s||'').replace(/&/g,'&amp;').replace(/"/g,'&quot;');
-function isFav(o,d){ return planFavs.some(p=>p.o===o && p.d===d); }
+
+/* ---- door-to-door endpoints: any stop (searchable) or any pinned map point ---- */
+let originPt=null, destPt=null, pickMode=null;
+const endpointLayer = L.layerGroup().addTo(map);
+function epIcon(role){
+  const c = role==='O' ? '#3ee387' : '#ff5d6c';
+  return L.divIcon({ className:'ep-icon',
+    html:`<div style="width:17px;height:17px;border-radius:50% 50% 50% 0;transform:rotate(-45deg);background:${c};border:2px solid #06121b;box-shadow:0 3px 7px rgba(0,0,0,.6)"></div>`,
+    iconSize:[17,17], iconAnchor:[8,17] });
+}
+function renderEndpoints(){
+  endpointLayer.clearLayers();
+  if(originPt) L.marker([originPt.lat,originPt.lng],{icon:epIcon('O'),zIndexOffset:1500,interactive:false}).addTo(endpointLayer);
+  if(destPt)   L.marker([destPt.lat,destPt.lng],  {icon:epIcon('D'),zIndexOffset:1500,interactive:false}).addTo(endpointLayer);
+}
+function setPoint(which, pt){
+  if(which==='O') originPt=pt; else destPt=pt;
+  document.getElementById(which==='O'?'selO':'selD').value = pt ? pt.name : '';
+  renderEndpoints(); updateFavBtn();
+}
+// live search over every stop (rail + ferry + bus); prefix matches first
+function acRender(which, q){
+  const listEl=document.getElementById(which==='O'?'acO':'acD'), f=fold(q);
+  if(!f){ listEl.classList.remove('show'); listEl.innerHTML=''; return; }
+  const pre=[], sub=[];
+  for(const pl of PLACES){ if(pl._f.startsWith(f)) pre.push(pl); else if(pl._f.includes(f)) sub.push(pl); }
+  const out=pre.concat(sub).slice(0,30);
+  if(!out.length){ listEl.innerHTML='<div class="ac-item" style="color:var(--dim)">No match — or drop a 📍 pin on the map</div>'; listEl.classList.add('show'); return; }
+  listEl.innerHTML=out.map((pl,ix)=>{
+    const col = pl.bus ? BUS_COLOR : colorForLine(pl.ref);
+    const kl  = pl.bus ? 'Bus' : (lineByRef[pl.ref]&&KIND[lineByRef[pl.ref].kind] ? KIND[lineByRef[pl.ref].kind].label : 'Rail');
+    return `<div class="ac-item" data-ix="${ix}"><span class="ac-dot" style="background:${col}"></span>${pl.name}<small>${kl}</small></div>`;
+  }).join('');
+  listEl.classList.add('show');
+  listEl.querySelectorAll('.ac-item[data-ix]').forEach(el=>el.addEventListener('mousedown', ev=>{
+    ev.preventDefault(); const pl=out[+el.dataset.ix];
+    setPoint(which, { name:pl.name, lat:pl.lat, lng:pl.lng }); listEl.classList.remove('show');
+  }));
+}
+// arm/disarm "pick a point on the map" mode for a field
+function armPick(which){
+  pickMode = (pickMode===which) ? null : which;
+  document.querySelectorAll('.ac-pin').forEach(b=>b.classList.toggle('armed', b.dataset.for===pickMode));
+  map.getContainer().style.cursor = pickMode ? 'crosshair' : '';
+}
+// resolve a typed (but not clicked) field to its best matching place
+function resolveTyped(which){
+  const cur = which==='O'?originPt:destPt;
+  const val = document.getElementById(which==='O'?'selO':'selD').value.trim();
+  if(!val){ if(which==='O') originPt=null; else destPt=null; return null; }
+  if(cur && cur.name===val) return cur;             // already a chosen stop / pinned point
+  const f=fold(val);
+  const m = PLACES.find(p=>p._f===f) || PLACES.find(p=>p._f.startsWith(f)) || PLACES.find(p=>p._f.includes(f));
+  if(m){ const pt={name:m.name,lat:m.lat,lng:m.lng}; if(which==='O') originPt=pt; else destPt=pt;
+    document.getElementById(which==='O'?'selO':'selD').value=m.name; return pt; }
+  return null;
+}
+function isFav(oN,dN){ return planFavs.some(p=>p.oN===oN && p.dN===dN); }
+const epOf = p => ({ o:{name:p.oN,lat:p.oLat,lng:p.oLng}, d:{name:p.dN,lat:p.dLat,lng:p.dLng} });
+const epRec = (o,d,sum)=>({ oN:o.name,oLat:o.lat,oLng:o.lng, dN:d.name,dLat:d.lat,dLng:d.lng,
+                            eta:sum?sum.eta:null, stops:sum?sum.stops:null, transfers:sum?sum.transfers:null });
 function recordPlan(o,d,sum){
-  planHistory = planHistory.filter(p=>!(p.o===o && p.d===d));
-  planHistory.unshift({ o, d, eta:sum.eta, stops:sum.stops, transfers:sum.transfers });
+  planHistory = planHistory.filter(p=>!(p.oN===o.name && p.dN===d.name));
+  planHistory.unshift(epRec(o,d,sum));
   if(planHistory.length>12) planHistory.length=12;
   lsSet(LS_HIST, planHistory); renderPlanLists();
 }
 function toggleFav(o,d,sum){
-  if(isFav(o,d)) planFavs = planFavs.filter(p=>!(p.o===o && p.d===d));
-  else planFavs.unshift({ o, d, eta:sum?sum.eta:null, stops:sum?sum.stops:null, transfers:sum?sum.transfers:null });
+  if(isFav(o.name,d.name)) planFavs = planFavs.filter(p=>!(p.oN===o.name && p.dN===d.name));
+  else planFavs.unshift(epRec(o,d,sum));
   lsSet(LS_FAV, planFavs); renderPlanLists(); updateFavBtn();
 }
-function loadPlan(o,d){ document.getElementById('selO').value=o; document.getElementById('selD').value=d; runRoute(); }
+function loadPlan(o,d){ setPoint('O',o); setPoint('D',d); runRoute(); }
 function updateFavBtn(){
-  const o=document.getElementById('selO').value, d=document.getElementById('selD').value;
   const b=document.getElementById('favBtn'); if(!b) return;
-  const f = o && d && isFav(o,d);
+  const f = originPt && destPt && isFav(originPt.name,destPt.name);
   b.textContent = f ? '★ Favourited' : '☆ Save to Favourites';
   b.classList.toggle('isfav', !!f);
 }
 function planRow(p, on){
-  return `<div class="plan-item" data-o="${attrEsc(p.o)}" data-d="${attrEsc(p.d)}">
+  return `<div class="plan-item" data-on="${attrEsc(p.oN)}" data-dn="${attrEsc(p.dN)}"
+       data-ola="${p.oLat}" data-olo="${p.oLng}" data-dla="${p.dLat}" data-dlo="${p.dLng}">
     <button class="pi-star ${on?'on':''}" data-act="star" title="favourite">★</button>
-    <div class="pi-route">${p.o} <small>→</small> ${p.d}</div>
+    <div class="pi-route">${p.oN} <small>→</small> ${p.dN}</div>
     ${p.eta!=null?`<span class="pi-eta">${p.eta}m</span>`:''}
     <button class="pi-del" data-act="del" title="remove">✕</button></div>`;
 }
@@ -1078,18 +1203,19 @@ function renderPlanLists(){
   const fav=document.getElementById('favList'), hist=document.getElementById('histList');
   if(!fav||!hist) return;
   fav.innerHTML = planFavs.length ? planFavs.map(p=>planRow(p,true)).join('') : '<div class="plan-empty">No favourites yet — find a route, then tap ☆.</div>';
-  hist.innerHTML = planHistory.length ? planHistory.map(p=>planRow(p,isFav(p.o,p.d))).join('') : '<div class="plan-empty">No recent plans.</div>';
+  hist.innerHTML = planHistory.length ? planHistory.map(p=>planRow(p,isFav(p.oN,p.dN))).join('') : '<div class="plan-empty">No recent plans.</div>';
   bindPlanItems(fav,'fav'); bindPlanItems(hist,'hist');
 }
 function bindPlanItems(container, kind){
   container.querySelectorAll('.plan-item').forEach(it=>{
-    const o=it.dataset.o, d=it.dataset.d;
+    const o={ name:it.dataset.on, lat:+it.dataset.ola, lng:+it.dataset.olo };
+    const d={ name:it.dataset.dn, lat:+it.dataset.dla, lng:+it.dataset.dlo };
     it.addEventListener('click', e=>{
       const act = e.target.getAttribute && e.target.getAttribute('data-act');
       if(act==='star'){ toggleFav(o,d,null); return; }
       if(act==='del'){
-        if(kind==='fav'){ planFavs=planFavs.filter(p=>!(p.o===o&&p.d===d)); lsSet(LS_FAV,planFavs); }
-        else { planHistory=planHistory.filter(p=>!(p.o===o&&p.d===d)); lsSet(LS_HIST,planHistory); }
+        if(kind==='fav'){ planFavs=planFavs.filter(p=>!(p.oN===o.name&&p.dN===d.name)); lsSet(LS_FAV,planFavs); }
+        else { planHistory=planHistory.filter(p=>!(p.oN===o.name&&p.dN===d.name)); lsSet(LS_HIST,planHistory); }
         renderPlanLists(); updateFavBtn(); return;
       }
       loadPlan(o,d);
@@ -1124,27 +1250,41 @@ function buildItinerary(res){
     if(s.type==='transfer' && prev && prev.type==='transfer'){ prev.ref=s.ref; prev.bus=s.bus; }
     else cleaned.push(s);
   }
-  return { steps:cleaned, segs, total:res.total,
+  // wrap the ride with access-walk legs (origin → first stop, last stop → destination)
+  const out=[];
+  if(res.oWalk!=null && res.oWalk>0.5 && p.length) out.push({type:'walk', mins:res.oWalk, to:p[0].name});
+  for(const s of cleaned) out.push(s);
+  if(res.dWalk!=null && res.dWalk>0.5 && p.length) out.push({type:'walk', mins:res.dWalk, from:p[p.length-1].name, dest:true});
+  return { steps:out, segs, total:res.total,
            transfers:cleaned.filter(s=>s.type==="transfer").length,
            stops:cleaned.filter(s=>s.type==="ride").reduce((a,s)=>a+s.stops,0) };
 }
+function drawWalkLeg(a,b){
+  L.polyline([a,b],{color:'#9fb0c0',weight:3,opacity:.85,dashArray:'1,7',lineCap:'round'}).addTo(routeLayer);
+}
 function runRoute(){
-  const o=document.getElementById('selO').value, d=document.getElementById('selD').value;
+  const o=resolveTyped('O'), d=resolveTyped('D');
+  renderEndpoints();
   const out=document.getElementById('rout'), stepsEl=document.getElementById('rSteps');
   routeLayer.clearLayers();
   if(!o || !d){ out.classList.add('show');
     document.getElementById('rEta').textContent='–'; document.getElementById('rStops').textContent='–'; document.getElementById('rTr').textContent='–';
-    stepsEl.innerHTML='<div class="none">Pick an origin and destination.</div>'; updateFavBtn(); return; }
-  const res=dijkstra(o,d);
+    stepsEl.innerHTML='<div class="none">Search a start &amp; destination, or tap 📍 to drop a point on the map.</div>'; updateFavBtn(); return; }
+  const res=routeXY(o,d);
   if(!res){ out.classList.add('show'); document.getElementById('rEta').textContent='—';
     document.getElementById('rStops').textContent='—'; document.getElementById('rTr').textContent='—';
-    stepsEl.innerHTML='<div class="none">No path found.</div>'; updateFavBtn(); return; }
+    stepsEl.innerHTML='<div class="none">No route found — try points closer to the network.</div>'; updateFavBtn(); return; }
   const it=buildItinerary(res);
   document.getElementById('rEta').textContent=Math.round(it.total);
   document.getElementById('rStops').textContent=it.stops;
   document.getElementById('rTr').textContent=it.transfers;
   // draw highlight following the track
   const allPts=[];
+  // access-walk legs: origin → first boarding stop, last alighting stop → destination
+  const firstStop=[nodeMeta[res.path[0]].lat, nodeMeta[res.path[0]].lng];
+  const lastStop=[nodeMeta[res.path[res.path.length-1]].lat, nodeMeta[res.path[res.path.length-1]].lng];
+  if(res.oWalk>0.5){ drawWalkLeg([o.lat,o.lng], firstStop); allPts.push([o.lat,o.lng], firstStop); }
+  if(res.dWalk>0.5){ drawWalkLeg(lastStop, [d.lat,d.lng]); allPts.push(lastStop, [d.lat,d.lng]); }
   it.segs.forEach(seg=>{
     const pts = seg.bus ? seg.coords : subPath(lineByRef[seg.ref], seg.s0, seg.s1);
     if(!pts || pts.length<2) return;
@@ -1155,7 +1295,11 @@ function runRoute(){
   });
   if(allPts.length) map.fitBounds(L.latLngBounds(allPts).pad(0.25));
   stepsEl.innerHTML = it.steps.map(s=>{
-    if(s.type==="ride"){
+    if(s.type==="walk"){
+      return `<div class="step"><div class="rail"><span class="nd" style="border-color:#9fb0c0"></span><span class="pipe" style="background:#9fb0c0"></span></div>
+        <div class="tx"><div class="nm">🚶 Walk ~${Math.max(1,Math.round(s.mins))} min</div>
+        <div class="mt">${s.dest ? ('from '+s.from+' to your destination') : ('to '+s.to)}</div></div></div>`;
+    } else if(s.type==="ride"){
       const c = s.bus ? BUS_COLOR : colorForLine(s.ref);
       const label = s.bus ? 'Bus' : KIND[lineByRef[s.ref].kind].label;
       return `<div class="step"><div class="rail"><span class="nd" style="border-color:${c}"></span><span class="pipe" style="background:${c}"></span></div>
@@ -1283,11 +1427,16 @@ function setLine(ref, on){
 function toggleLine(ref){ setLine(ref, !lineLayers[ref].on); }
 
 function populateSelects(){
-  const names=[...new Set(stationList.map(r=>r.name))].sort((a,b)=>a.localeCompare(b,'tr'));
-  const o=document.getElementById('selO'), d=document.getElementById('selD');
-  o.add(new Option('— origin —','')); d.add(new Option('— destination —',''));
-  names.forEach(n=>{ o.add(new Option(n,n)); d.add(new Option(n,n)); });
-  o.value=''; d.value='';   // start empty — no auto-run on refresh
+  // searchable autocomplete over every stop (PLACES) + 📍 map-pick buttons
+  ['O','D'].forEach(which=>{
+    const inp=document.getElementById(which==='O'?'selO':'selD');
+    const listEl=document.getElementById(which==='O'?'acO':'acD');
+    inp.addEventListener('input', ()=>{ if(which==='O') originPt=null; else destPt=null; acRender(which, inp.value); });
+    inp.addEventListener('focus', ()=>{ if(inp.value.trim()) acRender(which, inp.value); });
+    inp.addEventListener('blur',  ()=> setTimeout(()=>listEl.classList.remove('show'), 150));
+    inp.addEventListener('keydown', e=>{ if(e.key==='Enter'){ listEl.classList.remove('show'); runRoute(); } });
+  });
+  document.querySelectorAll('.ac-pin').forEach(b=> b.addEventListener('click', ()=> armPick(b.dataset.for)));
 }
 
 document.getElementById('baseSeg').addEventListener('click', e=>{
@@ -1314,22 +1463,32 @@ document.getElementById('route').addEventListener('click', runRoute);
 document.getElementById('clear').addEventListener('click', ()=>{
   routeLayer.clearLayers();
   document.getElementById('rout').classList.remove('show');
-  document.getElementById('selO').value=''; document.getElementById('selD').value='';
-  updateFavBtn();
+  setPoint('O',null); setPoint('D',null);
 });
 document.getElementById('favBtn').addEventListener('click', ()=>{
-  const o=document.getElementById('selO').value, d=document.getElementById('selD').value;
-  if(o && d) toggleFav(o, d, { eta:+document.getElementById('rEta').textContent||null,
+  if(originPt && destPt) toggleFav(originPt, destPt, { eta:+document.getElementById('rEta').textContent||null,
                                stops:+document.getElementById('rStops').textContent||null,
                                transfers:+document.getElementById('rTr').textContent||null });
 });
 document.getElementById('histClear').addEventListener('click', ()=>{ planHistory=[]; lsSet(LS_HIST,planHistory); renderPlanLists(); });
-document.getElementById('swap').addEventListener('click', ()=>{ const o=document.getElementById('selO'),d=document.getElementById('selD'); const t=o.value;o.value=d.value;d.value=t; });
+document.getElementById('swap').addEventListener('click', ()=>{
+  const t=originPt; originPt=destPt; destPt=t;
+  document.getElementById('selO').value = originPt?originPt.name:'';
+  document.getElementById('selD').value = destPt?destPt.name:'';
+  renderEndpoints(); updateFavBtn();
+});
 document.getElementById('stnX').addEventListener('click', ()=>{ selected=null; document.getElementById('stn').classList.remove('show'); });
 document.getElementById('linpX').addEventListener('click', ()=>document.getElementById('linp').classList.remove('show'));
-map.on('click', closeAllPanels);
-document.getElementById('setO').addEventListener('click', ()=>{ if(selected){ document.getElementById('selO').value=selected.name; } });
-document.getElementById('setD').addEventListener('click', ()=>{ if(selected){ document.getElementById('selD').value=selected.name; } });
+map.on('click', e=>{
+  if(pickMode){ const ll=e.latlng;
+    setPoint(pickMode, { name:`📍 ${ll.lat.toFixed(4)}, ${ll.lng.toFixed(4)}`, lat:ll.lat, lng:ll.lng });
+    armPick(pickMode);   // disarm + restore cursor
+    return;
+  }
+  closeAllPanels();
+});
+document.getElementById('setO').addEventListener('click', ()=>{ if(selected) setPoint('O',{name:selected.name,lat:selected.lat,lng:selected.lng}); });
+document.getElementById('setD').addEventListener('click', ()=>{ if(selected) setPoint('D',{name:selected.name,lat:selected.lat,lng:selected.lng}); });
 
 map.on('zoomstart', ()=>hideTrainsZoom=true);
 map.on('zoomend', ()=>hideTrainsZoom=false);
@@ -1394,11 +1553,12 @@ function renderDisruptionMarkers(){
     disruptionPaths(d).forEach(coords=>{
       if(coords.length<2) return;
       const base = (line && KIND[line.kind] && KIND[line.kind].weight) || 4;
-      const gw = Math.max(2.5, (base+5) * lineScale(z));
-      const dark = L.polyline(coords, { renderer:hazardRenderer, color:'#23272f', weight:gw+1.5,
-                              opacity:0.85, lineCap:'round', lineJoin:'round', interactive:false });
+      const gw = Math.max(1.6, (base+0.5) * lineScale(z));   // thin — close to the line's own width
+      // muted desaturated base (line "out of service") + fine dotted overlay in the severity colour
+      const dark = L.polyline(coords, { renderer:hazardRenderer, color:'#3a3f4a', weight:gw+1.5,
+                              opacity:0.6, lineCap:'round', lineJoin:'round', interactive:false });
       const haz = L.polyline(coords, { renderer:hazardRenderer, color:col, weight:gw,
-                              opacity:0.95, lineCap:'butt', dashArray:'10,12', className:'hazard-flow' });
+                              opacity:0.9, lineCap:'round', dashArray:'1,'+Math.round(gw*2.2), className:'hazard-flow' });
       haz.bindTooltip(disrTip(d), { sticky:true, className:'lt' });
       haz.on('click', ()=> openDisruption(d));
       dark.addTo(disruptionLayer); haz.addTo(disruptionLayer); haz.bringToFront();
