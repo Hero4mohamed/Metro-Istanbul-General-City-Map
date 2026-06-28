@@ -62,17 +62,23 @@ function simplify(pts,eps){ if(pts.length<3)return pts; const sq=eps*eps; const 
     if(md>sq&&idx!==-1){keep[idx]=true;st.push([s,idx],[idx,e]);}}
   return pts.filter((_,i)=>keep[i]); }
 
-// Catmull-Rom spline → gentle smooth curves through the piers (so straight
-// pier-to-pier hops read as smoothly as the OSM-geometry lines).
+// CENTRIPETAL Catmull-Rom (alpha=0.5) — unlike the uniform form it provably never
+// forms cusps or self-intersections/loops, so sharp pier turns stay clean.
 function catmullRom(pts, seg){
-  if (pts.length < 3) return pts;
-  const P = i => pts[Math.max(0, Math.min(pts.length-1, i))];
-  const cr = (a,b,c,d,t) => { const t2=t*t,t3=t2*t;
-    return 0.5*((2*b)+(-a+c)*t+(2*a-5*b+4*c-d)*t2+(-a+3*b-3*c+d)*t3); };
-  const out = [];
-  for (let i=0;i<pts.length-1;i++){
+  if (pts.length < 3) return pts.slice();
+  const a=0.5, out=[];
+  const P=i=>pts[Math.max(0,Math.min(pts.length-1,i))];
+  const tnext=(ti,A,B)=>{ const d=Math.hypot(B[0]-A[0],B[1]-A[1]); return ti + Math.pow(d<1e-9?1e-9:d, a); };
+  const L=(A,B,f)=>[A[0]+(B[0]-A[0])*f, A[1]+(B[1]-A[1])*f];
+  for(let i=0;i<pts.length-1;i++){
     const p0=P(i-1),p1=P(i),p2=P(i+1),p3=P(i+2);
-    for (let t=0;t<seg;t++){ const s=t/seg; out.push([ cr(p0[0],p1[0],p2[0],p3[0],s), cr(p0[1],p1[1],p2[1],p3[1],s) ]); }
+    const t0=0, t1=tnext(t0,p0,p1), t2=tnext(t1,p1,p2), t3=tnext(t2,p2,p3);
+    for(let s=0;s<seg;s++){
+      const t=t1+(t2-t1)*(s/seg);
+      const A1=L(p0,p1,(t-t0)/(t1-t0)), A2=L(p1,p2,(t-t1)/(t2-t1)), A3=L(p2,p3,(t-t2)/(t3-t2));
+      const B1=L(A1,A2,(t-t0)/(t2-t0)), B2=L(A2,A3,(t-t1)/(t3-t1));
+      out.push(L(B1,B2,(t-t1)/(t2-t1)));
+    }
   }
   out.push(pts[pts.length-1]);
   return out;
@@ -144,10 +150,21 @@ function repelToWater(latlngs){
     return [w[1], w[0]];
   });
 }
+// push a point toward the channel along a FIXED direction (stable for bank-hugging
+// lines: coast-normal pushing flips direction near coves/headlands and self-crosses).
+function pushDir(lng, lat, dir){
+  if(!coastSegs.length) return [lng,lat];
+  const c=coastInfo(lng,lat); if(!c.land && c.distM>=130) return [lng,lat];
+  const step=130/DEG;
+  for(let k=1;k<=45;k++){ const ql=lng+dir[1]*step*k, qa=lat+dir[0]*step*k;
+    const cc=coastInfo(ql,qa); if(!cc.land && cc.distM>=110) return [ql,qa]; }
+  return [lng+dir[1]*step*10, lat+dir[0]*step*10];
+}
 // Clean pier-to-pier routing that stays on water: keep every pier exact, and between
-// each pair insert a FEW control points (≈1 per 1.2 km) nudged into open water, then
-// spline. Few moved points ⇒ smooth channel-following line, no per-vertex scribble.
-function waterRoute(piers){
+// each pair insert a FEW control points (≈1 per 850 m) nudged into open water, then
+// spline. Few moved points ⇒ smooth line, no per-vertex scribble. `dir` (optional, toward
+// the channel) gives a stable push for shore lines; otherwise the coastline normal is used.
+function waterRoute(piers, dir){
   if(piers.length<2) return piers;
   const ctrl=[piers[0].slice()];
   for(let i=0;i<piers.length-1;i++){
@@ -155,7 +172,7 @@ function waterRoute(piers){
     const n=Math.min(9, Math.max(1, Math.round(segM/850)));
     for(let s=1;s<=n;s++){
       const t=s/(n+1), lat=A[0]+(B[0]-A[0])*t, lng=A[1]+(B[1]-A[1])*t;
-      const w=pushToWater(lng,lat);                              // [lng,lat] guaranteed on water
+      const w = dir ? pushDir(lng,lat,dir) : pushToWater(lng,lat);   // [lng,lat] on water
       ctrl.push([w[1],w[0]]);
     }
     ctrl.push(B.slice());
@@ -227,8 +244,19 @@ const HINTS = {
 };
 const dist2 = (p,h) => { const dx=p.lat-h[0], dy=p.lng-h[1]; return dx*dx+dy*dy; };
 
+// exact İskele coordinates where the OSM pier nodes are wrong/ambiguous (picked a marina
+// or a node deep in a cove). These override findPier so the line docks at the real pier.
+const PIER_FIX = {
+  'Emirgan':[41.10305,29.05609],   // OSM 'Emirgan Vapur İskelesi'
+  'İstinye':[41.10920,29.05790],   // no OSM node — hand-placed at the bay mouth on the channel
+  'Yeniköy':[41.12171,29.07119],   // OSM 'Yeniköy Şehir Hatları İskelesi'
+  'Sarıyer':[41.16716,29.05768],   // OSM 'İDO Sarıyer İskelesi'
+  'Rumeli Kavağı':[41.18164,29.07520]
+};
+
 // find the best pier coordinate for a place name: name match, then nearest to hint
 function findPier(place){
+  if(PIER_FIX[place]) return { name:place, lat:PIER_FIX[place][0], lng:PIER_FIX[place][1] };
   const np = norm(place), hint = HINTS[place];
   const cands = piers.filter(p => { const n = norm(p.name); return n===np || n.includes(np) || np.includes(n); });
   if (!cands.length) return null;
@@ -282,7 +310,8 @@ for (const r of ROUTES){
   if (g){ path = simplify(g.coords, 0.00006).map(round); src='osm'; geomUsed++; }
   else {
     const piers = stations.map(s => [s.lat, s.lng]);
-    path = simplify(waterRoute(piers), 0.00003).map(round);   // clean channel-following line on water
+    const DIR_PUSH = { 'Boğaz (Avrupa)':[0,1], 'Boğaz (Anadolu)':[0,-1] };   // toward the channel
+    path = simplify(waterRoute(piers, DIR_PUSH[r.ref]), 0.00003).map(round);  // clean line on water
     src='piers';
   }
   out.push({ ref:r.ref, kind:'ferry', color:FX, paths:[path], stations,
