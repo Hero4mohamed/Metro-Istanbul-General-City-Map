@@ -1672,7 +1672,7 @@ map.on('resize', sizeCanvas);
 /* ===========================================================================
    9. BOOT + MAIN LOOP
    =========================================================================== */
-let last=performance.now(), boardAcc=0;
+let last=performance.now(), boardAcc=0, animOn=true, animRaf=0;
 function frame(now){
   let dt=(now-last)/1000; last=now; if(dt>0.1) dt=0.1;
   updateTrains(dt);
@@ -1680,8 +1680,30 @@ function frame(now){
   labelAlpha += (target-labelAlpha)*Math.min(1, dt*5);
   renderOverlay(now);
   boardAcc+=dt; if(boardAcc>0.25){ if(selected) renderBoard(); boardAcc=0; }
-  requestAnimationFrame(frame);
+  if(animOn) animRaf=requestAnimationFrame(frame);   // pausable so the page can reach idle for capture
 }
+/* ---- capture mode: freeze the animation + settle tiles so headless screenshots are stable.
+   Inert until called. Usage (e.g. from automation): await captureReady({w,h,center,zoom}); then screenshot; captureEnd(); ---- */
+function captureReady(opts){
+  opts = opts || {};
+  const w = opts.w||1200, h = opts.h||820;
+  document.documentElement.style.width = document.body.style.width = w+'px';
+  document.documentElement.style.height = document.body.style.height = h+'px';
+  const mc = document.getElementById('map');
+  mc.style.cssText = 'position:absolute;top:0;left:0;width:'+w+'px;height:'+h+'px';
+  map.invalidateSize(true);
+  if(opts.center && opts.zoom!=null) map.setView(opts.center, opts.zoom, {animate:false});
+  else if(opts.zoom!=null) map.setZoom(opts.zoom, {animate:false});
+  animOn = false; if(animRaf) cancelAnimationFrame(animRaf);   // stop the perpetual rAF loop → page can go idle
+  renderOverlay(performance.now());                           // paint one last static frame
+  return new Promise(res=>{
+    let settled=false; const done=v=>{ if(!settled){ settled=true; res({ok:true, via:v, size:[map.getSize().x, map.getSize().y]}); } };
+    if(curBase && curBase.once) curBase.once('load', ()=>setTimeout(()=>done('tileload'),120));   // fires when fresh tiles finish
+    setTimeout(()=>done('idle'),   opts.settle||650);          // cached tiles paint fast
+    setTimeout(()=>done('timeout'),opts.timeout||7000);        // hard cap
+  });
+}
+function captureEnd(){ if(!animOn){ animOn=true; last=performance.now(); animRaf=requestAnimationFrame(frame); } return true; }
 /* ---- Announcements: live disruptions (faults / closures) + map warning markers ---- */
 const SEV_COLOR = { major:'#E5484D', partial:'#F5A623', minor:'#FFD400' };
 const SEV_LABEL = { major:'Major', partial:'Partial', minor:'Minor' };
@@ -1793,7 +1815,7 @@ function init(){
   updateFavBtn();
   renderAnnouncements();
   renderDisruptionMarkers();
-  requestAnimationFrame(frame);
+  animRaf=requestAnimationFrame(frame);
 }
 init();
 </script>
