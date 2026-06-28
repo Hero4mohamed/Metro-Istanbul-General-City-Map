@@ -19,6 +19,9 @@ transit_data/sefer*.html
 transit_data/ariza.txt
 transit_data/scan*.cjs
 
+# generated verification renders (render-check.cjs output)
+transit_data/*.png
+
 # OS / editor cruft
 .DS_Store
 Thumbs.db

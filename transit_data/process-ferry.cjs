@@ -125,13 +125,13 @@ function coastInfo(px, py){
 }
 // move a point to the water side, at least MARGIN metres off the nearest shore
 function pushToWater(px, py){
-  const MARGIN=95, m=MARGIN/DEG;
+  const MARGIN=130, m=MARGIN/DEG;
   let c=coastInfo(px,py);
   if(!coastSegs.length) return [px,py];
   if(!c.land && c.distM>=MARGIN) return [px,py];
-  for(let k=1;k<=22;k++){                                       // step outward along the water normal
+  for(let k=1;k<=30;k++){                                       // step outward along the water normal
     const qx=c.cx+c.nx*m*k, qy=c.cy+c.ny*m*k; const cc=coastInfo(qx,qy);
-    if(!cc.land && cc.distM>=MARGIN*0.6) return [qx,qy];
+    if(!cc.land && cc.distM>=MARGIN*0.7) return [qx,qy];
   }
   return [c.cx+c.nx*m*3, c.cy+c.ny*m*3];
 }
@@ -143,6 +143,24 @@ function repelToWater(latlngs){
     const w=pushToWater(p[1], p[0]);                            // p=[lat,lng] → coast uses lng,lat
     return [w[1], w[0]];
   });
+}
+// Clean pier-to-pier routing that stays on water: keep every pier exact, and between
+// each pair insert a FEW control points (≈1 per 1.2 km) nudged into open water, then
+// spline. Few moved points ⇒ smooth channel-following line, no per-vertex scribble.
+function waterRoute(piers){
+  if(piers.length<2) return piers;
+  const ctrl=[piers[0].slice()];
+  for(let i=0;i<piers.length-1;i++){
+    const A=piers[i], B=piers[i+1], segM=meters(A,B);
+    const n=Math.min(9, Math.max(1, Math.round(segM/850)));
+    for(let s=1;s<=n;s++){
+      const t=s/(n+1), lat=A[0]+(B[0]-A[0])*t, lng=A[1]+(B[1]-A[1])*t;
+      const w=pushToWater(lng,lat);                              // [lng,lat] guaranteed on water
+      ctrl.push([w[1],w[0]]);
+    }
+    ctrl.push(B.slice());
+  }
+  return catmullRom(ctrl, 12);
 }
 
 // stitched paths from the OSM route=ferry relations (real over-water geometry),
@@ -204,8 +222,8 @@ const HINTS = {
   'Paşabahçe':[41.117,29.093],'Beykoz':[41.134,29.090],'Anadolu Kavağı':[41.173,29.088],
   'Kasımpaşa':[41.034,28.965],'Hasköy':[41.043,28.951],'Fener':[41.034,28.949],
   'Balat':[41.031,28.949],'Ayvansaray':[41.035,28.943],'Sütlüce':[41.046,28.948],
-  'Eyüp':[41.048,28.933],'Kınalıada':[40.910,29.056],'Burgazada':[40.881,29.071],
-  'Heybeliada':[40.878,29.101],'Büyükada':[40.875,29.128]
+  'Eyüp':[41.048,28.933],'Kınalıada':[40.9105,29.0518],'Burgazada':[40.8807,29.0667],
+  'Heybeliada':[40.8745,29.0905],'Büyükada':[40.8767,29.1230]
 };
 const dist2 = (p,h) => { const dx=p.lat-h[0], dy=p.lng-h[1]; return dx*dx+dy*dy; };
 
@@ -254,21 +272,17 @@ for (const r of ROUTES){
   if (stations.length < 2) continue;
   const start = [stations[0].lat, stations[0].lng];
   const end   = [stations[stations.length-1].lat, stations[stations.length-1].lng];
-  // prefer real OSM over-water geometry (matched by terminal name); else pier-to-pier on water
-  const g = findGeom(start, end, r.places[0], r.places[r.places.length-1]);
+  // prefer real OSM over-water geometry (matched by terminal name); else pier-to-pier on water.
+  // island routes are FORCED synthetic — their OSM relations are fragmented and stitch into
+  // straight chords that slice across Heybeliada/Burgazada; waterRoute goes around on water.
+  const FORCE_PIERS = new Set(['Adalar (Kabataş)','Adalar (Bostancı)']);
+  const g = FORCE_PIERS.has(r.ref) ? null : findGeom(start, end, r.places[0], r.places[r.places.length-1]);
   const round = p => [ +p[0].toFixed(5), +p[1].toFixed(5) ];
   let path, src;
   if (g){ path = simplify(g.coords, 0.00006).map(round); src='osm'; geomUsed++; }
   else {
-    let pts = stations.map(s => [s.lat, s.lng]);
-    const off = OFFSETS[r.ref];
-    if (off) pts = SHORE.has(r.ref) ? offsetShore(pts, off[0], off[1])     // bank-hugging line
-                                    : offsetMidpoints(pts, off[0], off[1]); // around headlands
-    let dense = catmullRom(pts, 18);          // dense smooth curve through the piers
-    dense = repelToWater(dense);              // pull vertices off land toward open water
-    dense = repelToWater(dense);              // second pass clears stubborn points
-    let simp = repelToWater(simplify(dense, 0.00003));   // thin, then re-check thinned chords
-    path = simp.map(round);
+    const piers = stations.map(s => [s.lat, s.lng]);
+    path = simplify(waterRoute(piers), 0.00003).map(round);   // clean channel-following line on water
     src='piers';
   }
   out.push({ ref:r.ref, kind:'ferry', color:FX, paths:[path], stations,
