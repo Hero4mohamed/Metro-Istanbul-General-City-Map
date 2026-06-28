@@ -86,38 +86,99 @@ function offsetMidpoints(pts, dLat, dLng){
   }
   return out;
 }
+// push intermediate piers (not the terminals) into open water, then bow the midpoints —
+// keeps a shore-following line (Bosphorus banks) consistently off the land.
+function offsetShore(pts, dLat, dLng){
+  const moved = pts.map((p,i)=> (i===0||i===pts.length-1) ? p.slice() : [p[0]+dLat, p[1]+dLng]);
+  return offsetMidpoints(moved, dLat*0.5, dLng*0.5);
+}
 // per-route nudge toward the channel/sea (keeps shore lines off land)
 const OFFSETS = {
-  'Boğaz (Avrupa)':   [0,  0.0050],
-  'Boğaz (Anadolu)':  [0, -0.0050],
-  'Bostancı–Kadıköy': [-0.007, 0.003]
+  'Boğaz (Avrupa)':   [0,  0.0042],
+  'Boğaz (Anadolu)':  [0, -0.0042],
+  'Bostancı–Kadıköy': [-0.007, 0.003],
+  'Üsküdar–Beşiktaş': [0.0010, 0.0024]   // bow the short cross-strait hop into the channel
 };
+const SHORE = new Set(['Boğaz (Avrupa)','Boğaz (Anadolu)']);   // long bank-hugging lines
 
-// stitched paths from the OSM route=ferry relations (real over-water geometry)
-const relPaths = [];
+// ---- coastline-aware water snapping: pull any vertex that lands on shore into the sea ----
+// OSM coastline convention: land is on the LEFT of a way's direction, water on the RIGHT.
+let coastSegs = [];
+try {
+  const craw = JSON.parse(fs.readFileSync(path.join(DIR,'coastline.json'),'utf8'));
+  for (const w of craw.elements){ if(w.type!=='way'||!w.geometry) continue; const g=w.geometry;
+    for(let i=1;i<g.length;i++) coastSegs.push([g[i-1].lon,g[i-1].lat,g[i].lon,g[i].lat]); }   // [ax,ay,bx,by] = lng,lat
+} catch(e){ /* coastline.json optional — without it, no snapping */ }
+const DEG = 92000;   // ~metres per degree at this latitude (lng-ish)
+// nearest coastline segment to a point; returns closest point, unit water-normal, side, distance(m)
+function coastInfo(px, py){
+  let bd=Infinity, cx=0, cy=0, nx=0, ny=0, land=false;
+  for(const s of coastSegs){
+    const ax=s[0],ay=s[1],bx=s[2],by=s[3]; const dx=bx-ax,dy=by-ay; const L=dx*dx+dy*dy||1e-12;
+    let t=((px-ax)*dx+(py-ay)*dy)/L; t=t<0?0:t>1?1:t;
+    const qx=ax+t*dx, qy=ay+t*dy; const ex=px-qx, ey=py-qy; const d=ex*ex+ey*ey;
+    if(d<bd){ bd=d; cx=qx; cy=qy; const len=Math.sqrt(dx*dx+dy*dy)||1e-9;
+      nx=dy/len; ny=-dx/len;                                   // right-hand (water) normal
+      land = ((bx-ax)*(py-ay)-(by-ay)*(px-ax)) > 0; }          // >0 ⇒ left ⇒ land
+  }
+  return { cx, cy, nx, ny, land, distM:Math.sqrt(bd)*DEG };
+}
+// move a point to the water side, at least MARGIN metres off the nearest shore
+function pushToWater(px, py){
+  const MARGIN=95, m=MARGIN/DEG;
+  let c=coastInfo(px,py);
+  if(!coastSegs.length) return [px,py];
+  if(!c.land && c.distM>=MARGIN) return [px,py];
+  for(let k=1;k<=22;k++){                                       // step outward along the water normal
+    const qx=c.cx+c.nx*m*k, qy=c.cy+c.ny*m*k; const cc=coastInfo(qx,qy);
+    if(!cc.land && cc.distM>=MARGIN*0.6) return [qx,qy];
+  }
+  return [c.cx+c.nx*m*3, c.cy+c.ny*m*3];
+}
+// pull a whole densified path off land (keep the terminal piers where they dock)
+function repelToWater(latlngs){
+  if(!coastSegs.length) return latlngs;
+  return latlngs.map((p,i)=>{
+    if(i===0 || i===latlngs.length-1) return p;
+    const w=pushToWater(p[1], p[0]);                            // p=[lat,lng] → coast uses lng,lat
+    return [w[1], w[0]];
+  });
+}
+
+// stitched paths from the OSM route=ferry relations (real over-water geometry),
+// tagged with their from/to terminals so each route matches the RIGHT relation
+// (endpoint-distance matching cross-assigned Beşiktaş↔Kabataş, ~1.5 km apart).
+const relInfos = [];
 try {
   const fraw = JSON.parse(fs.readFileSync(path.join(DIR,'ferry.json'),'utf8'));
   fraw.elements.filter(e=>e.type==='relation').forEach(rel=>{
     const ways=(rel.members||[]).filter(m=>m.type==='way'&&m.geometry).map(m=>m.geometry.map(g=>[g.lat,g.lon]));
     if(!ways.length) return;
-    // candidate A: longest single connected chain (best for short/continuous routes e.g. Haliç)
-    const chains = buildChains(ways,80).sort((a,b)=>chainLen(b)-chainLen(a));
-    const longest = chains[0];
-    if(longest && longest.length>=2) relPaths.push({ coords:longest, a:longest[0], b:longest[longest.length-1], len:chainLen(longest) });
-    // candidate B: all fragments joined (best for split island/long routes e.g. Adalar)
-    if(chains.length>1){ const full=stitchAll(ways); if(full.length>=2) relPaths.push({ coords:full, a:full[0], b:full[full.length-1], len:chainLen(full) }); }
+    const coords = stitchAll(ways);
+    if(coords.length<2) return;
+    const t = rel.tags||{};
+    let from=t.from, to=t.to;
+    if(!from || !to){                                      // derive terminals from the name
+      const parts=(t.name||'').split(/[-–—→>]/).map(s=>s.trim()).filter(Boolean);
+      if(parts.length>=2){ from=from||parts[0]; to=to||parts[parts.length-1]; }
+    }
+    relInfos.push({ from, to, coords, len:chainLen(coords) });
   });
 } catch(e){ /* ferry.json optional */ }
 
-// find a real ferry path whose ends match this route's terminals (either direction)
-function findGeom(start, end){
-  const straight = meters(start,end); let best=null;
-  for(const rp of relPaths){
-    const fwd = meters(start,rp.a)<1600 && meters(end,rp.b)<1600;
-    const rev = meters(start,rp.b)<1600 && meters(end,rp.a)<1600;
-    if((fwd||rev) && rp.len > straight*0.75 && rp.len < straight*2.2){
-      if(!best || rp.len>best.len) best = { coords: rev?rp.coords.slice().reverse():rp.coords, len:rp.len };
-    }
+function nameHit(a,b){ a=norm(a||''); b=norm(b||''); return !!a && !!b && (a===b || a.includes(b) || b.includes(a)); }
+// match by terminal NAME (either direction); among matches prefer the most direct
+// geometry (length closest to the straight pier-to-pier distance).
+function findGeom(start, end, first, last){
+  const straight = meters(start,end); let best=null, bestScore=Infinity;
+  for(const r of relInfos){
+    if(!r.from || !r.to) continue;
+    const fwd = nameHit(r.from,first) && nameHit(r.to,last);
+    const rev = nameHit(r.from,last) && nameHit(r.to,first);
+    if(!fwd && !rev) continue;
+    if(r.len < straight*0.6 || r.len > straight*3.2) continue;   // sanity vs crossing distance
+    const score = Math.abs(r.len - straight);
+    if(score < bestScore){ bestScore=score; best={ coords: rev?r.coords.slice().reverse():r.coords, len:r.len }; }
   }
   return best;
 }
@@ -193,16 +254,22 @@ for (const r of ROUTES){
   if (stations.length < 2) continue;
   const start = [stations[0].lat, stations[0].lng];
   const end   = [stations[stations.length-1].lat, stations[stations.length-1].lng];
-  // prefer real OSM over-water geometry; fall back to straight pier-to-pier
-  const g = findGeom(start, end);
+  // prefer real OSM over-water geometry (matched by terminal name); else pier-to-pier on water
+  const g = findGeom(start, end, r.places[0], r.places[r.places.length-1]);
   const round = p => [ +p[0].toFixed(5), +p[1].toFixed(5) ];
   let path, src;
   if (g){ path = simplify(g.coords, 0.00006).map(round); src='osm'; geomUsed++; }
   else {
     let pts = stations.map(s => [s.lat, s.lng]);
     const off = OFFSETS[r.ref];
-    if (off) pts = offsetMidpoints(pts, off[0], off[1]);   // route around headlands / into the strait
-    path = catmullRom(pts, 14).map(round); src='piers';
+    if (off) pts = SHORE.has(r.ref) ? offsetShore(pts, off[0], off[1])     // bank-hugging line
+                                    : offsetMidpoints(pts, off[0], off[1]); // around headlands
+    let dense = catmullRom(pts, 18);          // dense smooth curve through the piers
+    dense = repelToWater(dense);              // pull vertices off land toward open water
+    dense = repelToWater(dense);              // second pass clears stubborn points
+    let simp = repelToWater(simplify(dense, 0.00003));   // thin, then re-check thinned chords
+    path = simp.map(round);
+    src='piers';
   }
   out.push({ ref:r.ref, kind:'ferry', color:FX, paths:[path], stations,
              scope:'active', official:r.official, geom:src });
@@ -212,4 +279,4 @@ fs.writeFileSync(path.join(DIR,'ferry-lines.json'), JSON.stringify(out));
 console.log('REF'.padEnd(18),'PIERS','GEOM','PTS','OFFICIAL');
 for (const l of out) console.log(l.ref.padEnd(18), String(l.stations.length).padEnd(5), (l.geom||'').padEnd(5), String(l.paths[0].length).padEnd(4), l.official);
 if (missing.length) console.log('\nMISSING PIERS:', missing.join(' | '));
-console.log('\nTOTAL FERRY LINES:', out.length, ' USING OSM GEOMETRY:', geomUsed, ' RELPATHS:', relPaths.length);
+console.log('\nTOTAL FERRY LINES:', out.length, ' USING OSM GEOMETRY:', geomUsed, ' RELINFOS:', relInfos.length);

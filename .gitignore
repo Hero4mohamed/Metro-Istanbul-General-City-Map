@@ -8,6 +8,7 @@ transit_data/b2-geom.json
 transit_data/b2.json
 transit_data/bus-routes.json
 transit_data/busstop-count.json
+transit_data/coastline.json
 transit_data/inventory.json
 transit_data/*-probe.json
 transit_data/proje*.html

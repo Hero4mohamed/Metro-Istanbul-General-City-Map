@@ -138,6 +138,19 @@
   .step .tx .nm{font-weight:700;}
   .step .tx .mt{font-size:10px;color:var(--muted);margin-top:1px;}
   .badge{display:inline-block;font-size:9px;font-weight:800;padding:2px 6px;border-radius:5px;color:#fff;margin-right:5px;vertical-align:middle;}
+  .step .tx .mt.alt{margin-top:3px;color:var(--muted);}
+  .altbus{display:inline-block;font-size:9px;font-weight:800;padding:1px 5px;border-radius:4px;margin:1px 2px 1px 0;
+          color:#E8A33D;background:rgba(232,163,61,.14);border:1px solid rgba(232,163,61,.4);}
+  .altmore{font-size:9px;color:var(--dim);font-style:italic;}
+  /* alternative-route option chips */
+  .ropts{display:flex;gap:6px;flex-wrap:wrap;margin:2px 0 9px;}
+  .ropt{flex:1;min-width:84px;cursor:pointer;border:1px solid var(--stroke-2);border-radius:8px;padding:6px 8px;
+        background:rgba(255,255,255,.03);transition:.15s;}
+  .ropt:hover{border-color:var(--accent);}
+  .ropt.sel{border-color:var(--accent);background:rgba(62,227,135,.10);}
+  .ropt .ro-t{font-size:9px;letter-spacing:.4px;text-transform:uppercase;color:var(--dim);}
+  .ropt .ro-m{font-weight:800;font-size:13px;}.ropt .ro-m small{font-weight:600;font-size:9px;color:var(--muted);}
+  .ropt .ro-s{font-size:9px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
 
   .favbtn{margin-top:9px;}
   .favbtn.isfav{color:var(--gold);border-color:var(--gold);}
@@ -322,6 +335,7 @@
         <div class="c"><b id="rStops">–</b><span>Stops</span></div>
         <div class="c"><b id="rTr">–</b><span>Transfers</span></div>
       </div>
+      <div id="rOpts" class="ropts"></div>
       <div id="rSteps"></div>
       <button class="btn ghost favbtn" id="favBtn">☆ Save to Favourites</button>
     </div>
@@ -668,28 +682,50 @@ const PLACES = (()=>{ const seen=new Set(), arr=[];
   arr.sort((a,b)=>a.name.localeCompare(b.name,'tr')); return arr; })();
 const WALK = 80;      // metres / minute
 const ACCESS = 1100;  // max access-walk to the first/last stop (m)
-// route between two arbitrary points (or selected stops): walk to nearby stops → Dijkstra → walk out
-function routeXY(o, d){
+// route between two arbitrary points (or selected stops): walk to nearby stops → Dijkstra → walk out.
+// penalty = optional Set of line refs to discourage boarding (used to surface alternative routes).
+function routeXY(o, d, penalty){
   const srcs = nearbyNodes(o.lat,o.lng,ACCESS,12);
   const dArr = nearbyNodes(d.lat,d.lng,ACCESS,12);
   if(!srcs.length || !dArr.length) return null;
+  const pen = penalty && penalty.size ? penalty : null;
   const dsts = new Map(); dArr.forEach(([k,dist])=> dsts.set(k, dist/WALK));
   const dist={}, prev={}, done={}, h=new MinHeap();
-  srcs.forEach(([k,mm])=>{ const w=mm/WALK; if(dist[k]===undefined||w<dist[k]){ dist[k]=w; prev[k]=null; h.push(k,w); } });
+  srcs.forEach(([k,mm])=>{ let w=mm/WALK; if(pen && pen.has(nodeMeta[k].ref)) w+=18;   // discourage starting on a used line
+    if(dist[k]===undefined||w<dist[k]){ dist[k]=w; prev[k]=null; h.push(k,w); } });
   let best=Infinity, bestEnd=null;
   while(true){ const top=h.pop(); if(!top) break; const du=top[0], u=top[1];
     if(done[u]) continue; done[u]=true; if(du>best) break;
     if(dsts.has(u)){ const tot=du+dsts.get(u); if(tot<best){ best=tot; bestEnd=u; } }
-    const adj=G[u]||[]; for(const e of adj){ if(done[e.to]) continue; const nd=du+e.w;
+    const adj=G[u]||[]; for(const e of adj){ if(done[e.to]) continue; let nd=du+e.w;
+      if(pen){ const vr=nodeMeta[e.to].ref; if(vr!==nodeMeta[u].ref && pen.has(vr)) nd+=18; }  // discourage re-boarding a used line
       if(dist[e.to]===undefined||nd<dist[e.to]){ dist[e.to]=nd; prev[e.to]=u; h.push(e.to,nd); } }
   }
   if(bestEnd===null) return null;
   const path=[]; let cur=bestEnd; while(cur!=null){ path.unshift(cur); cur=prev[cur]; }
   const first=nodeMeta[path[0]], lastN=nodeMeta[bestEnd];
-  return { path, total:best,
+  // recompute real total without the synthetic penalty so ETA stays truthful
+  let realTotal = metersBetween([o.lat,o.lng],[first.lat,first.lng])/WALK + metersBetween([lastN.lat,lastN.lng],[d.lat,d.lng])/WALK;
+  for(let i=1;i<path.length;i++){ const a=path[i-1], b=path[i]; const adj=G[a]||[]; let w=Infinity;
+    for(const e of adj) if(e.to===b && e.w<w) w=e.w; if(w<Infinity) realTotal+=w; }
+  return { path, total:realTotal,
            oWalk: metersBetween([o.lat,o.lng],[first.lat,first.lng])/WALK,
            dWalk: metersBetween([lastN.lat,lastN.lng],[d.lat,d.lng])/WALK,
            origin:o, dest:d };
+}
+// other bus lines that also connect a leg's boarding & alighting stops (direction-agnostic)
+function siblingBuses(b, a, exclude){
+  const R=300, out=new Set();
+  for(const line of BUS_GRAPH){
+    if(line.ref===exclude) continue;
+    let bi=-1, ai=-1;
+    for(let i=0;i<line.stops.length;i++){ const s=line.stops[i];
+      if(bi<0 && metersBetween([s[0],s[1]],b)<=R) bi=i;
+      if(ai<0 && metersBetween([s[0],s[1]],a)<=R) ai=i;
+      if(bi>=0 && ai>=0) break; }
+    if(bi>=0 && ai>=0 && bi!==ai) out.add(line.ref);
+  }
+  return [...out].sort((x,y)=>(parseInt(x)||1e9)-(parseInt(y)||1e9)||x.localeCompare(y,'tr'));
 }
 
 /* ===========================================================================
@@ -1236,7 +1272,8 @@ function buildItinerary(res){
       } else {
         segs.push({ ref, s0:p[i].s, s1:p[j].s });
       }
-      steps.push({type:"ride", ref, bus:isBus, from:p[i].name, to:p[j].name, stops:Math.abs(p[j].idx-p[i].idx)});
+      const sibs = isBus ? siblingBuses([p[i].lat,p[i].lng],[p[j].lat,p[j].lng], ref) : null;
+      steps.push({type:"ride", ref, bus:isBus, from:p[i].name, to:p[j].name, stops:Math.abs(p[j].idx-p[i].idx), siblings:sibs});
     } else if(steps.length===0){
       steps.push({type:"ride", ref, bus:isBus, from:p[i].name, to:p[i].name, stops:0});
     }
@@ -1339,20 +1376,43 @@ async function upgradeRoute(legs, token, baseTotal){
   if(note && token===routeToken) note.remove();
   if(refined && token===routeToken) updatePlanEta(Math.round(total));
 }
-function runRoute(){
-  const o=resolveTyped('O'), d=resolveTyped('D');
-  renderEndpoints();
-  const out=document.getElementById('rout'), stepsEl=document.getElementById('rSteps');
+let currentOpts=[], currentOptIdx=0;
+// build up to N distinct itineraries by penalising lines used in earlier options
+function routeOptions(o,d,maxOpts){
+  const opts=[], sigs=new Set(), penalty=new Set();
+  for(let k=0; k<maxOpts+2 && opts.length<maxOpts; k++){
+    const res=routeXY(o,d, penalty.size?penalty:null);
+    if(!res) break;
+    const it=buildItinerary(res);
+    const rides=it.steps.filter(s=>s.type==='ride');
+    const sig=rides.map(s=>(s.bus?'b':'')+s.ref).join('>');
+    if(!sigs.has(sig)){ sigs.add(sig); opts.push({res,it,sig}); }
+    if(!rides.length) break;
+    rides.forEach(s=> penalty.add(s.ref));         // steer the next search onto other lines
+  }
+  return opts;
+}
+const optLines = it => it.steps.filter(s=>s.type==='ride').map(s=> s.bus?('🚌'+s.ref):s.ref).join(' › ') || 'Walk';
+function renderOptChips(){
+  const el=document.getElementById('rOpts');
+  if(currentOpts.length<2){ el.innerHTML=''; return; }
+  el.innerHTML=currentOpts.map((o,i)=>`<div class="ropt${i===currentOptIdx?' sel':''}" data-i="${i}">
+      <div class="ro-t">${i===0?'Fastest':'Option '+(i+1)}</div>
+      <div class="ro-m">${Math.round(o.it.total)}<small> min</small></div>
+      <div class="ro-s">${optLines(o.it)}</div></div>`).join('');
+  el.querySelectorAll('.ropt').forEach(c=> c.addEventListener('click', ()=> selectOption(+c.dataset.i)));
+}
+function selectOption(idx){
+  if(!currentOpts[idx]) return;
+  currentOptIdx=idx;
+  document.querySelectorAll('#rOpts .ropt').forEach(c=> c.classList.toggle('sel', +c.dataset.i===idx));
+  showItinerary(currentOpts[idx].res, currentOpts[idx].it);
+}
+// draw + list a single itinerary (shared by the option chips)
+function showItinerary(res, it){
+  const o=res.origin, d=res.dest, stepsEl=document.getElementById('rSteps');
   routeLayer.clearLayers();
   const token=++routeToken;     // invalidate any geometry fetches still in flight
-  if(!o || !d){ out.classList.add('show');
-    document.getElementById('rEta').textContent='–'; document.getElementById('rStops').textContent='–'; document.getElementById('rTr').textContent='–';
-    stepsEl.innerHTML='<div class="none">Search a start &amp; destination, or tap 📍 to drop a point on the map.</div>'; updateFavBtn(); return; }
-  const res=routeXY(o,d);
-  if(!res){ out.classList.add('show'); document.getElementById('rEta').textContent='—';
-    document.getElementById('rStops').textContent='—'; document.getElementById('rTr').textContent='—';
-    stepsEl.innerHTML='<div class="none">No route found — try points closer to the network.</div>'; updateFavBtn(); return; }
-  const it=buildItinerary(res);
   document.getElementById('rEta').textContent=Math.round(it.total);
   document.getElementById('rStops').textContent=it.stops;
   document.getElementById('rTr').textContent=it.transfers;
@@ -1389,9 +1449,14 @@ function runRoute(){
     } else if(s.type==="ride"){
       const c = s.bus ? BUS_COLOR : colorForLine(s.ref);
       const label = s.bus ? 'Bus' : KIND[lineByRef[s.ref].kind].label;
+      let alt='';
+      if(s.bus && s.siblings && s.siblings.length){
+        const show=s.siblings.slice(0,6), more=s.siblings.length-show.length;
+        alt=`<div class="mt alt">also: ${show.map(r=>`<span class="altbus">${r}</span>`).join(' ')}${more>0?` <span class="altmore">+${more}</span>`:''}</div>`;
+      }
       return `<div class="step"><div class="rail"><span class="nd" style="border-color:${c}"></span><span class="pipe" style="background:${c}"></span></div>
         <div class="tx"><div class="nm"><span class="badge" style="background:${c}">${s.bus?'🚌 '+s.ref:s.ref}</span>${label}</div>
-        <div class="mt">${s.from} → ${s.to} · ${s.stops} stop${s.stops!==1?'s':''}</div></div></div>`;
+        <div class="mt">${s.from} → ${s.to} · ${s.stops} stop${s.stops!==1?'s':''}</div>${alt}</div></div>`;
     } else {
       const c = s.bus ? BUS_COLOR : colorForLine(s.ref);
       return `<div class="step"><div class="rail"><span class="nd" style="border-color:var(--gold)"></span><span class="pipe" style="background:var(--gold)"></span></div>
@@ -1405,8 +1470,25 @@ function runRoute(){
     stepsEl.insertBefore(note, stepsEl.firstChild);
     upgradeRoute(legs, token, it.total);
   }
+}
+function runRoute(){
+  const o=resolveTyped('O'), d=resolveTyped('D');
+  renderEndpoints();
+  const out=document.getElementById('rout'), stepsEl=document.getElementById('rSteps');
+  routeLayer.clearLayers(); ++routeToken;
+  document.getElementById('rOpts').innerHTML=''; currentOpts=[]; currentOptIdx=0;
+  if(!o || !d){ out.classList.add('show');
+    document.getElementById('rEta').textContent='–'; document.getElementById('rStops').textContent='–'; document.getElementById('rTr').textContent='–';
+    stepsEl.innerHTML='<div class="none">Search a start &amp; destination, or tap 📍 to drop a point on the map.</div>'; updateFavBtn(); return; }
+  currentOpts = routeOptions(o,d,3);
+  if(!currentOpts.length){ out.classList.add('show'); document.getElementById('rEta').textContent='—';
+    document.getElementById('rStops').textContent='—'; document.getElementById('rTr').textContent='—';
+    stepsEl.innerHTML='<div class="none">No route found — try points closer to the network.</div>'; updateFavBtn(); return; }
+  renderOptChips();
+  selectOption(0);
   out.classList.add('show');
-  recordPlan(o, d, { eta: Math.round(it.total), stops: it.stops, transfers: it.transfers });
+  const best=currentOpts[0].it;
+  recordPlan(o, d, { eta: Math.round(best.total), stops: best.stops, transfers: best.transfers });
   updateFavBtn();
 }
 
