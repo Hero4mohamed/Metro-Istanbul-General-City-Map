@@ -248,7 +248,7 @@ const dist2 = (p,h) => { const dx=p.lat-h[0], dy=p.lng-h[1]; return dx*dx+dy*dy;
 // or a node deep in a cove). These override findPier so the line docks at the real pier.
 const PIER_FIX = {
   'Emirgan':[41.10305,29.05609],   // OSM 'Emirgan Vapur İskelesi'
-  'İstinye':[41.10920,29.05790],   // no OSM node — hand-placed at the bay mouth on the channel
+  'İstinye':[41.11333,29.06139],   // no OSM node — exact İskele from user (41°06'48"N 29°03'41"E)
   'Yeniköy':[41.12171,29.07119],   // OSM 'Yeniköy Şehir Hatları İskelesi'
   'Sarıyer':[41.16716,29.05768],   // OSM 'İDO Sarıyer İskelesi'
   'Rumeli Kavağı':[41.18164,29.07520]
