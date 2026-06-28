@@ -1311,21 +1311,33 @@ function drawBusPath(pts,dashed){
   const c=L.polyline(pts,{color:BUS_COLOR,weight:4,opacity:1,lineCap:'round',lineJoin:'round',dashArray:dashed?'2,8':null}).addTo(routeLayer);
   return [w,c];
 }
-// progressively swap straight placeholders for real geometry (aborts if a newer route runs)
-async function upgradeRoute(legs, token){
+// write the refined ETA back to the most-recent history row (and matching favourite)
+function updatePlanEta(eta){
+  if(planHistory[0]){ planHistory[0].eta=eta; lsSet(LS_HIST,planHistory); }
+  if(originPt&&destPt){ const f=planFavs.find(p=>p.oN===originPt.name&&p.dN===destPt.name); if(f){ f.eta=eta; lsSet(LS_FAV,planFavs); } }
+  renderPlanLists();
+}
+// progressively swap straight placeholders for real geometry + refine ETA with real walk times
+async function upgradeRoute(legs, token, baseTotal){
   const note=document.getElementById('refineNote');
+  let total=baseTotal, refined=false;
   for(const leg of legs){
     if(token!==routeToken) return;
-    let real=null;
+    let real=null, realWalkMin=null;
     if(leg.kind==='bus'){ const full=await fetchBusGeom(leg.ref); if(full) real=_busPortion(full,leg.a,leg.b); }
-    else { const fr=await fetchFoot(leg.a,leg.b); if(fr&&fr.pts.length>1) real=fr.pts; }
+    else { const fr=await fetchFoot(leg.a,leg.b); if(fr&&fr.pts.length>1){ real=fr.pts; realWalkMin=fr.dur/60; } }
     if(token!==routeToken) return;
     if(real&&real.length>1){
       leg.placeholders.forEach(p=>routeLayer.removeLayer(p));
       leg.placeholders = leg.kind==='bus' ? drawBusPath(real,false) : [drawWalkPath(real)];
     }
+    if(realWalkMin!=null && leg.estWalkMin!=null){   // swap modelled walk-minutes for the router's real time
+      total += realWalkMin - leg.estWalkMin; refined=true;
+      const el=document.getElementById('rEta'); if(el) el.textContent=Math.round(total);
+    }
   }
   if(note && token===routeToken) note.remove();
+  if(refined && token===routeToken) updatePlanEta(Math.round(total));
 }
 function runRoute(){
   const o=resolveTyped('O'), d=resolveTyped('D');
@@ -1348,13 +1360,13 @@ function runRoute(){
   const allPts=[], legs=[];
   const pm=res.path.map(k=>nodeMeta[k]);
   const firstStop=[pm[0].lat,pm[0].lng], lastStop=[pm[pm.length-1].lat,pm[pm.length-1].lng];
-  if(res.oWalk>0.5){ const a=[o.lat,o.lng]; legs.push({kind:'walk',a,b:firstStop,placeholders:[drawWalkLeg(a,firstStop)]}); allPts.push(a,firstStop); }
-  if(res.dWalk>0.5){ const b=[d.lat,d.lng]; legs.push({kind:'walk',a:lastStop,b,placeholders:[drawWalkLeg(lastStop,b)]}); allPts.push(lastStop,b); }
+  if(res.oWalk>0.5){ const a=[o.lat,o.lng]; legs.push({kind:'walk',a,b:firstStop,estWalkMin:res.oWalk,placeholders:[drawWalkLeg(a,firstStop)]}); allPts.push(a,firstStop); }
+  if(res.dWalk>0.5){ const b=[d.lat,d.lng]; legs.push({kind:'walk',a:lastStop,b,estWalkMin:res.dWalk,placeholders:[drawWalkLeg(lastStop,b)]}); allPts.push(lastStop,b); }
   // transfer walks: every boundary where the line/mode changes along the path
   { let i=0; while(i<pm.length){ const ref=pm[i].ref, bus=pm[i].kind==='bus'; let j=i;
       while(j+1<pm.length && pm[j+1].ref===ref && (pm[j+1].kind==='bus')===bus) j++;
       if(j+1<pm.length){ const a=[pm[j].lat,pm[j].lng], b=[pm[j+1].lat,pm[j+1].lng];
-        if(metersBetween(a,b)>25){ legs.push({kind:'walk',a,b,placeholders:[drawWalkLeg(a,b)]}); allPts.push(a,b); } }
+        if(metersBetween(a,b)>25){ legs.push({kind:'walk',a,b,estWalkMin:metersBetween(a,b)/80,placeholders:[drawWalkLeg(a,b)]}); allPts.push(a,b); } }
       i=j+1; } }
   it.segs.forEach(seg=>{
     const pts = seg.bus ? seg.coords : subPath(lineByRef[seg.ref], seg.s0, seg.s1);
@@ -1391,7 +1403,7 @@ function runRoute(){
     const note=document.createElement('div'); note.className='none'; note.id='refineNote';
     note.textContent='⏳ Loading real road & footpath geometry…';
     stepsEl.insertBefore(note, stepsEl.firstChild);
-    upgradeRoute(legs, token);
+    upgradeRoute(legs, token, it.total);
   }
   out.classList.add('show');
   recordPlan(o, d, { eta: Math.round(it.total), stops: it.stops, transfers: it.transfers });
