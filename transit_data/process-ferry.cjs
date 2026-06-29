@@ -132,14 +132,20 @@ function coastInfo(px, py){
 // move a point to the water side, at least MARGIN metres off the nearest shore
 function pushToWater(px, py){
   const MARGIN=130, m=MARGIN/DEG;
-  let c=coastInfo(px,py);
+  const c=coastInfo(px,py);
   if(!coastSegs.length) return [px,py];
   if(!c.land && c.distM>=MARGIN) return [px,py];
-  for(let k=1;k<=30;k++){                                       // step outward along the water normal
-    const qx=c.cx+c.nx*m*k, qy=c.cy+c.ny*m*k; const cc=coastInfo(qx,qy);
-    if(!cc.land && cc.distM>=MARGIN*0.7) return [qx,qy];
+  // search outward in many directions; take the CLOSEST open-water point (robust to
+  // inconsistent coastline orientation, unlike trusting a single segment normal).
+  let best=null, bestK=Infinity;
+  for(let a=0;a<16;a++){
+    const ang=a/16*2*Math.PI, dx=Math.cos(ang)*m, dy=Math.sin(ang)*m;
+    for(let k=1;k<=26;k++){
+      const cc=coastInfo(px+dx*k, py+dy*k);
+      if(!cc.land && cc.distM>=MARGIN*0.7){ if(k<bestK){ bestK=k; best=[px+dx*k, py+dy*k]; } break; }
+    }
   }
-  return [c.cx+c.nx*m*3, c.cy+c.ny*m*3];
+  return best || [c.cx+c.nx*m*3, c.cy+c.ny*m*3];
 }
 // pull a whole densified path off land (keep the terminal piers where they dock)
 function repelToWater(latlngs){
@@ -166,10 +172,11 @@ function pushDir(lng, lat, dir){
 // the channel) gives a stable push for shore lines; otherwise the coastline normal is used.
 function waterRoute(piers, dir){
   if(piers.length<2) return piers;
+  const dense = dir ? 550 : 850;       // shore lines need finer sampling to track a winding bank
   const ctrl=[piers[0].slice()];
   for(let i=0;i<piers.length-1;i++){
     const A=piers[i], B=piers[i+1], segM=meters(A,B);
-    const n=Math.min(9, Math.max(1, Math.round(segM/850)));
+    const n=Math.min(16, Math.max(1, Math.round(segM/dense)));
     for(let s=1;s<=n;s++){
       const t=s/(n+1), lat=A[0]+(B[0]-A[0])*t, lng=A[1]+(B[1]-A[1])*t;
       const w = dir ? pushDir(lng,lat,dir) : pushToWater(lng,lat);   // [lng,lat] on water
@@ -177,7 +184,24 @@ function waterRoute(piers, dir){
     }
     ctrl.push(B.slice());
   }
-  return catmullRom(ctrl, 12);
+  let out = catmullRom(ctrl, 12);
+  out = repelVerts(out, dir);          // clamp any spline vertex that cut a headland back to water
+  if(dir){                             // shore lines: round the clamp steps, then re-clamp
+    out = catmullRom(simplify(out, 0.00002), 5);   // centripetal ⇒ no new loops
+    out = repelVerts(out, dir);
+  }
+  return out;
+}
+// push spline vertices that landed on (or right next to) land back out to water. With a channel
+// `dir` the push is along that fixed direction (stable for shore lines); otherwise it follows the
+// local coastline normal (for island / open-water hops). Only on-land vertices move, so an
+// otherwise-clean centripetal curve isn't disturbed (no scribble).
+function repelVerts(latlngs, dir){
+  if(!coastSegs.length) return latlngs;
+  return latlngs.map(p=>{ const c=coastInfo(p[1],p[0]);
+    if(!c.land && c.distM>=70) return p;
+    const w = dir ? pushDir(p[1],p[0],dir) : pushToWater(p[1],p[0]);
+    return [w[1],w[0]]; });
 }
 
 // stitched paths from the OSM route=ferry relations (real over-water geometry),
@@ -247,6 +271,7 @@ const dist2 = (p,h) => { const dx=p.lat-h[0], dy=p.lng-h[1]; return dx*dx+dy*dy;
 // exact İskele coordinates where the OSM pier nodes are wrong/ambiguous (picked a marina
 // or a node deep in a cove). These override findPier so the line docks at the real pier.
 const PIER_FIX = {
+  'Beşiktaş':[41.04131,29.00817],  // exact Beşiktaş–Üsküdar İskele from user (41°02'28.7"N 29°00'29.4"E)
   'Emirgan':[41.10305,29.05609],   // OSM 'Emirgan Vapur İskelesi'
   'İstinye':[41.11333,29.06139],   // no OSM node — exact İskele from user (41°06'48"N 29°03'41"E)
   'Yeniköy':[41.12171,29.07119],   // OSM 'Yeniköy Şehir Hatları İskelesi'
