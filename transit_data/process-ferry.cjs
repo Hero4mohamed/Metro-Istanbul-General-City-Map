@@ -109,24 +109,58 @@ const SHORE = new Set(['Boğaz (Avrupa)','Boğaz (Anadolu)']);   // long bank-hu
 
 // ---- coastline-aware water snapping: pull any vertex that lands on shore into the sea ----
 // OSM coastline convention: land is on the LEFT of a way's direction, water on the RIGHT.
-let coastSegs = [];
+// Each segment stores its unit water-normal; each shared vertex accumulates the sum of the
+// normals of the segments meeting there (an angle-weighted PSEUDONORMAL) — this is what makes
+// the land/water side test correct when the nearest point is a coastline CORNER (a single
+// segment's perpendicular side is ambiguous/ order-dependent right at a vertex).
+let coastSegs = [];     // [ax,ay,bx,by, nlng,nlat] (water normal) — lng,lat coords
+const vNorm = new Map();   // vertexKey -> [sumNlng, sumNlat]
+const vKey = (lng,lat)=> Math.round(lng*1e5)+'_'+Math.round(lat*1e5);
 try {
   const craw = JSON.parse(fs.readFileSync(path.join(DIR,'coastline.json'),'utf8'));
   for (const w of craw.elements){ if(w.type!=='way'||!w.geometry) continue; const g=w.geometry;
-    for(let i=1;i<g.length;i++) coastSegs.push([g[i-1].lon,g[i-1].lat,g[i].lon,g[i].lat]); }   // [ax,ay,bx,by] = lng,lat
+    for(let i=1;i<g.length;i++){
+      const ax=g[i-1].lon, ay=g[i-1].lat, bx=g[i].lon, by=g[i].lat;
+      const dx=bx-ax, dy=by-ay, len=Math.sqrt(dx*dx+dy*dy)||1e-9;
+      const nlng=dy/len, nlat=-dx/len;                 // right-hand (water) normal
+      coastSegs.push([ax,ay,bx,by,nlng,nlat]);
+      for(const [vx,vy] of [[ax,ay],[bx,by]]){ const k=vKey(vx,vy);
+        let v=vNorm.get(k); if(!v){ v=[0,0]; vNorm.set(k,v); } v[0]+=nlng; v[1]+=nlat; }
+    }
+  }
 } catch(e){ /* coastline.json optional — without it, no snapping */ }
 const DEG = 92000;   // ~metres per degree at this latitude (lng-ish)
-// nearest coastline segment to a point; returns closest point, unit water-normal, side, distance(m)
+const CCELL = 0.004, coastGrid = new Map();          // spatial grid so coastInfo is O(nearby)
+for(const s of coastSegs){
+  const mx=(s[0]+s[2])/2, my=(s[1]+s[3])/2, k=Math.round(mx/CCELL)+'_'+Math.round(my/CCELL);
+  let a=coastGrid.get(k); if(!a){ a=[]; coastGrid.set(k,a); } a.push(s);
+}
+// nearest coastline point + correct land/water side (pseudonormal at corners). Expands ring by
+// ring until found, then 2 extra rings to confirm the TRUE nearest, so the verdict is right even
+// far from any coast (deep inland vs open sea differ only by which side of the nearest edge).
 function coastInfo(px, py){
-  let bd=Infinity, cx=0, cy=0, nx=0, ny=0, land=false;
-  for(const s of coastSegs){
-    const ax=s[0],ay=s[1],bx=s[2],by=s[3]; const dx=bx-ax,dy=by-ay; const L=dx*dx+dy*dy||1e-12;
-    let t=((px-ax)*dx+(py-ay)*dy)/L; t=t<0?0:t>1?1:t;
-    const qx=ax+t*dx, qy=ay+t*dy; const ex=px-qx, ey=py-qy; const d=ex*ex+ey*ey;
-    if(d<bd){ bd=d; cx=qx; cy=qy; const len=Math.sqrt(dx*dx+dy*dy)||1e-9;
-      nx=dy/len; ny=-dx/len;                                   // right-hand (water) normal
-      land = ((bx-ax)*(py-ay)-(by-ay)*(px-ax)) > 0; }          // >0 ⇒ left ⇒ land
+  let bd=Infinity, cx=0, cy=0, nx=0, ny=0, bt=0, bvx=0, bvy=0, found=-1;
+  const ci=Math.round(px/CCELL), cj=Math.round(py/CCELL);
+  for(let R=0; R<=60; R++){
+    for(let di=-R;di<=R;di++) for(let dj=-R;dj<=R;dj++){
+      if(Math.max(Math.abs(di),Math.abs(dj))!==R) continue;       // perimeter of this ring only
+      const arr=coastGrid.get((ci+di)+'_'+(cj+dj)); if(!arr) continue;
+      for(const s of arr){
+        const ax=s[0],ay=s[1],bx=s[2],by=s[3]; const dx=bx-ax,dy=by-ay; const L=dx*dx+dy*dy||1e-12;
+        let t=((px-ax)*dx+(py-ay)*dy)/L; t=t<0?0:t>1?1:t;
+        const qx=ax+t*dx, qy=ay+t*dy; const ex=px-qx, ey=py-qy; const d=ex*ex+ey*ey;
+        if(d<bd){ bd=d; cx=qx; cy=qy; nx=s[4]; ny=s[5]; bt=t;
+          if(t<=0.001){ bvx=ax; bvy=ay; } else if(t>=0.999){ bvx=bx; bvy=by; } else { bvx=NaN; } }
+      }
+    }
+    if(found<0 && bd<Infinity) found=R;
+    if(found>=0 && R>=found+2) break;            // two extra rings ⇒ nearest confirmed
   }
+  if(bd===Infinity) return { cx:px, cy:py, nx:0, ny:0, land:false, distM:9999 };
+  // side: interior foot ⇒ that edge's normal; corner foot ⇒ the vertex pseudonormal
+  let pnx=nx, pny=ny;
+  if(!isNaN(bvx)){ const v=vNorm.get(vKey(bvx,bvy)); if(v){ pnx=v[0]; pny=v[1]; } }
+  const land = ((px-cx)*pnx + (py-cy)*pny) < 0;     // dot(point→foot vector, water normal) < 0 ⇒ land
   return { cx, cy, nx, ny, land, distM:Math.sqrt(bd)*DEG };
 }
 // move a point to the water side, at least MARGIN metres off the nearest shore
@@ -186,11 +220,39 @@ function waterRoute(piers, dir){
   }
   let out = catmullRom(ctrl, 12);
   out = repelVerts(out, dir);          // clamp any spline vertex that cut a headland back to water
-  if(dir){                             // shore lines: round the clamp steps, then re-clamp
-    out = catmullRom(simplify(out, 0.00002), 5);   // centripetal ⇒ no new loops
-    out = repelVerts(out, dir);
+  if(dir){                             // only the bank-hugging shore lines get the whisker problem
+    out = smoothOnWater(out, 7);       // average out the clamp spikes/whiskers, constrained to water
+    out = repelVerts(out, dir);        // re-clear anything smoothing nudged toward land
   }
+  snapPiers(out, piers);               // guarantee the line still passes through every pier
   return out;
+}
+// Laplacian smoothing that only moves a vertex toward its neighbours' midpoint when the
+// result stays on water — removes spikes/whiskers but preserves genuine headland detours
+// (pulling those toward the chord would hit land, so the constraint keeps them).
+function smoothOnWater(pts, iters){
+  if(!coastSegs.length || pts.length<3) return pts;
+  const p=pts.map(x=>x.slice());
+  for(let it=0;it<iters;it++){
+    for(let i=1;i<p.length-1;i++){
+      const mlat=(p[i-1][0]+p[i+1][0])/2, mlng=(p[i-1][1]+p[i+1][1])/2;
+      const nlat=p[i][0]+(mlat-p[i][0])*0.55, nlng=p[i][1]+(mlng-p[i][1])*0.55;
+      const c=coastInfo(nlng,nlat);
+      // only accept the move on a CONFIRMED near-coast water verdict (distM<1300). A point with
+      // no coast in range reports distM 9999 — that could be deep sea OR deep inland, so never
+      // move there (this is what let earlier smoothing straighten lines across peninsulas).
+      if(!c.land && c.distM>=75 && c.distM<1300){ p[i][0]=nlat; p[i][1]=nlng; }
+    }
+  }
+  return p;
+}
+// snap the nearest path vertex to each pier so the line still docks exactly
+function snapPiers(out, piers){
+  for(const pier of piers){
+    let bi=0,bd=Infinity;
+    for(let i=0;i<out.length;i++){ const d=meters(out[i],pier); if(d<bd){ bd=d; bi=i; } }
+    out[bi]=pier.slice();
+  }
 }
 // push spline vertices that landed on (or right next to) land back out to water. With a channel
 // `dir` the push is along that fixed direction (stable for shore lines); otherwise it follows the
