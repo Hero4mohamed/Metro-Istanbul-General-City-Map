@@ -52,6 +52,8 @@
   .seg button{flex:1;padding:8px 0;border-radius:9px;border:1px solid var(--stroke-2);background:rgba(8,11,18,.6);
     color:var(--muted);font-family:var(--font);font-size:11px;font-weight:700;cursor:pointer;transition:.15s;}
   .seg button.active{background:rgba(54,208,122,.16);border-color:var(--accent);color:var(--accent);}
+  .topbar .langseg{margin-top:10px;justify-content:flex-end;gap:5px;}
+  .topbar .langseg button{flex:0 0 auto;min-width:38px;padding:5px 12px;letter-spacing:1px;}
 
   .tabs{display:flex;gap:6px;}
   .tabs button{flex:1;padding:10px 0;border-radius:11px;border:1px solid var(--stroke-2);background:rgba(8,11,18,.5);color:var(--muted);font-family:var(--font);font-size:11.5px;font-weight:700;cursor:pointer;transition:.16s;letter-spacing:.3px;}
@@ -263,36 +265,40 @@
 
 <div class="topbar glass">
   <h1><span class="dot"></span>İSTANBUL · RAY-NET</h1>
-  <div class="sub">Live Rail Network · <a href="https://github.com/Hero4mohamed/Metro-Istanbul-General-City-Map" target="_blank" rel="noopener" style="color:var(--accent);text-decoration:none;font-weight:700;">source ↗</a></div>
+  <div class="sub"><span data-i18n="liveNet">Live Rail Network</span> · <a href="https://github.com/Hero4mohamed/Metro-Istanbul-General-City-Map" target="_blank" rel="noopener" style="color:var(--accent);text-decoration:none;font-weight:700;" data-i18n="source">source ↗</a></div>
   <div class="stats">
-    <div class="kv"><b id="sLines">0</b><span>Lines</span></div>
-    <div class="kv"><b id="sStations">0</b><span>Stations</span></div>
-    <div class="kv"><b id="sTrains">0</b><span>Carriages</span></div>
+    <div class="kv"><b id="sLines">0</b><span data-i18n="lines">Lines</span></div>
+    <div class="kv"><b id="sStations">0</b><span data-i18n="stations">Stations</span></div>
+    <div class="kv"><b id="sTrains">0</b><span data-i18n="carriages">Carriages</span></div>
+  </div>
+  <div class="seg langseg" id="langSeg">
+    <button data-lang="en" class="active">EN</button>
+    <button data-lang="tr">TR</button>
   </div>
 </div>
 
 <div class="controls">
   <div class="card glass" style="padding:7px;">
     <div class="tabs" id="tabs">
-      <button data-tab="active" class="active">● Active</button>
-      <button data-tab="vision">◇ Vision</button>
-      <button data-tab="bus">▤ Buses</button>
+      <button data-tab="active" class="active" data-i18n="tabActive">● Active</button>
+      <button data-tab="vision" data-i18n="tabVision">◇ Vision</button>
+      <button data-tab="bus" data-i18n="tabBus">▤ Buses</button>
     </div>
   </div>
   <div class="card glass">
-    <div class="sec">Base Map</div>
+    <div class="sec" data-i18n="baseMap">Base Map</div>
     <div class="seg" id="baseSeg">
-      <button data-b="dark" class="active">Dark</button>
-      <button data-b="voyager">Streets</button>
-      <button data-b="sat">Satellite</button>
+      <button data-b="dark" class="active" data-i18n="dark">Dark</button>
+      <button data-b="voyager" data-i18n="streets">Streets</button>
+      <button data-b="sat" data-i18n="satellite">Satellite</button>
     </div>
-    <div class="row" style="margin-top:10px">Live carriages
+    <div class="row" style="margin-top:10px"><span data-i18n="liveCarr">Live carriages</span>
       <label class="switch"><input type="checkbox" id="tglTrains" checked><span class="sl"></span></label>
     </div>
-    <div class="row">Station markers
+    <div class="row"><span data-i18n="stationMarkers">Station markers</span>
       <label class="switch"><input type="checkbox" id="tglStations" checked><span class="sl"></span></label>
     </div>
-    <div class="sec" style="margin-top:14px">Simulation Speed</div>
+    <div class="sec" style="margin-top:14px" data-i18n="simSpeed">Simulation Speed</div>
     <div class="seg" id="speedSeg">
       <button data-s="1">1×</button>
       <button data-s="3" class="active">3×</button>
@@ -301,50 +307,50 @@
   </div>
 
   <div class="card glass" id="cardLines">
-    <div class="sec">Network Lines</div>
+    <div class="sec" data-i18n="networkLines">Network Lines</div>
     <div id="legend"></div>
     <div style="display:flex;gap:6px;margin-top:8px">
-      <button class="btn ghost" id="allOn" style="margin:0">All</button>
-      <button class="btn ghost" id="allOff" style="margin:0">None</button>
+      <button class="btn ghost" id="allOn" style="margin:0" data-i18n="all">All</button>
+      <button class="btn ghost" id="allOff" style="margin:0" data-i18n="none">None</button>
     </div>
   </div>
 
   <div class="card glass" id="cardBus" style="display:none;">
-    <div class="sec">Bus Directory · İETT</div>
-    <input id="busSearch" class="bus-search" placeholder="Search line no. or stop (e.g. 500T, Kadıköy)" autocomplete="off" />
+    <div class="sec" data-i18n="busDir">Bus Directory · İETT</div>
+    <input id="busSearch" class="bus-search" data-i18n-ph="busSearchPh" placeholder="Search line no. or stop (e.g. 500T, Kadıköy)" autocomplete="off" />
     <div class="bus-count" id="busCount"></div>
     <div class="bus-list" id="busList"></div>
   </div>
 
   <div class="card glass" id="cardPlanner">
-    <div class="sec">Trip Planner</div>
-    <div class="field"><label>From</label>
-      <div class="ac"><input id="selO" class="ac-input" type="text" placeholder="Search any stop or place…" autocomplete="off">
-        <button class="ac-pin" data-for="O" title="Pick point on map">📍</button>
+    <div class="sec" data-i18n="tripPlanner">Trip Planner</div>
+    <div class="field"><label data-i18n="from">From</label>
+      <div class="ac"><input id="selO" class="ac-input" type="text" data-i18n-ph="searchStop" placeholder="Search any stop or place…" autocomplete="off">
+        <button class="ac-pin" data-for="O" data-i18n-title="pickPoint" title="Pick point on map">📍</button>
         <div class="ac-list" id="acO"></div></div></div>
-    <div class="swapb"><button id="swap" title="Swap">⇅</button></div>
-    <div class="field"><label>To</label>
-      <div class="ac"><input id="selD" class="ac-input" type="text" placeholder="Search any stop or place…" autocomplete="off">
-        <button class="ac-pin" data-for="D" title="Pick point on map">📍</button>
+    <div class="swapb"><button id="swap" data-i18n-title="swap" title="Swap">⇅</button></div>
+    <div class="field"><label data-i18n="to">To</label>
+      <div class="ac"><input id="selD" class="ac-input" type="text" data-i18n-ph="searchStop" placeholder="Search any stop or place…" autocomplete="off">
+        <button class="ac-pin" data-for="D" data-i18n-title="pickPoint" title="Pick point on map">📍</button>
         <div class="ac-list" id="acD"></div></div></div>
-    <button class="btn" id="route">◇ Find Optimal Path</button>
-    <button class="btn ghost" id="clear">Clear</button>
+    <button class="btn" id="route" data-i18n="findPath">◇ Find Optimal Path</button>
+    <button class="btn ghost" id="clear" data-i18n="clear">Clear</button>
     <div class="route-out" id="rout">
       <div class="rsum">
-        <div class="c"><b id="rEta">–</b><span>Min</span></div>
-        <div class="c"><b id="rStops">–</b><span>Stops</span></div>
-        <div class="c"><b id="rTr">–</b><span>Transfers</span></div>
+        <div class="c"><b id="rEta">–</b><span data-i18n="min">Min</span></div>
+        <div class="c"><b id="rStops">–</b><span data-i18n="stops">Stops</span></div>
+        <div class="c"><b id="rTr">–</b><span data-i18n="transfers">Transfers</span></div>
       </div>
       <div id="rOpts" class="ropts"></div>
       <div id="rSteps"></div>
       <button class="btn ghost favbtn" id="favBtn">☆ Save to Favourites</button>
     </div>
     <div class="plan-sec" id="favSec">
-      <div class="plan-h">★ Favourites</div>
+      <div class="plan-h" data-i18n="favourites">★ Favourites</div>
       <div class="plan-list" id="favList"></div>
     </div>
     <div class="plan-sec" id="histSec">
-      <div class="plan-h">Recent plans <button class="mini" id="histClear">clear all</button></div>
+      <div class="plan-h"><span data-i18n="recentPlans">Recent plans</span> <button class="mini" id="histClear" data-i18n="clearAll">clear all</button></div>
       <div class="plan-list" id="histList"></div>
     </div>
   </div>
@@ -356,10 +362,10 @@
   <div class="st-lines" id="stnLines"></div>
   <div class="st-meta" id="stnMeta"></div>
   <div class="rowbtns">
-    <button id="setO">Set as Origin</button>
-    <button id="setD">Set as Destination</button>
+    <button id="setO" data-i18n="setOrigin">Set as Origin</button>
+    <button id="setD" data-i18n="setDest">Set as Destination</button>
   </div>
-  <div class="bt">Predictive Arrivals <span class="live">LIVE</span></div>
+  <div class="bt"><span data-i18n="predArrivals">Predictive Arrivals</span> <span class="live" data-i18n="live">LIVE</span></div>
   <div id="stnBoard"></div>
   <div id="stnService"></div>
 </div>
@@ -372,27 +378,139 @@
   </div>
   <div class="lp-kind" id="lpKind"></div>
   <div class="lp-stats" id="lpStats"></div>
-  <div class="bt">Connectivity</div>
+  <div class="bt" data-i18n="connectivity">Connectivity</div>
   <div class="lp-conn" id="lpConn"></div>
-  <div class="bt">Expansion Projects</div>
+  <div class="bt" data-i18n="expansion">Expansion Projects</div>
   <div id="lpExp"></div>
-  <div class="lp-src">Metadata aligned with İBB / Metro İstanbul records · dates are official projections</div>
+  <div class="lp-src" data-i18n="lpSrc">Metadata aligned with İBB / Metro İstanbul records · dates are official projections</div>
 </div>
 
 <div class="announce glass" id="announce">
   <div class="ann-h" id="annHead">
-    <span>📢 Announcements <span class="ann-count" id="annCount"></span></span>
-    <button class="ann-toggle" id="annToggle" title="collapse">▾</button>
+    <span>📢 <span data-i18n="announcements">Announcements</span> <span class="ann-count" id="annCount"></span></span>
+    <button class="ann-toggle" id="annToggle" data-i18n-title="collapse" title="collapse">▾</button>
   </div>
   <div class="ann-body" id="annBody"></div>
 </div>
 
-<div class="hint glass">Drag to pan · Scroll to zoom · Click a <b>station</b> or a <b>line</b> for details</div>
+<div class="hint glass" data-i18n-html="hint">Drag to pan · Scroll to zoom · Click a <b>station</b> or a <b>line</b> for details</div>
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
         integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
 <script>
 "use strict";
+/* ===========================================================================
+   0. i18n — English / Turkish UI
+   =========================================================================== */
+const I18N = {
+  en:{ liveNet:"Live Rail Network", source:"source ↗", lines:"Lines", stations:"Stations", carriages:"Carriages",
+    tabActive:"● Active", tabVision:"◇ Vision", tabBus:"▤ Buses",
+    baseMap:"Base Map", dark:"Dark", streets:"Streets", satellite:"Satellite",
+    liveCarr:"Live carriages", stationMarkers:"Station markers", simSpeed:"Simulation Speed",
+    networkLines:"Network Lines", all:"All", none:"None",
+    busDir:"Bus Directory · İETT", busSearchPh:"Search line no. or stop (e.g. 500T, Kadıköy)",
+    tripPlanner:"Trip Planner", from:"From", to:"To", searchStop:"Search any stop or place…",
+    pickPoint:"Pick point on map", swap:"Swap", findPath:"◇ Find Optimal Path", clear:"Clear",
+    min:"Min", stops:"Stops", transfers:"Transfers", favourites:"★ Favourites",
+    recentPlans:"Recent plans", clearAll:"clear all", setOrigin:"Set as Origin", setDest:"Set as Destination",
+    predArrivals:"Predictive Arrivals", live:"LIVE", connectivity:"Connectivity", expansion:"Expansion Projects",
+    lpSrc:"Metadata aligned with İBB / Metro İstanbul records · dates are official projections",
+    announcements:"Announcements", collapse:"collapse",
+    hint:"Drag to pan · Scroll to zoom · Click a <b>station</b> or a <b>line</b> for details",
+    saveFav:"☆ Save to Favourites", favourited:"★ Favourited",
+    walk:"Walk", busLabel:"Bus", transferAt:"Transfer at", walkToShort:"walk to", also:"also:",
+    stop_one:"stop", stop_many:"stops", fastest:"Fastest", option:"Option", minUnit:"min",
+    pickOD:"Search a start &amp; destination, or tap 📍 to drop a point on the map.",
+    noRoute:"No route found — try points closer to the network.",
+    noFav:"No favourites yet — find a route, then tap ☆.", noRecent:"No recent plans.", noLines:"No lines match.",
+    toYourDest:"to your destination", toStop:"to", fromStop:"from",
+    annNone:"✓ No reported disruptions — network running normally.",
+    annFoot:"Reported service faults &amp; closures. Live official status:",
+    until:"until", daysLeft:"days left", endsToday:"ends today", ended:"ended",
+    sevMajor:"Major", sevPartial:"Partial", sevMinor:"Minor",
+    "ttl:Service suspended":"Service suspended", "ttl:Section affected":"Section affected", "ttl:Service notice":"Service notice",
+    serviceHours:"Service hours", every:"every", hours24:"24 hours", interchange:"Interchange", transferWord:"transfer",
+    busLines:"line", busLinesMany:"lines", showingFirst:"showing first", noGeom:"No mapped geometry for this line.",
+    loadingGeom:"Loading route geometry…", routeDrawn:"route drawn", needNet:"Could not fetch route (needs internet).",
+    kind_metro:"Metro", kind_tram:"Tram", kind_ferry:"Ferry", kind_funicular:"Funicular",
+    kind_marmaray:"Marmaray", kind_suburban:"Suburban", kind_metrobus:"Metrobüs (BRT)", kind_cable:"Cable car",
+    shuttleSpur:"shuttle spur", interchangesWord:"interchanges", targetOpen:"target open", soonWord:"soon", stationsLower:"stations",
+    st_construction:"Under construction", st_planned:"Planned", st_testing:"Under construction / testing", st_approx:"Approximate alignment" },
+  tr:{ liveNet:"Canlı Raylı Ağ", source:"kaynak ↗", lines:"Hatlar", stations:"İstasyonlar", carriages:"Vagonlar",
+    tabActive:"● Aktif", tabVision:"◇ Vizyon", tabBus:"▤ Otobüsler",
+    baseMap:"Harita", dark:"Koyu", streets:"Sokaklar", satellite:"Uydu",
+    liveCarr:"Canlı vagonlar", stationMarkers:"Durak işaretleri", simSpeed:"Simülasyon Hızı",
+    networkLines:"Ağ Hatları", all:"Tümü", none:"Hiçbiri",
+    busDir:"Otobüs Rehberi · İETT", busSearchPh:"Hat no veya durak ara (örn. 500T, Kadıköy)",
+    tripPlanner:"Yol Planlayıcı", from:"Nereden", to:"Nereye", searchStop:"Durak veya yer ara…",
+    pickPoint:"Haritada nokta seç", swap:"Yer değiştir", findPath:"◇ En İyi Rotayı Bul", clear:"Temizle",
+    min:"Dk", stops:"Durak", transfers:"Aktarma", favourites:"★ Favoriler",
+    recentPlans:"Son planlar", clearAll:"tümünü sil", setOrigin:"Başlangıç yap", setDest:"Varış yap",
+    predArrivals:"Tahmini Varışlar", live:"CANLI", connectivity:"Bağlantılar", expansion:"Genişleme Projeleri",
+    lpSrc:"Veriler İBB / Metro İstanbul kayıtlarıyla uyumludur · tarihler resmi projeksiyonlardır",
+    announcements:"Duyurular", collapse:"daralt",
+    hint:"Kaydırmak için sürükle · Yakınlaştırmak için tekerlek · Detay için bir <b>durak</b> ya da <b>hat</b> tıklayın",
+    saveFav:"☆ Favorilere Ekle", favourited:"★ Favoride",
+    walk:"Yürü", busLabel:"Otobüs", transferAt:"Aktarma:", walkToShort:"şuraya yürü:", also:"ayrıca:",
+    stop_one:"durak", stop_many:"durak", fastest:"En hızlı", option:"Seçenek", minUnit:"dk",
+    pickOD:"Başlangıç ve varış arayın ya da haritaya nokta bırakmak için 📍 dokunun.",
+    noRoute:"Rota bulunamadı — ağa daha yakın noktalar deneyin.",
+    noFav:"Henüz favori yok — bir rota bulun, sonra ☆ dokunun.", noRecent:"Son plan yok.", noLines:"Eşleşen hat yok.",
+    toYourDest:"varış noktanıza", toStop:"→", fromStop:"şuradan:",
+    annNone:"✓ Bildirilen aksama yok — ağ normal çalışıyor.",
+    annFoot:"Bildirilen servis arızaları ve kapanışları. Canlı resmi durum:",
+    until:"şu tarihe kadar:", daysLeft:"gün kaldı", endsToday:"bugün bitiyor", ended:"sona erdi",
+    sevMajor:"Büyük", sevPartial:"Kısmi", sevMinor:"Hafif",
+    "ttl:Service suspended":"Seferler durduruldu", "ttl:Section affected":"Etkilenen kesim", "ttl:Service notice":"Servis bildirimi",
+    serviceHours:"Servis saatleri", every:"her", hours24:"24 saat", interchange:"Aktarma noktası", transferWord:"aktarma",
+    busLines:"hat", busLinesMany:"hat", showingFirst:"ilk gösterilen", noGeom:"Bu hat için harita geometrisi yok.",
+    loadingGeom:"Güzergah çiziliyor…", routeDrawn:"güzergah çizildi", needNet:"Güzergah alınamadı (internet gerekli).",
+    kind_metro:"Metro", kind_tram:"Tramvay", kind_ferry:"Vapur", kind_funicular:"Füniküler",
+    kind_marmaray:"Marmaray", kind_suburban:"Banliyö", kind_metrobus:"Metrobüs", kind_cable:"Teleferik",
+    shuttleSpur:"mekik hattı", interchangesWord:"aktarmalar", targetOpen:"hedef açılış", soonWord:"yakında", stationsLower:"istasyon",
+    st_construction:"Yapım aşamasında", st_planned:"Planlanan", st_testing:"Yapım / test aşamasında", st_approx:"Yaklaşık güzergah" }
+};
+let lang = (function(){ try{ const s=localStorage.getItem('irn_lang'); if(s==='en'||s==='tr') return s; }catch(e){}
+  return (navigator.language||'').toLowerCase().startsWith('tr') ? 'tr' : 'en'; })();
+function t(k){ const d=I18N[lang]||I18N.en; return d[k]!==undefined ? d[k] : (I18N.en[k]!==undefined ? I18N.en[k] : k); }
+function applyI18n(){
+  document.querySelectorAll('[data-i18n]').forEach(el=> el.textContent = t(el.getAttribute('data-i18n')));
+  document.querySelectorAll('[data-i18n-html]').forEach(el=> el.innerHTML = t(el.getAttribute('data-i18n-html')));
+  document.querySelectorAll('[data-i18n-ph]').forEach(el=> el.placeholder = t(el.getAttribute('data-i18n-ph')));
+  document.querySelectorAll('[data-i18n-title]').forEach(el=> el.title = t(el.getAttribute('data-i18n-title')));
+  document.documentElement.lang = lang;
+}
+function setLang(l){
+  if(l!=='en' && l!=='tr') return;
+  lang=l; try{ localStorage.setItem('irn_lang', l); }catch(e){}
+  document.querySelectorAll('#langSeg button').forEach(b=> b.classList.toggle('active', b.dataset.lang===l));
+  applyI18n();
+  // re-render the dynamic panels in the new language
+  try{ buildLegend(); }catch(e){}
+  try{ renderAnnouncements(); renderDisruptionMarkers(); }catch(e){}
+  try{ renderPlanLists(); updateFavBtn(); }catch(e){}
+  try{ if(currentTab==='bus' && document.getElementById('busSearch')) renderBusList(document.getElementById('busSearch').value); }catch(e){}
+  try{ if(currentOpts && currentOpts.length){ renderOptChips(); selectOption(currentOptIdx); } }catch(e){}
+  try{ if(selected) openStation(selected); }catch(e){}
+}
+// localized line-category label (legend groups + planner steps); falls back to KIND.label
+function kindLabel(kind){ const k=I18N[lang]['kind_'+kind]; return k!==undefined ? k : ((KIND[kind]&&KIND[kind].label)||kind); }
+// localized disruption title + message (TR uses the original messageTr when present)
+function disTitle(d){ const k='ttl:'+(d.title||''); return I18N[lang][k]!==undefined ? I18N[lang][k] : (d.title||''); }
+function disMsg(d){ return (lang==='tr' && d.messageTr) ? d.messageTr : d.message; }
+// best-effort translation of LINE_META status strings (data); unknown values pass through
+function transStatus(s){
+  const m={ 'Under construction':'st_construction', 'Planned':'st_planned', 'Under construction / testing':'st_testing',
+            'Under construction / testing':'st_testing' };
+  if(m[s]) return t(m[s]);
+  if(/testing/i.test(s)) return t('st_testing');
+  if(/construction/i.test(s)) return t('st_construction');
+  if(/planned/i.test(s)) return t('st_planned');
+  if(/approx/i.test(s)) return t('st_approx');
+  return s;
+}
+function sevLabel(sev){ return t('sev'+(sev||'').charAt(0).toUpperCase()+(sev||'').slice(1)); }
+
 /* ===========================================================================
    ISTANBUL RAY-NET  ·  Leaflet edition
    Real OSM-derived geometry for the entire metropolitan rail network plus the
@@ -1012,8 +1130,9 @@ function openStation(reg){
   document.getElementById('stnNm').textContent = reg.name;
   document.getElementById('stnLines').innerHTML = [...reg.lines]
     .map(ref=>`<span class="badge" style="background:${colorForLine(ref)}">${ref}</span>`).join("");
-  let meta = `Served by ${reg.lines.size} line${reg.lines.size>1?"s":""}.`;
-  if(reg.lines.size>1) meta += ` <span class="ix">◆ Interchange · ${TRANSFER_MIN} min transfer</span>`;
+  const nL=reg.lines.size;
+  let meta = lang==='tr' ? `${nL} hat hizmet veriyor.` : `Served by ${nL} line${nL>1?"s":""}.`;
+  if(nL>1) meta += ` <span class="ix">◆ ${t('interchange')} · ${TRANSFER_MIN} ${t('minUnit')} ${t('transferWord')}</span>`;
   document.getElementById('stnMeta').innerHTML = meta;
   // operating hours / frequency per serving line (official-style timetable)
   const svc = [...reg.lines].map(ref=>{
@@ -1021,7 +1140,7 @@ function openStation(reg){
     const tm=lineTiming(ref);
     return `<div class="svc-row"><span class="svc-cd" style="background:${ln.color}">${ref}</span><span class="svc-tx"><b>${tm.freq}</b> · ${tm.hours}</span></div>`;
   }).filter(Boolean).join('');
-  document.getElementById('stnService').innerHTML = svc ? `<div class="bt">Service hours</div>${svc}` : '';
+  document.getElementById('stnService').innerHTML = svc ? `<div class="bt">${t('serviceHours')}</div>${svc}` : '';
   document.getElementById('stn').classList.add('show');
   renderBoard();
 }
@@ -1105,17 +1224,17 @@ function openLine(line){
   document.getElementById('lpRef').textContent = (line.partOf || line.ref) + (live ? '' : ' ◇');
   document.getElementById('lpName').textContent = official;
   document.getElementById('lpKind').textContent =
-    KIND[line.kind].label + (line.branch ? ' · shuttle spur' : '') + (live ? '' : ' · ' + (line.status||'Planned'));
+    kindLabel(line.kind) + (line.branch ? ' · '+t('shuttleSpur') : '') + (live ? '' : ' · ' + transStatus(line.status||'Planned'));
   const conns = [];
   if(live) line.stations.forEach((st,idx) => {
     const cl = clusterFor(line.ref, idx);
     if(cl && cl.lines.size>1){ const others=[...cl.lines].filter(r=>r!==line.ref); if(others.length) conns.push({at:st.name, others}); }
   });
-  const third = live ? conns.length : (line.launch ? fmtLaunch(line.launch) : 'soon');
+  const third = live ? conns.length : (line.launch ? fmtLaunch(line.launch) : t('soonWord'));
   document.getElementById('lpStats').innerHTML =
     `<div class="c"><b>${(line._len/1000).toFixed(1)}</b><span>km</span></div>
-     <div class="c"><b>${line.stations.length||'—'}</b><span>stations</span></div>
-     <div class="c"><b style="font-size:${live?'15px':'11px'}">${third}</b><span>${live?'interchanges':'target open'}</span></div>`;
+     <div class="c"><b>${line.stations.length||'—'}</b><span>${t('stationsLower')}</span></div>
+     <div class="c"><b style="font-size:${live?'15px':'11px'}">${third}</b><span>${live?t('interchangesWord'):t('targetOpen')}</span></div>`;
   document.getElementById('lpConn').innerHTML = !live
     ? `<div class="planned-banner">◷ ${line.status||'Planned'}${line.launch?(' · targeting '+fmtLaunch(line.launch)):''}<span>Excluded from live pathfinding &amp; carriage simulation until launch.${line.approx?' ⚠ Approximate alignment — hand-placed from the published station list.':''}</span></div>`
     : (conns.length
@@ -1224,7 +1343,7 @@ function loadPlan(o,d){ setPoint('O',o); setPoint('D',d); runRoute(); }
 function updateFavBtn(){
   const b=document.getElementById('favBtn'); if(!b) return;
   const f = originPt && destPt && isFav(originPt.name,destPt.name);
-  b.textContent = f ? '★ Favourited' : '☆ Save to Favourites';
+  b.textContent = f ? t('favourited') : t('saveFav');
   b.classList.toggle('isfav', !!f);
 }
 function planRow(p, on){
@@ -1238,8 +1357,8 @@ function planRow(p, on){
 function renderPlanLists(){
   const fav=document.getElementById('favList'), hist=document.getElementById('histList');
   if(!fav||!hist) return;
-  fav.innerHTML = planFavs.length ? planFavs.map(p=>planRow(p,true)).join('') : '<div class="plan-empty">No favourites yet — find a route, then tap ☆.</div>';
-  hist.innerHTML = planHistory.length ? planHistory.map(p=>planRow(p,isFav(p.oN,p.dN))).join('') : '<div class="plan-empty">No recent plans.</div>';
+  fav.innerHTML = planFavs.length ? planFavs.map(p=>planRow(p,true)).join('') : `<div class="plan-empty">${t('noFav')}</div>`;
+  hist.innerHTML = planHistory.length ? planHistory.map(p=>planRow(p,isFav(p.oN,p.dN))).join('') : `<div class="plan-empty">${t('noRecent')}</div>`;
   bindPlanItems(fav,'fav'); bindPlanItems(hist,'hist');
 }
 function bindPlanItems(container, kind){
@@ -1397,8 +1516,8 @@ function renderOptChips(){
   const el=document.getElementById('rOpts');
   if(currentOpts.length<2){ el.innerHTML=''; return; }
   el.innerHTML=currentOpts.map((o,i)=>`<div class="ropt${i===currentOptIdx?' sel':''}" data-i="${i}">
-      <div class="ro-t">${i===0?'Fastest':'Option '+(i+1)}</div>
-      <div class="ro-m">${Math.round(o.it.total)}<small> min</small></div>
+      <div class="ro-t">${i===0?t('fastest'):t('option')+' '+(i+1)}</div>
+      <div class="ro-m">${Math.round(o.it.total)}<small> ${t('minUnit')}</small></div>
       <div class="ro-s">${optLines(o.it)}</div></div>`).join('');
   el.querySelectorAll('.ropt').forEach(c=> c.addEventListener('click', ()=> selectOption(+c.dataset.i)));
 }
@@ -1444,24 +1563,24 @@ function showItinerary(res, it){
   stepsEl.innerHTML = it.steps.map(s=>{
     if(s.type==="walk"){
       return `<div class="step"><div class="rail"><span class="nd" style="border-color:#9fb0c0"></span><span class="pipe" style="background:#9fb0c0"></span></div>
-        <div class="tx"><div class="nm">🚶 Walk ~${Math.max(1,Math.round(s.mins))} min</div>
-        <div class="mt">${s.dest ? ('from '+s.from+' to your destination') : ('to '+s.to)}</div></div></div>`;
+        <div class="tx"><div class="nm">🚶 ${t('walk')} ~${Math.max(1,Math.round(s.mins))} ${t('minUnit')}</div>
+        <div class="mt">${s.dest ? t('toYourDest') : (t('toStop')+' '+s.to)}</div></div></div>`;
     } else if(s.type==="ride"){
       const c = s.bus ? BUS_COLOR : colorForLine(s.ref);
-      const label = s.bus ? 'Bus' : KIND[lineByRef[s.ref].kind].label;
+      const label = s.bus ? t('busLabel') : kindLabel(lineByRef[s.ref].kind);
       let alt='';
       if(s.bus && s.siblings && s.siblings.length){
         const show=s.siblings.slice(0,6), more=s.siblings.length-show.length;
-        alt=`<div class="mt alt">also: ${show.map(r=>`<span class="altbus">${r}</span>`).join(' ')}${more>0?` <span class="altmore">+${more}</span>`:''}</div>`;
+        alt=`<div class="mt alt">${t('also')} ${show.map(r=>`<span class="altbus">${r}</span>`).join(' ')}${more>0?` <span class="altmore">+${more}</span>`:''}</div>`;
       }
       return `<div class="step"><div class="rail"><span class="nd" style="border-color:${c}"></span><span class="pipe" style="background:${c}"></span></div>
         <div class="tx"><div class="nm"><span class="badge" style="background:${c}">${s.bus?'🚌 '+s.ref:s.ref}</span>${label}</div>
-        <div class="mt">${s.from} → ${s.to} · ${s.stops} stop${s.stops!==1?'s':''}</div>${alt}</div></div>`;
+        <div class="mt">${s.from} → ${s.to} · ${s.stops} ${s.stops===1?t('stop_one'):t('stop_many')}</div>${alt}</div></div>`;
     } else {
       const c = s.bus ? BUS_COLOR : colorForLine(s.ref);
       return `<div class="step"><div class="rail"><span class="nd" style="border-color:var(--gold)"></span><span class="pipe" style="background:var(--gold)"></span></div>
-        <div class="tx"><div class="nm" style="color:var(--gold)">⇄ Transfer at ${s.at}</div>
-        <div class="mt">walk to <span class="badge" style="background:${c}">${s.bus?'🚌 '+s.ref:s.ref}</span> · +${TRANSFER_MIN} min</div></div></div>`;
+        <div class="tx"><div class="nm" style="color:var(--gold)">⇄ ${t('transferAt')} ${s.at}</div>
+        <div class="mt">${t('walkToShort')} <span class="badge" style="background:${c}">${s.bus?'🚌 '+s.ref:s.ref}</span> · +${TRANSFER_MIN} ${t('minUnit')}</div></div></div>`;
     }
   }).join("");
   if(legs.length){
@@ -1479,11 +1598,11 @@ function runRoute(){
   document.getElementById('rOpts').innerHTML=''; currentOpts=[]; currentOptIdx=0;
   if(!o || !d){ out.classList.add('show');
     document.getElementById('rEta').textContent='–'; document.getElementById('rStops').textContent='–'; document.getElementById('rTr').textContent='–';
-    stepsEl.innerHTML='<div class="none">Search a start &amp; destination, or tap 📍 to drop a point on the map.</div>'; updateFavBtn(); return; }
+    stepsEl.innerHTML=`<div class="none">${t('pickOD')}</div>`; updateFavBtn(); return; }
   currentOpts = routeOptions(o,d,3);
   if(!currentOpts.length){ out.classList.add('show'); document.getElementById('rEta').textContent='—';
     document.getElementById('rStops').textContent='—'; document.getElementById('rTr').textContent='—';
-    stepsEl.innerHTML='<div class="none">No route found — try points closer to the network.</div>'; updateFavBtn(); return; }
+    stepsEl.innerHTML=`<div class="none">${t('noRoute')}</div>`; updateFavBtn(); return; }
   renderOptChips();
   selectOption(0);
   out.classList.add('show');
@@ -1535,11 +1654,11 @@ function renderBusList(q){
       (d.to && d.to.toLocaleLowerCase('tr').includes(q)));
   const shown = res.slice(0, 150);
   document.getElementById('busCount').textContent =
-    res.length + ' line' + (res.length!==1?'s':'') + (res.length>shown.length ? ' · showing first '+shown.length : '');
+    res.length + ' ' + (res.length!==1?t('busLinesMany'):t('busLines')) + (res.length>shown.length ? ' · '+t('showingFirst')+' '+shown.length : '');
   document.getElementById('busList').innerHTML = shown.length
     ? shown.map(d => `<div class="bus-row" data-id="${d.id}" data-ref="${(d.ref||'').replace(/"/g,'&quot;')}">
         <span class="bn">${d.ref}</span><span class="br">${d.from} <small>↔</small> ${d.to}${d.op?` <small>· ${d.op}</small>`:''}</span></div>`).join('')
-    : '<div class="none">No lines match.</div>';
+    : `<div class="none">${t('noLines')}</div>`;
   document.querySelectorAll('#busList .bus-row').forEach(row =>
     row.addEventListener('click', () => selectBus(row.dataset.id, row)));
 }
@@ -1548,7 +1667,7 @@ async function selectBus(id, row){
   if(row) row.classList.add('sel');
   busLayer.clearLayers();
   const countEl = document.getElementById('busCount');
-  countEl.textContent = 'Loading route geometry…';
+  countEl.textContent = t('loadingGeom');
   try{
     const q = `[out:json][timeout:60];relation(${id});out geom;`;
     const resp = await fetch('https://overpass-api.de/api/interpreter', { method:'POST', body:q });
@@ -1561,9 +1680,9 @@ async function selectBus(id, row){
       L.polyline(seg, { color:'#E8A33D', weight:3.5, opacity:0.95, lineCap:'round' }).addTo(busLayer);
       pts = pts.concat(seg);
     });
-    if(pts.length){ map.fitBounds(L.latLngBounds(pts).pad(0.2)); countEl.textContent = (row?row.dataset.ref:'')+' · route drawn ('+pts.length+' pts)'; }
-    else countEl.textContent = 'No mapped geometry for this line.';
-  }catch(e){ countEl.textContent = 'Could not fetch route (needs internet).'; }
+    if(pts.length){ map.fitBounds(L.latLngBounds(pts).pad(0.2)); countEl.textContent = (row?row.dataset.ref:'')+' · '+t('routeDrawn')+' ('+pts.length+' pts)'; }
+    else countEl.textContent = t('noGeom');
+  }catch(e){ countEl.textContent = t('needNet'); }
 }
 
 // legend grouped by kind, scoped to the active tab
@@ -1574,7 +1693,7 @@ function buildLegend(){
   GROUP_ORDER.forEach(kind=>{
     const lines = set.filter(l=>l.kind===kind && !l.partOf);   // partOf lines fold into their parent
     if(!lines.length) return;
-    html += `<div class="grp"><div class="grp-h" data-kind="${kind}">${KIND[kind].label}<span>toggle</span></div><div class="lines-wrap">`;
+    html += `<div class="grp"><div class="grp-h" data-kind="${kind}">${kindLabel(kind)}<span>toggle</span></div><div class="lines-wrap">`;
     lines.forEach(l=>{
       html += `<div class="lchip${lineLayers[l.ref].on?'':' off'}" data-ref="${l.ref}"><span class="sw" style="background:${l.color}"></span>${l.ref}</div>`;
     });
@@ -1633,6 +1752,7 @@ document.getElementById('tglStations').addEventListener('change', e=>{
 document.getElementById('allOn').addEventListener('click', ()=>tabLines().forEach(l=>setLine(l.ref,true)));
 document.getElementById('allOff').addEventListener('click', ()=>tabLines().forEach(l=>setLine(l.ref,false)));
 document.getElementById('tabs').addEventListener('click', e=>{ const t=e.target.dataset.tab; if(t) setTab(t); });
+document.getElementById('langSeg').addEventListener('click', e=>{ const l=e.target.dataset.lang; if(l) setLang(l); });
 document.getElementById('busSearch').addEventListener('input', e=> renderBusList(e.target.value));
 document.getElementById('route').addEventListener('click', runRoute);
 document.getElementById('clear').addEventListener('click', ()=>{
@@ -1732,7 +1852,7 @@ function disruptionPoints(d){
   return pts;
 }
 function disrTip(d){
-  return `<b>⚠ ${d.ref} · ${d.title}</b><br>${d.message}${d.until?'<br>⏱ until '+fmtLaunch(d.until):''}`;
+  return `<b>⚠ ${d.ref?d.ref+' · ':''}${disTitle(d)}</b><br>${disMsg(d)}${d.until?'<br>⏱ '+untilText(d):''}`;
 }
 function openDisruption(d){
   const pts = disruptionPoints(d);
@@ -1776,8 +1896,8 @@ map.on('zoomend', renderDisruptionMarkers);   // re-size grey overlays + warning
 function untilText(d){
   if(!d.until) return '';
   const days = Math.ceil((Date.parse(d.until+'T23:59:59') - Date.now())/86400000);
-  const rel = days>0 ? ` · ${days} day${days!==1?'s':''} left` : (days===0?' · ends today':' · ended');
-  return 'until ' + fmtLaunch(d.until) + rel;
+  const rel = days>0 ? ` · ${days} ${t('daysLeft')}` : (days===0?' · '+t('endsToday'):' · '+t('ended'));
+  return t('until') + ' ' + fmtLaunch(d.until) + rel;
 }
 function renderAnnouncements(){
   document.getElementById('annCount').textContent = DISRUPTIONS.length;
@@ -1786,15 +1906,15 @@ function renderAnnouncements(){
     return `<div class="ann-item" data-id="${d.id}" style="border-left-color:${col};cursor:pointer">
       <div class="ann-row1">
         <span class="ann-line" style="background:${colorForLine(d.ref)}">${d.ref||'📣'}</span>
-        <span class="ann-sev" style="background:${col}">${SEV_LABEL[d.severity]||''}</span>
-        <span class="ann-ttl">${d.title}</span>
+        <span class="ann-sev" style="background:${col}">${sevLabel(d.severity)}</span>
+        <span class="ann-ttl">${disTitle(d)}</span>
       </div>
-      <div class="ann-msg">${d.message}</div>
+      <div class="ann-msg">${disMsg(d)}</div>
       ${d.until?`<div class="ann-until">⏱ ${untilText(d)}</div>`:''}</div>`;
   }).join('');
   const body = document.getElementById('annBody');
-  body.innerHTML = (DISRUPTIONS.length ? rows : '<div class="ann-none">✓ No reported disruptions — network running normally.</div>')
-    + `<div class="ann-foot">Reported service faults &amp; closures. Live official status: <a href="https://www.metro.istanbul/SeferDurumlari/SeferDetaylari" target="_blank" rel="noopener">metro.istanbul ↗</a></div>`;
+  body.innerHTML = (DISRUPTIONS.length ? rows : `<div class="ann-none">${t('annNone')}</div>`)
+    + `<div class="ann-foot">${t('annFoot')} <a href="https://www.metro.istanbul/SeferDurumlari/SeferDetaylari" target="_blank" rel="noopener">metro.istanbul ↗</a></div>`;
   body.querySelectorAll('.ann-item').forEach(el => el.addEventListener('click', ()=>{
     const d = DISRUPTIONS.find(x=>x.id===el.dataset.id); if(d) openDisruption(d);
   }));
@@ -1803,6 +1923,8 @@ document.getElementById('annHead').addEventListener('click', ()=>
   document.getElementById('announce').classList.toggle('collapsed'));
 
 function init(){
+  document.querySelectorAll('#langSeg button').forEach(b=> b.classList.toggle('active', b.dataset.lang===lang));
+  applyI18n();
   populateSelects();
   sizeCanvas();
   spawnTrains();

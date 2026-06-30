@@ -27,7 +27,8 @@ jobs:
           node-version: '20'
       - name: Scrape official status (+ X if token provided)
         env:
-          X_BEARER_TOKEN: ${{ secrets.X_BEARER_TOKEN }}   # optional; skipped when unset
+          X_BEARER_TOKEN:    ${{ secrets.X_BEARER_TOKEN }}     # optional; skipped when unset
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}  # optional; LLM translation fallback
         run: node transit_data/scrape-disruptions.cjs
       - name: Commit if changed
         run: |

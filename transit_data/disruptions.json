@@ -6,6 +6,7 @@
     "severity": "major",
     "title": "Service suspended",
     "message": "B2 Halkalı–Bahçeşehir is not operating due to engineering works.",
+    "messageTr": "B2 Halkalı–Bahçeşehir hattı altyapı çalışmaları nedeniyle çalışmamaktadır.",
     "until": "2026-08-31",
     "source": "manual"
   },

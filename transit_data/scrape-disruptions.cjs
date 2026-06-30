@@ -63,6 +63,32 @@ function translateTR(text){
   return s;
 }
 
+// residual-Turkish detector: if the phrase translator left transit jargon untranslated,
+// fall back to an LLM (only when ANTHROPIC_API_KEY is set — otherwise skipped).
+const TR_RESIDUAL=/\b(nedeniyle|istasyon\w*|seferler\w*|yapıl\w*|aktarma\w*|kapal\w*|çalışm\w*|arası\w*|durdurul\w*|hizmet|geçici|yönünde|güzergah\w*|yoğunluk)\b/i;
+const hasResidualTurkish = s => TR_RESIDUAL.test(s||'');
+async function llmTranslate(tr){
+  const key=process.env.ANTHROPIC_API_KEY; if(!key) return null;
+  try{
+    const r=await fetch('https://api.anthropic.com/v1/messages',{ method:'POST',
+      headers:{'x-api-key':key,'anthropic-version':'2023-06-01','content-type':'application/json'},
+      body:JSON.stringify({ model:'claude-haiku-4-5-20251001', max_tokens:300,
+        messages:[{ role:'user', content:'Translate this Istanbul public-transit service announcement from Turkish to concise, natural English. Keep all station and line names exactly as written. Reply with ONLY the translation, no preamble.\n\n'+tr }] }) });
+    if(!r.ok){ console.error('LLM HTTP '+r.status); return null; }
+    const j=await r.json();
+    const txt=(j.content && j.content[0] && j.content[0].text || '').trim();
+    return txt || null;
+  }catch(e){ console.error('LLM translate error:', e.message); return null; }
+}
+async function llmRefine(items){
+  if(!process.env.ANTHROPIC_API_KEY) return;
+  for(const e of items){
+    if(!e.messageTr || !hasResidualTurkish(e.message)) continue;
+    const en=await llmTranslate(e.messageTr);
+    if(en){ e.message=en; e.translatedBy='llm'; }
+  }
+}
+
 // map the page's status text + wording to our severity + short title
 function classify(status, desc){
   const s=(status||'').toLocaleLowerCase('tr'), d=(desc||'').toLocaleLowerCase('tr');
@@ -149,6 +175,7 @@ async function main(){
   }catch(e){ console.error('metro.istanbul fetch failed:', e.message); process.exitCode=2; }
   // a transient fetch failure must NOT erase the current file — bail out, leave it untouched
   if(!fetchOk){ console.error('Source unreachable — leaving disruptions.json unchanged.'); return; }
+  await llmRefine(metro);   // optional high-quality translation for anything the phrase map missed
   const x=await parseX();
   // merge curated manual entries (lines the metro.istanbul page does NOT cover — Marmaray/B2/
   // ferries/buses). Live parse wins for any ref it actually reports.
