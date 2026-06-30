@@ -18,6 +18,51 @@ function decode(s){
 }
 const stripTags = s => s.replace(/<[^>]+>/g,' ');
 
+// Domain Turkish→English translator for Istanbul metro service announcements. These messages
+// are highly formulaic, so ordered phrase rules (most-specific first) give faithful English.
+// Station names (proper nouns) are preserved. The original Turkish is kept as messageTr.
+const TR2EN_PHRASES = [
+  [/([^\s,]+)\s*[-–]\s*([^\s,]+)\s+istasyonları\s+arasında\s+yapılmaktadır/gi, 'operate between $1 and $2'],
+  [/([^\s,]+)\s+ve\s+([^\s,]+)\s+istasyon(?:undan|larından)\s+aktarmalı\s+olarak/gi, 'with a transfer at $1 and $2,'],
+  [/([^\s,]+)\s+istasyon(?:undan|larından)\s+aktarmalı\s+olarak/gi, 'with a transfer at $1,'],
+  [/([^\s,]+)\s*[-–]\s*([^\s,]+)\s+istasyonları\s+arasında/gi, 'between $1 and $2'],
+  [/onarım\s+çalışması\s+nedeniyle/gi, 'Due to maintenance works,'],
+  [/bakım\s+çalışması\s+nedeniyle/gi, 'Due to maintenance,'],
+  [/teknik\s+arıza\s+nedeniyle/gi, 'Due to a technical fault,'],
+  [/yoğunluk\s+nedeniyle/gi, 'Due to congestion,'],
+  [/hava\s+koşulları\s+nedeniyle/gi, 'Due to weather conditions,'],
+  [/çalışmaları?\s+nedeniyle/gi, 'due to works,'],
+  [/nedeniyle/gi, 'due to'],
+  [/seferler(?:imiz)?\s+(?:geçici\s+(?:bir\s+)?süreyle\s+)?durdurulmuştur/gi, 'services are temporarily suspended'],
+  [/seferler(?:imiz)?\s+normale\s+dönmüştür/gi, 'services have returned to normal'],
+  [/hizmet\s+ver(?:il)?memektedir/gi, 'is not in service'],
+  [/istasyon(?:u|umuz)?\s+kapalıdır/gi, 'station is closed'],
+  [/geçici\s+(?:bir\s+)?süreyle/gi, 'temporarily'],
+  [/geçici\s+olarak/gi, 'temporarily'],
+  [/aktarmalı\s+olarak/gi, 'with a transfer,'],
+  [/seferler(?:imiz)?/gi, 'trains'],
+  [/istasyonları\s+arasında/gi, 'between the stations'],
+  [/arasında\s+yapılmaktadır/gi, 'operate between'],
+  [/yapılmaktadır/gi, 'are operating'],
+  [/istasyonları/gi, 'stations'], [/istasyonundan/gi, 'from the station'], [/istasyonu/gi, 'station'], [/istasyon/gi, 'station'],
+  [/aktarmalı/gi, 'with transfer'], [/arasında/gi, 'between'],
+  [/kapalıdır/gi, 'is closed'], [/kapalı/gi, 'closed'], [/açıktır/gi, 'is open'],
+  [/onarım/gi, 'repair'], [/bakım/gi, 'maintenance'], [/çalışmaları/gi, 'works'], [/çalışması/gi, 'works'], [/çalışma/gi, 'work'],
+  [/arıza/gi, 'fault'], [/normale\s+dönmüştür/gi, 'has returned to normal'], [/durdurulmuştur/gi, 'has been suspended'],
+  [/\bve\b/gi, 'and'], [/\bile\b/gi, 'with'],
+];
+function translateTR(text){
+  let s=' '+text+' ';
+  for(const [re,rep] of TR2EN_PHRASES) s=s.replace(re,rep);
+  // move the transfer clause to the end so it reads naturally in English
+  s=s.replace(/trains\s+with a transfer at (.+?),\s*operate between (.+?)[.\s]*$/i,
+              'trains operate between $2, with a transfer at $1.');
+  s=s.replace(/\s+,/g,',').replace(/,\s*,/g,',').replace(/\s{2,}/g,' ').replace(/\s+\./g,'.').trim();
+  s=s.charAt(0).toUpperCase()+s.slice(1);
+  if(s && !/[.!?]$/.test(s)) s+='.';
+  return s;
+}
+
 // map the page's status text + wording to our severity + short title
 function classify(status, desc){
   const s=(status||'').toLocaleLowerCase('tr'), d=(desc||'').toLocaleLowerCase('tr');
@@ -64,7 +109,9 @@ function parseMetro(html){
     if(stations.length>=2){ e.scope='segment'; e.from=stations[0]; e.to=stations[stations.length-1]; }
     else if(stations.length===1){ e.scope='segment'; e.from=stations[0]; e.to=stations[0]; }
     else { e.scope='line'; }
-    e.severity=severity; e.title=title; e.message=desc;
+    e.severity=severity; e.title=title;
+    e.message=translateTR(desc);   // English for the panel
+    e.messageTr=desc;              // keep the authoritative original
     const until=parseUntil(desc); if(until) e.until=until;
     out.push(e);
   }
