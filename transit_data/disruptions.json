@@ -6,17 +6,18 @@
     "severity": "major",
     "title": "Service suspended",
     "message": "B2 Halkalı–Bahçeşehir is not operating due to engineering works.",
-    "until": "2026-08-31"
+    "until": "2026-08-31",
+    "source": "manual"
   },
   {
-    "id": "m7-closures-2026",
+    "id": "m7-mecidiyek-y",
     "ref": "M7",
+    "source": "metro.istanbul",
     "scope": "segment",
-    "from": "Kağıthane",
+    "from": "Mecidiyeköy",
     "to": "Çağlayan",
     "severity": "partial",
-    "title": "Section closed",
-    "message": "Trains do not stop between Kağıthane and Çağlayan due to maintenance works.",
-    "until": "2026-07-15"
+    "title": "Section affected",
+    "message": "Onarım çalışması nedeniyle seferler Yıldız-Mecidiyeköy ve Nurtepe istasyonundan aktarmalı olarak Çağlayan-Mahmutbey istasyonları arasında yapılmaktadır."
   }
 ]

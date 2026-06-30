@@ -1,0 +1,12 @@
+[
+  {
+    "id": "b2-works-2026",
+    "ref": "B2",
+    "scope": "line",
+    "severity": "major",
+    "title": "Service suspended",
+    "message": "B2 Halkalı–Bahçeşehir is not operating due to engineering works.",
+    "until": "2026-08-31",
+    "source": "manual"
+  }
+]

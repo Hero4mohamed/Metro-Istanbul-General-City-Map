@@ -1,0 +1,43 @@
+name: Update live disruptions
+
+# Pulls live service disruptions from the official Metro İstanbul status page (and the
+# official X accounts, only if an X_BEARER_TOKEN secret is set), writes transit_data/
+# disruptions.json, and commits it. The map fetches that file at runtime, so the
+# Announcements panel + map warnings update without rebuilding the page.
+
+on:
+  schedule:
+    - cron: '*/15 * * * *'      # every 15 min (GitHub may delay scheduled runs under load)
+  workflow_dispatch: {}         # allow manual "Run workflow"
+
+permissions:
+  contents: write               # lets the job commit the updated JSON
+
+concurrency:
+  group: disruptions
+  cancel-in-progress: false
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Scrape official status (+ X if token provided)
+        env:
+          X_BEARER_TOKEN: ${{ secrets.X_BEARER_TOKEN }}   # optional; skipped when unset
+        run: node transit_data/scrape-disruptions.cjs
+      - name: Commit if changed
+        run: |
+          if ! git diff --quiet -- transit_data/disruptions.json; then
+            git config user.name  "disruptions-bot"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git add transit_data/disruptions.json
+            git commit -m "chore: live disruptions update [skip ci]"
+            git push
+            echo "Updated disruptions.json"
+          else
+            echo "No change — disruptions.json already current."
+          fi

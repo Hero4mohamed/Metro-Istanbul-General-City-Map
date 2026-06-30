@@ -405,7 +405,7 @@ const NETWORK = __NETWORK_JSON__;
 /* --- Bus directory: every İETT line {ref,from,to,id,op} (geometry fetched on demand) --- */
 const BUS_DIR = __BUS_JSON__;
 /* --- Live disruptions: faults / closures / suspensions (editable transit_data/disruptions.json) --- */
-const DISRUPTIONS = __DISRUPTIONS_JSON__;
+let DISRUPTIONS = __DISRUPTIONS_JSON__;   // baked-in fallback; overridden by the live fetch below
 /* --- Bus routing graph: per İETT line ordered stops [[lat,lng,name],...] for the trip planner --- */
 const BUS_GRAPH = __BUSGRAPH_JSON__;
 const BUS_COLOR = '#E8A33D';
@@ -1785,7 +1785,7 @@ function renderAnnouncements(){
     const col = SEV_COLOR[d.severity] || SEV_COLOR.major;
     return `<div class="ann-item" data-id="${d.id}" style="border-left-color:${col};cursor:pointer">
       <div class="ann-row1">
-        <span class="ann-line" style="background:${colorForLine(d.ref)}">${d.ref}</span>
+        <span class="ann-line" style="background:${colorForLine(d.ref)}">${d.ref||'📣'}</span>
         <span class="ann-sev" style="background:${col}">${SEV_LABEL[d.severity]||''}</span>
         <span class="ann-ttl">${d.title}</span>
       </div>
@@ -1816,6 +1816,18 @@ function init(){
   renderAnnouncements();
   renderDisruptionMarkers();
   animRaf=requestAnimationFrame(frame);
+  loadLiveDisruptions();      // refresh from the auto-updated JSON (falls back to baked-in)
+}
+// pull the latest auto-scraped disruptions (committed by the GitHub Action) at runtime, so the
+// panel/map go live without rebuilding the page. Same-origin on Pages; silently keeps the
+// baked-in copy on file:// or when offline.
+async function loadLiveDisruptions(){
+  try{
+    const r = await fetch('transit_data/disruptions.json?t='+Date.now(), { cache:'no-store' });
+    if(!r.ok) return;
+    const data = await r.json();
+    if(Array.isArray(data)){ DISRUPTIONS = data; renderAnnouncements(); renderDisruptionMarkers(); }
+  }catch(e){ /* offline / file:// → keep the baked-in DISRUPTIONS */ }
 }
 init();
 </script>
