@@ -246,6 +246,53 @@ function smoothOnWater(pts, iters){
   }
   return p;
 }
+// ---- SEGMENT-level land repair: a chord whose endpoints are both on water can still
+// cross a peninsula (Moda!). Sample along every segment; where samples hit land, insert
+// detour points pushed to open water. Vertex-only checks miss exactly this case. ----
+function segOnLand(a, b){                                     // worst on-land sample on segment a→b
+  const L=meters(a,b); if(L<70) return null;
+  const n=Math.max(2, Math.ceil(L/55));
+  let worst=null;
+  for(let s=1;s<n;s++){ const t=s/n;
+    const lat=a[0]+(b[0]-a[0])*t, lng=a[1]+(b[1]-a[1])*t;
+    const c=coastInfo(lng,lat);
+    if(c.land && c.distM>40 && (!worst || c.distM>worst.distM)) worst={lat,lng,distM:c.distM,t};
+  }
+  return worst;
+}
+function fixLandCrossings(path){
+  if(!coastSegs.length || path.length<2) return path;
+  let p=path.map(x=>x.slice());
+  for(let pass=0; pass<10; pass++){
+    let changed=false; const out=[p[0]];
+    for(let i=1;i<p.length;i++){
+      const hit=segOnLand(p[i-1], p[i]);
+      if(hit){ const w=pushToWater(hit.lng, hit.lat); out.push([w[1],w[0]]); changed=true; }
+      out.push(p[i]);
+    }
+    p=out;
+    if(!changed) break;
+  }
+  return p;
+}
+// count remaining on-land samples (build-time QA gate printed per line)
+function landSamples(path){
+  let n=0; for(let i=1;i<path.length;i++){ if(segOnLand(path[i-1],path[i])) n++; } return n;
+}
+// slice a stitched OSM path to the pier-to-pier portion — stitchAll can glue unrelated
+// relation fragments producing overshoot tails (e.g. Kadıköy–Beşiktaş running on south
+// through Moda). Keep only the stretch between the vertices nearest each terminal.
+function trimToPiers(coords, start, end){
+  let si=0, sd=Infinity, ei=0, ed=Infinity;
+  for(let i=0;i<coords.length;i++){
+    const ds=meters(coords[i],start), de=meters(coords[i],end);
+    if(ds<sd){ sd=ds; si=i; } if(de<ed){ ed=de; ei=i; }
+  }
+  if(si===ei) return coords;
+  let s=coords.slice(Math.min(si,ei), Math.max(si,ei)+1);
+  if(si>ei) s=s.reverse();
+  return s;
+}
 // snap the nearest path vertex to each pier so the line still docks exactly
 function snapPiers(out, piers){
   for(const pier of piers){
@@ -394,13 +441,37 @@ for (const r of ROUTES){
   const g = FORCE_PIERS.has(r.ref) ? null : findGeom(start, end, r.places[0], r.places[r.places.length-1]);
   const round = p => [ +p[0].toFixed(5), +p[1].toFixed(5) ];
   let path, src;
-  if (g){ path = simplify(g.coords, 0.00006).map(round); src='osm'; geomUsed++; }
+  if (g){
+    let c = trimToPiers(g.coords, start, end);      // drop stitched overshoot tails
+    c = fixLandCrossings(c);                        // repair chords that cut headlands
+    c = smoothOnWater(c, 6);                        // relax the jagged pier approaches
+    c = fixLandCrossings(simplify(c, 0.00004));     // simplify LAST re-adds chords → repair after
+    path = c.map(round); src='osm'; geomUsed++;
+  }
   else {
     const piers = stations.map(s => [s.lat, s.lng]);
     const DIR_PUSH = { 'Boğaz (Avrupa)':[0,1], 'Boğaz (Anadolu)':[0,-1] };   // toward the channel
-    path = simplify(waterRoute(piers, DIR_PUSH[r.ref]), 0.00003).map(round);  // clean line on water
+    // open-water via-waypoints: routes rounding the Moda headland must swing into the
+    // Marmara like real ferries — shore-following control points zigzag along the bay.
+    const VIA = {
+      'Bostancı–Kadıköy':[{ between:['Bostancı','Kadıköy'], pts:[[40.9540,29.0500],[40.9690,29.0090],[40.9850,29.0140]] }],
+      'Adalar (Kabataş)':[{ between:['Kadıköy','Kınalıada'], pts:[[40.9850,29.0140],[40.9660,29.0120]] }],
+      'Adalar (Bostancı)':[{ between:['Bostancı','Kınalıada'], pts:[[40.9430,29.0700]] }]
+    };
+    let route = piers.slice();
+    for(const v of (VIA[r.ref]||[])){
+      const i = r.places.indexOf(v.between[0]);
+      if(i>=0 && r.places[i+1]===v.between[1])
+        route = route.slice(0,i+1).concat(v.pts, route.slice(i+1));
+    }
+    let c = waterRoute(route, DIR_PUSH[r.ref]);
+    c = fixLandCrossings(simplify(c, 0.00003));     // segment-level repair AFTER simplify
+    snapPiers(c, piers);
+    path = c.map(round);                            // clean line on water
     src='piers';
   }
+  const landQA = landSamples(path);
+  if (landQA) console.warn('  ! '+r.ref+' still has '+landQA+' land-crossing segment(s)');
   out.push({ ref:r.ref, kind:'ferry', color:FX, paths:[path], stations,
              scope:'active', official:r.official, geom:src });
 }

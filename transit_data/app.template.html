@@ -146,6 +146,7 @@
   .altmore{font-size:9px;color:var(--dim);font-style:italic;}
   /* alternative-route option chips */
   .ropts{display:flex;gap:6px;flex-wrap:wrap;margin:2px 0 9px;}
+  .ropts-h{width:100%;font-size:9px;letter-spacing:.6px;text-transform:uppercase;color:var(--dim);margin-bottom:-1px;}
   .ropt{flex:1;min-width:84px;cursor:pointer;border:1px solid var(--stroke-2);border-radius:8px;padding:6px 8px;
         background:rgba(255,255,255,.03);transition:.15s;}
   .ropt:hover{border-color:var(--accent);}
@@ -367,6 +368,7 @@
   </div>
   <div class="bt"><span data-i18n="predArrivals">Predictive Arrivals</span> <span class="live" data-i18n="live">LIVE</span></div>
   <div id="stnBoard"></div>
+  <div id="stnSched"></div>
   <div id="stnService"></div>
 </div>
 
@@ -430,6 +432,8 @@ const I18N = {
     sevMajor:"Major", sevPartial:"Partial", sevMinor:"Minor",
     "ttl:Service suspended":"Service suspended", "ttl:Section affected":"Section affected", "ttl:Service notice":"Service notice",
     serviceHours:"Service hours", every:"every", hours24:"24 hours", interchange:"Interchange", transferWord:"transfer",
+    schedDep:"Scheduled departures", official:"OFFICIAL", schedLoading:"Loading official timetable…",
+    schedNone:"No more departures today.", firstDep:"first", lastDep:"last", alternatives:"Alternatives",
     busLines:"line", busLinesMany:"lines", showingFirst:"showing first", noGeom:"No mapped geometry for this line.",
     loadingGeom:"Loading route geometry…", routeDrawn:"route drawn", needNet:"Could not fetch route (needs internet).",
     kind_metro:"Metro", kind_tram:"Tram", kind_ferry:"Ferry", kind_funicular:"Funicular",
@@ -463,6 +467,8 @@ const I18N = {
     sevMajor:"Büyük", sevPartial:"Kısmi", sevMinor:"Hafif",
     "ttl:Service suspended":"Seferler durduruldu", "ttl:Section affected":"Etkilenen kesim", "ttl:Service notice":"Servis bildirimi",
     serviceHours:"Servis saatleri", every:"her", hours24:"24 saat", interchange:"Aktarma noktası", transferWord:"aktarma",
+    schedDep:"Planlı kalkışlar", official:"RESMÎ", schedLoading:"Resmî tarife yükleniyor…",
+    schedNone:"Bugün başka sefer yok.", firstDep:"ilk", lastDep:"son", alternatives:"Alternatifler",
     busLines:"hat", busLinesMany:"hat", showingFirst:"ilk gösterilen", noGeom:"Bu hat için harita geometrisi yok.",
     loadingGeom:"Güzergah çiziliyor…", routeDrawn:"güzergah çizildi", needNet:"Güzergah alınamadı (internet gerekli).",
     kind_metro:"Metro", kind_tram:"Tramvay", kind_ferry:"Vapur", kind_funicular:"Füniküler",
@@ -527,6 +533,9 @@ let DISRUPTIONS = __DISRUPTIONS_JSON__;   // baked-in fallback; overridden by th
 /* --- Bus routing graph: per İETT line ordered stops [[lat,lng,name],...] for the trip planner --- */
 const BUS_GRAPH = __BUSGRAPH_JSON__;
 const BUS_COLOR = '#E8A33D';
+/* --- Official Metro İstanbul station registry [[Id,LineName,lat,lng,Name],...] — resolves a
+       clicked station to its official ID for EXACT scheduled departures (api.ibb.gov.tr, CORS-open) --- */
+const MI_STATIONS = __MISTATIONS_JSON__;
 
 /* --- line kind metadata: travel speed (km/h) + render style --- */
 const KIND = {
@@ -1143,6 +1152,64 @@ function openStation(reg){
   document.getElementById('stnService').innerHTML = svc ? `<div class="bt">${t('serviceHours')}</div>${svc}` : '';
   document.getElementById('stn').classList.add('show');
   renderBoard();
+  loadSchedule(reg);        // EXACT official departures (async, api.ibb.gov.tr)
+}
+
+/* ---- EXACT scheduled departures from the official Metro İstanbul API (CORS-open).
+   Resolves the clicked station to its official ID (same line ref + nearest ≤450 m),
+   then fetches the direction list + the full departure timetable, and shows the next
+   trains after the current İstanbul time. Cached per station/direction. ---- */
+const MI_API='https://api.ibb.gov.tr/MetroIstanbul/api/MetroMobile/V2';
+const miDirCache={}, miTTCache={};
+let schedToken=0;
+function miMatch(reg, ref){
+  let best=null, bd=Infinity;
+  for(const s of MI_STATIONS){ if(s[2]!==ref) continue;
+    const d=metersBetween([reg.lat,reg.lng],[s[3],s[4]]); if(d<bd){ bd=d; best=s; } }
+  return (best && bd<=450) ? best : null;
+}
+async function miPost(u,body){
+  const r=await fetch(MI_API+u,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+  if(!r.ok) throw new Error('HTTP '+r.status); return r.json();
+}
+function nowIstanbulMin(){   // minutes since midnight in Europe/Istanbul
+  try{ const p=new Intl.DateTimeFormat('en-GB',{timeZone:'Europe/Istanbul',hour:'2-digit',minute:'2-digit',hour12:false}).format(new Date());
+       const [h,m]=p.split(':').map(Number); return h*60+m; }
+  catch(e){ const d=new Date(); return d.getHours()*60+d.getMinutes(); }
+}
+async function loadSchedule(reg){
+  const el=document.getElementById('stnSched'); if(!el) return;
+  const tok=++schedToken;
+  const refs=[...reg.lines].filter(r=>MI_STATIONS.some(s=>s[2]===r));
+  if(!refs.length){ el.innerHTML=''; return; }
+  el.innerHTML=`<div class="bt">⏱ ${t('schedDep')} <span class="live">${t('official')}</span></div><div class="none">${t('schedLoading')}</div>`;
+  const blocks=[];
+  for(const ref of refs){
+    const st=miMatch(reg,ref); if(!st) continue;
+    try{
+      const dkey='d'+st[1]+'_'+st[0];
+      if(!miDirCache[dkey]) miDirCache[dkey]=((await miPost('/GetDirectionsByLineIdAndStationId',{lineId:st[1],stationId:st[0]})).Data)||[];
+      for(const d of miDirCache[dkey]){
+        const tkey='t'+st[0]+'_'+d.DirectionId;
+        if(!miTTCache[tkey]){
+          const tt=await miPost('/GetTimeTable',{boardingStationId:st[0],directionId:d.DirectionId});
+          const row=(tt.Data&&tt.Data[0])||{}; const ti=row.TimeInfos;
+          miTTCache[tkey]=(Array.isArray(ti)?(ti[0]&&ti[0].Times):(ti&&ti.Times))||[];
+        }
+        if(tok!==schedToken) return;               // user opened another station meanwhile
+        const times=miTTCache[tkey];
+        const nowM=nowIstanbulMin();
+        const next=times.filter(x=>{const [h,m]=x.split(':').map(Number);return h*60+m>=nowM;}).slice(0,3);
+        const target=(d.DirectionName||'').split('->').pop().trim();
+        const ln=lineByRef[ref];
+        blocks.push(`<div class="svc-row"><span class="svc-cd" style="background:${ln?ln.color:'#888'}">${ref}</span>`+
+          `<span class="svc-tx">→ ${target} · <b>${next.length?next.join(' · '):t('schedNone')}</b>`+
+          (times.length?` <small>(${t('firstDep')} ${times[0]} · ${t('lastDep')} ${times[times.length-1]})</small>`:'')+`</span></div>`);
+      }
+    }catch(e){ /* API hiccup → just skip this line's block */ }
+  }
+  if(tok!==schedToken) return;
+  el.innerHTML = blocks.length ? `<div class="bt">⏱ ${t('schedDep')} <span class="live">${t('official')}</span></div>`+blocks.join('') : '';
 }
 function renderBoard(){
   if(!selected) return;
@@ -1499,7 +1566,7 @@ let currentOpts=[], currentOptIdx=0;
 // build up to N distinct itineraries by penalising lines used in earlier options
 function routeOptions(o,d,maxOpts){
   const opts=[], sigs=new Set(), penalty=new Set();
-  for(let k=0; k<maxOpts+2 && opts.length<maxOpts; k++){
+  for(let k=0; k<maxOpts+4 && opts.length<maxOpts; k++){
     const res=routeXY(o,d, penalty.size?penalty:null);
     if(!res) break;
     const it=buildItinerary(res);
@@ -1509,13 +1576,16 @@ function routeOptions(o,d,maxOpts){
     if(!rides.length) break;
     rides.forEach(s=> penalty.add(s.ref));         // steer the next search onto other lines
   }
+  // drop unreasonable detours (>2.2× the fastest) so alternatives stay useful
+  if(opts.length>1){ const best=opts[0].it.total;
+    return opts.filter((o,i)=> i===0 || o.it.total<=best*2.2); }
   return opts;
 }
 const optLines = it => it.steps.filter(s=>s.type==='ride').map(s=> s.bus?('🚌'+s.ref):s.ref).join(' › ') || 'Walk';
 function renderOptChips(){
   const el=document.getElementById('rOpts');
   if(currentOpts.length<2){ el.innerHTML=''; return; }
-  el.innerHTML=currentOpts.map((o,i)=>`<div class="ropt${i===currentOptIdx?' sel':''}" data-i="${i}">
+  el.innerHTML=`<div class="ropts-h">${t('alternatives')}</div>`+currentOpts.map((o,i)=>`<div class="ropt${i===currentOptIdx?' sel':''}" data-i="${i}">
       <div class="ro-t">${i===0?t('fastest'):t('option')+' '+(i+1)}</div>
       <div class="ro-m">${Math.round(o.it.total)}<small> ${t('minUnit')}</small></div>
       <div class="ro-s">${optLines(o.it)}</div></div>`).join('');
@@ -1599,7 +1669,7 @@ function runRoute(){
   if(!o || !d){ out.classList.add('show');
     document.getElementById('rEta').textContent='–'; document.getElementById('rStops').textContent='–'; document.getElementById('rTr').textContent='–';
     stepsEl.innerHTML=`<div class="none">${t('pickOD')}</div>`; updateFavBtn(); return; }
-  currentOpts = routeOptions(o,d,3);
+  currentOpts = routeOptions(o,d,4);
   if(!currentOpts.length){ out.classList.add('show'); document.getElementById('rEta').textContent='—';
     document.getElementById('rStops').textContent='—'; document.getElementById('rTr').textContent='—';
     stepsEl.innerHTML=`<div class="none">${t('noRoute')}</div>`; updateFavBtn(); return; }
