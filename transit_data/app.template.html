@@ -147,6 +147,17 @@
   /* alternative-route option chips */
   .ropts{display:flex;gap:6px;flex-wrap:wrap;margin:2px 0 9px;}
   .ropts-h{width:100%;font-size:9px;letter-spacing:.6px;text-transform:uppercase;color:var(--dim);margin-bottom:-1px;}
+  /* Adventure planner */
+  .ptabs{margin-bottom:10px;}
+  .ptabs button[data-pt="adv"].active{background:rgba(255,201,77,.16);border-color:var(--gold);color:var(--gold);}
+  .adv-row{position:relative;}
+  .adv-x{position:absolute;right:-2px;top:-1px;width:16px;height:16px;border:none;border-radius:50%;cursor:pointer;
+         background:rgba(229,72,77,.18);color:#ff8a8e;font-size:9px;line-height:16px;padding:0;}
+  .adv-x:hover{background:rgba(229,72,77,.4);color:#fff;}
+  .leg-h{display:flex;align-items:center;gap:7px;font-size:11px;font-weight:700;margin:10px 0 4px;color:var(--text);}
+  .leg-h.fail{color:#ff8a8e;}
+  .leg-n{flex:0 0 auto;width:17px;height:17px;border-radius:50%;background:var(--gold);color:#06121b;
+         font:800 10px/17px var(--font);text-align:center;}
   .ropt{flex:1;min-width:84px;cursor:pointer;border:1px solid var(--stroke-2);border-radius:8px;padding:6px 8px;
         background:rgba(255,255,255,.03);transition:.15s;}
   .ropt:hover{border-color:var(--accent);}
@@ -325,6 +336,11 @@
 
   <div class="card glass" id="cardPlanner">
     <div class="sec" data-i18n="tripPlanner">Trip Planner</div>
+    <div class="seg ptabs" id="plannerTabs">
+      <button data-pt="trip" class="active" data-i18n="tripTab">Trip</button>
+      <button data-pt="adv" data-i18n="advTab">✦ Adventure</button>
+    </div>
+    <div id="plannerTrip">
     <div class="field"><label data-i18n="from">From</label>
       <div class="ac"><input id="selO" class="ac-input" type="text" data-i18n-ph="searchStop" placeholder="Search any stop or place…" autocomplete="off">
         <button class="ac-pin" data-for="O" data-i18n-title="pickPoint" title="Pick point on map">📍</button>
@@ -353,6 +369,21 @@
     <div class="plan-sec" id="histSec">
       <div class="plan-h"><span data-i18n="recentPlans">Recent plans</span> <button class="mini" id="histClear" data-i18n="clearAll">clear all</button></div>
       <div class="plan-list" id="histList"></div>
+    </div>
+    </div><!-- /plannerTrip -->
+    <div id="plannerAdv" style="display:none">
+      <div id="advStopsBox"></div>
+      <button class="btn ghost" id="advAdd" data-i18n="addStop">+ Add stop</button>
+      <button class="btn" id="advPlan" data-i18n="planAdv">✦ Plan Adventure</button>
+      <button class="btn ghost" id="advClear" data-i18n="clear">Clear</button>
+      <div class="route-out" id="advOut">
+        <div class="rsum">
+          <div class="c"><b id="aEta">–</b><span data-i18n="min">Min</span></div>
+          <div class="c"><b id="aStops">–</b><span data-i18n="stops">Stops</span></div>
+          <div class="c"><b id="aTr">–</b><span data-i18n="transfers">Transfers</span></div>
+        </div>
+        <div id="aSteps"></div>
+      </div>
     </div>
   </div>
 </div>
@@ -434,6 +465,8 @@ const I18N = {
     serviceHours:"Service hours", every:"every", hours24:"24 hours", interchange:"Interchange", transferWord:"transfer",
     schedDep:"Scheduled departures", official:"OFFICIAL", schedLoading:"Loading official timetable…",
     schedNone:"No more departures today.", firstDep:"first", lastDep:"last", alternatives:"Alternatives",
+    tripTab:"Trip", advTab:"✦ Adventure", stopN:"Stop", addStop:"+ Add stop", planAdv:"✦ Plan Adventure",
+    leg:"Leg", advEmpty:"Set every stop — search a place or tap 📍 to drop a point on the map.",
     busLines:"line", busLinesMany:"lines", showingFirst:"showing first", noGeom:"No mapped geometry for this line.",
     loadingGeom:"Loading route geometry…", routeDrawn:"route drawn", needNet:"Could not fetch route (needs internet).",
     kind_metro:"Metro", kind_tram:"Tram", kind_ferry:"Ferry", kind_funicular:"Funicular",
@@ -469,6 +502,8 @@ const I18N = {
     serviceHours:"Servis saatleri", every:"her", hours24:"24 saat", interchange:"Aktarma noktası", transferWord:"aktarma",
     schedDep:"Planlı kalkışlar", official:"RESMÎ", schedLoading:"Resmî tarife yükleniyor…",
     schedNone:"Bugün başka sefer yok.", firstDep:"ilk", lastDep:"son", alternatives:"Alternatifler",
+    tripTab:"Yolculuk", advTab:"✦ Macera", stopN:"Durak", addStop:"+ Durak ekle", planAdv:"✦ Macerayı Planla",
+    leg:"Etap", advEmpty:"Tüm durakları belirleyin — bir yer arayın ya da haritaya 📍 bırakın.",
     busLines:"hat", busLinesMany:"hat", showingFirst:"ilk gösterilen", noGeom:"Bu hat için harita geometrisi yok.",
     loadingGeom:"Güzergah çiziliyor…", routeDrawn:"güzergah çizildi", needNet:"Güzergah alınamadı (internet gerekli).",
     kind_metro:"Metro", kind_tram:"Tramvay", kind_ferry:"Vapur", kind_funicular:"Füniküler",
@@ -497,6 +532,7 @@ function setLang(l){
   try{ renderPlanLists(); updateFavBtn(); }catch(e){}
   try{ if(currentTab==='bus' && document.getElementById('busSearch')) renderBusList(document.getElementById('busSearch').value); }catch(e){}
   try{ if(currentOpts && currentOpts.length){ renderOptChips(); selectOption(currentOptIdx); } }catch(e){}
+  try{ rebuildAdvRows(); }catch(e){}
   try{ if(selected) openStation(selected); }catch(e){}
 }
 // localized line-category label (legend groups + planner steps); falls back to KIND.label
@@ -1350,6 +1386,7 @@ function renderEndpoints(){
   if(destPt)   L.marker([destPt.lat,destPt.lng],  {icon:epIcon('D'),zIndexOffset:1500,interactive:false}).addTo(endpointLayer);
 }
 function setPoint(which, pt){
+  if(which && which[0]==='A'){ const i=+which.slice(1); if(!isNaN(i)){ setAdvStop(i, pt); return; } }  // adventure row pick
   if(which==='O') originPt=pt; else destPt=pt;
   document.getElementById(which==='O'?'selO':'selD').value = pt ? pt.name : '';
   renderEndpoints(); updateFavBtn();
@@ -1598,15 +1635,9 @@ function selectOption(idx){
   showItinerary(currentOpts[idx].res, currentOpts[idx].it);
 }
 // draw + list a single itinerary (shared by the option chips)
-function showItinerary(res, it){
-  const o=res.origin, d=res.dest, stepsEl=document.getElementById('rSteps');
-  routeLayer.clearLayers();
-  const token=++routeToken;     // invalidate any geometry fetches still in flight
-  document.getElementById('rEta').textContent=Math.round(it.total);
-  document.getElementById('rStops').textContent=it.stops;
-  document.getElementById('rTr').textContent=it.transfers;
-  // draw straight placeholders now; collect upgradeable legs to fetch real geometry for
-  const allPts=[], legs=[];
+// draw one itinerary's placeholders into routeLayer; collects geometry-upgrade legs + extent
+function drawItin(res, it, allPts, legs){
+  const o=res.origin, d=res.dest;
   const pm=res.path.map(k=>nodeMeta[k]);
   const firstStop=[pm[0].lat,pm[0].lng], lastStop=[pm[pm.length-1].lat,pm[pm.length-1].lng];
   if(res.oWalk>0.5){ const a=[o.lat,o.lng]; legs.push({kind:'walk',a,b:firstStop,estWalkMin:res.oWalk,placeholders:[drawWalkLeg(a,firstStop)]}); allPts.push(a,firstStop); }
@@ -1629,8 +1660,27 @@ function showItinerary(res, it){
     }
     pts.forEach(p=>allPts.push(p));
   });
+}
+function showItinerary(res, it){
+  const stepsEl=document.getElementById('rSteps');
+  routeLayer.clearLayers();
+  const token=++routeToken;     // invalidate any geometry fetches still in flight
+  document.getElementById('rEta').textContent=Math.round(it.total);
+  document.getElementById('rStops').textContent=it.stops;
+  document.getElementById('rTr').textContent=it.transfers;
+  const allPts=[], legs=[];
+  drawItin(res, it, allPts, legs);
   if(allPts.length) map.fitBounds(L.latLngBounds(allPts).pad(0.25));
-  stepsEl.innerHTML = it.steps.map(s=>{
+  stepsEl.innerHTML = stepsHTML(it);
+  if(legs.length){
+    const note=document.createElement('div'); note.className='none'; note.id='refineNote';
+    note.textContent='⏳ Loading real road & footpath geometry…';
+    stepsEl.insertBefore(note, stepsEl.firstChild);
+    upgradeRoute(legs, token, it.total);
+  }
+}
+function stepsHTML(it){
+  return it.steps.map(s=>{
     if(s.type==="walk"){
       return `<div class="step"><div class="rail"><span class="nd" style="border-color:#9fb0c0"></span><span class="pipe" style="background:#9fb0c0"></span></div>
         <div class="tx"><div class="nm">🚶 ${t('walk')} ~${Math.max(1,Math.round(s.mins))} ${t('minUnit')}</div>
@@ -1653,12 +1703,119 @@ function showItinerary(res, it){
         <div class="mt">${t('walkToShort')} <span class="badge" style="background:${c}">${s.bus?'🚌 '+s.ref:s.ref}</span> · +${TRANSFER_MIN} ${t('minUnit')}</div></div></div>`;
     }
   }).join("");
-  if(legs.length){
+}
+/* ---- Adventure Planner: chain multiple stops into one journey ---- */
+let plannerMode='trip';
+let advStops=[null,null];           // resolved {name,lat,lng} per row (null = not chosen yet)
+function advLabel(i){ return i===0 ? t('from') : (i===advStops.length-1 ? t('to') : t('stopN')+' '+i); }
+function setAdvStop(i, pt){
+  advStops[i]=pt;
+  const inp=document.getElementById('advI'+i); if(inp) inp.value=pt?pt.name:'';
+  drawAdvMarkers();
+}
+function acRenderAdv(i, q){
+  const listEl=document.getElementById('advL'+i); if(!listEl) return;
+  const f=fold(q);
+  if(!f){ listEl.classList.remove('show'); listEl.innerHTML=''; return; }
+  const pre=[], sub=[];
+  for(const pl of PLACES){ if(pl._f.startsWith(f)) pre.push(pl); else if(pl._f.includes(f)) sub.push(pl); }
+  const out=pre.concat(sub).slice(0,30);
+  if(!out.length){ listEl.innerHTML=`<div class="ac-item" style="color:var(--dim)">${t('noLines')}</div>`; listEl.classList.add('show'); return; }
+  listEl.innerHTML=out.map((pl,ix)=>{
+    const col = pl.bus ? BUS_COLOR : colorForLine(pl.ref);
+    const kl  = pl.bus ? t('busLabel') : (lineByRef[pl.ref] ? kindLabel(lineByRef[pl.ref].kind) : 'Rail');
+    return `<div class="ac-item" data-ix="${ix}"><span class="ac-dot" style="background:${col}"></span>${pl.name}<small>${kl}</small></div>`;
+  }).join('');
+  listEl.classList.add('show');
+  listEl.querySelectorAll('.ac-item[data-ix]').forEach(el=>el.addEventListener('mousedown', ev=>{
+    ev.preventDefault(); const pl=out[+el.dataset.ix];
+    setAdvStop(i, { name:pl.name, lat:pl.lat, lng:pl.lng }); listEl.classList.remove('show');
+  }));
+}
+function makeAdvRow(i){
+  const row=document.createElement('div'); row.className='field adv-row';
+  row.innerHTML=`<label>${advLabel(i)}</label>
+    <div class="ac"><input id="advI${i}" class="ac-input" type="text" placeholder="${t('searchStop')}" autocomplete="off" value="${advStops[i]?attrEsc(advStops[i].name):''}">
+      <button class="ac-pin" data-for="A${i}" title="${t('pickPoint')}">📍</button>
+      <div class="ac-list" id="advL${i}"></div></div>
+    ${advStops.length>2 && i>0 && i<advStops.length-1 ? `<button class="adv-x" data-i="${i}" title="✕">✕</button>`:''}`;
+  const inp=row.querySelector('input');
+  inp.addEventListener('input', ()=>{ advStops[i]=null; acRenderAdv(i, inp.value); });
+  inp.addEventListener('focus', ()=>{ if(inp.value.trim()) acRenderAdv(i, inp.value); });
+  inp.addEventListener('blur',  ()=> setTimeout(()=>{ const l=document.getElementById('advL'+i); if(l) l.classList.remove('show'); },150));
+  inp.addEventListener('keydown', e=>{ if(e.key==='Enter'){ const l=document.getElementById('advL'+i); if(l) l.classList.remove('show'); } });
+  row.querySelector('.ac-pin').addEventListener('click', ()=>armPick('A'+i));
+  const x=row.querySelector('.adv-x');
+  if(x) x.addEventListener('click', ()=>{ advStops.splice(i,1); rebuildAdvRows(); drawAdvMarkers(); });
+  return row;
+}
+function rebuildAdvRows(){
+  const box=document.getElementById('advStopsBox'); if(!box) return;
+  box.innerHTML='';
+  advStops.forEach((_,i)=> box.appendChild(makeAdvRow(i)));
+}
+function advIcon(i, n){
+  const c = i===0 ? '#3ee387' : (i===n-1 ? '#ff5d6c' : '#FFC94D');
+  return L.divIcon({ className:'ep-icon',
+    html:`<div style="width:20px;height:20px;border-radius:50%;background:${c};border:2px solid #06121b;color:#06121b;font:800 11px/17px var(--font);text-align:center;box-shadow:0 3px 7px rgba(0,0,0,.6)">${i+1}</div>`,
+    iconSize:[20,20], iconAnchor:[10,10] });
+}
+function drawAdvMarkers(){
+  if(plannerMode!=='adv') return;
+  endpointLayer.clearLayers();
+  advStops.forEach((p,i)=>{ if(p) L.marker([p.lat,p.lng],{icon:advIcon(i,advStops.length),zIndexOffset:1500,interactive:false}).addTo(endpointLayer); });
+}
+function resolveAdv(i){
+  if(advStops[i]) return advStops[i];
+  const inp=document.getElementById('advI'+i); const val=inp?inp.value.trim():'';
+  if(!val) return null;
+  const f=fold(val);
+  const m = PLACES.find(p=>p._f===f) || PLACES.find(p=>p._f.startsWith(f)) || PLACES.find(p=>p._f.includes(f));
+  if(m){ const pt={name:m.name,lat:m.lat,lng:m.lng}; advStops[i]=pt; if(inp) inp.value=m.name; return pt; }
+  return null;
+}
+function planAdventure(){
+  const out=document.getElementById('advOut'), stepsEl=document.getElementById('aSteps');
+  routeLayer.clearLayers();
+  const token=++routeToken;
+  const pts=advStops.map((_,i)=>resolveAdv(i));
+  drawAdvMarkers();
+  out.classList.add('show');
+  if(pts.some(p=>!p)){
+    document.getElementById('aEta').textContent='–'; document.getElementById('aStops').textContent='–'; document.getElementById('aTr').textContent='–';
+    stepsEl.innerHTML=`<div class="none">${t('advEmpty')}</div>`; return;
+  }
+  let totMin=0, totStops=0, totTr=0, failed=false;
+  const allPts=[], legsUp=[], parts=[];
+  for(let i=0;i<pts.length-1;i++){
+    const res=routeXY(pts[i], pts[i+1]);
+    if(!res){ parts.push(`<div class="leg-h fail">${t('leg')} ${i+1} · ${pts[i].name} → ${pts[i+1].name} · ${t('noRoute')}</div>`); failed=true; continue; }
+    const it=buildItinerary(res);
+    totMin+=it.total; totStops+=it.stops; totTr+=it.transfers;
+    drawItin(res, it, allPts, legsUp);
+    parts.push(`<div class="leg-h"><span class="leg-n">${i+1}</span>${pts[i].name} → ${pts[i+1].name} · <b>${Math.round(it.total)} ${t('minUnit')}</b></div>`+stepsHTML(it));
+  }
+  document.getElementById('aEta').textContent = failed ? '—' : Math.round(totMin);
+  document.getElementById('aStops').textContent = totStops;
+  document.getElementById('aTr').textContent = totTr;
+  stepsEl.innerHTML = parts.join('');
+  if(allPts.length) map.fitBounds(L.latLngBounds(allPts).pad(0.2));
+  if(legsUp.length){
     const note=document.createElement('div'); note.className='none'; note.id='refineNote';
     note.textContent='⏳ Loading real road & footpath geometry…';
     stepsEl.insertBefore(note, stepsEl.firstChild);
-    upgradeRoute(legs, token, it.total);
+    upgradeRoute(legsUp, token, 0);
   }
+}
+function setPlannerTab(m){
+  plannerMode=m;
+  document.querySelectorAll('#plannerTabs button').forEach(b=>b.classList.toggle('active', b.dataset.pt===m));
+  document.getElementById('plannerTrip').style.display = m==='trip' ? '' : 'none';
+  document.getElementById('plannerAdv').style.display  = m==='adv'  ? '' : 'none';
+  routeLayer.clearLayers(); endpointLayer.clearLayers();
+  if(pickMode) armPick(pickMode);        // disarm any pending pick
+  ++routeToken;
+  if(m==='trip') renderEndpoints(); else { rebuildAdvRows(); drawAdvMarkers(); }
 }
 function runRoute(){
   const o=resolveTyped('O'), d=resolveTyped('D');
@@ -1823,6 +1980,18 @@ document.getElementById('allOn').addEventListener('click', ()=>tabLines().forEac
 document.getElementById('allOff').addEventListener('click', ()=>tabLines().forEach(l=>setLine(l.ref,false)));
 document.getElementById('tabs').addEventListener('click', e=>{ const t=e.target.dataset.tab; if(t) setTab(t); });
 document.getElementById('langSeg').addEventListener('click', e=>{ const l=e.target.dataset.lang; if(l) setLang(l); });
+document.getElementById('plannerTabs').addEventListener('click', e=>{ const m=e.target.dataset.pt; if(m) setPlannerTab(m); });
+document.getElementById('advAdd').addEventListener('click', ()=>{
+  if(advStops.length>=8) return;                       // sane cap
+  advStops.splice(advStops.length-1, 0, null);         // insert before the destination
+  rebuildAdvRows();
+});
+document.getElementById('advPlan').addEventListener('click', planAdventure);
+document.getElementById('advClear').addEventListener('click', ()=>{
+  advStops=[null,null]; rebuildAdvRows();
+  routeLayer.clearLayers(); endpointLayer.clearLayers(); ++routeToken;
+  document.getElementById('advOut').classList.remove('show');
+});
 document.getElementById('busSearch').addEventListener('input', e=> renderBusList(e.target.value));
 document.getElementById('route').addEventListener('click', runRoute);
 document.getElementById('clear').addEventListener('click', ()=>{
@@ -1996,6 +2165,7 @@ function init(){
   document.querySelectorAll('#langSeg button').forEach(b=> b.classList.toggle('active', b.dataset.lang===lang));
   applyI18n();
   populateSelects();
+  rebuildAdvRows();           // adventure planner stop rows
   sizeCanvas();
   spawnTrains();
   document.getElementById('sLines').textContent = liveLines.filter(l=>!l.partOf).length;
