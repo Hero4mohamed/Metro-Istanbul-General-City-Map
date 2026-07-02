@@ -61,6 +61,24 @@
   .tabs button[data-tab="active"].active{background:rgba(54,208,122,.16);border-color:var(--accent);color:var(--accent);box-shadow:0 0 18px -6px var(--accent);}
   .tabs button[data-tab="vision"].active{background:rgba(181,23,158,.18);border-color:#B5179E;color:#e887db;box-shadow:0 0 18px -6px #B5179E;}
   .tabs button[data-tab="bus"].active{background:rgba(232,163,61,.18);border-color:#E8A33D;color:#f0bd6f;box-shadow:0 0 18px -6px #E8A33D;}
+  .tabs button[data-tab="weather"].active{background:rgba(74,184,232,.18);border-color:#4AB8E8;color:#8fd4f2;box-shadow:0 0 18px -6px #4AB8E8;}
+  /* weather card */
+  .wx-clockbox{text-align:center;padding:8px 0 10px;border-bottom:1px solid var(--stroke-2);margin-bottom:10px;}
+  .wx-clock{font-family:var(--mono);font-size:26px;font-weight:800;letter-spacing:2px;color:#8fd4f2;text-shadow:0 0 16px rgba(74,184,232,.45);}
+  .wx-date{font-size:11px;color:var(--text);margin-top:3px;font-weight:600;}
+  .wx-tz{font-size:9px;color:var(--dim);letter-spacing:.6px;text-transform:uppercase;margin-top:2px;}
+  .wx-list{max-height:46vh;overflow-y:auto;margin-top:6px;}
+  .wx-row{display:flex;align-items:center;gap:8px;padding:6px 7px;border-radius:8px;cursor:pointer;transition:.12s;}
+  .wx-row:hover{background:rgba(255,255,255,.06);}
+  .wx-emo{flex:0 0 22px;font-size:16px;text-align:center;}
+  .wx-nm{flex:1;font-size:11.5px;font-weight:700;line-height:1.25;}
+  .wx-nm small{display:block;font-weight:500;color:var(--muted);font-size:9.5px;}
+  .wx-t{flex:0 0 auto;font-family:var(--mono);font-size:15px;font-weight:800;color:#8fd4f2;}
+  .wx-sub{flex:0 0 auto;font-size:8.5px;color:var(--dim);text-align:right;line-height:1.5;}
+  .wx-icon{background:none;border:none;}
+  .wx-badge{background:rgba(8,14,22,.82);border:1px solid rgba(74,184,232,.5);border-radius:10px;
+            color:#cfeeff;font:700 10px/1 var(--font);padding:3px 7px;white-space:nowrap;text-align:center;
+            box-shadow:0 2px 8px rgba(0,0,0,.5);}
   .bus-search{width:100%;padding:9px 10px;border-radius:9px;background:rgba(8,11,18,.85);color:var(--text);border:1px solid var(--stroke-2);font-family:var(--font);font-size:12px;outline:none;margin-bottom:7px;}
   .bus-search:focus{border-color:#E8A33D;}
   .bus-count{font-size:9.5px;color:var(--dim);margin-bottom:6px;letter-spacing:.4px;}
@@ -295,6 +313,7 @@
       <button data-tab="active" class="active" data-i18n="tabActive">● Active</button>
       <button data-tab="vision" data-i18n="tabVision">◇ Vision</button>
       <button data-tab="bus" data-i18n="tabBus">▤ Buses</button>
+      <button data-tab="weather" data-i18n="tabWeather">☀ Weather</button>
     </div>
   </div>
   <div class="card glass">
@@ -325,6 +344,21 @@
       <button class="btn ghost" id="allOn" style="margin:0" data-i18n="all">All</button>
       <button class="btn ghost" id="allOff" style="margin:0" data-i18n="none">None</button>
     </div>
+  </div>
+
+  <div class="card glass" id="cardWeather" style="display:none;">
+    <div class="sec" data-i18n="wxTitle">İstanbul · District Weather</div>
+    <div class="wx-clockbox">
+      <div class="wx-clock" id="wxClock">--:--:--</div>
+      <div class="wx-date" id="wxDate"></div>
+      <div class="wx-tz" data-i18n="istTime">İstanbul time (GMT+3)</div>
+    </div>
+    <div style="display:flex;gap:6px;align-items:center;margin-bottom:8px">
+      <input id="wxSearch" class="bus-search" style="margin:0;flex:1" data-i18n-ph="wxSearchPh" placeholder="Search district…" autocomplete="off" />
+      <button class="btn ghost" id="wxRefresh" style="margin:0;flex:0 0 auto" title="↻">↻</button>
+    </div>
+    <div class="bus-count" id="wxUpd"></div>
+    <div class="wx-list" id="wxList"></div>
   </div>
 
   <div class="card glass" id="cardBus" style="display:none;">
@@ -467,6 +501,11 @@ const I18N = {
     schedNone:"No more departures today.", firstDep:"first", lastDep:"last", alternatives:"Alternatives",
     tripTab:"Trip", advTab:"✦ Adventure", stopN:"Stop", addStop:"+ Add stop", planAdv:"✦ Plan Adventure",
     leg:"Leg", advEmpty:"Set every stop — search a place or tap 📍 to drop a point on the map.",
+    tabWeather:"☀ Weather", wxTitle:"İstanbul · District Weather", istTime:"İstanbul time (GMT+3)",
+    wxSearchPh:"Search district…", wxLoading:"Loading weather…", wxFail:"Could not load weather (needs internet).",
+    wxUpdated:"updated",
+    wx0:"Clear", wx1:"Mainly clear", wx2:"Partly cloudy", wx3:"Overcast", wx45:"Fog",
+    wx51:"Drizzle", wx61:"Rain", wx71:"Snow", wx80:"Showers", wx95:"Thunderstorm",
     busLines:"line", busLinesMany:"lines", showingFirst:"showing first", noGeom:"No mapped geometry for this line.",
     loadingGeom:"Loading route geometry…", routeDrawn:"route drawn", needNet:"Could not fetch route (needs internet).",
     kind_metro:"Metro", kind_tram:"Tram", kind_ferry:"Ferry", kind_funicular:"Funicular",
@@ -504,6 +543,11 @@ const I18N = {
     schedNone:"Bugün başka sefer yok.", firstDep:"ilk", lastDep:"son", alternatives:"Alternatifler",
     tripTab:"Yolculuk", advTab:"✦ Macera", stopN:"Durak", addStop:"+ Durak ekle", planAdv:"✦ Macerayı Planla",
     leg:"Etap", advEmpty:"Tüm durakları belirleyin — bir yer arayın ya da haritaya 📍 bırakın.",
+    tabWeather:"☀ Hava", wxTitle:"İstanbul · İlçe Hava Durumu", istTime:"İstanbul saati (GMT+3)",
+    wxSearchPh:"İlçe ara…", wxLoading:"Hava durumu yükleniyor…", wxFail:"Hava durumu alınamadı (internet gerekli).",
+    wxUpdated:"güncellendi",
+    wx0:"Açık", wx1:"Az bulutlu", wx2:"Parçalı bulutlu", wx3:"Kapalı", wx45:"Sisli",
+    wx51:"Çisenti", wx61:"Yağmurlu", wx71:"Kar yağışlı", wx80:"Sağanak", wx95:"Gök gürültülü fırtına",
     busLines:"hat", busLinesMany:"hat", showingFirst:"ilk gösterilen", noGeom:"Bu hat için harita geometrisi yok.",
     loadingGeom:"Güzergah çiziliyor…", routeDrawn:"güzergah çizildi", needNet:"Güzergah alınamadı (internet gerekli).",
     kind_metro:"Metro", kind_tram:"Tramvay", kind_ferry:"Vapur", kind_funicular:"Füniküler",
@@ -533,6 +577,7 @@ function setLang(l){
   try{ if(currentTab==='bus' && document.getElementById('busSearch')) renderBusList(document.getElementById('busSearch').value); }catch(e){}
   try{ if(currentOpts && currentOpts.length){ renderOptChips(); selectOption(currentOptIdx); } }catch(e){}
   try{ rebuildAdvRows(); }catch(e){}
+  try{ if(wxData) renderWeather(); }catch(e){}
   try{ if(selected) openStation(selected); }catch(e){}
 }
 // localized line-category label (legend groups + planner steps); falls back to KIND.label
@@ -1852,10 +1897,12 @@ function setTab(t){
   closeAllPanels();
   NETWORK.forEach(l => map.removeLayer(lineLayers[l.ref].group));
   map.removeLayer(ghostGroup); map.removeLayer(stationGroup); map.removeLayer(plannedStationGroup);
-  busLayer.clearLayers();
-  document.getElementById('cardLines').style.display   = (t==='bus') ? 'none' : '';
-  document.getElementById('cardPlanner').style.display = (t==='bus') ? 'none' : '';
+  busLayer.clearLayers(); map.removeLayer(weatherLayer);
+  const hideCore = (t==='bus' || t==='weather');
+  document.getElementById('cardLines').style.display   = hideCore ? 'none' : '';
+  document.getElementById('cardPlanner').style.display = hideCore ? 'none' : '';
   document.getElementById('cardBus').style.display     = (t==='bus') ? '' : 'none';
+  document.getElementById('cardWeather').style.display = (t==='weather') ? '' : 'none';
   if(t==='active'){
     liveLines.forEach(l => { if(lineLayers[l.ref].on) lineLayers[l.ref].group.addTo(map); });
     if(showStations) stationGroup.addTo(map);
@@ -1865,11 +1912,105 @@ function setTab(t){
     visionLines.forEach(l => { if(lineLayers[l.ref].on) lineLayers[l.ref].group.addTo(map); });
     if(showStations) plannedStationGroup.addTo(map);
     buildLegend();
+  } else if(t==='weather'){
+    ghostGroup.addTo(map);                                   // faint network for orientation
+    weatherLayer.addTo(map);
+    ensureWeather();                                         // fetch (or refresh stale) data
   } else { // bus directory
     ghostGroup.addTo(map);                                   // rail/ferry context behind buses
     if(!busListBuilt){ renderBusList(''); busListBuilt = true; }
   }
 }
+
+/* ---- Weather & time per belediye (39 ilçe) — Open-Meteo, keyless + CORS-open ---- */
+const DISTRICTS = [
+  ['Adalar',40.8760,29.0891],['Arnavutköy',41.1840,28.7400],['Ataşehir',40.9923,29.1274],
+  ['Avcılar',40.9800,28.7170],['Bağcılar',41.0340,28.8560],['Bahçelievler',41.0020,28.8600],
+  ['Bakırköy',40.9820,28.8720],['Başakşehir',41.0930,28.8020],['Bayrampaşa',41.0460,28.9020],
+  ['Beşiktaş',41.0430,29.0090],['Beykoz',41.1340,29.0920],['Beylikdüzü',41.0010,28.6420],
+  ['Beyoğlu',41.0370,28.9770],['Büyükçekmece',41.0200,28.5850],['Çatalca',41.1430,28.4610],
+  ['Çekmeköy',41.0360,29.1770],['Esenler',41.0430,28.8760],['Esenyurt',41.0340,28.6800],
+  ['Eyüpsultan',41.0480,28.9340],['Fatih',41.0190,28.9400],['Gaziosmanpaşa',41.0580,28.9120],
+  ['Güngören',41.0190,28.8820],['Kadıköy',40.9900,29.0300],['Kağıthane',41.0860,28.9710],
+  ['Kartal',40.9060,29.1900],['Küçükçekmece',40.9990,28.7760],['Maltepe',40.9350,29.1300],
+  ['Pendik',40.8780,29.2510],['Sancaktepe',41.0020,29.2310],['Sarıyer',41.1670,29.0570],
+  ['Silivri',41.0730,28.2460],['Sultanbeyli',40.9600,29.2710],['Sultangazi',41.1060,28.8680],
+  ['Şile',41.1760,29.6130],['Şişli',41.0600,28.9870],['Tuzla',40.8160,29.3000],
+  ['Ümraniye',41.0250,29.0960],['Üsküdar',41.0230,29.0150],['Zeytinburnu',40.9940,28.9050]
+];
+const weatherLayer = L.layerGroup();
+let wxData=null, wxFetchedAt=0, wxLoading=false;
+// WMO weather code → emoji + i18n label key
+function wmo(code){
+  if(code===0) return ['☀️','wx0']; if(code===1) return ['🌤️','wx1']; if(code===2) return ['⛅','wx2'];
+  if(code===3) return ['☁️','wx3']; if(code===45||code===48) return ['🌫️','wx45'];
+  if(code>=51&&code<=57) return ['🌦️','wx51']; if(code>=61&&code<=67) return ['🌧️','wx61'];
+  if(code>=71&&code<=77) return ['🌨️','wx71']; if(code>=80&&code<=82) return ['🌧️','wx80'];
+  if(code===85||code===86) return ['🌨️','wx71']; if(code>=95) return ['⛈️','wx95'];
+  return ['🌡️','wx1'];
+}
+function ensureWeather(){
+  if(wxData && Date.now()-wxFetchedAt < 10*60*1000){ renderWeather(); return; }
+  fetchWeather();
+}
+async function fetchWeather(){
+  if(wxLoading) return; wxLoading=true;
+  const list=document.getElementById('wxList');
+  if(!wxData) list.innerHTML=`<div class="none">${t('wxLoading')}</div>`;
+  try{
+    const lats=DISTRICTS.map(d=>d[1]).join(','), lngs=DISTRICTS.map(d=>d[2]).join(',');
+    const u=`https://api.open-meteo.com/v1/forecast?latitude=${lats}&longitude=${lngs}`+
+            `&current=temperature_2m,relative_humidity_2m,weather_code,wind_speed_10m&timezone=Europe%2FIstanbul`;
+    const r=await fetch(u); if(!r.ok) throw new Error('HTTP '+r.status);
+    const j=await r.json();
+    wxData=(Array.isArray(j)?j:[j]).map(x=>x.current);
+    wxFetchedAt=Date.now();
+    renderWeather();
+  }catch(e){ if(!wxData) list.innerHTML=`<div class="none">${t('wxFail')}</div>`; }
+  wxLoading=false;
+}
+function renderWeather(){
+  if(!wxData) return;
+  const list=document.getElementById('wxList');
+  const q=fold(document.getElementById('wxSearch').value||'');
+  const rows=DISTRICTS.map((d,i)=>({ name:d[0], lat:d[1], lng:d[2], c:wxData[i] }))
+    .filter(x=>x.c && (!q || fold(x.name).includes(q)));
+  list.innerHTML = rows.map(x=>{
+    const [emo,key]=wmo(x.c.weather_code);
+    return `<div class="wx-row" data-lat="${x.lat}" data-lng="${x.lng}">
+      <span class="wx-emo">${emo}</span>
+      <span class="wx-nm">${x.name}<small>${t(key)}</small></span>
+      <span class="wx-t">${Math.round(x.c.temperature_2m)}°</span>
+      <span class="wx-sub">💨 ${Math.round(x.c.wind_speed_10m)} km/h<br>💧 ${x.c.relative_humidity_2m}%</span></div>`;
+  }).join('') || `<div class="none">${t('noLines')}</div>`;
+  list.querySelectorAll('.wx-row').forEach(row=> row.addEventListener('click', ()=>
+    map.flyTo([+row.dataset.lat, +row.dataset.lng], Math.max(map.getZoom(),12), {duration:.6})));
+  const upd=document.getElementById('wxUpd');
+  if(upd) upd.textContent = t('wxUpdated')+' '+new Intl.DateTimeFormat(lang==='tr'?'tr-TR':'en-GB',
+    {timeZone:'Europe/Istanbul',hour:'2-digit',minute:'2-digit'}).format(new Date(wxFetchedAt));
+  // map badges: temp + emoji at each district centre
+  weatherLayer.clearLayers();
+  DISTRICTS.forEach((d,i)=>{
+    const c=wxData[i]; if(!c) return;
+    const [emo,key]=wmo(c.weather_code);
+    const icon=L.divIcon({ className:'wx-icon',
+      html:`<div class="wx-badge">${emo} ${Math.round(c.temperature_2m)}°</div>`, iconSize:[54,20], iconAnchor:[27,10] });
+    const mk=L.marker([d[1],d[2]],{icon, zIndexOffset:900});
+    mk.bindTooltip(`<b>${d[0]}</b><br>${t(key)} · ${Math.round(c.temperature_2m)}°C<br>💨 ${Math.round(c.wind_speed_10m)} km/h · 💧 ${c.relative_humidity_2m}%`,
+      {className:'lt', direction:'top', offset:[0,-8]});
+    mk.addTo(weatherLayer);
+  });
+}
+// live İstanbul clock (header of the weather card)
+setInterval(()=>{
+  const el=document.getElementById('wxClock'); if(!el || currentTab!=='weather') return;
+  const now=new Date();
+  el.textContent=new Intl.DateTimeFormat(lang==='tr'?'tr-TR':'en-GB',
+    {timeZone:'Europe/Istanbul',hour:'2-digit',minute:'2-digit',second:'2-digit'}).format(now);
+  const de=document.getElementById('wxDate');
+  if(de) de.textContent=new Intl.DateTimeFormat(lang==='tr'?'tr-TR':'en-GB',
+    {timeZone:'Europe/Istanbul',weekday:'long',day:'numeric',month:'long'}).format(now);
+}, 1000);
 
 /* ---- Bus directory (855 İETT lines; geometry fetched from OSM on click) ---- */
 function renderBusList(q){
@@ -1993,6 +2134,8 @@ document.getElementById('advClear').addEventListener('click', ()=>{
   document.getElementById('advOut').classList.remove('show');
 });
 document.getElementById('busSearch').addEventListener('input', e=> renderBusList(e.target.value));
+document.getElementById('wxSearch').addEventListener('input', ()=> renderWeather());
+document.getElementById('wxRefresh').addEventListener('click', ()=>{ wxFetchedAt=0; fetchWeather(); });
 document.getElementById('route').addEventListener('click', runRoute);
 document.getElementById('clear').addEventListener('click', ()=>{
   routeLayer.clearLayers();
