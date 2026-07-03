@@ -1898,6 +1898,7 @@ function setTab(t){
   NETWORK.forEach(l => map.removeLayer(lineLayers[l.ref].group));
   map.removeLayer(ghostGroup); map.removeLayer(stationGroup); map.removeLayer(plannedStationGroup);
   busLayer.clearLayers(); map.removeLayer(weatherLayer);
+  map.removeLayer(disruptionLayer);                          // hazard overlays belong to Active only
   const hideCore = (t==='bus' || t==='weather');
   document.getElementById('cardLines').style.display   = hideCore ? 'none' : '';
   document.getElementById('cardPlanner').style.display = hideCore ? 'none' : '';
@@ -1906,6 +1907,7 @@ function setTab(t){
   if(t==='active'){
     liveLines.forEach(l => { if(lineLayers[l.ref].on) lineLayers[l.ref].group.addTo(map); });
     if(showStations) stationGroup.addTo(map);
+    disruptionLayer.addTo(map);
     buildLegend();
   } else if(t==='vision'){
     ghostGroup.addTo(map);                                   // dim live network for context
@@ -2209,7 +2211,7 @@ function captureEnd(){ if(!animOn){ animOn=true; last=performance.now(); animRaf
 /* ---- Announcements: live disruptions (faults / closures) + map warning markers ---- */
 const SEV_COLOR = { major:'#E5484D', partial:'#F5A623', minor:'#FFD400' };
 const SEV_LABEL = { major:'Major', partial:'Partial', minor:'Minor' };
-const disruptionLayer = L.layerGroup().addTo(map);   // always visible, above lines
+const disruptionLayer = L.layerGroup().addTo(map);   // shown on the Active tab only (setTab manages it)
 const hazardRenderer = L.svg({ padding:0.5 });       // SVG so the dash animation (CSS) works
 // affected coord path(s) to grey-out: a segment between two stations, or the whole line
 function disruptionPaths(d){
