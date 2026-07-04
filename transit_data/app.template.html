@@ -278,13 +278,10 @@
   .ann-foot a{color:var(--accent);text-decoration:none;}
   .ann-item{cursor:pointer;}
   .ann-none{font-size:11px;color:var(--accent);padding:8px 9px;}
-  /* map warning markers for disruptions */
-  .warn-icon span{display:flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:50%;
-    background:var(--wc,#E5484D);color:#fff;font-size:12px;box-shadow:0 0 0 2px #0B0F19,0 0 12px -2px var(--wc,#E5484D);animation:wpulse 1.6s infinite;}
-  @keyframes wpulse{0%,100%{transform:scale(1);}50%{transform:scale(1.18);}}
-  /* closed line-section: thin dotted overlay with a soft, slow pulse (subtle) */
-  path.hazard-flow{animation:hazpulse 2.6s ease-in-out infinite;}
-  @keyframes hazpulse{0%,100%{opacity:.45;}50%{opacity:.9;}}
+  /* map warning markers for disruptions — clean static signage plate */
+  .warn-icon span{display:flex;align-items:center;justify-content:center;width:21px;height:21px;border-radius:6px;
+    background:var(--wc,#E5484D);color:#fff;font-size:12px;font-weight:800;
+    box-shadow:0 0 0 1.5px #0B0F19,0 2px 8px rgba(0,0,0,.55);}
   .leaflet-tooltip.lt b{color:#fff;}
   @media (max-width:760px){.controls{width:228px;}.station{width:228px;}.topbar{max-width:200px;}}
 </style>
@@ -2285,20 +2282,36 @@ function renderDisruptionMarkers(){
   DISRUPTIONS.forEach(d=>{
     const col = SEV_COLOR[d.severity] || SEV_COLOR.major;
     const line = lineByRef[d.ref];
-    // mark the affected section as an animated "hazard tape": darkened track +
-    // flowing dashes in the severity (danger) colour. Weight scales with zoom.
+    // "out of service" section — professional cartographic style: a muted grey band
+    // (the line greyed out) with clean white perpendicular closure ticks. Static, no
+    // dots / animation. Severity stays on the ⚠ badge + tooltip.
     disruptionPaths(d).forEach(coords=>{
       if(coords.length<2) return;
       const base = (line && KIND[line.kind] && KIND[line.kind].weight) || 4;
-      const gw = Math.max(1.6, (base+0.5) * lineScale(z));   // thin — close to the line's own width
-      // muted desaturated base (line "out of service") + fine dotted overlay in the severity colour
-      const dark = L.polyline(coords, { renderer:hazardRenderer, color:'#3a3f4a', weight:gw+1.5,
-                              opacity:0.6, lineCap:'round', lineJoin:'round', interactive:false });
-      const haz = L.polyline(coords, { renderer:hazardRenderer, color:col, weight:gw,
-                              opacity:0.9, lineCap:'round', dashArray:'1,'+Math.round(gw*2.2), className:'hazard-flow' });
-      haz.bindTooltip(disrTip(d), { sticky:true, className:'lt' });
-      haz.on('click', ()=> openDisruption(d));
-      dark.addTo(disruptionLayer); haz.addTo(disruptionLayer); haz.bringToFront();
+      const gw = Math.max(2, (base+0.6) * lineScale(z));
+      const cased = L.polyline(coords, { renderer:hazardRenderer, color:'#12151b', weight:gw+2.6,
+                              opacity:0.92, lineCap:'round', lineJoin:'round', interactive:false });
+      const grey  = L.polyline(coords, { renderer:hazardRenderer, color:'#6b7280', weight:gw,
+                              opacity:0.96, lineCap:'butt', lineJoin:'round' });
+      grey.bindTooltip(disrTip(d), { sticky:true, className:'lt' });
+      grey.on('click', ()=> openDisruption(d));
+      cased.addTo(disruptionLayer); grey.addTo(disruptionLayer);
+      // perpendicular closure ticks (the "engineering works" hatch), computed in screen space
+      const pts = coords.map(c=>map.latLngToLayerPoint(c));
+      const SPACING=13, HALF=Math.max(3.4, gw*1.15); let acc=SPACING/2, ticks=0;
+      for(let i=1;i<pts.length && ticks<400;i++){
+        const a=pts[i-1], b=pts[i], dx=b.x-a.x, dy=b.y-a.y, len=Math.hypot(dx,dy);
+        if(len<0.01) continue;
+        const ux=dx/len, uy=dy/len, px=-uy, py=ux;
+        while(acc<len && ticks<400){
+          const cx=a.x+ux*acc, cy=a.y+uy*acc;
+          const t1=map.layerPointToLatLng(L.point(cx+px*HALF, cy+py*HALF));
+          const t2=map.layerPointToLatLng(L.point(cx-px*HALF, cy-py*HALF));
+          L.polyline([t1,t2], { renderer:hazardRenderer, color:'#e6e8ee', weight:1.5, opacity:0.9, lineCap:'butt', interactive:false }).addTo(disruptionLayer);
+          acc+=SPACING; ticks++;
+        }
+        acc-=len;
+      }
     });
     // warning marker(s): fixed screen size, gently smaller when zoomed out
     disruptionPoints(d).forEach(p=>{
