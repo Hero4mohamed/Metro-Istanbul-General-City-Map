@@ -506,6 +506,8 @@ const I18N = {
     wxUpdated:"updated",
     wx0:"Clear", wx1:"Mainly clear", wx2:"Partly cloudy", wx3:"Overcast", wx45:"Fog",
     wx51:"Drizzle", wx61:"Rain", wx71:"Snow", wx80:"Showers", wx95:"Thunderstorm",
+    boardClosed:"Closed", boardSusp:"Service suspended", opensAt:"opens", seeAnn:"see Announcements",
+    nextArr:"Next", followingArr:"Following", noApproach:"No approaching carriages.", carrOff:"Carriage layer disabled.",
     busLines:"line", busLinesMany:"lines", showingFirst:"showing first", noGeom:"No mapped geometry for this line.",
     loadingGeom:"Loading route geometry…", routeDrawn:"route drawn", needNet:"Could not fetch route (needs internet).",
     kind_metro:"Metro", kind_tram:"Tram", kind_ferry:"Ferry", kind_funicular:"Funicular",
@@ -548,6 +550,8 @@ const I18N = {
     wxUpdated:"güncellendi",
     wx0:"Açık", wx1:"Az bulutlu", wx2:"Parçalı bulutlu", wx3:"Kapalı", wx45:"Sisli",
     wx51:"Çisenti", wx61:"Yağmurlu", wx71:"Kar yağışlı", wx80:"Sağanak", wx95:"Gök gürültülü fırtına",
+    boardClosed:"Kapalı", boardSusp:"Seferler durduruldu", opensAt:"açılış", seeAnn:"Duyurulara bakın",
+    nextArr:"Sonraki", followingArr:"Ardından", noApproach:"Yaklaşan vagon yok.", carrOff:"Vagon katmanı kapalı.",
     busLines:"hat", busLinesMany:"hat", showingFirst:"ilk gösterilen", noGeom:"Bu hat için harita geometrisi yok.",
     loadingGeom:"Güzergah çiziliyor…", routeDrawn:"güzergah çizildi", needNet:"Güzergah alınamadı (internet gerekli).",
     kind_metro:"Metro", kind_tram:"Tramvay", kind_ferry:"Vapur", kind_funicular:"Füniküler",
@@ -664,6 +668,29 @@ function lineTiming(ref){
   const s = SCHEDULE[kind] || SCHEDULE.subway;
   return { spd:(KIND[kind]&&KIND[kind].speed)||40, hwMin:HW_FALLBACK[kind]||10, hours:s.hours, freq:s.freq };
 }
+/* ---- is this line actually running right now? Two reasons it may not be:
+   (a) suspended by an active line-scope MAJOR disruption (e.g. B2 engineering works);
+   (b) outside its operating hours (İstanbul time; ranges may span midnight).
+   Simulated carriages + the predictive-arrivals board both respect this. ---- */
+function lineClosedNow(ref){
+  const d=(DISRUPTIONS||[]).find(x=> x.ref===ref && x.scope==='line' && x.severity==='major'
+        && (!x.until || Date.parse(x.until+'T23:59:59')>=Date.now()));
+  if(d) return { why:'susp', d };
+  const h=(lineTiming(ref).hours)||'';
+  if(/24/.test(h)) return null;                       // 24-hour service (Metrobüs)
+  const m=h.match(/(\d{1,2}):(\d{2})\s*[–—-]\s*(\d{1,2}):(\d{2})/);
+  if(!m) return null;                                 // unparseable → assume open
+  const start=+m[1]*60+ +m[2], end=+m[3]*60+ +m[4], now=nowIstanbulMin();
+  const open = start<=end ? (now>=start && now<end) : (now>=start || now<end);   // spans midnight
+  return open ? null : { why:'hours', hours:h, opens:m[1]+':'+m[2] };
+}
+let closedCache={};                                    // ref -> closure info (checked per frame → cached)
+function refreshClosed(){
+  const c={};
+  (typeof liveLines!=='undefined'?liveLines:[]).forEach(l=>{ const x=lineClosedNow(l.ref); if(x) c[l.ref]=x; });
+  closedCache=c;
+}
+setInterval(refreshClosed, 30000);
 
 /* --- geo helpers --- */
 const R = 6371000;
@@ -1136,6 +1163,7 @@ function drawTrains(now){
   const rad = z>=14?4.6 : z>=12?3.7 : 2.8;
   for(const tr of trains){
     if(!lineLayers[tr.ref].on) continue;
+    if(closedCache[tr.ref]) continue;                 // line suspended / outside service hours
     const ll = posAt(tr.line, tr.s);
     const p = map.latLngToContainerPoint([ll[0], ll[1]]);
     if(p.x<-15||p.y<-15||p.x>s.x+15||p.y>s.y+15) continue;
@@ -1191,6 +1219,7 @@ function buildBoard(reg){
     const line = lineByRef[ref];
     const node = reg.nodes.find(n=>n.ref===ref);
     if(!node) return;
+    if(closedCache[ref]) return;                       // no arrivals on a closed line
     const sTarget = node.s;
     const lineTrains = trains.filter(t=>t.ref===ref);
     const byDest = {};
@@ -1295,15 +1324,22 @@ async function loadSchedule(reg){
 function renderBoard(){
   if(!selected) return;
   const el = document.getElementById('stnBoard');
-  if(!showTrains){ el.innerHTML = '<div class="none">Carriage layer disabled.</div>'; return; }
+  if(!showTrains){ el.innerHTML = `<div class="none">${t('carrOff')}</div>`; return; }
+  // lines at this station that are NOT running right now → honest closed rows, no fake ETAs
+  const closedRows=[...selected.lines].filter(r=>closedCache[r]).map(r=>{
+    const c=closedCache[r], ln=lineByRef[r];
+    const msg = c.why==='susp' ? `⚠ ${t('boardSusp')}` : `🌙 ${t('boardClosed')} · ${c.hours}`;
+    return `<div class="arr"><span class="cd" style="background:${ln?ln.color:'#888'}">${r}</span>
+      <div class="ds">${msg}<small>${c.why==='susp'?t('seeAnn'):t('opensAt')+' '+c.opens}</small></div></div>`;
+  }).join("");
   const board = buildBoard(selected);
-  if(!board.length){ el.innerHTML = '<div class="none">No approaching carriages.</div>'; return; }
-  el.innerHTML = board.map(b => b.etas.map((sec,i)=>{
+  const liveRows = board.map(b => b.etas.map((sec,i)=>{
     const e=fmtEta(sec);
     return `<div class="arr"><span class="cd" style="background:${b.color}">${b.ref}</span>
-      <div class="ds">→ ${b.dest}<small>${i===0?'Next':'Following'}</small></div>
+      <div class="ds">→ ${b.dest}<small>${i===0?t('nextArr'):t('followingArr')}</small></div>
       <div class="et ${e.now?'now':''}">${e.t}</div></div>`;
   }).join("")).join("");
+  el.innerHTML = (liveRows + closedRows) || `<div class="none">${t('noApproach')}</div>`;
 }
 
 /* ===========================================================================
@@ -2309,6 +2345,7 @@ document.getElementById('annHead').addEventListener('click', ()=>
 function init(){
   document.querySelectorAll('#langSeg button').forEach(b=> b.classList.toggle('active', b.dataset.lang===lang));
   applyI18n();
+  refreshClosed();            // suspended / out-of-hours lines (sim + arrivals board honesty)
   populateSelects();
   rebuildAdvRows();           // adventure planner stop rows
   sizeCanvas();
@@ -2333,7 +2370,7 @@ async function loadLiveDisruptions(){
     const r = await fetch('transit_data/disruptions.json?t='+Date.now(), { cache:'no-store' });
     if(!r.ok) return;
     const data = await r.json();
-    if(Array.isArray(data)){ DISRUPTIONS = data; renderAnnouncements(); renderDisruptionMarkers(); }
+    if(Array.isArray(data)){ DISRUPTIONS = data; renderAnnouncements(); renderDisruptionMarkers(); refreshClosed(); }
   }catch(e){ /* offline / file:// → keep the baked-in DISRUPTIONS */ }
 }
 init();
