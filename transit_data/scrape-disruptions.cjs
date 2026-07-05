@@ -21,39 +21,77 @@ const stripTags = s => s.replace(/<[^>]+>/g,' ');
 // Domain Turkish→English translator for Istanbul metro service announcements. These messages
 // are highly formulaic, so ordered phrase rules (most-specific first) give faithful English.
 // Station names (proper nouns) are preserved. The original Turkish is kept as messageTr.
+// [İi] etc. because JS regex /i/ does ASCII case-folding only — Turkish İ/I aren't handled.
 const TR2EN_PHRASES = [
+  // station/segment ride patterns (most specific first)
   [/([^\s,]+)\s*[-–]\s*([^\s,]+)\s+istasyonları\s+arasında\s+yapılmaktadır/gi, 'operate between $1 and $2'],
-  [/([^\s,]+)\s+ve\s+([^\s,]+)\s+istasyon(?:undan|larından)\s+aktarmalı\s+olarak/gi, 'with a transfer at $1 and $2,'],
-  [/([^\s,]+)\s+istasyon(?:undan|larından)\s+aktarmalı\s+olarak/gi, 'with a transfer at $1,'],
+  [/([^\s,]+)\s+ve\s+([^\s,]+)\s+[İi]stasyon(?:undan|larından)\s+aktarmalı\s+olarak/gi, 'with a transfer at $1 and $2,'],
+  [/([^\s,]+)\s+[İi]stasyon(?:undan|larından)\s+aktarmalı\s+olarak/gi, 'with a transfer at $1,'],
   [/([^\s,]+)\s*[-–]\s*([^\s,]+)\s+istasyonları\s+arasında/gi, 'between $1 and $2'],
-  [/onarım\s+çalışması\s+nedeniyle/gi, 'Due to maintenance works,'],
-  [/bakım\s+çalışması\s+nedeniyle/gi, 'Due to maintenance,'],
-  [/teknik\s+arıza\s+nedeniyle/gi, 'Due to a technical fault,'],
-  [/yoğunluk\s+nedeniyle/gi, 'Due to congestion,'],
-  [/hava\s+koşulları\s+nedeniyle/gi, 'Due to weather conditions,'],
+  // reasons — lowercase so they read correctly mid-sentence (first letter re-capitalised at end)
+  [/planlı\s+bakım\s+(?:ve\s+onarım\s+)?çalış(?:ması|maları)?\s*(?:nedeniyle)?/gi, 'due to planned maintenance,'],
+  [/onarım\s+çalış(?:ması|maları)\s+nedeniyle/gi, 'due to maintenance works,'],
+  [/bakım\s+(?:ve\s+onarım\s+)?çalış(?:ması|maları)\s+nedeniyle/gi, 'due to maintenance works,'],
+  [/teknik\s+(?:bir\s+)?arıza\s+nedeniyle/gi, 'due to a technical fault,'],
+  [/sinyalizasyon\s+arızası\s+nedeniyle/gi, 'due to a signalling fault,'],
+  [/elektrik\s+kesintisi\s+nedeniyle/gi, 'due to a power outage,'],
+  [/olumsuz\s+hava\s+koşulları\s+nedeniyle/gi, 'due to adverse weather conditions,'],
+  [/hava\s+koşulları\s+nedeniyle/gi, 'due to weather conditions,'],
+  [/yoğunluk\s+nedeniyle/gi, 'due to congestion,'],
   [/çalışmaları?\s+nedeniyle/gi, 'due to works,'],
-  [/nedeniyle/gi, 'due to'],
-  [/seferler(?:imiz)?\s+(?:geçici\s+(?:bir\s+)?süreyle\s+)?durdurulmuştur/gi, 'services are temporarily suspended'],
-  [/seferler(?:imiz)?\s+normale\s+dönmüştür/gi, 'services have returned to normal'],
+  [/(?:nedeniyle|sebebiyle|dolayısıyla)/gi, 'due to'],
+  // line/station nouns
+  [/[Tt]eleferik\s+[Hh]attı(?:mız)?/gi, 'cable car line'], [/[Ff]üniküler\s+[Hh]attı(?:mız)?/gi, 'funicular line'],
+  [/[Mm]etro\s+[Hh]attı(?:mız)?/gi, 'metro line'], [/[Tt]ramvay\s+[Hh]attı(?:mız)?/gi, 'tram line'],
+  [/[Bb]anliyö\s+[Hh]attı(?:mız)?/gi, 'suburban line'],
+  [/[Hh]attımız/gi, 'our line'], [/[Hh]attında/gi, 'on the line'], [/[Hh]attı/gi, 'line'],
+  [/[İi]stasyonumuz/gi, 'our station'],
+  // status clauses
+  [/seferler(?:imiz)?\s+(?:geçici\s+(?:bir\s+)?süreyle\s+)?durdurul(?:muştur|du)/gi, 'services are temporarily suspended'],
+  [/seferler(?:imiz)?\s+normale\s+dön(?:müştür|dü)/gi, 'services have returned to normal'],
+  [/normale\s+dön(?:müştür|dü)/gi, 'has returned to normal'],
+  [/geçici\s+(?:olarak|(?:bir\s+)?süreyle)\s+hizmet\s+dışıdır/gi, 'is temporarily out of service'],
+  [/hizmet\s+dışına\s+alınmıştır/gi, 'has been taken out of service'],
+  [/hizmet\s+dışıdır/gi, 'is out of service'], [/hizmet\s+dışı/gi, 'out of service'],
+  [/hizmete\s+kapatılmıştır/gi, 'has been closed to service'],
+  [/hizmete\s+(?:yeniden\s+)?alınmıştır/gi, 'has been brought back into service'],
   [/hizmet\s+ver(?:il)?memektedir/gi, 'is not in service'],
-  [/istasyon(?:u|umuz)?\s+kapalıdır/gi, 'station is closed'],
-  [/geçici\s+(?:bir\s+)?süreyle/gi, 'temporarily'],
-  [/geçici\s+olarak/gi, 'temporarily'],
+  [/hizmet\s+vermeye\s+(?:yeniden\s+)?başlamıştır/gi, 'has resumed service'],
+  [/geçici\s+(?:olarak|(?:bir\s+)?süreyle)\s+kapatılmıştır/gi, 'has been temporarily closed'],
+  [/[İi]stasyon(?:u|umuz)?\s+kapalıdır/gi, 'station is closed'],
+  [/kapatılmıştır/gi, 'has been closed'], [/kapatılmış(?:tır)?/gi, 'closed'],
+  [/geçici\s+(?:bir\s+)?süreyle/gi, 'temporarily'], [/geçici\s+olarak/gi, 'temporarily'],
   [/aktarmalı\s+olarak/gi, 'with a transfer,'],
-  [/seferler(?:imiz)?/gi, 'trains'],
+  [/seferler(?:imiz|ini|ine|i)?/gi, 'trains'],
   [/istasyonları\s+arasında/gi, 'between the stations'],
-  [/arasında\s+yapılmaktadır/gi, 'operate between'],
-  [/yapılmaktadır/gi, 'are operating'],
-  [/istasyonları/gi, 'stations'], [/istasyonundan/gi, 'from the station'], [/istasyonu/gi, 'station'], [/istasyon/gi, 'station'],
+  [/arasında\s+yapılmaktadır/gi, 'operate between'], [/yapılmaktadır/gi, 'are operating'],
+  [/istasyonları/gi, 'stations'], [/[İi]stasyon(?:undan|dan)/gi, 'from the station'],
+  [/[İi]stasyon(?:umuz|u)?/gi, 'station'],
   [/aktarmalı/gi, 'with transfer'], [/arasında/gi, 'between'],
-  [/kapalıdır/gi, 'is closed'], [/kapalı/gi, 'closed'], [/açıktır/gi, 'is open'],
-  [/onarım/gi, 'repair'], [/bakım/gi, 'maintenance'], [/çalışmaları/gi, 'works'], [/çalışması/gi, 'works'], [/çalışma/gi, 'work'],
-  [/arıza/gi, 'fault'], [/normale\s+dönmüştür/gi, 'has returned to normal'], [/durdurulmuştur/gi, 'has been suspended'],
-  [/\bve\b/gi, 'and'], [/\bile\b/gi, 'with'],
+  [/devam\s+etmektedir/gi, 'continues'], [/başlamıştır/gi, 'has started'],
+  [/kapalıdır/gi, 'is closed'], [/açıktır/gi, 'is open'],
+  [/[Oo]narım/gi, 'repair'], [/[Bb]akım/gi, 'maintenance'], [/arıza/gi, 'fault'],
+  [/çalışmaları/gi, 'works'], [/çalışması/gi, 'works'], [/çalışma/gi, 'work'],
+  [/vatandaşlarımız(?:ın|a|ı)?/gi, 'passengers'], [/yolcularımız(?:ın|a|ı)?/gi, 'passengers'],
+  [/(?:sayın\s+)?yolcular(?:ımız)?/gi, 'passengers'],
+  [/bilgi(?:lerinize|nize)\s+(?:saygıyla\s+)?sunulur/gi, 'for your information'],
+  [/durdurul(?:muştur|du)/gi, 'has been suspended'],
 ];
+// whole-word cleanup for the odd straggler the phrase rules missed (base forms only)
+const TR2EN_WORDS = {
+  've':'and','ile':'with','için':'for','olarak':'as','ancak':'however','ayrıca':'also','ise':'while',
+  'teleferik':'cable car','füniküler':'funicular','metro':'metro','tramvay':'tram','vapur':'ferry','banliyö':'suburban',
+  'hat':'line','sefer':'service','seferler':'services','yön':'direction','yönünde':'toward','yönü':'direction',
+  'saatleri':'hours','saatlerinde':'hours','gün':'day','saat':'hour','dakika':'minutes','süreyle':'temporarily',
+  'geçici':'temporary','planlı':'planned','planlanan':'planned','kapalı':'closed','açık':'open','kapatıldı':'closed',
+  'yeniden':'again','normal':'normal','aksama':'disruption','arıza':'fault','bakım':'maintenance','onarım':'repair',
+  'çalışıyor':'operating','çalışmıyor':'not operating','durduruldu':'suspended','başladı':'started','bitti':'ended'
+};
 function translateTR(text){
   let s=' '+text+' ';
   for(const [re,rep] of TR2EN_PHRASES) s=s.replace(re,rep);
+  // whole-word stragglers (base forms only; station/line names pass through unchanged)
+  s=s.replace(/[A-Za-zÇĞİıÖŞÜçğöşü]+/g, w=>{ const k=w.toLocaleLowerCase('tr'); return TR2EN_WORDS[k]||w; });
   // move the transfer clause to the end so it reads naturally in English
   s=s.replace(/trains\s+with a transfer at (.+?),\s*operate between (.+?)[.\s]*$/i,
               'trains operate between $2, with a transfer at $1.');

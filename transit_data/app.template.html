@@ -626,10 +626,11 @@ const KIND = {
   suburban: { speed:80, weight:4,   dash:null,    label:"Banliyö (Suburban)" },
   tram:     { speed:32, weight:3.5, dash:null,    label:"Tram" },
   funicular:{ speed:28, weight:3.5, dash:null,    label:"Funicular" },
+  cable:    { speed:14, weight:3,   dash:"2,4",   label:"Cable Car" },
   metrobus: { speed:42, weight:3.5, dash:"7,6",   label:"Metrobüs (BRT)" },
   ferry:    { speed:26, weight:1.5, dash:"1,7",   label:"Ferry (Vapur)" }
 };
-const GROUP_ORDER = ["subway","marmaray","suburban","tram","funicular","metrobus","ferry"];
+const GROUP_ORDER = ["subway","marmaray","suburban","tram","funicular","cable","metrobus","ferry"];
 const DWELL = 4;             // seconds dwell at each station (sim time)
 const TRANSFER_MIN = 4;      // walking-transfer penalty (minutes)
 // typical Metro İstanbul service hours / headways (per mode)
@@ -639,6 +640,7 @@ const SCHEDULE = {
   suburban: { hours:'06:00 – 00:00', freq:'every 15–30 min' },
   tram:     { hours:'06:00 – 00:00', freq:'every 5–10 min' },
   funicular:{ hours:'07:00 – 00:00', freq:'every 3–5 min' },
+  cable:    { hours:'08:00 – 22:00', freq:'every 5–10 min' },
   metrobus: { hours:'24 hours',      freq:'every 1–4 min' },
   ferry:    { hours:'06:30 – 21:00', freq:'every 15–40 min' }
 };
@@ -656,9 +658,10 @@ const LINE_TIMING = {
   'T3':{spd:12,peak:12,off:20,hours:'07:00 – 21:00'}, 'T4':{spd:20,peak:7,off:12},
   'T5':{spd:22,peak:6,off:10}, 'T6':{spd:22,peak:8,off:15},
   'F1':{spd:25,peak:4,off:5},  'F2':{spd:18,peak:5,off:7}, 'F3':{spd:25,peak:5,off:8}, 'F4':{spd:25,peak:5,off:8},
+  'TF1':{spd:12,peak:8,off:10,hours:'08:00 – 20:00'}, 'TF2':{spd:12,peak:8,off:10,hours:'08:00 – 23:00'},
   'Metrobüs':{spd:40,peak:1,off:4,hours:'24 hours'}
 };
-const HW_FALLBACK = { subway:8, marmaray:10, suburban:20, tram:10, funicular:6, metrobus:3, ferry:25 };
+const HW_FALLBACK = { subway:8, marmaray:10, suburban:20, tram:10, funicular:6, cable:8, metrobus:3, ferry:25 };
 function lineTiming(ref){
   const t = LINE_TIMING[ref], kind = lineByRef[ref] && lineByRef[ref].kind;
   if(t) return { spd:t.spd, hwMin:(t.peak+t.off)/2, hours:t.hours||'06:00 – 00:00', freq:`every ${t.peak}–${t.off} min` };
@@ -2282,36 +2285,22 @@ function renderDisruptionMarkers(){
   DISRUPTIONS.forEach(d=>{
     const col = SEV_COLOR[d.severity] || SEV_COLOR.major;
     const line = lineByRef[d.ref];
-    // "out of service" section — professional cartographic style: a muted grey band
-    // (the line greyed out) with clean white perpendicular closure ticks. Static, no
-    // dots / animation. Severity stays on the ⚠ badge + tooltip.
+    // "out of service" section — clean solid caution band: a red outline (casing) with a
+    // yellow infill and a thin dark centre-seam so it reads as a crisp boxed hazard line.
+    // Static, no dots / animation. The ⚠ signage plate marks the affected stations.
     disruptionPaths(d).forEach(coords=>{
       if(coords.length<2) return;
       const base = (line && KIND[line.kind] && KIND[line.kind].weight) || 4;
-      const gw = Math.max(2, (base+0.6) * lineScale(z));
-      const cased = L.polyline(coords, { renderer:hazardRenderer, color:'#12151b', weight:gw+2.6,
-                              opacity:0.92, lineCap:'round', lineJoin:'round', interactive:false });
-      const grey  = L.polyline(coords, { renderer:hazardRenderer, color:'#6b7280', weight:gw,
-                              opacity:0.96, lineCap:'butt', lineJoin:'round' });
-      grey.bindTooltip(disrTip(d), { sticky:true, className:'lt' });
-      grey.on('click', ()=> openDisruption(d));
-      cased.addTo(disruptionLayer); grey.addTo(disruptionLayer);
-      // perpendicular closure ticks (the "engineering works" hatch), computed in screen space
-      const pts = coords.map(c=>map.latLngToLayerPoint(c));
-      const SPACING=13, HALF=Math.max(3.4, gw*1.15); let acc=SPACING/2, ticks=0;
-      for(let i=1;i<pts.length && ticks<400;i++){
-        const a=pts[i-1], b=pts[i], dx=b.x-a.x, dy=b.y-a.y, len=Math.hypot(dx,dy);
-        if(len<0.01) continue;
-        const ux=dx/len, uy=dy/len, px=-uy, py=ux;
-        while(acc<len && ticks<400){
-          const cx=a.x+ux*acc, cy=a.y+uy*acc;
-          const t1=map.layerPointToLatLng(L.point(cx+px*HALF, cy+py*HALF));
-          const t2=map.layerPointToLatLng(L.point(cx-px*HALF, cy-py*HALF));
-          L.polyline([t1,t2], { renderer:hazardRenderer, color:'#e6e8ee', weight:1.5, opacity:0.9, lineCap:'butt', interactive:false }).addTo(disruptionLayer);
-          acc+=SPACING; ticks++;
-        }
-        acc-=len;
-      }
+      const gw = Math.max(3, (base+1.4) * lineScale(z));
+      const red    = L.polyline(coords, { renderer:hazardRenderer, color:'#D42A2A', weight:gw+3.4,
+                              opacity:0.97, lineCap:'round', lineJoin:'round', interactive:false });   // red outline
+      const yellow = L.polyline(coords, { renderer:hazardRenderer, color:'#F5C518', weight:gw,
+                              opacity:1, lineCap:'round', lineJoin:'round' });                          // yellow infill
+      const seam   = L.polyline(coords, { renderer:hazardRenderer, color:'#7a5c00', weight:Math.max(1,gw*0.18),
+                              opacity:0.55, lineCap:'round', lineJoin:'round', interactive:false });    // subtle centre seam
+      yellow.bindTooltip(disrTip(d), { sticky:true, className:'lt' });
+      yellow.on('click', ()=> openDisruption(d));
+      red.addTo(disruptionLayer); yellow.addTo(disruptionLayer); seam.addTo(disruptionLayer);
     });
     // warning marker(s): fixed screen size, gently smaller when zoomed out
     disruptionPoints(d).forEach(p=>{

@@ -1,0 +1,20 @@
+[
+  {
+    "ref": "TF1", "kind": "cable", "color": "#68BCB0", "scope": "active",
+    "official": "Maçka – Taşkışla Teleferik (Cable Car)",
+    "paths": [[[41.0435,28.99034],[41.04361,28.99065],[41.04405,28.99194],[41.0445,28.99324],[41.04476,28.99398]]],
+    "stations": [
+      {"name":"Maçka","lat":41.0435,"lng":28.99034},
+      {"name":"Taşkışla","lat":41.04476,"lng":28.99398}
+    ]
+  },
+  {
+    "ref": "TF2", "kind": "cable", "color": "#68BCB0", "scope": "active",
+    "official": "Eyüp – Piyerloti Teleferik (Cable Car)",
+    "paths": [[[41.04976,28.93441],[41.05343,28.93331]]],
+    "stations": [
+      {"name":"Eyüp","lat":41.04976,"lng":28.93441},
+      {"name":"Piyerloti","lat":41.05343,"lng":28.93331}
+    ]
+  }
+]
