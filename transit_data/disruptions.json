@@ -21,5 +21,15 @@
     "title": "Section affected",
     "message": "Due to maintenance works, trains operate between Çağlayan and Mahmutbey, with a transfer at Yıldız-Mecidiyeköy and Nurtepe.",
     "messageTr": "Onarım çalışması nedeniyle seferler Yıldız-Mecidiyeköy ve Nurtepe istasyonundan aktarmalı olarak Çağlayan-Mahmutbey istasyonları arasında yapılmaktadır."
+  },
+  {
+    "id": "t3-al-m-yor",
+    "ref": "T3",
+    "source": "metro.istanbul",
+    "scope": "line",
+    "severity": "minor",
+    "title": "Service notice",
+    "message": "İstanbul Emniyeti’nin talebi doğrultusunda trains yapılamamaktadır.",
+    "messageTr": "İstanbul Emniyeti’nin talebi doğrultusunda seferler yapılamamaktadır."
   }
 ]
