@@ -29,7 +29,7 @@
     "scope": "line",
     "severity": "minor",
     "title": "Service notice",
-    "message": "İstanbul Emniyeti’nin talebi doğrultusunda trains yapılamamaktadır.",
+    "message": "At the request of İstanbul Police, services cannot operate.",
     "messageTr": "İstanbul Emniyeti’nin talebi doğrultusunda seferler yapılamamaktadır."
   }
 ]

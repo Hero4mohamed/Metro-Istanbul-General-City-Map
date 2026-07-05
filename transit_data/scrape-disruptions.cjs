@@ -21,9 +21,16 @@ const stripTags = s => s.replace(/<[^>]+>/g,' ');
 // Domain Turkish→English translator for Istanbul metro service announcements. These messages
 // are highly formulaic, so ordered phrase rules (most-specific first) give faithful English.
 // Station names (proper nouns) are preserved. The original Turkish is kept as messageTr.
+// ==TRANSLATOR-START== (this block is injected verbatim into the app by build.cjs so the
+// client can re-translate any disruption that still contains Turkish — single source of truth)
 // [İi] etc. because JS regex /i/ does ASCII case-folding only — Turkish İ/I aren't handled.
 const TR2EN_PHRASES = [
+  // requests by authorities ("X'nin talebi doğrultusunda …")
+  [/^\s*(.+?)['’ʼ]?\s*n[iı]n\s+talebi\s+doğrultusunda[ ,]*/i, 'At the request of $1, '],
+  [/talebi\s+doğrultusunda/gi, 'per request'],
+  [/doğrultusunda/gi, 'in line with'],
   // station/segment ride patterns (most specific first)
+  [/seferler(?:imiz)?\s+yapıl(?:a)?mamaktadır/gi, 'services cannot operate'],
   [/([^\s,]+)\s*[-–]\s*([^\s,]+)\s+istasyonları\s+arasında\s+yapılmaktadır/gi, 'operate between $1 and $2'],
   [/([^\s,]+)\s+ve\s+([^\s,]+)\s+[İi]stasyon(?:undan|larından)\s+aktarmalı\s+olarak/gi, 'with a transfer at $1 and $2,'],
   [/([^\s,]+)\s+[İi]stasyon(?:undan|larından)\s+aktarmalı\s+olarak/gi, 'with a transfer at $1,'],
@@ -65,6 +72,7 @@ const TR2EN_PHRASES = [
   [/seferler(?:imiz|ini|ine|i)?/gi, 'trains'],
   [/istasyonları\s+arasında/gi, 'between the stations'],
   [/arasında\s+yapılmaktadır/gi, 'operate between'], [/yapılmaktadır/gi, 'are operating'],
+  [/yapıl(?:a)?mamaktadır/gi, 'cannot operate'],
   [/istasyonları/gi, 'stations'], [/[İi]stasyon(?:undan|dan)/gi, 'from the station'],
   [/[İi]stasyon(?:umuz|u)?/gi, 'station'],
   [/aktarmalı/gi, 'with transfer'], [/arasında/gi, 'between'],
@@ -85,7 +93,9 @@ const TR2EN_WORDS = {
   'saatleri':'hours','saatlerinde':'hours','gün':'day','saat':'hour','dakika':'minutes','süreyle':'temporarily',
   'geçici':'temporary','planlı':'planned','planlanan':'planned','kapalı':'closed','açık':'open','kapatıldı':'closed',
   'yeniden':'again','normal':'normal','aksama':'disruption','arıza':'fault','bakım':'maintenance','onarım':'repair',
-  'çalışıyor':'operating','çalışmıyor':'not operating','durduruldu':'suspended','başladı':'started','bitti':'ended'
+  'çalışıyor':'operating','çalışmıyor':'not operating','durduruldu':'suspended','başladı':'started','bitti':'ended',
+  'emniyeti':'Police','emniyetinin':'Police','valiliği':'Governorship','belediyesi':'Municipality',
+  'talebi':'request','nedeni':'reason','güvenlik':'security','etkinlik':'event','maç':'match'
 };
 function translateTR(text){
   let s=' '+text+' ';
@@ -103,8 +113,9 @@ function translateTR(text){
 
 // residual-Turkish detector: if the phrase translator left transit jargon untranslated,
 // fall back to an LLM (only when ANTHROPIC_API_KEY is set — otherwise skipped).
-const TR_RESIDUAL=/\b(nedeniyle|istasyon\w*|seferler\w*|yapıl\w*|aktarma\w*|kapal\w*|çalışm\w*|arası\w*|durdurul\w*|hizmet|geçici|yönünde|güzergah\w*|yoğunluk)\b/i;
+const TR_RESIDUAL=/\b(nedeniyle|sebebiyle|istasyon\w*|seferler\w*|yapıl\w*|aktarma\w*|kapal\w*|kapat\w*|çalışm\w*|arası\w*|durdurul\w*|hizmet|geçici|yönünde|güzergah\w*|yoğunluk|doğrultusunda|talebi|hattı\w*|teleferik|füniküler|vatandaş\w*|yolcu\w*)\b/i;
 const hasResidualTurkish = s => TR_RESIDUAL.test(s||'');
+// ==TRANSLATOR-END==
 async function llmTranslate(tr){
   const key=process.env.ANTHROPIC_API_KEY; if(!key) return null;
   try{
