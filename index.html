@@ -387,6 +387,8 @@
   <div class="seg langseg" id="langSeg">
     <button data-lang="en" class="active">EN</button>
     <button data-lang="tr">TR</button>
+    <button data-lang="ar">ع</button>
+    <button data-lang="fr">FR</button>
   </div>
 </div>
 
@@ -596,7 +598,8 @@ const I18N = {
     kind_metro:"Metro", kind_tram:"Tram", kind_ferry:"Ferry", kind_funicular:"Funicular",
     kind_marmaray:"Marmaray", kind_suburban:"Suburban", kind_metrobus:"Metrobüs (BRT)", kind_cable:"Cable car",
     shuttleSpur:"shuttle spur", interchangesWord:"interchanges", targetOpen:"target open", soonWord:"soon", stationsLower:"stations",
-    st_construction:"Under construction", st_planned:"Planned", st_testing:"Under construction / testing", st_approx:"Approximate alignment" },
+    st_construction:"Under construction", st_planned:"Planned", st_testing:"Under construction / testing", st_approx:"Approximate alignment",
+    servedBy:"Served by {n} line(s)." },
   tr:{ liveNet:"Canlı Raylı Ağ", source:"kaynak ↗", lines:"Hatlar", stations:"İstasyonlar", carriages:"Vagonlar",
     tabActive:"● Aktif", tabVision:"◇ Vizyon", tabBus:"▤ Otobüsler",
     baseMap:"Harita", dark:"Koyu", streets:"Sokaklar", satellite:"Uydu",
@@ -640,10 +643,100 @@ const I18N = {
     kind_metro:"Metro", kind_tram:"Tramvay", kind_ferry:"Vapur", kind_funicular:"Füniküler",
     kind_marmaray:"Marmaray", kind_suburban:"Banliyö", kind_metrobus:"Metrobüs", kind_cable:"Teleferik",
     shuttleSpur:"mekik hattı", interchangesWord:"aktarmalar", targetOpen:"hedef açılış", soonWord:"yakında", stationsLower:"istasyon",
-    st_construction:"Yapım aşamasında", st_planned:"Planlanan", st_testing:"Yapım / test aşamasında", st_approx:"Yaklaşık güzergah" }
+    st_construction:"Yapım aşamasında", st_planned:"Planlanan", st_testing:"Yapım / test aşamasında", st_approx:"Yaklaşık güzergah",
+    servedBy:"{n} hat hizmet veriyor." },
+  ar:{ liveNet:"شبكة النقل المباشرة", source:"المصدر ↗", lines:"الخطوط", stations:"المحطات", carriages:"العربات",
+    tabActive:"● النشط", tabVision:"◇ الرؤية", tabBus:"▤ الحافلات", tabWeather:"☀ الطقس",
+    baseMap:"خريطة الأساس", dark:"داكن", streets:"الشوارع", satellite:"قمر صناعي",
+    liveCarr:"عربات مباشرة", stationMarkers:"علامات المحطات", simSpeed:"سرعة المحاكاة",
+    networkLines:"خطوط الشبكة", all:"الكل", none:"لا شيء",
+    busDir:"دليل الحافلات · İETT", busSearchPh:"ابحث عن خط أو محطة (مثل 500T)",
+    tripPlanner:"مخطّط الرحلات", from:"من", to:"إلى", searchStop:"ابحث عن محطة أو مكان…",
+    pickPoint:"اختر نقطة على الخريطة", swap:"تبديل", findPath:"◇ إيجاد أفضل مسار", clear:"مسح",
+    min:"دقيقة", stops:"محطات", transfers:"تحويلات", favourites:"★ المفضلة",
+    recentPlans:"الرحلات الأخيرة", clearAll:"مسح الكل", setOrigin:"تعيين كانطلاق", setDest:"تعيين كوجهة",
+    predArrivals:"الوصول المتوقع", live:"مباشر", connectivity:"الارتباطات", expansion:"مشاريع التوسعة",
+    lpSrc:"البيانات وفق سجلات بلدية إسطنبول ومترو إسطنبول · التواريخ توقعات رسمية",
+    announcements:"الإعلانات", collapse:"طيّ",
+    hint:"اسحب للتحريك · مرّر للتكبير · انقر على <b>محطة</b> أو <b>خط</b> للتفاصيل",
+    saveFav:"☆ حفظ في المفضلة", favourited:"★ في المفضلة",
+    walk:"سيرًا", busLabel:"حافلة", transferAt:"تحويل في", walkToShort:"امشِ إلى", also:"أيضًا:",
+    stop_one:"محطة", stop_many:"محطات", fastest:"الأسرع", option:"خيار", minUnit:"د",
+    pickOD:"ابحث عن انطلاق ووجهة، أو المس 📍 لوضع نقطة على الخريطة.",
+    noRoute:"لم يُعثر على مسار — جرّب نقاطًا أقرب إلى الشبكة.",
+    noFav:"لا مفضلات بعد — اعثر على مسار ثم المس ☆.", noRecent:"لا رحلات أخيرة.", noLines:"لا خطوط مطابقة.",
+    toYourDest:"إلى وجهتك", toStop:"إلى", fromStop:"من",
+    annNone:"✓ لا اضطرابات مبلّغة — الشبكة تعمل بشكل طبيعي.",
+    annFoot:"الأعطال والإغلاقات المبلّغة. الحالة الرسمية:",
+    until:"حتى", daysLeft:"يومًا متبقيًا", endsToday:"ينتهي اليوم", ended:"انتهى",
+    sevMajor:"كبير", sevPartial:"جزئي", sevMinor:"طفيف",
+    "ttl:Service suspended":"الخدمة متوقفة", "ttl:Section affected":"قسم متأثر", "ttl:Service notice":"إشعار خدمة",
+    serviceHours:"ساعات الخدمة", every:"كل", hours24:"على مدار الساعة", interchange:"محطة تحويل", transferWord:"تحويل",
+    schedDep:"المغادرات المجدولة", official:"رسمي", schedLoading:"جارٍ تحميل الجدول الرسمي…",
+    schedNone:"لا مغادرات أخرى اليوم.", firstDep:"الأولى", lastDep:"الأخيرة", alternatives:"البدائل",
+    tripTab:"رحلة", advTab:"✦ مغامرة", stopN:"محطة", addStop:"+ إضافة محطة", planAdv:"✦ خطّط المغامرة",
+    leg:"مرحلة", advEmpty:"حدّد كل المحطات — ابحث عن مكان أو المس 📍.",
+    tabWeather:"☀ الطقس", wxTitle:"إسطنبول · طقس البلديات", istTime:"توقيت إسطنبول (GMT+3)",
+    wxSearchPh:"ابحث عن بلدية…", wxLoading:"جارٍ تحميل الطقس…", wxFail:"تعذّر تحميل الطقس (يلزم اتصال).",
+    wxUpdated:"حُدّث",
+    wx0:"صافٍ", wx1:"صافٍ غالبًا", wx2:"غائم جزئيًا", wx3:"غائم", wx45:"ضباب",
+    wx51:"رذاذ", wx61:"مطر", wx71:"ثلج", wx80:"زخات مطر", wx95:"عاصفة رعدية",
+    boardClosed:"مغلق", boardSusp:"الخدمة متوقفة", opensAt:"يفتح", seeAnn:"انظر الإعلانات",
+    nextArr:"التالي", followingArr:"الذي يليه", noApproach:"لا عربات قادمة.", carrOff:"طبقة العربات معطّلة.",
+    kind_metro:"مترو", kind_tram:"ترام", kind_ferry:"عبّارة", kind_funicular:"قطار جبلي مائل",
+    kind_marmaray:"مرمراي", kind_suburban:"ضواحٍ", kind_metrobus:"متروبوس", kind_cable:"تلفريك",
+    shuttleSpur:"خط مكوكي", interchangesWord:"تحويلات", targetOpen:"الافتتاح المستهدف", soonWord:"قريبًا", stationsLower:"محطات",
+    st_construction:"قيد الإنشاء", st_planned:"مخطَّط", st_testing:"قيد الإنشاء / الاختبار", st_approx:"مسار تقريبي",
+    servedBy:"تخدمها {n} خط/خطوط." },
+  fr:{ liveNet:"Réseau de transport en direct", source:"source ↗", lines:"Lignes", stations:"Stations", carriages:"Rames",
+    tabActive:"● Actif", tabVision:"◇ Vision", tabBus:"▤ Bus", tabWeather:"☀ Météo",
+    baseMap:"Fond de carte", dark:"Sombre", streets:"Rues", satellite:"Satellite",
+    liveCarr:"Rames en direct", stationMarkers:"Marqueurs de stations", simSpeed:"Vitesse de simulation",
+    networkLines:"Lignes du réseau", all:"Tout", none:"Aucune",
+    busDir:"Répertoire des bus · İETT", busSearchPh:"Ligne ou arrêt (ex. 500T, Kadıköy)",
+    tripPlanner:"Planificateur", from:"De", to:"À", searchStop:"Rechercher un arrêt ou un lieu…",
+    pickPoint:"Choisir un point sur la carte", swap:"Inverser", findPath:"◇ Meilleur itinéraire", clear:"Effacer",
+    min:"Min", stops:"Arrêts", transfers:"Corresp.", favourites:"★ Favoris",
+    recentPlans:"Trajets récents", clearAll:"tout effacer", setOrigin:"Définir comme départ", setDest:"Définir comme arrivée",
+    predArrivals:"Arrivées prédictives", live:"DIRECT", connectivity:"Connexions", expansion:"Projets d'extension",
+    lpSrc:"Données alignées sur les registres İBB / Metro İstanbul · les dates sont des projections officielles",
+    announcements:"Annonces", collapse:"réduire",
+    hint:"Glissez pour déplacer · Molette pour zoomer · Cliquez une <b>station</b> ou une <b>ligne</b>",
+    saveFav:"☆ Ajouter aux favoris", favourited:"★ Favori",
+    walk:"Marche", busLabel:"Bus", transferAt:"Correspondance à", walkToShort:"marcher vers", also:"aussi :",
+    stop_one:"arrêt", stop_many:"arrêts", fastest:"Le plus rapide", option:"Option", minUnit:"min",
+    pickOD:"Cherchez un départ et une arrivée, ou touchez 📍 pour placer un point.",
+    noRoute:"Aucun itinéraire — essayez des points plus proches du réseau.",
+    noFav:"Pas encore de favoris — trouvez un itinéraire puis touchez ☆.", noRecent:"Aucun trajet récent.", noLines:"Aucune ligne trouvée.",
+    toYourDest:"jusqu'à votre destination", toStop:"vers", fromStop:"depuis",
+    annNone:"✓ Aucune perturbation signalée — réseau normal.",
+    annFoot:"Pannes et fermetures signalées. Statut officiel :",
+    until:"jusqu'au", daysLeft:"jours restants", endsToday:"se termine aujourd'hui", ended:"terminé",
+    sevMajor:"Majeure", sevPartial:"Partielle", sevMinor:"Mineure",
+    "ttl:Service suspended":"Service suspendu", "ttl:Section affected":"Section affectée", "ttl:Service notice":"Avis de service",
+    serviceHours:"Horaires de service", every:"toutes les", hours24:"24h/24", interchange:"Pôle d'échange", transferWord:"correspondance",
+    schedDep:"Départs programmés", official:"OFFICIEL", schedLoading:"Chargement des horaires officiels…",
+    schedNone:"Plus de départs aujourd'hui.", firstDep:"premier", lastDep:"dernier", alternatives:"Alternatives",
+    tripTab:"Trajet", advTab:"✦ Aventure", stopN:"Étape", addStop:"+ Ajouter une étape", planAdv:"✦ Planifier l'aventure",
+    leg:"Étape", advEmpty:"Définissez chaque étape — cherchez un lieu ou touchez 📍.",
+    tabWeather:"☀ Météo", wxTitle:"İstanbul · Météo par district", istTime:"Heure d'İstanbul (GMT+3)",
+    wxSearchPh:"Rechercher un district…", wxLoading:"Chargement de la météo…", wxFail:"Météo indisponible (internet requis).",
+    wxUpdated:"mis à jour",
+    wx0:"Dégagé", wx1:"Plutôt clair", wx2:"Partiellement nuageux", wx3:"Couvert", wx45:"Brouillard",
+    wx51:"Bruine", wx61:"Pluie", wx71:"Neige", wx80:"Averses", wx95:"Orage",
+    boardClosed:"Fermé", boardSusp:"Service suspendu", opensAt:"ouvre à", seeAnn:"voir Annonces",
+    nextArr:"Prochain", followingArr:"Suivant", noApproach:"Aucune rame en approche.", carrOff:"Couche des rames désactivée.",
+    kind_metro:"Métro", kind_tram:"Tramway", kind_ferry:"Ferry", kind_funicular:"Funiculaire",
+    kind_marmaray:"Marmaray", kind_suburban:"Banlieue", kind_metrobus:"Métrobus (BRT)", kind_cable:"Téléphérique",
+    shuttleSpur:"navette", interchangesWord:"correspondances", targetOpen:"ouverture prévue", soonWord:"bientôt", stationsLower:"stations",
+    st_construction:"En construction", st_planned:"Planifié", st_testing:"En construction / essais", st_approx:"Tracé approximatif",
+    servedBy:"Desservie par {n} ligne(s)." }
 };
-let lang = (function(){ try{ const s=localStorage.getItem('irn_lang'); if(s==='en'||s==='tr') return s; }catch(e){}
-  return (navigator.language||'').toLowerCase().startsWith('tr') ? 'tr' : 'en'; })();
+const LOCALE = { en:'en-GB', tr:'tr-TR', ar:'ar-u-nu-latn', fr:'fr-FR' };   // ar: Latin digits to match the UI's numerals
+let lang = (function(){ try{ const s=localStorage.getItem('irn_lang'); if(I18N[s]) return s; }catch(e){}
+  const nv=(navigator.language||'').toLowerCase();
+  for(const l of ['tr','ar','fr']) if(nv.startsWith(l)) return l;
+  return 'en'; })();
 function t(k){ const d=I18N[lang]||I18N.en; return d[k]!==undefined ? d[k] : (I18N.en[k]!==undefined ? I18N.en[k] : k); }
 function applyI18n(){
   document.querySelectorAll('[data-i18n]').forEach(el=> el.textContent = t(el.getAttribute('data-i18n')));
@@ -653,7 +746,7 @@ function applyI18n(){
   document.documentElement.lang = lang;
 }
 function setLang(l){
-  if(l!=='en' && l!=='tr') return;
+  if(!I18N[l]) return;
   lang=l; try{ localStorage.setItem('irn_lang', l); }catch(e){}
   document.querySelectorAll('#langSeg button').forEach(b=> b.classList.toggle('active', b.dataset.lang===l));
   applyI18n();
@@ -1443,7 +1536,8 @@ function openStation(reg){
   document.getElementById('stnLines').innerHTML = [...reg.lines]
     .map(ref=>`<span class="badge" style="background:${colorForLine(ref)}">${ref}</span>`).join("");
   const nL=reg.lines.size;
-  let meta = lang==='tr' ? `${nL} hat hizmet veriyor.` : `Served by ${nL} line${nL>1?"s":""}.`;
+  let meta = t('servedBy').replace('{n}', nL);
+  if(lang==='en') meta = `Served by ${nL} line${nL>1?"s":""}.`;   // proper English plural
   if(nL>1) meta += ` <span class="ix">◆ ${t('interchange')} · ${TRANSFER_MIN} ${t('minUnit')} ${t('transferWord')}</span>`;
   document.getElementById('stnMeta').innerHTML = meta;
   // operating hours / frequency per serving line (official-style timetable)
@@ -2217,7 +2311,7 @@ function renderWeather(){
   list.querySelectorAll('.wx-row').forEach(row=> row.addEventListener('click', ()=>
     map.flyTo([+row.dataset.lat, +row.dataset.lng], Math.max(map.getZoom(),12), {duration:.6})));
   const upd=document.getElementById('wxUpd');
-  if(upd) upd.textContent = t('wxUpdated')+' '+new Intl.DateTimeFormat(lang==='tr'?'tr-TR':'en-GB',
+  if(upd) upd.textContent = t('wxUpdated')+' '+new Intl.DateTimeFormat(LOCALE[lang]||'en-GB',
     {timeZone:'Europe/Istanbul',hour:'2-digit',minute:'2-digit'}).format(new Date(wxFetchedAt));
   // map badges: temp + emoji at each district centre
   weatherLayer.clearLayers();
@@ -2236,10 +2330,10 @@ function renderWeather(){
 setInterval(()=>{
   const el=document.getElementById('wxClock'); if(!el || currentTab!=='weather') return;
   const now=new Date();
-  el.textContent=new Intl.DateTimeFormat(lang==='tr'?'tr-TR':'en-GB',
+  el.textContent=new Intl.DateTimeFormat(LOCALE[lang]||'en-GB',
     {timeZone:'Europe/Istanbul',hour:'2-digit',minute:'2-digit',second:'2-digit'}).format(now);
   const de=document.getElementById('wxDate');
-  if(de) de.textContent=new Intl.DateTimeFormat(lang==='tr'?'tr-TR':'en-GB',
+  if(de) de.textContent=new Intl.DateTimeFormat(LOCALE[lang]||'en-GB',
     {timeZone:'Europe/Istanbul',weekday:'long',day:'numeric',month:'long'}).format(now);
 }, 1000);
 
