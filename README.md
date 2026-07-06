@@ -1,9 +1,18 @@
-# İstanbul Ray-Net — Live Rail Network Map & Simulation
+<p align="center">
+  <img src="assets/logo.svg" width="110" alt="İstanbul Ray-Net logo — a metro M drawn as a transit route line">
+</p>
 
-An interactive map of Istanbul's rail network (metro, Marmaray, trams, funiculars,
-Metrobüs and ferries) on a real dark basemap, with animated "live" carriages,
-multimodal trip planning, a searchable İETT bus directory, and a Vision & Expansion
-tab showing official future projects.
+<h1 align="center">İstanbul Ray-Net — Live Transit Network Map</h1>
+
+<p align="center">
+  <img src="assets/og-card.png" width="640" alt="İSTANBUL · RAY-NET — live transit network map of İstanbul">
+</p>
+
+An interactive map of Istanbul's transit network (metro, Marmaray, trams, funiculars,
+cable cars, Metrobüs, ferries and buses) on a real dark basemap, with animated "live"
+carriages, official exact timetables, multimodal + multi-stop trip planning, live
+auto-updating disruptions, per-district weather, and a Vision & Expansion tab showing
+official future projects. Bilingual (EN/TR).
 
 **Live site:** https://hero4mohamed.github.io/Metro-Istanbul-General-City-Map/
 
