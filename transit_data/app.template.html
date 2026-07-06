@@ -9,6 +9,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;600;700&family=JetBrains+Mono:wght@500;700;800&display=swap" rel="stylesheet">
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 34 34'%3E%3Crect x='1' y='1' width='32' height='32' rx='9' fill='%23D42A2A'/%3E%3Cpath d='M8 24V11L17 19.5 26 11V24' fill='none' stroke='%23fff' stroke-width='3.4' stroke-linecap='round' stroke-linejoin='round'/%3E%3Ccircle cx='17' cy='19.5' r='2.4' fill='%234ADE80'/%3E%3C/svg%3E">
 <style>
   :root{
     --obsidian:#070A12; --panel:rgba(13,17,27,0.74); --stroke:rgba(255,255,255,0.08);
@@ -55,9 +56,13 @@
     box-shadow:0 24px 60px -18px rgba(0,0,0,.8),0 2px 8px rgba(0,0,0,.35),inset 0 1px 0 rgba(255,255,255,.07);}
 
   /* Top bar */
-  .topbar{position:fixed;top:14px;left:14px;padding:14px 17px;z-index:1000;max-width:320px;}
-  .topbar h1{font-family:var(--display);font-size:15px;letter-spacing:2.6px;font-weight:700;display:flex;align-items:center;gap:10px;}
-  .topbar h1 .dot{width:9px;height:9px;border-radius:50%;background:var(--grad-accent);box-shadow:0 0 14px var(--accent);animation:pulse 2.2s infinite;}
+  .topbar{position:fixed;top:14px;left:14px;padding:14px 17px;z-index:1000;max-width:320px;animation:cardIn .5s var(--ease) backwards;}
+  .topbar h1{font-family:var(--display);font-size:15px;letter-spacing:2.6px;font-weight:700;display:flex;align-items:center;gap:10px;cursor:default;}
+  .topbar .logo{flex:none;filter:drop-shadow(0 4px 12px rgba(52,211,153,.35));transition:transform .35s var(--ease);}
+  .topbar h1:hover .logo{transform:rotate(-8deg) scale(1.08);}
+  .logo-hub{animation:hubPulse 2.4s ease-in-out infinite;}
+  @keyframes hubPulse{0%,100%{opacity:1;}50%{opacity:.4;}}
+  @keyframes cardIn{from{opacity:0;transform:translateY(12px);}to{opacity:1;transform:translateY(0);}}
   .topbar .sub{font-size:9.5px;color:var(--muted);letter-spacing:1.4px;margin-top:6px;text-transform:uppercase;font-weight:600;}
   .stats{display:flex;gap:8px;margin-top:12px;}
   .stats .kv{flex:1;background:var(--surface);border:1px solid var(--stroke);border-radius:11px;padding:7px 4px 6px;text-align:center;}
@@ -69,7 +74,10 @@
   /* Right control stack */
   .controls{position:fixed;top:14px;right:14px;width:286px;z-index:1000;display:flex;flex-direction:column;gap:12px;
     max-height:calc(100vh - 64px);overflow-y:auto;overflow-x:hidden;padding:0 5px 18px 0;scrollbar-gutter:stable;}
-  .card{padding:15px;}
+  .card{padding:15px;animation:cardIn .45s var(--ease) backwards;}
+  .controls .card:nth-child(1){animation-delay:.06s;} .controls .card:nth-child(2){animation-delay:.12s;}
+  .controls .card:nth-child(3){animation-delay:.18s;} .controls .card:nth-child(4){animation-delay:.24s;}
+  .controls .card:nth-child(5){animation-delay:.30s;} .controls .card:nth-child(6){animation-delay:.36s;}
   .sec{font-size:9.5px;letter-spacing:1.7px;color:var(--muted);text-transform:uppercase;font-weight:700;display:flex;align-items:center;gap:8px;margin-bottom:12px;}
   .sec::before{content:"";width:16px;height:4px;border-radius:99px;background:var(--grad-accent);box-shadow:0 0 10px rgba(52,211,153,.55);}
 
@@ -170,8 +178,12 @@
   .ac-item .ac-dot{width:7px;height:7px;border-radius:50%;flex:none;box-shadow:0 0 5px currentColor;}
   .ac-item small{color:var(--dim);margin-left:auto;font-size:8.5px;text-transform:uppercase;letter-spacing:.6px;font-weight:600;}
   .btn{width:100%;padding:11px;border:none;border-radius:12px;cursor:pointer;font-family:var(--font);font-size:12px;
-    font-weight:700;letter-spacing:.4px;color:#03130A;background:var(--grad-accent);
+    font-weight:700;letter-spacing:.4px;color:#03130A;background:var(--grad-accent);position:relative;overflow:hidden;
     box-shadow:0 8px 22px -8px rgba(52,211,153,.75),inset 0 1px 0 rgba(255,255,255,.25);transition:all .18s var(--ease);}
+  .btn::after{content:"";position:absolute;top:0;left:-70%;width:45%;height:100%;
+    background:linear-gradient(105deg,transparent,rgba(255,255,255,.4),transparent);transform:skewX(-20deg);transition:left .55s var(--ease);}
+  .btn:hover::after{left:130%;}
+  .btn.ghost::after{display:none;}
   .btn:hover{filter:brightness(1.09);transform:translateY(-1px);box-shadow:0 12px 26px -8px rgba(52,211,153,.8),inset 0 1px 0 rgba(255,255,255,.25);}
   .btn:active{transform:translateY(0) scale(.99);}
   .btn.ghost{background:var(--surface);color:var(--muted);box-shadow:none;border:1px solid var(--stroke-2);font-weight:600;margin-top:6px;}
@@ -324,6 +336,14 @@
     background:var(--wc,#E5484D);color:#fff;font-size:12px;font-weight:800;
     box-shadow:0 0 0 1.5px #070A12,0 3px 10px rgba(0,0,0,.55);}
   .leaflet-tooltip.lt b{color:#fff;}
+
+  /* micro-interactions */
+  .announce{animation:cardIn .5s .2s var(--ease) backwards;}
+  .lchip:active{transform:scale(.92);}
+  .seg button:active,.tabs button:active,.rowbtns button:active{transform:scale(.95);}
+  .ropt:active,.plan-item:active,.wx-row:active,.bus-row:active,.ann-item:active{transform:scale(.985);}
+  .wx-clock{animation:clockGlow 3.4s ease-in-out infinite;}
+  @keyframes clockGlow{0%,100%{text-shadow:0 0 22px rgba(56,189,248,.45);}50%{text-shadow:0 0 34px rgba(56,189,248,.85);}}
   @media (max-width:760px){.controls{width:228px;}.station{width:228px;}.topbar{max-width:200px;}}
 </style>
 </head>
@@ -332,7 +352,16 @@
 <canvas id="trainCanvas"></canvas>
 
 <div class="topbar glass">
-  <h1><span class="dot"></span>İSTANBUL · RAY-NET</h1>
+  <h1><svg class="logo" viewBox="0 0 34 34" width="30" height="30" aria-hidden="true">
+      <defs><linearGradient id="lgM" x1="0" y1="0" x2="1" y2="1">
+        <stop offset="0" stop-color="#4ADE80"/><stop offset="1" stop-color="#14B8A6"/>
+      </linearGradient></defs>
+      <rect x="1.2" y="1.2" width="31.6" height="31.6" rx="9.5" fill="rgba(4,7,13,.85)" stroke="rgba(255,255,255,.16)" stroke-width="1.2"/>
+      <path d="M8 24 V11 L17 19.5 26 11 V24" fill="none" stroke="url(#lgM)" stroke-width="3.3" stroke-linecap="round" stroke-linejoin="round"/>
+      <circle cx="8" cy="11" r="2" fill="#fff"/>
+      <circle cx="26" cy="11" r="2" fill="#fff"/>
+      <circle class="logo-hub" cx="17" cy="19.5" r="2.3" fill="#E5484D"/>
+    </svg>İSTANBUL · RAY-NET</h1>
   <div class="sub"><span data-i18n="liveNet">Live Rail Network</span> · <a href="https://github.com/Hero4mohamed/Metro-Istanbul-General-City-Map" target="_blank" rel="noopener" style="color:var(--accent);text-decoration:none;font-weight:700;" data-i18n="source">source ↗</a></div>
   <div class="stats">
     <div class="kv"><b id="sLines">0</b><span data-i18n="lines">Lines</span></div>
@@ -2398,6 +2427,16 @@ function renderAnnouncements(){
 document.getElementById('annHead').addEventListener('click', ()=>
   document.getElementById('announce').classList.toggle('collapsed'));
 
+// ease-out count-up for the topbar stat tiles
+function countUp(el, target, ms){
+  if(!el) return; target=+target||0;
+  const t0=performance.now();
+  (function tick(now){
+    const p=Math.min(1,(now-t0)/ms), e=1-Math.pow(1-p,3);
+    el.textContent=Math.round(target*e);
+    if(p<1) requestAnimationFrame(tick);
+  })(t0);
+}
 function init(){
   document.querySelectorAll('#langSeg button').forEach(b=> b.classList.toggle('active', b.dataset.lang===lang));
   applyI18n();
@@ -2407,9 +2446,9 @@ function init(){
   rebuildAdvRows();           // adventure planner stop rows
   sizeCanvas();
   spawnTrains();
-  document.getElementById('sLines').textContent = liveLines.filter(l=>!l.partOf).length;
-  document.getElementById('sStations').textContent = stationList.length;
-  document.getElementById('sTrains').textContent = trains.length;
+  countUp(document.getElementById('sLines'), liveLines.filter(l=>!l.partOf).length, 900);
+  countUp(document.getElementById('sStations'), stationList.length, 1100);
+  countUp(document.getElementById('sTrains'), trains.length, 1300);
   setTab('active');           // builds legend + adds the active-scope layers
   applyZoomStyling();         // size lines/markers for the initial zoom
   renderPlanLists();          // restore saved history + favourites
