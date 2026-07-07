@@ -16,6 +16,13 @@ official future projects. Bilingual (EN/TR).
 
 **Live site:** https://hero4mohamed.github.io/Metro-Istanbul-General-City-Map/
 
+## 📲 Install as an app (PWA)
+Open the live site on your phone and install it — it gets its own icon, full-screen
+mobile UI (bottom navigation + slide-up sheets) and **auto-updates on every deploy**:
+- **Android (Chrome/Edge):** tap the **Install app** button in the ◈ Layers sheet
+  (or the browser's "Install app / Add to Home screen" menu).
+- **iPhone (Safari):** Share → **Add to Home Screen**.
+
 It's a single self-contained file — open [`index.html`](index.html) in any modern
 browser (it needs internet for the map tiles, the Leaflet library, and on-demand
 bus-route lookups).

@@ -37,3 +37,9 @@ console.log('ACTIVE:', active.length, ' B2:', b2.length, ' FERRY:', ferry.length
 const outPath = path.join(ROOT, 'index.html');   // GitHub Pages serves the repo-root index.html
 fs.writeFileSync(outPath, html);
 console.log('WROTE', outPath, (fs.statSync(outPath).size/1024).toFixed(1), 'KB');
+
+// emit the service worker with a fresh version stamp → installed apps self-update on deploy
+const swTpl = fs.readFileSync(path.join(DIR, 'sw.template.js'), 'utf8');
+const swVersion = new Date().toISOString().replace(/[-:TZ.]/g,'').slice(0,14);
+fs.writeFileSync(path.join(ROOT, 'sw.js'), swTpl.replace('__SW_VERSION__', swVersion));
+console.log('WROTE sw.js  version', swVersion);

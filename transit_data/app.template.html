@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
 <title>İSTANBUL RAY-NET · Live Rail Network Map &amp; Simulation</title>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
       integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
@@ -12,6 +12,12 @@
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 34 34'%3E%3Crect x='1' y='1' width='32' height='32' rx='9' fill='%23D42A2A'/%3E%3Cpath d='M8 24V11L17 19.5 26 11V24' fill='none' stroke='%23fff' stroke-width='3.4' stroke-linecap='round' stroke-linejoin='round'/%3E%3Ccircle cx='17' cy='19.5' r='2.4' fill='%234ADE80'/%3E%3C/svg%3E">
 <meta name="description" content="Live İstanbul transit map — metro, tram, funicular, cable car, Marmaray, ferry and bus. Real-time carriages, official timetables, multi-stop trip planner, live disruptions and district weather.">
 <meta name="theme-color" content="#070A12">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="RAY-NET">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="İSTANBUL · RAY-NET">
 <meta property="og:title" content="İSTANBUL · RAY-NET — Live Transit Network Map">
@@ -361,6 +367,43 @@
   .wx-clock{animation:clockGlow 3.4s ease-in-out infinite;}
   @keyframes clockGlow{0%,100%{text-shadow:0 0 22px rgba(56,189,248,.45);}50%{text-shadow:0 0 34px rgba(56,189,248,.85);}}
   @media (max-width:760px){.controls{width:228px;}.station{width:228px;}.topbar{max-width:200px;}}
+
+  /* ============ MOBILE APP SHELL (PWA) ============ */
+  .mnav,.msheet,.mbackdrop,.mtoast{display:none;}
+  body.mobile .controls,body.mobile .hint{display:none!important;}
+  body.mobile .topbar{left:10px;right:10px;max-width:none;top:calc(8px + env(safe-area-inset-top));
+    padding:9px 13px;display:flex;align-items:center;gap:10px;}
+  body.mobile .topbar h1{flex:1;font-size:13.5px;letter-spacing:1.8px;}
+  body.mobile .topbar .sub,body.mobile .topbar .stats{display:none;}
+  body.mobile .topbar .langseg{margin:0;flex:0 0 148px;}
+  body.mobile .mnav{position:fixed;left:10px;right:10px;bottom:calc(10px + env(safe-area-inset-bottom));
+    z-index:1400;display:flex;gap:3px;padding:6px;border-radius:22px;}
+  .mnav button{flex:1;background:none;border:none;color:var(--muted);cursor:pointer;border-radius:16px;
+    display:flex;flex-direction:column;align-items:center;gap:3px;padding:7px 0 6px;transition:all .18s var(--ease);}
+  .mnav button .mi{font-size:17px;line-height:1;}
+  .mnav button .ml{font:650 8.5px var(--font);letter-spacing:.3px;}
+  .mnav button.on{color:#7CF0BE;background:rgba(52,211,153,.14);box-shadow:inset 0 0 0 1px rgba(52,211,153,.35);}
+  .mnav button:active{transform:scale(.93);}
+  body.mobile .mbackdrop{display:block;position:fixed;inset:0;z-index:1250;background:rgba(3,6,10,.5);
+    opacity:0;pointer-events:none;transition:opacity .25s;}
+  body.mobile .mbackdrop.on{opacity:1;pointer-events:auto;}
+  body.mobile .msheet{display:block;position:fixed;left:0;right:0;bottom:0;z-index:1300;max-height:80vh;
+    overflow-y:auto;border-radius:24px 24px 0 0;padding:8px 14px calc(88px + env(safe-area-inset-bottom));
+    transform:translateY(105%);transition:transform .32s var(--ease);}
+  body.mobile .msheet.open{transform:none;}
+  .msheet .mgrab{width:42px;height:4.5px;background:rgba(255,255,255,.22);border-radius:99px;margin:4px auto 12px;}
+  .msheet .card{padding:0 0 14px;border:none;background:none;box-shadow:none;backdrop-filter:none;animation:none;border-radius:0;}
+  .msheet .announce{position:static;width:auto;border:none;background:none;box-shadow:none;backdrop-filter:none;animation:none;overflow:visible;}
+  .msheet .ann-body{max-height:none;padding:0;}
+  .msheet .wx-list,.msheet .bus-list{max-height:none;}
+  body.mobile .station,body.mobile .linep{left:8px;right:8px;width:auto;
+    bottom:calc(86px + env(safe-area-inset-bottom));max-height:56vh;border-radius:20px;}
+  body.mobile .mtoast{display:block;position:fixed;top:calc(64px + env(safe-area-inset-top));left:50%;
+    transform:translate(-50%,-14px);z-index:1500;padding:9px 16px;border-radius:99px;font-size:11.5px;font-weight:700;
+    color:#03130A;background:var(--grad-accent);box-shadow:0 10px 28px -8px rgba(52,211,153,.8);
+    opacity:0;pointer-events:none;transition:all .3s var(--ease);}
+  body.mobile .mtoast.on{opacity:1;transform:translate(-50%,0);}
+  .mhint{font-size:10px;color:var(--dim);line-height:1.5;margin:6px 0 10px;}
 </style>
 </head>
 <body>
@@ -599,7 +642,10 @@ const I18N = {
     kind_marmaray:"Marmaray", kind_suburban:"Suburban", kind_metrobus:"Metrobüs (BRT)", kind_cable:"Cable car",
     shuttleSpur:"shuttle spur", interchangesWord:"interchanges", targetOpen:"target open", soonWord:"soon", stationsLower:"stations",
     st_construction:"Under construction", st_planned:"Planned", st_testing:"Under construction / testing", st_approx:"Approximate alignment",
-    servedBy:"Served by {n} line(s)." },
+    servedBy:"Served by {n} line(s).",
+    mMap:"Map", mPlanner:"Planner", mLayers:"Layers", mWeather:"Weather", mAlerts:"Alerts",
+    installApp:"📲 Install app", appUpdated:"Updated to the latest version ✓",
+    iosHint:"iPhone: Share → Add to Home Screen to install." },
   tr:{ liveNet:"Canlı Raylı Ağ", source:"kaynak ↗", lines:"Hatlar", stations:"İstasyonlar", carriages:"Vagonlar",
     tabActive:"● Aktif", tabVision:"◇ Vizyon", tabBus:"▤ Otobüsler",
     baseMap:"Harita", dark:"Koyu", streets:"Sokaklar", satellite:"Uydu",
@@ -644,7 +690,10 @@ const I18N = {
     kind_marmaray:"Marmaray", kind_suburban:"Banliyö", kind_metrobus:"Metrobüs", kind_cable:"Teleferik",
     shuttleSpur:"mekik hattı", interchangesWord:"aktarmalar", targetOpen:"hedef açılış", soonWord:"yakında", stationsLower:"istasyon",
     st_construction:"Yapım aşamasında", st_planned:"Planlanan", st_testing:"Yapım / test aşamasında", st_approx:"Yaklaşık güzergah",
-    servedBy:"{n} hat hizmet veriyor." },
+    servedBy:"{n} hat hizmet veriyor.",
+    mMap:"Harita", mPlanner:"Planlayıcı", mLayers:"Katmanlar", mWeather:"Hava", mAlerts:"Duyurular",
+    installApp:"📲 Uygulamayı yükle", appUpdated:"En son sürüme güncellendi ✓",
+    iosHint:"iPhone: Paylaş → Ana Ekrana Ekle ile yükleyin." },
   ar:{ liveNet:"شبكة النقل المباشرة", source:"المصدر ↗", lines:"الخطوط", stations:"المحطات", carriages:"العربات",
     tabActive:"● النشط", tabVision:"◇ الرؤية", tabBus:"▤ الحافلات", tabWeather:"☀ الطقس",
     baseMap:"خريطة الأساس", dark:"داكن", streets:"الشوارع", satellite:"قمر صناعي",
@@ -687,7 +736,10 @@ const I18N = {
     kind_marmaray:"مرمراي", kind_suburban:"ضواحٍ", kind_metrobus:"متروبوس", kind_cable:"تلفريك",
     shuttleSpur:"خط مكوكي", interchangesWord:"تحويلات", targetOpen:"الافتتاح المستهدف", soonWord:"قريبًا", stationsLower:"محطات",
     st_construction:"قيد الإنشاء", st_planned:"مخطَّط", st_testing:"قيد الإنشاء / الاختبار", st_approx:"مسار تقريبي",
-    servedBy:"تخدمها {n} خط/خطوط." },
+    servedBy:"تخدمها {n} خط/خطوط.",
+    mMap:"الخريطة", mPlanner:"المخطّط", mLayers:"الطبقات", mWeather:"الطقس", mAlerts:"تنبيهات",
+    installApp:"📲 تثبيت التطبيق", appUpdated:"تم التحديث إلى أحدث إصدار ✓",
+    iosHint:"آيفون: مشاركة ← أضِف إلى الشاشة الرئيسية للتثبيت." },
   fr:{ liveNet:"Réseau de transport en direct", source:"source ↗", lines:"Lignes", stations:"Stations", carriages:"Rames",
     tabActive:"● Actif", tabVision:"◇ Vision", tabBus:"▤ Bus", tabWeather:"☀ Météo",
     baseMap:"Fond de carte", dark:"Sombre", streets:"Rues", satellite:"Satellite",
@@ -730,7 +782,10 @@ const I18N = {
     kind_marmaray:"Marmaray", kind_suburban:"Banlieue", kind_metrobus:"Métrobus (BRT)", kind_cable:"Téléphérique",
     shuttleSpur:"navette", interchangesWord:"correspondances", targetOpen:"ouverture prévue", soonWord:"bientôt", stationsLower:"stations",
     st_construction:"En construction", st_planned:"Planifié", st_testing:"En construction / essais", st_approx:"Tracé approximatif",
-    servedBy:"Desservie par {n} ligne(s)." }
+    servedBy:"Desservie par {n} ligne(s).",
+    mMap:"Carte", mPlanner:"Trajets", mLayers:"Couches", mWeather:"Météo", mAlerts:"Alertes",
+    installApp:"📲 Installer l'app", appUpdated:"Mis à jour vers la dernière version ✓",
+    iosHint:"iPhone : Partager → Sur l'écran d'accueil pour installer." }
 };
 const LOCALE = { en:'en-GB', tr:'tr-TR', ar:'ar-u-nu-latn', fr:'fr-FR' };   // ar: Latin digits to match the UI's numerals
 let lang = (function(){ try{ const s=localStorage.getItem('irn_lang'); if(I18N[s]) return s; }catch(e){}
@@ -2537,6 +2592,99 @@ function renderAnnouncements(){
 document.getElementById('annHead').addEventListener('click', ()=>
   document.getElementById('announce').classList.toggle('collapsed'));
 
+/* ===========================================================================
+   MOBILE APP SHELL (PWA) — bottom navigation + slide-up sheets. The existing
+   feature cards are REPARENTED into sheets (same DOM, same listeners), so the
+   phone gets its own UI without duplicating any logic.
+   =========================================================================== */
+const IS_MOBILE = matchMedia('(max-width:720px)').matches;
+let mSheets={}, mNavBtns={};
+function mkSheet(id){
+  const s=document.createElement('div'); s.className='msheet glass'; s.id='sheet_'+id;
+  s.innerHTML='<div class="mgrab"></div>';
+  document.body.appendChild(s);
+  // swipe-down to close
+  let y0=null, dy=0;
+  s.addEventListener('touchstart',e=>{ if(s.scrollTop<=0){ y0=e.touches[0].clientY; dy=0; } },{passive:true});
+  s.addEventListener('touchmove',e=>{ if(y0===null) return; dy=e.touches[0].clientY-y0;
+    if(dy>0){ s.style.transform=`translateY(${dy}px)`; } },{passive:true});
+  s.addEventListener('touchend',()=>{ if(y0===null) return;
+    s.style.transform=''; if(dy>90) openSheet(null); y0=null; },{passive:true});
+  return s;
+}
+function openSheet(name){
+  for(const k in mSheets) mSheets[k].classList.toggle('open', k===name);
+  document.getElementById('mbackdrop').classList.toggle('on', !!name);
+  for(const k in mNavBtns) mNavBtns[k].classList.toggle('on', (name===null? k==='map' : k===name));
+  if(navigator.vibrate) try{ navigator.vibrate(8); }catch(e){}
+}
+function setupMobile(){
+  if(!IS_MOBILE) return;
+  document.body.classList.add('mobile');
+  // backdrop + toast
+  const bd=document.createElement('div'); bd.id='mbackdrop'; bd.className='mbackdrop';
+  bd.addEventListener('click',()=>openSheet(null)); document.body.appendChild(bd);
+  // sheets
+  mSheets={ planner:mkSheet('planner'), layers:mkSheet('layers'), weather:mkSheet('weather'), alerts:mkSheet('alerts') };
+  // install button + iOS hint live at the top of the Layers sheet
+  const inst=document.createElement('button'); inst.className='btn'; inst.id='installBtn';
+  inst.style.display='none'; inst.setAttribute('data-i18n','installApp'); inst.textContent=t('installApp');
+  mSheets.layers.appendChild(inst);
+  const hint=document.createElement('div'); hint.className='mhint'; hint.id='iosHint'; hint.style.display='none';
+  hint.setAttribute('data-i18n','iosHint'); hint.textContent=t('iosHint');
+  mSheets.layers.appendChild(hint);
+  // reparent the desktop cards into their sheets (order preserved)
+  const controls=document.querySelector('.controls');
+  [...controls.children].forEach(el=>{
+    if(el.id==='cardPlanner') mSheets.planner.appendChild(el);
+    else if(el.id==='cardWeather') mSheets.weather.appendChild(el);
+    else mSheets.layers.appendChild(el);
+    el.style.display='';   // sheets control visibility now; setTab still toggles weather/bus cards
+  });
+  document.getElementById('cardPlanner').style.display='';
+  const ann=document.getElementById('announce'); mSheets.alerts.appendChild(ann); ann.classList.remove('collapsed');
+  // bottom navigation
+  const nav=document.createElement('div'); nav.className='mnav glass';
+  const items=[ ['map','🗺','mMap'], ['planner','⇆','mPlanner'], ['layers','◈','mLayers'], ['weather','☀','mWeather'], ['alerts','📢','mAlerts'] ];
+  items.forEach(([k,icon,key])=>{
+    const b=document.createElement('button');
+    b.innerHTML=`<span class="mi">${icon}</span><span class="ml" data-i18n="${key}">${t(key)}</span>`;
+    b.addEventListener('click',()=>{
+      if(k==='map'){ openSheet(null); return; }
+      if(k==='weather'){ setTab('weather'); }
+      if(k==='planner' && (currentTab==='weather'||currentTab==='bus')) setTab('active');
+      openSheet(k);
+    });
+    mNavBtns[k]=b; nav.appendChild(b);
+  });
+  document.body.appendChild(nav);
+  mNavBtns.map.classList.add('on');
+  // iOS install hint (no beforeinstallprompt on iOS)
+  const standalone = matchMedia('(display-mode: standalone)').matches || navigator.standalone;
+  if(/iphone|ipad|ipod/i.test(navigator.userAgent) && !standalone) hint.style.display='';
+}
+// toast (used for PWA update notifications)
+function showToast(msg){
+  let tEl=document.getElementById('mtoast');
+  if(!tEl){ tEl=document.createElement('div'); tEl.id='mtoast'; tEl.className='mtoast'; document.body.appendChild(tEl); }
+  tEl.textContent=msg; tEl.classList.add('on');
+  setTimeout(()=>tEl.classList.remove('on'), 4200);
+}
+// PWA: register the service worker (auto-updates on every deploy) + install prompt
+let deferredInstall=null;
+window.addEventListener('beforeinstallprompt', e=>{
+  e.preventDefault(); deferredInstall=e;
+  const b=document.getElementById('installBtn');
+  if(b){ b.style.display=''; b.onclick=async ()=>{ b.style.display='none'; deferredInstall.prompt(); await deferredInstall.userChoice; deferredInstall=null; }; }
+});
+if('serviceWorker' in navigator && (location.protocol==='https:' || location.hostname==='localhost')){
+  navigator.serviceWorker.register('sw.js', { updateViaCache:'none' }).then(reg=>{
+    document.addEventListener('visibilitychange', ()=>{ if(!document.hidden) reg.update().catch(()=>{}); });
+  }).catch(()=>{});
+  let hadSW=!!navigator.serviceWorker.controller;
+  navigator.serviceWorker.addEventListener('controllerchange', ()=>{ if(hadSW) showToast(t('appUpdated')); hadSW=true; });
+}
+
 // ease-out count-up for the topbar stat tiles
 function countUp(el, target, ms){
   if(!el) return; target=+target||0;
@@ -2548,6 +2696,7 @@ function countUp(el, target, ms){
   })(t0);
 }
 function init(){
+  setupMobile();              // phone app shell (bottom nav + sheets) — no-op on desktop
   document.querySelectorAll('#langSeg button').forEach(b=> b.classList.toggle('active', b.dataset.lang===lang));
   applyI18n();
   ensureEnglish(DISRUPTIONS); // safety net: translate any Turkish left in the baked-in feed

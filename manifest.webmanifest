@@ -1,0 +1,19 @@
+{
+  "name": "İSTANBUL RAY-NET — Live Transit Map",
+  "short_name": "RAY-NET",
+  "description": "Live İstanbul transit map: metro, tram, ferry, bus & cable car with real-time carriages, official timetables, trip planner, disruptions and weather.",
+  "id": "./",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#070A12",
+  "theme_color": "#070A12",
+  "lang": "en",
+  "categories": ["travel", "navigation", "maps"],
+  "icons": [
+    { "src": "assets/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "assets/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "assets/icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}
