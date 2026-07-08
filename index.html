@@ -359,6 +359,22 @@
     box-shadow:0 0 0 1.5px #070A12,0 3px 10px rgba(0,0,0,.55);}
   .leaflet-tooltip.lt b{color:#fff;}
 
+  /* strip maps: per-line station diagram + multimodal journey diagram */
+  .lp-strip{margin:2px 0 6px;}
+  .strip-dir{display:flex;align-items:center;gap:7px;font-size:11px;color:var(--muted);margin-bottom:7px;flex-wrap:wrap;}
+  .strip-dir b{color:var(--text);font-weight:700;}
+  .strip-dir .ar{color:var(--accent);font-weight:700;}
+  .strip-dir .strip-hint{flex-basis:100%;color:var(--dim);font-size:9.5px;letter-spacing:.2px;}
+  .strip-scroll,.jmap-scroll{overflow-x:auto;overflow-y:hidden;-webkit-overflow-scrolling:touch;
+    border-radius:14px;border:1px solid var(--stroke);padding:5px 3px 3px;
+    background:linear-gradient(180deg,rgba(255,255,255,.045),rgba(255,255,255,.012));
+    scrollbar-width:thin;scrollbar-color:rgba(255,255,255,.22) transparent;}
+  .strip-scroll::-webkit-scrollbar,.jmap-scroll::-webkit-scrollbar{height:7px;}
+  .strip-scroll::-webkit-scrollbar-thumb,.jmap-scroll::-webkit-scrollbar-thumb{background:rgba(255,255,255,.22);border-radius:99px;}
+  .strip-svg,.jmap-svg{display:block;}
+  .jmap{margin:4px 0 12px;}
+  .jmap-h{font-size:10px;letter-spacing:.7px;text-transform:uppercase;color:var(--dim);font-weight:700;margin:2px 0 5px;}
+
   /* micro-interactions */
   .announce{animation:cardIn .5s .2s var(--ease) backwards;}
   .lchip:active{transform:scale(.92);}
@@ -521,6 +537,7 @@
         <div class="c"><b id="rTr">–</b><span data-i18n="transfers">Transfers</span></div>
       </div>
       <div id="rOpts" class="ropts"></div>
+      <div id="rJourney" class="jmap"></div>
       <div id="rSteps"></div>
       <button class="btn ghost favbtn" id="favBtn">☆ Save to Favourites</button>
     </div>
@@ -573,6 +590,8 @@
   </div>
   <div class="lp-kind" id="lpKind"></div>
   <div class="lp-stats" id="lpStats"></div>
+  <div class="bt" id="lpStripBt" data-i18n="lineMap">Line map</div>
+  <div class="lp-strip" id="lpStrip"></div>
   <div class="bt" data-i18n="connectivity">Connectivity</div>
   <div class="lp-conn" id="lpConn"></div>
   <div class="bt" data-i18n="expansion">Expansion Projects</div>
@@ -645,7 +664,8 @@ const I18N = {
     servedBy:"Served by {n} line(s).",
     mMap:"Map", mPlanner:"Planner", mLayers:"Layers", mWeather:"Weather", mAlerts:"Alerts",
     installApp:"📲 Install app", appUpdated:"Updated to the latest version ✓",
-    iosHint:"iPhone: Share → Add to Home Screen to install." },
+    iosHint:"iPhone: Share → Add to Home Screen to install.",
+    lineMap:"Line map", journeyMap:"Journey map", stripHint:"swipe to see the whole line →" },
   tr:{ liveNet:"Canlı Raylı Ağ", source:"kaynak ↗", lines:"Hatlar", stations:"İstasyonlar", carriages:"Vagonlar",
     tabActive:"● Aktif", tabVision:"◇ Vizyon", tabBus:"▤ Otobüsler",
     baseMap:"Harita", dark:"Koyu", streets:"Sokaklar", satellite:"Uydu",
@@ -693,7 +713,8 @@ const I18N = {
     servedBy:"{n} hat hizmet veriyor.",
     mMap:"Harita", mPlanner:"Planlayıcı", mLayers:"Katmanlar", mWeather:"Hava", mAlerts:"Duyurular",
     installApp:"📲 Uygulamayı yükle", appUpdated:"En son sürüme güncellendi ✓",
-    iosHint:"iPhone: Paylaş → Ana Ekrana Ekle ile yükleyin." },
+    iosHint:"iPhone: Paylaş → Ana Ekrana Ekle ile yükleyin.",
+    lineMap:"Hat şeması", journeyMap:"Yolculuk şeması", stripHint:"tüm hattı görmek için kaydır →" },
   ar:{ liveNet:"شبكة النقل المباشرة", source:"المصدر ↗", lines:"الخطوط", stations:"المحطات", carriages:"العربات",
     tabActive:"● النشط", tabVision:"◇ الرؤية", tabBus:"▤ الحافلات", tabWeather:"☀ الطقس",
     baseMap:"خريطة الأساس", dark:"داكن", streets:"الشوارع", satellite:"قمر صناعي",
@@ -739,7 +760,8 @@ const I18N = {
     servedBy:"تخدمها {n} خط/خطوط.",
     mMap:"الخريطة", mPlanner:"المخطّط", mLayers:"الطبقات", mWeather:"الطقس", mAlerts:"تنبيهات",
     installApp:"📲 تثبيت التطبيق", appUpdated:"تم التحديث إلى أحدث إصدار ✓",
-    iosHint:"آيفون: مشاركة ← أضِف إلى الشاشة الرئيسية للتثبيت." },
+    iosHint:"آيفون: مشاركة ← أضِف إلى الشاشة الرئيسية للتثبيت.",
+    lineMap:"مخطط الخط", journeyMap:"مخطط الرحلة", stripHint:"اسحب لرؤية الخط بالكامل →" },
   fr:{ liveNet:"Réseau de transport en direct", source:"source ↗", lines:"Lignes", stations:"Stations", carriages:"Rames",
     tabActive:"● Actif", tabVision:"◇ Vision", tabBus:"▤ Bus", tabWeather:"☀ Météo",
     baseMap:"Fond de carte", dark:"Sombre", streets:"Rues", satellite:"Satellite",
@@ -785,7 +807,8 @@ const I18N = {
     servedBy:"Desservie par {n} ligne(s).",
     mMap:"Carte", mPlanner:"Trajets", mLayers:"Couches", mWeather:"Météo", mAlerts:"Alertes",
     installApp:"📲 Installer l'app", appUpdated:"Mis à jour vers la dernière version ✓",
-    iosHint:"iPhone : Partager → Sur l'écran d'accueil pour installer." }
+    iosHint:"iPhone : Partager → Sur l'écran d'accueil pour installer.",
+    lineMap:"Schéma de ligne", journeyMap:"Schéma du trajet", stripHint:"faites défiler pour voir toute la ligne →" }
 };
 const LOCALE = { en:'en-GB', tr:'tr-TR', ar:'ar-u-nu-latn', fr:'fr-FR' };   // ar: Latin digits to match the UI's numerals
 let lang = (function(){ try{ const s=localStorage.getItem('irn_lang'); if(I18N[s]) return s; }catch(e){}
@@ -1740,6 +1763,123 @@ function lineTooltip(line){
   const when = line.launch ? ('opens '+fmtLaunch(line.launch)) : (line.status||'planned');
   return `<b>${dref}</b> ◇ ${when} · ${km} km`;
 }
+/* ===========================================================================
+   STRIP MAPS — a per-line station diagram (line panel, like a station sign) and
+   a multimodal journey diagram (trip planner). Pure inline SVG, generated from
+   the same data the map already uses; both scroll horizontally when long.
+   =========================================================================== */
+const svgEsc = s => (s==null?'':(''+s)).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+const MODE_GLYPH = { subway:'🚇', marmaray:'🚆', suburban:'🚆', tram:'🚊', funicular:'🚡', cable:'🚠', metrobus:'🚌', ferry:'⛴', bus:'🚌' };
+function mGlyph(kind, bus){ return bus ? '🚌' : (MODE_GLYPH[kind] || '🚇'); }
+function inkOn(hex){                                    // pick black/white text for a colored chip
+  const c=(hex||'').replace('#',''); if(c.length<6) return '#fff';
+  const r=parseInt(c.slice(0,2),16), g=parseInt(c.slice(2,4),16), b=parseInt(c.slice(4,6),16);
+  return (0.299*r+0.587*g+0.114*b)>150 ? '#0b0f17' : '#fff';
+}
+function svgPill(cx, baseY, text, bg, fg){
+  const w=Math.max(28, text.length*6.1+16), x=cx-w/2;
+  return `<g><rect x="${x.toFixed(1)}" y="${baseY-13}" width="${w.toFixed(1)}" height="17" rx="8.5" fill="${bg}"/>`
+       + `<text x="${cx}" y="${baseY-1}" text-anchor="middle" font-size="9.5" font-weight="700" fill="${fg}" style="font-family:var(--font)">${svgEsc(text)}</text></g>`;
+}
+// (A) horizontal strip map of one line's stations, with interchange badges + terminals
+function lineStripSVG(line){
+  const sts=line.stations||[]; if(sts.length<2) return '';
+  const live=isLive(line), col=line.color||'#888';
+  const GAP=46, PADX=30, TY=64, H=188, W=PADX*2+(sts.length-1)*GAP;
+  const P=[`<line x1="${PADX}" y1="${TY}" x2="${W-PADX}" y2="${TY}" stroke="${col}" stroke-width="6" stroke-linecap="round"/>`];
+  sts.forEach((st,i)=>{
+    const x=PADX+i*GAP, term=(i===0||i===sts.length-1);
+    let others=[];
+    if(live){ const cl=clusterFor(line.ref,i); if(cl&&cl.lines.size>1) others=[...cl.lines].filter(r=>r!==line.ref); }
+    // compact interchange chips (ferries → ⛴, dedupe, cap 3) so long ferry refs don't sprawl
+    let chips=[]; { const seen=new Set();
+      for(const r of others){ const ln=lineByRef[r];
+        const lab = (ln&&ln.kind==='ferry') ? '⛴' : (r==='Metrobüs'?'MB':(r==='Marmaray'?'MAR':r));
+        if(seen.has(lab)) continue; seen.add(lab);
+        chips.push({lab, col:colorForLine(r)}); if(chips.length>=3) break; } }
+    if(chips.length){
+      P.push(`<line x1="${x}" y1="${TY-7}" x2="${x}" y2="${TY-15}" stroke="${col}" stroke-width="2"/>`);
+      chips.forEach((ch,k)=>{
+        const bw=Math.max(17, ch.lab.length*6.2+8), by=TY-21-k*16;
+        P.push(`<rect x="${(x-bw/2).toFixed(1)}" y="${by-11}" width="${bw.toFixed(1)}" height="13" rx="3" fill="${ch.col}"/>`);
+        P.push(`<text x="${x}" y="${by-1}" text-anchor="middle" font-size="8.5" font-weight="700" fill="${inkOn(ch.col)}" style="font-family:var(--mono)">${svgEsc(ch.lab)}</text>`);
+      });
+    }
+    if(term) P.push(`<circle cx="${x}" cy="${TY}" r="8" fill="#0b0f17" stroke="${col}" stroke-width="4"/>`);
+    else if(others.length) P.push(`<circle cx="${x}" cy="${TY}" r="6.5" fill="#fff" stroke="${col}" stroke-width="3"/>`);
+    else P.push(`<circle cx="${x}" cy="${TY}" r="5" fill="${col}"/><circle cx="${x}" cy="${TY}" r="2.1" fill="#0b0f17"/>`);
+    P.push(`<text x="${x+4}" y="${TY+15}" transform="rotate(45 ${x+4} ${TY+15})" font-size="10.5" fill="${term?'#ffffff':'var(--muted)'}" font-weight="${term?'700':'500'}" style="font-family:var(--font)">${svgEsc(st.name)}</text>`);
+  });
+  return `<svg class="strip-svg" viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" xmlns="http://www.w3.org/2000/svg">${P.join('')}</svg>`;
+}
+function lineStripHTML(line){
+  const svg=lineStripSVG(line); if(!svg) return '';
+  const sts=line.stations||[], ref=line.partOf||line.ref, col=line.color||'#888';
+  return `<div class="strip-dir"><span class="badge" style="background:${col};color:${inkOn(col)}">${svgEsc(ref)}</span>`
+       + `<b>${svgEsc(sts[0].name)}</b><span class="ar">⟷</span><b>${svgEsc(sts[sts.length-1].name)}</b>`
+       + `<span class="strip-hint">${t('stripHint')}</span></div>`
+       + `<div class="strip-scroll">${svg}</div>`;
+}
+// (B) multimodal journey diagram from an itinerary: legs as colored bars, ferries
+//     visibly cross water, transfers are interchange nodes, walks are dashed.
+function buildJourney(it,res){
+  const oName=(res&&res.origin&&res.origin.name)||t('from');
+  const dName=(res&&res.dest&&res.dest.name)||t('to');
+  let segs=[];
+  (it.steps||[]).forEach(s=>{
+    if(s.type==='walk'){
+      segs.push(s.dest ? {walk:true,from:s.from,to:dName,mins:s.mins}
+                       : {walk:true,from:oName,to:s.to,mins:s.mins});
+    } else if(s.type==='ride'){
+      const ln=lineByRef[s.ref], ferry=!s.bus&&ln&&ln.kind==='ferry';
+      segs.push({walk:false, ref:s.ref, bus:s.bus, kind:s.bus?'bus':(ln?ln.kind:'subway'),
+                 color:s.bus?BUS_COLOR:colorForLine(s.ref), from:s.from, to:s.to, stops:s.stops, ferry});
+    }
+  });
+  if(!segs.length) return null;
+  // drop access-walk legs whose endpoints are the same named stop (origin == boarding pier)
+  let segs2=segs.filter(sg=> !(sg.walk && fold(sg.from)===fold(sg.to)));
+  if(!segs2.length) segs2=segs;
+  segs=segs2;
+  const nodes=[{name:segs[0].from}]; segs.forEach(sg=>nodes.push({name:sg.to}));
+  nodes[0].role='origin'; nodes[nodes.length-1].role='dest';
+  for(let i=1;i<nodes.length-1;i++){ const a=segs[i-1], b=segs[i]; nodes[i].role=(!a.walk&&!b.walk)?'interchange':'stop'; }
+  return {segs, nodes};
+}
+function journeySVG(it,res){
+  const J=buildJourney(it,res); if(!J) return '';
+  const {segs,nodes}=J, LW=140, PADX=36, TY=72, H=170, W=PADX*2+(nodes.length-1)*LW;
+  const P=[];
+  segs.forEach((sg,i)=>{
+    const x0=PADX+i*LW, x1=PADX+(i+1)*LW, mx=(x0+x1)/2;
+    if(sg.walk){
+      P.push(`<line x1="${x0}" y1="${TY}" x2="${x1}" y2="${TY}" stroke="#9fb0c0" stroke-width="3" stroke-dasharray="1,7" stroke-linecap="round"/>`);
+      P.push(svgPill(mx, TY-13, '🚶 '+Math.max(1,Math.round(sg.mins))+' '+t('minUnit'), 'rgba(159,176,192,.22)', '#dfe7f2'));
+    } else if(sg.ferry){
+      P.push(`<rect x="${x0+3}" y="${TY-2}" width="${(x1-x0-6).toFixed(1)}" height="22" rx="8" fill="rgba(56,150,220,.18)"/>`);
+      let wp=`M ${x0+5} ${TY+16}`; for(let wx=x0+5; wx<x1-9; wx+=12) wp+=' q 6 -5 12 0';
+      P.push(`<path d="${wp}" fill="none" stroke="rgba(120,190,240,.75)" stroke-width="1.5"/>`);
+      P.push(`<line x1="${x0}" y1="${TY}" x2="${x1}" y2="${TY}" stroke="${sg.color}" stroke-width="4" stroke-dasharray="1.5,6" stroke-linecap="round"/>`);
+      P.push(svgPill(mx, TY-13, '⛴ '+t('kind_ferry'), sg.color, inkOn(sg.color)));
+    } else {
+      P.push(`<rect x="${x0}" y="${TY-4}" width="${(x1-x0).toFixed(1)}" height="8" rx="4" fill="${sg.color}"/>`);
+      const lab=(sg.bus?'🚌 ':mGlyph(sg.kind)+' ')+sg.ref;
+      const sub=sg.stops!=null?('  ·  '+sg.stops+' '+(sg.stops===1?t('stop_one'):t('stop_many'))):'';
+      P.push(svgPill(mx, TY-13, lab+sub, sg.color, inkOn(sg.color)));
+    }
+  });
+  nodes.forEach((nd,i)=>{
+    const x=PADX+i*LW;
+    if(nd.role==='origin'||nd.role==='dest') P.push(`<circle cx="${x}" cy="${TY}" r="7.5" fill="${nd.role==='origin'?'#3ee387':'#ff5d6c'}" stroke="#06121b" stroke-width="2.5"/>`);
+    else if(nd.role==='interchange') P.push(`<circle cx="${x}" cy="${TY}" r="7" fill="#fff" stroke="var(--gold)" stroke-width="3"/>`);
+    else P.push(`<circle cx="${x}" cy="${TY}" r="5" fill="#fff" stroke="#06121b" stroke-width="1.5"/>`);
+    const bold=(nd.role!=='stop');
+    P.push(`<text x="${x+4}" y="${TY+16}" transform="rotate(38 ${x+4} ${TY+16})" font-size="10.5" fill="${bold?'#ffffff':'var(--muted)'}" font-weight="${bold?'700':'500'}" style="font-family:var(--font)">${svgEsc(nd.name)}</text>`);
+  });
+  return `<svg class="jmap-svg" viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" xmlns="http://www.w3.org/2000/svg">${P.join('')}</svg>`;
+}
+function journeyHTML(it,res){ const s=journeySVG(it,res); return s ? `<div class="jmap-h">${t('journeyMap')}</div><div class="jmap-scroll">${s}</div>` : ''; }
+
 function openLine(line){
   selected = null; document.getElementById('stn').classList.remove('show');
   const live = isLive(line);
@@ -1761,6 +1901,11 @@ function openLine(line){
     `<div class="c"><b>${(line._len/1000).toFixed(1)}</b><span>km</span></div>
      <div class="c"><b>${line.stations.length||'—'}</b><span>${t('stationsLower')}</span></div>
      <div class="c"><b style="font-size:${live?'15px':'11px'}">${third}</b><span>${live?t('interchangesWord'):t('targetOpen')}</span></div>`;
+  const strip=document.getElementById('lpStrip'), stripBt=document.getElementById('lpStripBt');
+  const stripHTML=lineStripHTML(line);
+  strip.innerHTML=stripHTML;
+  strip.style.display = stripHTML ? '' : 'none';
+  if(stripBt) stripBt.style.display = stripHTML ? '' : 'none';
   document.getElementById('lpConn').innerHTML = !live
     ? `<div class="planned-banner">◷ ${line.status||'Planned'}${line.launch?(' · targeting '+fmtLaunch(line.launch)):''}<span>Excluded from live pathfinding &amp; carriage simulation until launch.${line.approx?' ⚠ Approximate alignment — hand-placed from the published station list.':''}</span></div>`
     : (conns.length
@@ -2094,6 +2239,7 @@ function showItinerary(res, it){
   const allPts=[], legs=[];
   drawItin(res, it, allPts, legs);
   if(allPts.length) map.fitBounds(L.latLngBounds(allPts).pad(0.25));
+  const jm=document.getElementById('rJourney'); if(jm) jm.innerHTML = journeyHTML(it, res);
   stepsEl.innerHTML = stepsHTML(it);
   if(legs.length){
     const note=document.createElement('div'); note.className='none'; note.id='refineNote';
@@ -2216,7 +2362,7 @@ function planAdventure(){
     const it=buildItinerary(res);
     totMin+=it.total; totStops+=it.stops; totTr+=it.transfers;
     drawItin(res, it, allPts, legsUp);
-    parts.push(`<div class="leg-h"><span class="leg-n">${i+1}</span>${pts[i].name} → ${pts[i+1].name} · <b>${Math.round(it.total)} ${t('minUnit')}</b></div>`+stepsHTML(it));
+    parts.push(`<div class="leg-h"><span class="leg-n">${i+1}</span>${pts[i].name} → ${pts[i+1].name} · <b>${Math.round(it.total)} ${t('minUnit')}</b></div>`+journeyHTML(it,res)+stepsHTML(it));
   }
   document.getElementById('aEta').textContent = failed ? '—' : Math.round(totMin);
   document.getElementById('aStops').textContent = totStops;
@@ -2246,6 +2392,7 @@ function runRoute(){
   const out=document.getElementById('rout'), stepsEl=document.getElementById('rSteps');
   routeLayer.clearLayers(); ++routeToken;
   document.getElementById('rOpts').innerHTML=''; currentOpts=[]; currentOptIdx=0;
+  { const jm=document.getElementById('rJourney'); if(jm) jm.innerHTML=''; }
   if(!o || !d){ out.classList.add('show');
     document.getElementById('rEta').textContent='–'; document.getElementById('rStops').textContent='–'; document.getElementById('rTr').textContent='–';
     stepsEl.innerHTML=`<div class="none">${t('pickOD')}</div>`; updateFavBtn(); return; }
