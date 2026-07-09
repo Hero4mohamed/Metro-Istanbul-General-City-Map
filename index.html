@@ -185,13 +185,16 @@
     border:1px solid var(--stroke-2);font-family:var(--font);font-size:12px;outline:none;cursor:pointer;}
   select:focus{border-color:var(--accent);}
   .ac{position:relative;}
-  .ac-input{width:100%;padding:10px 34px 10px 12px;border-radius:11px;background:var(--track);color:var(--text);
+  .ac-input{width:100%;padding:10px 62px 10px 12px;border-radius:11px;background:var(--track);color:var(--text);
     border:1px solid var(--stroke-2);font-family:var(--font);font-size:12px;outline:none;transition:all .18s var(--ease);}
   .ac-input:focus{border-color:var(--accent);box-shadow:0 0 0 3px var(--ring);}
   .ac-input::placeholder{color:var(--dim);}
   .ac-pin{position:absolute;right:5px;top:5px;width:27px;height:27px;border:none;background:transparent;cursor:pointer;font-size:13px;border-radius:9px;opacity:.65;transition:all .15s var(--ease);}
   .ac-pin:hover{opacity:1;background:var(--surface-2);}
   .ac-pin.armed{background:rgba(52,211,153,.28);opacity:1;box-shadow:0 0 0 1px rgba(52,211,153,.5);}
+  .ac-geo{position:absolute;right:33px;top:5px;width:27px;height:27px;border:none;background:transparent;cursor:pointer;border-radius:9px;opacity:.7;color:var(--text);display:flex;align-items:center;justify-content:center;transition:all .15s var(--ease);}
+  .ac-geo:hover{opacity:1;background:var(--surface-2);color:var(--accent);}
+  .ac-geo.busy{color:var(--accent);animation:spin 1s linear infinite;}
   .ac-list{position:absolute;left:0;right:0;top:40px;z-index:30;background:rgba(10,14,22,.97);backdrop-filter:blur(16px);
     border:1px solid var(--stroke-2);border-radius:12px;max-height:230px;overflow-y:auto;display:none;
     box-shadow:0 20px 48px -12px rgba(0,0,0,.85);}
@@ -377,6 +380,22 @@
   .jmap{margin:4px 0 12px;}
   .jmap-h{font-size:10px;letter-spacing:.7px;text-transform:uppercase;color:var(--dim);font-weight:700;margin:2px 0 5px;}
 
+  /* GPS: floating locate button + live position dot */
+  .locate-fab{position:fixed;left:18px;top:172px;z-index:1200;width:44px;height:44px;border-radius:14px;
+    display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--text);
+    border:1px solid var(--stroke-2);background:var(--panel);box-shadow:0 8px 22px -10px rgba(0,0,0,.7);
+    transition:all .18s var(--ease);}
+  .locate-fab:hover{color:var(--accent);border-color:var(--ring);transform:translateY(-1px);}
+  .locate-fab:active{transform:scale(.94);}
+  .locate-fab.on{color:#2f8fff;border-color:rgba(47,143,255,.5);box-shadow:0 0 0 1px rgba(47,143,255,.4),0 8px 22px -10px rgba(0,0,0,.7);}
+  .locate-fab.busy svg{animation:spin 1s linear infinite;}
+  body.mobile .locate-fab{left:auto;top:auto;right:14px;bottom:calc(92px + env(safe-area-inset-bottom));}
+  .geo-ic{background:none!important;border:none!important;}
+  .geo-dot{width:16px;height:16px;border-radius:50%;background:#2f8fff;border:3px solid #fff;
+    box-shadow:0 0 0 0 rgba(47,143,255,.5);animation:geopulse 2s infinite;}
+  @keyframes geopulse{0%{box-shadow:0 0 0 0 rgba(47,143,255,.5);}70%{box-shadow:0 0 0 15px rgba(47,143,255,0);}100%{box-shadow:0 0 0 0 rgba(47,143,255,0);}}
+  @keyframes spin{to{transform:rotate(360deg);}}
+
   /* micro-interactions */
   .announce{animation:cardIn .5s .2s var(--ease) backwards;}
   .lchip:active{transform:scale(.92);}
@@ -387,7 +406,7 @@
   @media (max-width:760px){.controls{width:228px;}.station{width:228px;}.topbar{max-width:200px;}}
 
   /* ============ MOBILE APP SHELL (PWA) ============ */
-  .mnav,.msheet,.mbackdrop,.mtoast{display:none;}
+  .mnav,.msheet,.mbackdrop{display:none;}
   body.mobile .controls,body.mobile .hint{display:none!important;}
   body.mobile .topbar{left:10px;right:10px;max-width:none;top:calc(8px + env(safe-area-inset-top));
     padding:9px 13px;display:flex;align-items:center;gap:10px;}
@@ -416,17 +435,26 @@
   .msheet .wx-list,.msheet .bus-list{max-height:none;}
   body.mobile .station,body.mobile .linep{left:8px;right:8px;width:auto;z-index:1360;
     bottom:calc(86px + env(safe-area-inset-bottom));max-height:56vh;border-radius:20px;}
-  body.mobile .mtoast{display:block;position:fixed;top:calc(64px + env(safe-area-inset-top));left:50%;
-    transform:translate(-50%,-14px);z-index:1500;padding:9px 16px;border-radius:99px;font-size:11.5px;font-weight:700;
+  .mtoast{position:fixed;top:20px;left:50%;transform:translate(-50%,-14px);z-index:1600;
+    padding:9px 16px;border-radius:99px;font-size:11.5px;font-weight:700;max-width:88vw;text-align:center;
     color:#03130A;background:var(--grad-accent);box-shadow:0 10px 28px -8px rgba(52,211,153,.8);
     opacity:0;pointer-events:none;transition:all .3s var(--ease);}
-  body.mobile .mtoast.on{opacity:1;transform:translate(-50%,0);}
+  .mtoast.on{opacity:1;transform:translate(-50%,0);}
+  .mtoast.err{background:linear-gradient(135deg,#ff7a7a,#e5484d);color:#fff;box-shadow:0 10px 28px -8px rgba(229,72,77,.7);}
+  body.mobile .mtoast{top:calc(64px + env(safe-area-inset-top));}
   .mhint{font-size:10px;color:var(--dim);line-height:1.5;margin:6px 0 10px;}
 </style>
 </head>
 <body>
 <div id="map"></div>
 <canvas id="trainCanvas"></canvas>
+<button id="locateFab" class="locate-fab glass" data-i18n-title="locateMe" title="My location" aria-label="My location">
+  <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+    <circle cx="12" cy="12" r="3.4"/><circle cx="12" cy="12" r="8.4"/>
+    <line x1="12" y1="1.3" x2="12" y2="4"/><line x1="12" y1="20" x2="12" y2="22.7"/>
+    <line x1="1.3" y1="12" x2="4" y2="12"/><line x1="20" y1="12" x2="22.7" y2="12"/>
+  </svg>
+</button>
 
 <div class="topbar glass">
   <h1><svg class="logo" viewBox="0 0 34 34" width="30" height="30" aria-hidden="true">
@@ -523,11 +551,13 @@
     <div id="plannerTrip">
     <div class="field"><label data-i18n="from">From</label>
       <div class="ac"><input id="selO" class="ac-input" type="text" data-i18n-ph="searchStop" placeholder="Search any stop or place…" autocomplete="off">
+        <button class="ac-geo" data-for="O" data-i18n-title="useMyLocation" title="Use my location"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="12" cy="12" r="3.2"/><circle cx="12" cy="12" r="8"/><line x1="12" y1="2" x2="12" y2="4.2"/><line x1="12" y1="19.8" x2="12" y2="22"/><line x1="2" y1="12" x2="4.2" y2="12"/><line x1="19.8" y1="12" x2="22" y2="12"/></svg></button>
         <button class="ac-pin" data-for="O" data-i18n-title="pickPoint" title="Pick point on map">📍</button>
         <div class="ac-list" id="acO"></div></div></div>
     <div class="swapb"><button id="swap" data-i18n-title="swap" title="Swap">⇅</button></div>
     <div class="field"><label data-i18n="to">To</label>
       <div class="ac"><input id="selD" class="ac-input" type="text" data-i18n-ph="searchStop" placeholder="Search any stop or place…" autocomplete="off">
+        <button class="ac-geo" data-for="D" data-i18n-title="useMyLocation" title="Use my location"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="12" cy="12" r="3.2"/><circle cx="12" cy="12" r="8"/><line x1="12" y1="2" x2="12" y2="4.2"/><line x1="12" y1="19.8" x2="12" y2="22"/><line x1="2" y1="12" x2="4.2" y2="12"/><line x1="19.8" y1="12" x2="22" y2="12"/></svg></button>
         <button class="ac-pin" data-for="D" data-i18n-title="pickPoint" title="Pick point on map">📍</button>
         <div class="ac-list" id="acD"></div></div></div>
     <button class="btn" id="route" data-i18n="findPath">◇ Find Optimal Path</button>
@@ -667,7 +697,9 @@ const I18N = {
     mMap:"Map", mPlanner:"Planner", mLayers:"Layers", mWeather:"Weather", mAlerts:"Alerts",
     installApp:"📲 Install app", appUpdated:"Updated to the latest version ✓",
     iosHint:"iPhone: Share → Add to Home Screen to install.",
-    lineMap:"Line map", journeyMap:"Journey map", stripHint:"swipe to see the whole line →", showHide:"Show / hide on map", openLineMap:"Tap for line map" },
+    lineMap:"Line map", journeyMap:"Journey map", stripHint:"swipe to see the whole line →", showHide:"Show / hide on map", openLineMap:"Tap for line map",
+    myLocation:"My location", useMyLocation:"Use my location", locateMe:"My location", locating:"Locating you…",
+    geoDenied:"Location access denied — allow it in your browser.", geoUnavailable:"Couldn't get your location.", geoUnsupported:"Location needs HTTPS or a supported browser." },
   tr:{ liveNet:"Canlı Raylı Ağ", source:"kaynak ↗", lines:"Hatlar", stations:"İstasyonlar", carriages:"Vagonlar",
     tabActive:"● Aktif", tabVision:"◇ Vizyon", tabBus:"▤ Otobüsler",
     baseMap:"Harita", dark:"Koyu", streets:"Sokaklar", satellite:"Uydu",
@@ -716,7 +748,9 @@ const I18N = {
     mMap:"Harita", mPlanner:"Planlayıcı", mLayers:"Katmanlar", mWeather:"Hava", mAlerts:"Duyurular",
     installApp:"📲 Uygulamayı yükle", appUpdated:"En son sürüme güncellendi ✓",
     iosHint:"iPhone: Paylaş → Ana Ekrana Ekle ile yükleyin.",
-    lineMap:"Hat şeması", journeyMap:"Yolculuk şeması", stripHint:"tüm hattı görmek için kaydır →", showHide:"Haritada göster / gizle", openLineMap:"Hat şeması için dokun" },
+    lineMap:"Hat şeması", journeyMap:"Yolculuk şeması", stripHint:"tüm hattı görmek için kaydır →", showHide:"Haritada göster / gizle", openLineMap:"Hat şeması için dokun",
+    myLocation:"Konumum", useMyLocation:"Konumumu kullan", locateMe:"Konumum", locating:"Konumun bulunuyor…",
+    geoDenied:"Konum erişimi reddedildi — tarayıcıdan izin verin.", geoUnavailable:"Konumunuz alınamadı.", geoUnsupported:"Konum için HTTPS veya desteklenen tarayıcı gerekir." },
   ar:{ liveNet:"شبكة النقل المباشرة", source:"المصدر ↗", lines:"الخطوط", stations:"المحطات", carriages:"العربات",
     tabActive:"● النشط", tabVision:"◇ الرؤية", tabBus:"▤ الحافلات", tabWeather:"☀ الطقس",
     baseMap:"خريطة الأساس", dark:"داكن", streets:"الشوارع", satellite:"قمر صناعي",
@@ -763,7 +797,9 @@ const I18N = {
     mMap:"الخريطة", mPlanner:"المخطّط", mLayers:"الطبقات", mWeather:"الطقس", mAlerts:"تنبيهات",
     installApp:"📲 تثبيت التطبيق", appUpdated:"تم التحديث إلى أحدث إصدار ✓",
     iosHint:"آيفون: مشاركة ← أضِف إلى الشاشة الرئيسية للتثبيت.",
-    lineMap:"مخطط الخط", journeyMap:"مخطط الرحلة", stripHint:"اسحب لرؤية الخط بالكامل →", showHide:"إظهار / إخفاء على الخريطة", openLineMap:"اضغط لعرض مخطط الخط" },
+    lineMap:"مخطط الخط", journeyMap:"مخطط الرحلة", stripHint:"اسحب لرؤية الخط بالكامل →", showHide:"إظهار / إخفاء على الخريطة", openLineMap:"اضغط لعرض مخطط الخط",
+    myLocation:"موقعي", useMyLocation:"استخدم موقعي", locateMe:"موقعي", locating:"جارٍ تحديد موقعك…",
+    geoDenied:"تم رفض الوصول إلى الموقع — فعّله في المتصفح.", geoUnavailable:"تعذّر تحديد موقعك.", geoUnsupported:"يتطلب الموقع HTTPS أو متصفحًا مدعومًا." },
   fr:{ liveNet:"Réseau de transport en direct", source:"source ↗", lines:"Lignes", stations:"Stations", carriages:"Rames",
     tabActive:"● Actif", tabVision:"◇ Vision", tabBus:"▤ Bus", tabWeather:"☀ Météo",
     baseMap:"Fond de carte", dark:"Sombre", streets:"Rues", satellite:"Satellite",
@@ -810,7 +846,9 @@ const I18N = {
     mMap:"Carte", mPlanner:"Trajets", mLayers:"Couches", mWeather:"Météo", mAlerts:"Alertes",
     installApp:"📲 Installer l'app", appUpdated:"Mis à jour vers la dernière version ✓",
     iosHint:"iPhone : Partager → Sur l'écran d'accueil pour installer.",
-    lineMap:"Schéma de ligne", journeyMap:"Schéma du trajet", stripHint:"faites défiler pour voir toute la ligne →", showHide:"Afficher / masquer sur la carte", openLineMap:"Appuyez pour le schéma" }
+    lineMap:"Schéma de ligne", journeyMap:"Schéma du trajet", stripHint:"faites défiler pour voir toute la ligne →", showHide:"Afficher / masquer sur la carte", openLineMap:"Appuyez pour le schéma",
+    myLocation:"Ma position", useMyLocation:"Utiliser ma position", locateMe:"Ma position", locating:"Localisation…",
+    geoDenied:"Accès à la position refusé — autorisez-le dans le navigateur.", geoUnavailable:"Impossible d'obtenir votre position.", geoUnsupported:"La position nécessite HTTPS ou un navigateur compatible." }
 };
 const LOCALE = { en:'en-GB', tr:'tr-TR', ar:'ar-u-nu-latn', fr:'fr-FR' };   // ar: Latin digits to match the UI's numerals
 let lang = (function(){ try{ const s=localStorage.getItem('irn_lang'); if(I18N[s]) return s; }catch(e){}
@@ -1961,6 +1999,57 @@ function setPoint(which, pt){
   document.getElementById(which==='O'?'selO':'selD').value = pt ? pt.name : '';
   renderEndpoints(); updateFavBtn();
 }
+/* ===========================================================================
+   GPS — locate the user and route from their real position. Live pulsing dot +
+   accuracy ring; the planner can use "my location" as an endpoint. Browser
+   Geolocation API; needs HTTPS (the live site) or localhost. Nothing is stored
+   or sent anywhere — the position stays in the page.
+   =========================================================================== */
+const geoLayer = L.layerGroup().addTo(map);
+let geoWatchId=null, geoActive=false, geoFirstFix=false, geoPos=null;
+function geoSupported(){ return ('geolocation' in navigator) && window.isSecureContext; }
+function renderGeo(){
+  geoLayer.clearLayers(); if(!geoPos) return;
+  if(geoPos.acc && geoPos.acc<4000)
+    L.circle([geoPos.lat,geoPos.lng],{radius:geoPos.acc,color:'#2f8fff',weight:1,opacity:.5,fillColor:'#2f8fff',fillOpacity:.12,interactive:false}).addTo(geoLayer);
+  L.marker([geoPos.lat,geoPos.lng],{icon:L.divIcon({className:'geo-ic',html:'<div class="geo-dot"></div>',iconSize:[16,16],iconAnchor:[8,8]}),interactive:false,zIndexOffset:2000}).addTo(geoLayer);
+}
+function geoErr(e){
+  stopLocate();
+  const c=e&&e.code;
+  showToast(c===1 ? t('geoDenied') : t('geoUnavailable'), 'err');
+}
+function startLocate(){
+  if(!geoSupported()){ showToast(t('geoUnsupported'),'err'); return; }
+  geoActive=true; geoFirstFix=true;
+  const b=document.getElementById('locateFab'); if(b) b.classList.add('on','busy');
+  showToast(t('locating'));
+  geoWatchId=navigator.geolocation.watchPosition(p=>{
+    geoPos={lat:p.coords.latitude,lng:p.coords.longitude,acc:p.coords.accuracy}; renderGeo();
+    const b2=document.getElementById('locateFab'); if(b2) b2.classList.remove('busy');
+    if(geoFirstFix){ geoFirstFix=false; map.setView([geoPos.lat,geoPos.lng], Math.max(map.getZoom(),15)); }
+  }, geoErr, {enableHighAccuracy:true,timeout:12000,maximumAge:10000});
+}
+function stopLocate(){
+  if(geoWatchId!=null){ try{ navigator.geolocation.clearWatch(geoWatchId); }catch(e){} geoWatchId=null; }
+  geoActive=false; geoPos=null; geoLayer.clearLayers();
+  const b=document.getElementById('locateFab'); if(b) b.classList.remove('on','busy');
+}
+function toggleLocate(){ geoActive ? stopLocate() : startLocate(); }
+// fill a planner endpoint (O / D) with the user's current position, then route if the other end is set
+function useMyLocation(which, btn){
+  if(!geoSupported()){ showToast(t('geoUnsupported'),'err'); return; }
+  if(btn) btn.classList.add('busy'); showToast(t('locating'));
+  navigator.geolocation.getCurrentPosition(p=>{
+    if(btn) btn.classList.remove('busy');
+    geoPos={lat:p.coords.latitude,lng:p.coords.longitude,acc:p.coords.accuracy}; renderGeo();
+    setPoint(which, {name:t('myLocation'), lat:geoPos.lat, lng:geoPos.lng});
+    if(which==='O' && destPt) runRoute();
+    else if(which==='D' && originPt) runRoute();
+    else map.setView([geoPos.lat,geoPos.lng], Math.max(map.getZoom(),14));
+  }, e=>{ if(btn) btn.classList.remove('busy'); geoErr(e); }, {enableHighAccuracy:true,timeout:12000,maximumAge:15000});
+}
+
 // live search over every stop (rail + ferry + bus); prefix matches first
 function acRender(which, q){
   const listEl=document.getElementById(which==='O'?'acO':'acD'), f=fold(q);
@@ -2637,6 +2726,7 @@ function populateSelects(){
     inp.addEventListener('keydown', e=>{ if(e.key==='Enter'){ listEl.classList.remove('show'); runRoute(); } });
   });
   document.querySelectorAll('.ac-pin').forEach(b=> b.addEventListener('click', ()=> armPick(b.dataset.for)));
+  document.querySelectorAll('.ac-geo').forEach(b=> b.addEventListener('click', ()=> useMyLocation(b.dataset.for, b)));
 }
 
 document.getElementById('baseSeg').addEventListener('click', e=>{
@@ -2916,11 +3006,11 @@ function setupMobile(){
   if(/iphone|ipad|ipod/i.test(navigator.userAgent) && !standalone) hint.style.display='';
 }
 // toast (used for PWA update notifications)
-function showToast(msg){
+function showToast(msg, kind){
   let tEl=document.getElementById('mtoast');
   if(!tEl){ tEl=document.createElement('div'); tEl.id='mtoast'; tEl.className='mtoast'; document.body.appendChild(tEl); }
-  tEl.textContent=msg; tEl.classList.add('on');
-  setTimeout(()=>tEl.classList.remove('on'), 4200);
+  tEl.textContent=msg; tEl.classList.toggle('err', kind==='err'); tEl.classList.add('on');
+  clearTimeout(tEl._t); tEl._t=setTimeout(()=>tEl.classList.remove('on'), 4200);
 }
 // PWA: register the service worker (auto-updates on every deploy) + install prompt
 let deferredInstall=null;
@@ -2949,6 +3039,8 @@ function countUp(el, target, ms){
 }
 function init(){
   setupMobile();              // phone app shell (bottom nav + sheets) — no-op on desktop
+  { const lf=document.getElementById('locateFab');
+    if(lf){ if(geoSupported()) lf.addEventListener('click', toggleLocate); else lf.style.display='none'; } }
   document.querySelectorAll('#langSeg button').forEach(b=> b.classList.toggle('active', b.dataset.lang===lang));
   applyI18n();
   ensureEnglish(DISRUPTIONS); // safety net: translate any Turkish left in the baked-in feed
