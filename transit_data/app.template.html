@@ -42,7 +42,25 @@
     --font:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;
     --display:'Space Grotesk',var(--font);
     --mono:'JetBrains Mono',ui-monospace,'Cascadia Code',Consolas,monospace;
+    --svg-hole:#0b0f17;   /* "paper" behind SVG diagram dots — flips with theme */
   }
+  body.light{
+    --obsidian:#E9EEF5; --panel:rgba(255,255,255,0.84); --stroke:rgba(15,23,42,0.10);
+    --stroke-2:rgba(15,23,42,0.16); --text:#141C2B; --muted:#586274; --dim:#93A0B3;
+    --surface:rgba(15,23,42,.04); --surface-2:rgba(15,23,42,.07); --track:rgba(15,23,42,.06);
+    --ring:rgba(20,140,100,.28); --svg-hole:#ffffff;
+  }
+  body.light .glass,body.light .card,body.light .topbar{box-shadow:0 12px 34px -14px rgba(20,30,55,.35);}
+  body.light .locate-fab{box-shadow:0 8px 22px -10px rgba(20,30,55,.4);}
+  /* darken pastel "active" text (tuned for dark mode) so it reads on light panels */
+  body.light .seg button.active{color:#067A54;}
+  body.light .tabs button[data-tab="active"].active{color:#067A54;}
+  body.light .tabs button[data-tab="vision"].active{color:#7C3AED;}
+  body.light .tabs button[data-tab="bus"].active{color:#B45309;}
+  body.light .tabs button[data-tab="weather"].active{color:#0369A1;}
+  body.light .ptabs button[data-pt="adv"].active{color:#B45309;}
+  body.light .exp-s.ok,body.light .ann-none{color:#067A54;}
+  body.light .mnav button.on{color:#067A54;}
   *{box-sizing:border-box;margin:0;padding:0;}
   html,body{height:100%;width:100%;overflow:hidden;background:var(--obsidian);color:var(--text);font-family:var(--font);
     -webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility;}
@@ -435,7 +453,7 @@
   .msheet .wx-list,.msheet .bus-list{max-height:none;}
   body.mobile .station,body.mobile .linep{left:8px;right:8px;width:auto;z-index:1360;
     bottom:calc(86px + env(safe-area-inset-bottom));max-height:56vh;border-radius:20px;}
-  .mtoast{position:fixed;top:20px;left:50%;transform:translate(-50%,-14px);z-index:1600;
+  .mtoast{position:fixed;top:20px;left:50%;transform:translate(-50%,-14px);z-index:1700;
     padding:9px 16px;border-radius:99px;font-size:11.5px;font-weight:700;max-width:88vw;text-align:center;
     color:#03130A;background:var(--grad-accent);box-shadow:0 10px 28px -8px rgba(52,211,153,.8);
     opacity:0;pointer-events:none;transition:all .3s var(--ease);}
@@ -443,6 +461,37 @@
   .mtoast.err{background:linear-gradient(135deg,#ff7a7a,#e5484d);color:#fff;box-shadow:0 10px 28px -8px rgba(229,72,77,.7);}
   body.mobile .mtoast{top:calc(64px + env(safe-area-inset-top));}
   .mhint{font-size:10px;color:var(--dim);line-height:1.5;margin:6px 0 10px;}
+
+  /* Settings: gear button + panel */
+  .settings-btn{position:absolute;top:13px;right:13px;width:32px;height:32px;border-radius:10px;border:1px solid var(--stroke-2);
+    background:var(--surface);color:var(--text);cursor:pointer;display:flex;align-items:center;justify-content:center;opacity:.85;transition:all .2s var(--ease);z-index:3;}
+  .settings-btn:hover{opacity:1;color:var(--accent);border-color:var(--ring);transform:rotate(40deg);}
+  .settings-btn:active{transform:scale(.9) rotate(40deg);}
+  .topbar h1{padding-right:30px;}
+  body.mobile .topbar h1{padding-right:4px;}
+  body.mobile .settings-btn{position:static;flex:0 0 auto;}
+  .settings-overlay{position:fixed;inset:0;background:rgba(3,6,10,.55);backdrop-filter:blur(2px);opacity:0;pointer-events:none;z-index:1650;transition:opacity .25s;}
+  .settings-overlay.on{opacity:1;pointer-events:auto;}
+  .settings-panel{position:fixed;top:50%;left:50%;transform:translate(-50%,-46%) scale(.98);opacity:0;pointer-events:none;
+    width:min(392px,94vw);max-height:86vh;overflow-y:auto;z-index:1660;padding:16px 18px 18px;transition:transform .3s var(--ease),opacity .25s;}
+  .settings-panel.open{transform:translate(-50%,-50%) scale(1);opacity:1;pointer-events:auto;}
+  .sp-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;}
+  .sp-head span{font-family:var(--display);font-size:16px;font-weight:700;letter-spacing:.5px;}
+  .sp-head .x{background:none;border:none;color:var(--muted);font-size:15px;cursor:pointer;width:28px;height:28px;border-radius:8px;transition:all .15s var(--ease);}
+  .sp-head .x:hover{background:var(--surface-2);color:var(--text);}
+  .sp-group{padding:13px 0;border-top:1px solid var(--stroke);}
+  .sp-group:first-of-type{border-top:none;padding-top:2px;}
+  .sp-label{font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--dim);margin-bottom:10px;}
+  .sp-row{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:10px;}
+  .sp-row:last-child{margin-bottom:0;}
+  .sp-row>span{font-size:12.5px;font-weight:600;color:var(--text);}
+  .settings-panel .seg{margin:0;}
+  .settings-panel .spseg{width:100%;margin-top:3px;}
+  .settings-panel .spseg button{flex:1;}
+  .sp-hint{font-size:10.5px;color:var(--dim);line-height:1.5;margin-top:8px;}
+  .settings-panel .btn{margin-top:2px;}
+  body.mobile .settings-panel{top:auto;bottom:0;left:0;transform:translateY(105%);width:100%;max-height:84vh;border-radius:22px 22px 0 0;}
+  body.mobile .settings-panel.open{transform:translateY(0);}
 </style>
 </head>
 <body>
@@ -473,11 +522,44 @@
     <div class="kv"><b id="sStations">0</b><span data-i18n="stations">Stations</span></div>
     <div class="kv"><b id="sTrains">0</b><span data-i18n="carriages">Carriages</span></div>
   </div>
-  <div class="seg langseg" id="langSeg">
-    <button data-lang="en" class="active">EN</button>
-    <button data-lang="tr">TR</button>
-    <button data-lang="ar">ع</button>
-    <button data-lang="fr">FR</button>
+  <button id="settingsBtn" class="settings-btn" data-i18n-title="settings" title="Settings" aria-label="Settings">
+    <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+  </button>
+</div>
+
+<div class="settings-overlay" id="settingsOverlay"></div>
+<div class="settings-panel glass" id="settingsPanel" role="dialog" aria-modal="true" aria-label="Settings">
+  <div class="sp-head"><span data-i18n="settings">Settings</span><button class="x" id="settingsX" aria-label="Close">✕</button></div>
+  <div class="sp-group">
+    <div class="sp-label" data-i18n="appearance">Appearance</div>
+    <div class="sp-row"><span data-i18n="theme">Theme</span>
+      <div class="seg" id="themeSeg">
+        <button data-theme="dark" class="active" data-i18n="dark">Dark</button>
+        <button data-theme="light" data-i18n="light">Light</button>
+      </div>
+    </div>
+    <div class="sp-row"><span data-i18n="language">Language</span>
+      <div class="seg langseg" id="langSeg">
+        <button data-lang="en" class="active">EN</button>
+        <button data-lang="tr">TR</button>
+        <button data-lang="ar">ع</button>
+        <button data-lang="fr">FR</button>
+      </div>
+    </div>
+  </div>
+  <div class="sp-group">
+    <div class="sp-label" data-i18n="journeyPrefs">Journey</div>
+    <div class="sp-row"><span data-i18n="preferRoute">Show best route by</span></div>
+    <div class="seg spseg" id="prefSeg">
+      <button data-pref="fast" class="active" data-i18n="prefFast">⚡ Fastest</button>
+      <button data-pref="easy" data-i18n="prefEasy">☺ Fewest changes</button>
+    </div>
+    <div class="sp-hint" data-i18n="prefHint">“Fewest changes” prefers fewer transfers, even if it's a little slower.</div>
+  </div>
+  <div class="sp-group">
+    <div class="sp-label" data-i18n="dataPrivacy">Data</div>
+    <button class="btn ghost" id="resetTrips" data-i18n="resetTrips">Clear saved trips &amp; favourites</button>
+    <div class="sp-hint" data-i18n="privacyNote">Your settings and saved trips stay on this device only.</div>
   </div>
 </div>
 
@@ -699,7 +781,12 @@ const I18N = {
     iosHint:"iPhone: Share → Add to Home Screen to install.",
     lineMap:"Line map", journeyMap:"Journey map", stripHint:"swipe to see the whole line →", showHide:"Show / hide on map", openLineMap:"Tap for line map",
     myLocation:"My location", useMyLocation:"Use my location", locateMe:"My location", locating:"Locating you…",
-    geoDenied:"Location access denied — allow it in your browser.", geoUnavailable:"Couldn't get your location.", geoUnsupported:"Location needs HTTPS or a supported browser." },
+    geoDenied:"Location access denied — allow it in your browser.", geoUnavailable:"Couldn't get your location.", geoUnsupported:"Location needs HTTPS or a supported browser.",
+    settings:"Settings", appearance:"Appearance", language:"Language", theme:"Theme", light:"Light",
+    journeyPrefs:"Journey", preferRoute:"Show best route by", prefFast:"⚡ Fastest", prefEasy:"☺ Fewest changes", easiest:"Easiest",
+    prefHint:"“Fewest changes” prefers fewer transfers, even if it's a little slower.",
+    dataPrivacy:"Data", resetTrips:"Clear saved trips & favourites", tripsCleared:"Saved trips cleared",
+    privacyNote:"Your settings and saved trips stay on this device only." },
   tr:{ liveNet:"Canlı Raylı Ağ", source:"kaynak ↗", lines:"Hatlar", stations:"İstasyonlar", carriages:"Vagonlar",
     tabActive:"● Aktif", tabVision:"◇ Vizyon", tabBus:"▤ Otobüsler",
     baseMap:"Harita", dark:"Koyu", streets:"Sokaklar", satellite:"Uydu",
@@ -750,7 +837,12 @@ const I18N = {
     iosHint:"iPhone: Paylaş → Ana Ekrana Ekle ile yükleyin.",
     lineMap:"Hat şeması", journeyMap:"Yolculuk şeması", stripHint:"tüm hattı görmek için kaydır →", showHide:"Haritada göster / gizle", openLineMap:"Hat şeması için dokun",
     myLocation:"Konumum", useMyLocation:"Konumumu kullan", locateMe:"Konumum", locating:"Konumun bulunuyor…",
-    geoDenied:"Konum erişimi reddedildi — tarayıcıdan izin verin.", geoUnavailable:"Konumunuz alınamadı.", geoUnsupported:"Konum için HTTPS veya desteklenen tarayıcı gerekir." },
+    geoDenied:"Konum erişimi reddedildi — tarayıcıdan izin verin.", geoUnavailable:"Konumunuz alınamadı.", geoUnsupported:"Konum için HTTPS veya desteklenen tarayıcı gerekir.",
+    settings:"Ayarlar", appearance:"Görünüm", language:"Dil", theme:"Tema", light:"Açık",
+    journeyPrefs:"Yolculuk", preferRoute:"En iyi rotayı şuna göre göster", prefFast:"⚡ En hızlı", prefEasy:"☺ En az aktarma", easiest:"En kolay",
+    prefHint:"“En az aktarma”, biraz daha yavaş olsa bile daha az aktarmalı rotaları tercih eder.",
+    dataPrivacy:"Veri", resetTrips:"Kayıtlı yolculukları ve favorileri temizle", tripsCleared:"Kayıtlı yolculuklar temizlendi",
+    privacyNote:"Ayarların ve kayıtlı yolculukların yalnızca bu cihazda saklanır." },
   ar:{ liveNet:"شبكة النقل المباشرة", source:"المصدر ↗", lines:"الخطوط", stations:"المحطات", carriages:"العربات",
     tabActive:"● النشط", tabVision:"◇ الرؤية", tabBus:"▤ الحافلات", tabWeather:"☀ الطقس",
     baseMap:"خريطة الأساس", dark:"داكن", streets:"الشوارع", satellite:"قمر صناعي",
@@ -799,7 +891,12 @@ const I18N = {
     iosHint:"آيفون: مشاركة ← أضِف إلى الشاشة الرئيسية للتثبيت.",
     lineMap:"مخطط الخط", journeyMap:"مخطط الرحلة", stripHint:"اسحب لرؤية الخط بالكامل →", showHide:"إظهار / إخفاء على الخريطة", openLineMap:"اضغط لعرض مخطط الخط",
     myLocation:"موقعي", useMyLocation:"استخدم موقعي", locateMe:"موقعي", locating:"جارٍ تحديد موقعك…",
-    geoDenied:"تم رفض الوصول إلى الموقع — فعّله في المتصفح.", geoUnavailable:"تعذّر تحديد موقعك.", geoUnsupported:"يتطلب الموقع HTTPS أو متصفحًا مدعومًا." },
+    geoDenied:"تم رفض الوصول إلى الموقع — فعّله في المتصفح.", geoUnavailable:"تعذّر تحديد موقعك.", geoUnsupported:"يتطلب الموقع HTTPS أو متصفحًا مدعومًا.",
+    settings:"الإعدادات", appearance:"المظهر", language:"اللغة", theme:"السمة", light:"فاتح",
+    journeyPrefs:"الرحلة", preferRoute:"أظهر أفضل مسار حسب", prefFast:"⚡ الأسرع", prefEasy:"☺ أقل تبديل", easiest:"الأسهل",
+    prefHint:"«أقل تبديل» يفضّل المسارات ذات التبديلات الأقل، حتى لو كانت أبطأ قليلًا.",
+    dataPrivacy:"البيانات", resetTrips:"مسح الرحلات والمفضلة", tripsCleared:"تم مسح الرحلات المحفوظة",
+    privacyNote:"تُحفظ إعداداتك ورحلاتك على هذا الجهاز فقط." },
   fr:{ liveNet:"Réseau de transport en direct", source:"source ↗", lines:"Lignes", stations:"Stations", carriages:"Rames",
     tabActive:"● Actif", tabVision:"◇ Vision", tabBus:"▤ Bus", tabWeather:"☀ Météo",
     baseMap:"Fond de carte", dark:"Sombre", streets:"Rues", satellite:"Satellite",
@@ -848,7 +945,12 @@ const I18N = {
     iosHint:"iPhone : Partager → Sur l'écran d'accueil pour installer.",
     lineMap:"Schéma de ligne", journeyMap:"Schéma du trajet", stripHint:"faites défiler pour voir toute la ligne →", showHide:"Afficher / masquer sur la carte", openLineMap:"Appuyez pour le schéma",
     myLocation:"Ma position", useMyLocation:"Utiliser ma position", locateMe:"Ma position", locating:"Localisation…",
-    geoDenied:"Accès à la position refusé — autorisez-le dans le navigateur.", geoUnavailable:"Impossible d'obtenir votre position.", geoUnsupported:"La position nécessite HTTPS ou un navigateur compatible." }
+    geoDenied:"Accès à la position refusé — autorisez-le dans le navigateur.", geoUnavailable:"Impossible d'obtenir votre position.", geoUnsupported:"La position nécessite HTTPS ou un navigateur compatible.",
+    settings:"Paramètres", appearance:"Apparence", language:"Langue", theme:"Thème", light:"Clair",
+    journeyPrefs:"Trajet", preferRoute:"Afficher le meilleur trajet selon", prefFast:"⚡ Le plus rapide", prefEasy:"☺ Moins de correspondances", easiest:"Le plus simple",
+    prefHint:"« Moins de correspondances » privilégie les trajets avec moins de changements, même un peu plus lents.",
+    dataPrivacy:"Données", resetTrips:"Effacer trajets et favoris", tripsCleared:"Trajets enregistrés effacés",
+    privacyNote:"Vos réglages et trajets restent uniquement sur cet appareil." }
 };
 const LOCALE = { en:'en-GB', tr:'tr-TR', ar:'ar-u-nu-latn', fr:'fr-FR' };   // ar: Latin digits to match the UI's numerals
 let lang = (function(){ try{ const s=localStorage.getItem('irn_lang'); if(I18N[s]) return s; }catch(e){}
@@ -878,6 +980,41 @@ function setLang(l){
   try{ if(wxData) renderWeather(); }catch(e){}
   try{ if(selected) openStation(selected); }catch(e){}
 }
+/* ===========================================================================
+   SETTINGS — theme (dark/light), route preference (fastest / fewest changes),
+   and the settings panel. All choices persist in localStorage (this device).
+   =========================================================================== */
+let theme = (function(){ try{ const s=localStorage.getItem('irn_theme'); if(s==='light'||s==='dark') return s; }catch(e){}
+  return (window.matchMedia && matchMedia('(prefers-color-scheme: light)').matches) ? 'light' : 'dark'; })();
+let routePref = (function(){ try{ const s=localStorage.getItem('irn_routePref'); if(s==='fast'||s==='easy') return s; }catch(e){} return 'fast'; })();
+function applyTheme(th, syncBase){
+  theme = th==='light' ? 'light' : 'dark';
+  document.body.classList.toggle('light', theme==='light');
+  try{ localStorage.setItem('irn_theme', theme); }catch(e){}
+  const tc=document.querySelector('meta[name="theme-color"]'); if(tc) tc.setAttribute('content', theme==='light'?'#E9EEF5':'#070A12');
+  document.querySelectorAll('#themeSeg button').forEach(b=> b.classList.toggle('active', b.dataset.theme===theme));
+  // keep the map basemap in step with the UI theme (unless the user is on Satellite)
+  if(syncBase && typeof setBase==='function'){
+    if(theme==='light' && curBaseKey==='dark') setBase('voyager');
+    else if(theme==='dark' && curBaseKey==='voyager') setBase('dark');
+  }
+}
+function setRoutePref(p, rerun){
+  routePref = p==='easy' ? 'easy' : 'fast';
+  try{ localStorage.setItem('irn_routePref', routePref); }catch(e){}
+  document.querySelectorAll('#prefSeg button').forEach(b=> b.classList.toggle('active', b.dataset.pref===routePref));
+  if(rerun && originPt && destPt && currentOpts && currentOpts.length) runRoute();
+}
+// re-rank the found itineraries per the user's preference before display
+function sortOptsByPref(){
+  if(!currentOpts || !currentOpts.length) return;
+  if(routePref==='easy') currentOpts.sort((a,b)=> (a.it.transfers-b.it.transfers) || (a.it.total-b.it.total));
+  else                   currentOpts.sort((a,b)=> (a.it.total-b.it.total) || (a.it.transfers-b.it.transfers));
+  currentOptIdx=0;
+}
+function openSettings(){ document.getElementById('settingsPanel').classList.add('open'); document.getElementById('settingsOverlay').classList.add('on'); }
+function closeSettings(){ document.getElementById('settingsPanel').classList.remove('open'); document.getElementById('settingsOverlay').classList.remove('on'); }
+function resetTrips(){ planHistory=[]; planFavs=[]; lsSet(LS_HIST,planHistory); lsSet(LS_FAV,planFavs); renderPlanLists(); updateFavBtn(); showToast(t('tripsCleared')); }
 // localized line-category label (legend groups + planner steps); falls back to KIND.label
 function kindLabel(kind){ const k=I18N[lang]['kind_'+kind]; return k!==undefined ? k : ((KIND[kind]&&KIND[kind].label)||kind); }
 /* --- TR→EN disruption translator (same code the scraper uses — injected at build).
@@ -1289,6 +1426,12 @@ const BASES = {
             { maxZoom:19, attribution:'&copy; Esri, Maxar, Earthstar Geographics' })
 };
 let curBase = BASES.dark.addTo(map);
+let curBaseKey = 'dark';
+function setBase(b){
+  if(!BASES[b] || b===curBaseKey) return;
+  map.removeLayer(curBase); curBase=BASES[b].addTo(map); curBase.bringToBack(); curBaseKey=b;
+  const seg=document.getElementById('baseSeg'); if(seg)[...seg.children].forEach(x=>x.classList.toggle('active', x.dataset.b===b));
+}
 
 const lineRenderer = L.canvas({ padding:0.5 });
 const stationRenderer = L.canvas({ padding:0.5 });
@@ -1751,10 +1894,10 @@ function lineStripSVG(line){
         P.push(`<text x="${x}" y="${by-1}" text-anchor="middle" font-size="8.5" font-weight="700" fill="${inkOn(ch.col)}" style="font-family:var(--mono)">${svgEsc(ch.lab)}</text>`);
       });
     }
-    if(term) P.push(`<circle cx="${x}" cy="${TY}" r="8" fill="#0b0f17" stroke="${col}" stroke-width="4"/>`);
-    else if(others.length) P.push(`<circle cx="${x}" cy="${TY}" r="6.5" fill="#fff" stroke="${col}" stroke-width="3"/>`);
-    else P.push(`<circle cx="${x}" cy="${TY}" r="5" fill="${col}"/><circle cx="${x}" cy="${TY}" r="2.1" fill="#0b0f17"/>`);
-    P.push(`<text x="${x+4}" y="${TY+15}" transform="rotate(45 ${x+4} ${TY+15})" font-size="10.5" fill="${term?'#ffffff':'var(--muted)'}" font-weight="${term?'700':'500'}" style="font-family:var(--font)">${svgEsc(st.name)}</text>`);
+    if(term) P.push(`<circle cx="${x}" cy="${TY}" r="8" fill="var(--svg-hole)" stroke="${col}" stroke-width="4"/>`);
+    else if(others.length) P.push(`<circle cx="${x}" cy="${TY}" r="6.5" fill="var(--svg-hole)" stroke="${col}" stroke-width="3"/>`);
+    else P.push(`<circle cx="${x}" cy="${TY}" r="5" fill="${col}"/><circle cx="${x}" cy="${TY}" r="2.1" fill="var(--svg-hole)"/>`);
+    P.push(`<text x="${x+4}" y="${TY+15}" transform="rotate(45 ${x+4} ${TY+15})" font-size="10.5" fill="${term?'var(--text)':'var(--muted)'}" font-weight="${term?'700':'500'}" style="font-family:var(--font)">${svgEsc(st.name)}</text>`);
   });
   return `<svg class="strip-svg" viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" xmlns="http://www.w3.org/2000/svg">${P.join('')}</svg>`;
 }
@@ -1800,7 +1943,7 @@ function journeySVG(it,res){
     const x0=PADX+i*LW, x1=PADX+(i+1)*LW, mx=(x0+x1)/2;
     if(sg.walk){
       P.push(`<line x1="${x0}" y1="${TY}" x2="${x1}" y2="${TY}" stroke="#9fb0c0" stroke-width="3" stroke-dasharray="1,7" stroke-linecap="round"/>`);
-      P.push(svgPill(mx, TY-13, '🚶 '+Math.max(1,Math.round(sg.mins))+' '+t('minUnit'), 'rgba(159,176,192,.22)', '#dfe7f2'));
+      P.push(svgPill(mx, TY-13, '🚶 '+Math.max(1,Math.round(sg.mins))+' '+t('minUnit'), 'var(--surface-2)', 'var(--text)'));
     } else if(sg.ferry){
       P.push(`<rect x="${x0+3}" y="${TY-2}" width="${(x1-x0-6).toFixed(1)}" height="22" rx="8" fill="rgba(56,150,220,.18)"/>`);
       let wp=`M ${x0+5} ${TY+16}`; for(let wx=x0+5; wx<x1-9; wx+=12) wp+=' q 6 -5 12 0';
@@ -1817,10 +1960,10 @@ function journeySVG(it,res){
   nodes.forEach((nd,i)=>{
     const x=PADX+i*LW;
     if(nd.role==='origin'||nd.role==='dest') P.push(`<circle cx="${x}" cy="${TY}" r="7.5" fill="${nd.role==='origin'?'#3ee387':'#ff5d6c'}" stroke="#06121b" stroke-width="2.5"/>`);
-    else if(nd.role==='interchange') P.push(`<circle cx="${x}" cy="${TY}" r="7" fill="#fff" stroke="var(--gold)" stroke-width="3"/>`);
-    else P.push(`<circle cx="${x}" cy="${TY}" r="5" fill="#fff" stroke="#06121b" stroke-width="1.5"/>`);
+    else if(nd.role==='interchange') P.push(`<circle cx="${x}" cy="${TY}" r="7" fill="var(--svg-hole)" stroke="var(--gold)" stroke-width="3"/>`);
+    else P.push(`<circle cx="${x}" cy="${TY}" r="5" fill="var(--svg-hole)" stroke="var(--muted)" stroke-width="1.5"/>`);
     const bold=(nd.role!=='stop');
-    P.push(`<text x="${x+4}" y="${TY+16}" transform="rotate(38 ${x+4} ${TY+16})" font-size="10.5" fill="${bold?'#ffffff':'var(--muted)'}" font-weight="${bold?'700':'500'}" style="font-family:var(--font)">${svgEsc(nd.name)}</text>`);
+    P.push(`<text x="${x+4}" y="${TY+16}" transform="rotate(38 ${x+4} ${TY+16})" font-size="10.5" fill="${bold?'var(--text)':'var(--muted)'}" font-weight="${bold?'700':'500'}" style="font-family:var(--font)">${svgEsc(nd.name)}</text>`);
   });
   return `<svg class="jmap-svg" viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" xmlns="http://www.w3.org/2000/svg">${P.join('')}</svg>`;
 }
@@ -2188,7 +2331,7 @@ function renderOptChips(){
   const el=document.getElementById('rOpts');
   if(currentOpts.length<2){ el.innerHTML=''; return; }
   el.innerHTML=`<div class="ropts-h">${t('alternatives')}</div>`+currentOpts.map((o,i)=>`<div class="ropt${i===currentOptIdx?' sel':''}" data-i="${i}">
-      <div class="ro-t">${i===0?t('fastest'):t('option')+' '+(i+1)}</div>
+      <div class="ro-t">${i===0?(routePref==='easy'?t('easiest'):t('fastest')):t('option')+' '+(i+1)}</div>
       <div class="ro-m">${Math.round(o.it.total)}<small> ${t('minUnit')}</small></div>
       <div class="ro-s">${optLines(o.it)}</div></div>`).join('');
   el.querySelectorAll('.ropt').forEach(c=> c.addEventListener('click', ()=> selectOption(+c.dataset.i)));
@@ -2397,6 +2540,7 @@ function runRoute(){
   if(!currentOpts.length){ out.classList.add('show'); document.getElementById('rEta').textContent='—';
     document.getElementById('rStops').textContent='—'; document.getElementById('rTr').textContent='—';
     stepsEl.innerHTML=`<div class="none">${t('noRoute')}</div>`; updateFavBtn(); return; }
+  sortOptsByPref();     // rank by the user's Fastest / Fewest-changes preference
   renderOptChips();
   selectOption(0);
   out.classList.add('show');
@@ -2637,9 +2781,16 @@ function populateSelects(){
 
 document.getElementById('baseSeg').addEventListener('click', e=>{
   const b=e.target.dataset.b; if(!b) return;
-  [...e.currentTarget.children].forEach(x=>x.classList.toggle('active', x.dataset.b===b));
-  map.removeLayer(curBase); curBase=BASES[b].addTo(map); curBase.bringToBack();
+  setBase(b);
 });
+// settings panel wiring
+document.getElementById('settingsBtn').addEventListener('click', openSettings);
+document.getElementById('settingsX').addEventListener('click', closeSettings);
+document.getElementById('settingsOverlay').addEventListener('click', closeSettings);
+document.getElementById('themeSeg').addEventListener('click', e=>{ const b=e.target.closest('button'); if(b&&b.dataset.theme) applyTheme(b.dataset.theme, true); });
+document.getElementById('prefSeg').addEventListener('click', e=>{ const b=e.target.closest('button'); if(b&&b.dataset.pref) setRoutePref(b.dataset.pref, true); });
+document.getElementById('resetTrips').addEventListener('click', resetTrips);
+document.addEventListener('keydown', e=>{ if(e.key==='Escape') closeSettings(); });
 document.getElementById('speedSeg').addEventListener('click', e=>{
   const s=e.target.dataset.s; if(!s) return;
   [...e.currentTarget.children].forEach(x=>x.classList.toggle('active', x.dataset.s===s));
@@ -2947,6 +3098,8 @@ function init(){
   setupMobile();              // phone app shell (bottom nav + sheets) — no-op on desktop
   { const lf=document.getElementById('locateFab');
     if(lf){ if(geoSupported()) lf.addEventListener('click', toggleLocate); else lf.style.display='none'; } }
+  applyTheme(theme, true);          // restore saved dark/light theme (+ matching basemap)
+  setRoutePref(routePref, false);   // restore saved route preference
   document.querySelectorAll('#langSeg button').forEach(b=> b.classList.toggle('active', b.dataset.lang===lang));
   applyI18n();
   ensureEnglish(DISRUPTIONS); // safety net: translate any Turkish left in the baked-in feed
