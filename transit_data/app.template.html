@@ -175,7 +175,9 @@
     background:var(--surface);font-size:10.5px;font-weight:650;cursor:pointer;transition:all .15s var(--ease);user-select:none;}
   .lchip:hover{border-color:var(--stroke-2);background:var(--surface-2);transform:translateY(-1px);}
   .lchip.off{opacity:.3;filter:saturate(.2);}
-  .lchip .sw{width:11px;height:11px;border-radius:50%;flex:none;box-shadow:0 0 6px -1px currentColor;}
+  .lchip .sw{width:11px;height:11px;border-radius:50%;flex:none;box-shadow:0 0 6px -1px currentColor;position:relative;cursor:pointer;transition:transform .15s var(--ease),box-shadow .15s var(--ease);}
+  .lchip .sw::after{content:"";position:absolute;inset:-7px;border-radius:50%;}   /* larger tap target for the toggle */
+  .lchip .sw:hover{transform:scale(1.4);box-shadow:0 0 0 3px rgba(255,255,255,.16);}
 
   .field{display:flex;flex-direction:column;gap:5px;margin-bottom:8px;}
   .field label{font-size:9px;color:var(--muted);letter-spacing:1px;text-transform:uppercase;font-weight:650;}
@@ -412,7 +414,7 @@
   .msheet .announce{position:static;width:auto;border:none;background:none;box-shadow:none;backdrop-filter:none;animation:none;overflow:visible;}
   .msheet .ann-body{max-height:none;padding:0;}
   .msheet .wx-list,.msheet .bus-list{max-height:none;}
-  body.mobile .station,body.mobile .linep{left:8px;right:8px;width:auto;
+  body.mobile .station,body.mobile .linep{left:8px;right:8px;width:auto;z-index:1360;
     bottom:calc(86px + env(safe-area-inset-bottom));max-height:56vh;border-radius:20px;}
   body.mobile .mtoast{display:block;position:fixed;top:calc(64px + env(safe-area-inset-top));left:50%;
     transform:translate(-50%,-14px);z-index:1500;padding:9px 16px;border-radius:99px;font-size:11.5px;font-weight:700;
@@ -665,7 +667,7 @@ const I18N = {
     mMap:"Map", mPlanner:"Planner", mLayers:"Layers", mWeather:"Weather", mAlerts:"Alerts",
     installApp:"📲 Install app", appUpdated:"Updated to the latest version ✓",
     iosHint:"iPhone: Share → Add to Home Screen to install.",
-    lineMap:"Line map", journeyMap:"Journey map", stripHint:"swipe to see the whole line →" },
+    lineMap:"Line map", journeyMap:"Journey map", stripHint:"swipe to see the whole line →", showHide:"Show / hide on map", openLineMap:"Tap for line map" },
   tr:{ liveNet:"Canlı Raylı Ağ", source:"kaynak ↗", lines:"Hatlar", stations:"İstasyonlar", carriages:"Vagonlar",
     tabActive:"● Aktif", tabVision:"◇ Vizyon", tabBus:"▤ Otobüsler",
     baseMap:"Harita", dark:"Koyu", streets:"Sokaklar", satellite:"Uydu",
@@ -714,7 +716,7 @@ const I18N = {
     mMap:"Harita", mPlanner:"Planlayıcı", mLayers:"Katmanlar", mWeather:"Hava", mAlerts:"Duyurular",
     installApp:"📲 Uygulamayı yükle", appUpdated:"En son sürüme güncellendi ✓",
     iosHint:"iPhone: Paylaş → Ana Ekrana Ekle ile yükleyin.",
-    lineMap:"Hat şeması", journeyMap:"Yolculuk şeması", stripHint:"tüm hattı görmek için kaydır →" },
+    lineMap:"Hat şeması", journeyMap:"Yolculuk şeması", stripHint:"tüm hattı görmek için kaydır →", showHide:"Haritada göster / gizle", openLineMap:"Hat şeması için dokun" },
   ar:{ liveNet:"شبكة النقل المباشرة", source:"المصدر ↗", lines:"الخطوط", stations:"المحطات", carriages:"العربات",
     tabActive:"● النشط", tabVision:"◇ الرؤية", tabBus:"▤ الحافلات", tabWeather:"☀ الطقس",
     baseMap:"خريطة الأساس", dark:"داكن", streets:"الشوارع", satellite:"قمر صناعي",
@@ -761,7 +763,7 @@ const I18N = {
     mMap:"الخريطة", mPlanner:"المخطّط", mLayers:"الطبقات", mWeather:"الطقس", mAlerts:"تنبيهات",
     installApp:"📲 تثبيت التطبيق", appUpdated:"تم التحديث إلى أحدث إصدار ✓",
     iosHint:"آيفون: مشاركة ← أضِف إلى الشاشة الرئيسية للتثبيت.",
-    lineMap:"مخطط الخط", journeyMap:"مخطط الرحلة", stripHint:"اسحب لرؤية الخط بالكامل →" },
+    lineMap:"مخطط الخط", journeyMap:"مخطط الرحلة", stripHint:"اسحب لرؤية الخط بالكامل →", showHide:"إظهار / إخفاء على الخريطة", openLineMap:"اضغط لعرض مخطط الخط" },
   fr:{ liveNet:"Réseau de transport en direct", source:"source ↗", lines:"Lignes", stations:"Stations", carriages:"Rames",
     tabActive:"● Actif", tabVision:"◇ Vision", tabBus:"▤ Bus", tabWeather:"☀ Météo",
     baseMap:"Fond de carte", dark:"Sombre", streets:"Rues", satellite:"Satellite",
@@ -808,7 +810,7 @@ const I18N = {
     mMap:"Carte", mPlanner:"Trajets", mLayers:"Couches", mWeather:"Météo", mAlerts:"Alertes",
     installApp:"📲 Installer l'app", appUpdated:"Mis à jour vers la dernière version ✓",
     iosHint:"iPhone : Partager → Sur l'écran d'accueil pour installer.",
-    lineMap:"Schéma de ligne", journeyMap:"Schéma du trajet", stripHint:"faites défiler pour voir toute la ligne →" }
+    lineMap:"Schéma de ligne", journeyMap:"Schéma du trajet", stripHint:"faites défiler pour voir toute la ligne →", showHide:"Afficher / masquer sur la carte", openLineMap:"Appuyez pour le schéma" }
 };
 const LOCALE = { en:'en-GB', tr:'tr-TR', ar:'ar-u-nu-latn', fr:'fr-FR' };   // ar: Latin digits to match the UI's numerals
 let lang = (function(){ try{ const s=localStorage.getItem('irn_lang'); if(I18N[s]) return s; }catch(e){}
@@ -2496,12 +2498,21 @@ function buildLegend(){
     if(!lines.length) return;
     html += `<div class="grp"><div class="grp-h" data-kind="${kind}">${kindLabel(kind)}<span>toggle</span></div><div class="lines-wrap">`;
     lines.forEach(l=>{
-      html += `<div class="lchip${lineLayers[l.ref].on?'':' off'}" data-ref="${l.ref}"><span class="sw" style="background:${l.color}"></span>${l.ref}</div>`;
+      html += `<div class="lchip${lineLayers[l.ref].on?'':' off'}" data-ref="${l.ref}" title="${attrEsc(t('openLineMap'))}"><span class="sw" style="background:${l.color}" title="${attrEsc(t('showHide'))}"></span>${l.ref}</div>`;
     });
     html += `</div></div>`;
   });
   el.innerHTML = html;
-  el.querySelectorAll('.lchip').forEach(ch=> ch.addEventListener('click', ()=> toggleLine(ch.dataset.ref)));
+  el.querySelectorAll('.lchip').forEach(ch=>{
+    const ref=ch.dataset.ref, ln=lineByRef[ref];
+    // chip body → open the line's strip-map panel (turning the line on if it was hidden)
+    ch.addEventListener('click', ()=>{ if(!ln) return; if(!lineLayers[ref].on) setLine(ref,true);
+      if(typeof IS_MOBILE!=='undefined' && IS_MOBILE && typeof openSheet==='function') openSheet(null);  // close the Layers sheet so the panel shows
+      openLine(ln); });
+    // the colored dot keeps the show/hide toggle
+    const sw=ch.querySelector('.sw');
+    if(sw) sw.addEventListener('click', e=>{ e.stopPropagation(); toggleLine(ref); });
+  });
   el.querySelectorAll('.grp-h').forEach(h=>{
     h.addEventListener('click', ()=>{
       const refs = set.filter(l=>l.kind===h.dataset.kind && !l.partOf).map(l=>l.ref);
