@@ -1,0 +1,45 @@
+name: Refresh accessibility data
+
+# Rebuilds the per-station step-free / elevator data from İBB Open Data (authoritative
+# elevator + escalator counts) enriched with OpenStreetMap wheelchair tags, then rebuilds
+# the site so the baked-in data + station panels stay current. Monthly is plenty — elevator
+# counts change slowly (mostly when new stations open). Also catches OSM when Overpass is
+# available (it rate-limits under load), so the wheelchair enrichment lands automatically.
+
+on:
+  schedule:
+    - cron: '17 4 1 * *'        # 04:17 UTC on the 1st of each month
+  workflow_dispatch: {}         # allow manual "Run workflow"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: accessibility
+  cancel-in-progress: false
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Fetch İBB + OSM accessibility data
+        run: node transit_data/fetch-accessibility.cjs
+      - name: Rebuild site with refreshed data
+        run: node transit_data/build.cjs
+      - name: Commit if changed
+        run: |
+          if ! git diff --quiet -- transit_data/accessibility.json index.html; then
+            git config user.name  "accessibility-bot"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git add transit_data/accessibility.json index.html sw.js
+            git commit -m "chore: refresh accessibility data + rebuild [skip ci]"
+            git pull --rebase --autostash origin main || true   # avoid racing the 15-min disruptions bot
+            git push
+            echo "Accessibility data refreshed."
+          else
+            echo "No change — accessibility data already current."
+          fi
