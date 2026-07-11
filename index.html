@@ -492,6 +492,48 @@
   .settings-panel .btn{margin-top:2px;}
   body.mobile .settings-panel{top:auto;bottom:0;left:0;transform:translateY(105%);width:100%;max-height:84vh;border-radius:22px 22px 0 0;}
   body.mobile .settings-panel.open{transform:translateY(0);}
+  /* toggle switch */
+  .sw{width:40px;height:23px;border-radius:99px;border:1px solid var(--stroke-2);background:var(--track);cursor:pointer;position:relative;flex:0 0 auto;transition:background .18s var(--ease),border-color .18s var(--ease);padding:0;}
+  .sw .sw-k{position:absolute;top:2px;left:2px;width:17px;height:17px;border-radius:50%;background:#c7cfdd;transition:all .2s var(--ease);}
+  .sw.on{background:linear-gradient(135deg,rgba(74,222,128,.95),rgba(20,184,166,.95));border-color:transparent;}
+  .sw.on .sw-k{left:20px;background:#fff;}
+  .sw:active .sw-k{width:21px;}
+  /* saved places rows */
+  .sp-place{display:flex;align-items:center;gap:8px;margin-bottom:8px;font-size:12px;}
+  .sp-p-nm{flex:1;color:var(--text);font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  /* fare row */
+  .rfare{display:flex;align-items:center;gap:8px;margin:8px 0 2px;padding:8px 11px;border-radius:12px;background:var(--surface);border:1px solid var(--stroke);}
+  .rfare:empty{display:none;}
+  .rf-ico{font-size:14px;} .rf-main{font-family:var(--mono);font-weight:800;font-size:14px;color:var(--text);}
+  .rf-sub{font-size:10.5px;color:var(--muted);} .rf-i{margin-left:auto;color:var(--dim);cursor:help;font-size:12px;}
+  /* nearby-stops button + panel */
+  .near-btn{width:100%;padding:8px;margin-bottom:9px;border:1px dashed var(--stroke-2);border-radius:11px;background:var(--surface);color:var(--text);font:650 11.5px var(--font);cursor:pointer;transition:all .15s var(--ease);}
+  .near-btn::before{content:"◎ ";color:var(--accent);font-weight:800;}
+  .near-btn:hover{border-color:var(--ring);color:var(--accent);}
+  .near-panel{position:fixed;left:14px;bottom:14px;width:300px;max-height:60vh;overflow-y:auto;z-index:1360;padding:13px;
+    transform:translateY(14px) scale(.98);opacity:0;pointer-events:none;transition:all .28s var(--ease);}
+  .near-panel.open{transform:none;opacity:1;pointer-events:auto;}
+  body.mobile .near-panel{left:8px;right:8px;width:auto;bottom:calc(88px + env(safe-area-inset-bottom));}
+  .np-head{display:flex;align-items:center;justify-content:space-between;font-family:var(--display);font-weight:700;font-size:13px;margin-bottom:8px;}
+  .np-head .x{background:none;border:none;color:var(--muted);font-size:14px;cursor:pointer;}
+  .nb-row{display:flex;align-items:center;gap:8px;padding:8px 7px;border-radius:10px;cursor:pointer;transition:background .15s var(--ease);}
+  .nb-row:hover{background:var(--surface-2);} .nb-row:active{transform:scale(.985);}
+  .nb-main{flex:1;min-width:0;} .nb-nm{font-size:12px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .nb-ch{display:flex;gap:3px;margin-top:3px;flex-wrap:wrap;} .nb-badge{font:700 8.5px var(--mono);padding:1px 5px;border-radius:5px;}
+  .nb-meta{flex:0 0 auto;text-align:right;font-size:11px;font-weight:700;color:var(--text);}
+  .nb-meta span{display:block;font-size:9.5px;font-weight:500;color:var(--muted);}
+  /* planner quick chips */
+  .place-chips{display:flex;gap:6px;margin:2px 0 9px;}
+  .pchip{flex:1;padding:8px;border-radius:10px;border:1px solid var(--stroke-2);background:var(--surface);color:var(--text);font:650 11.5px var(--font);cursor:pointer;transition:all .15s var(--ease);}
+  .pchip:hover{border-color:var(--ring);color:var(--accent);background:var(--surface-2);} .pchip:active{transform:scale(.96);}
+  /* accessibility: larger text + high contrast + reduce motion */
+  body.large-text .step .nm,body.large-text .step .mt,body.large-text .ann-msg,body.large-text .st-nm,
+  body.large-text .lp-name,body.large-text .bus-row,body.large-text .wx-row,body.large-text .plan-item,
+  body.large-text .ac-item,body.large-text .ac-input,body.large-text .sp-row>span,body.large-text .nb-nm,
+  body.large-text .lchip,body.large-text .btn,body.large-text .pchip{font-size:13.5px;}
+  body.high-contrast{--muted:#c6cfdd;--dim:#9ca7ba;--stroke:rgba(255,255,255,.22);--stroke-2:rgba(255,255,255,.34);}
+  body.high-contrast.light{--muted:#333c4c;--dim:#495264;--stroke:rgba(15,23,42,.3);--stroke-2:rgba(15,23,42,.46);}
+  body.reduce-motion *{animation-duration:.001ms!important;animation-iteration-count:1!important;transition-duration:.001ms!important;}
 </style>
 </head>
 <body>
@@ -536,6 +578,13 @@
       <div class="seg" id="themeSeg">
         <button data-theme="dark" class="active" data-i18n="dark">Dark</button>
         <button data-theme="light" data-i18n="light">Light</button>
+        <button data-theme="auto" data-i18n="themeAuto">Auto</button>
+      </div>
+    </div>
+    <div class="sp-row"><span data-i18n="textSize">Text size</span>
+      <div class="seg" id="textSeg">
+        <button data-ts="normal" class="active" data-i18n="textNormal">Normal</button>
+        <button data-ts="large" data-i18n="textLarge">Large</button>
       </div>
     </div>
     <div class="sp-row"><span data-i18n="language">Language</span>
@@ -548,6 +597,13 @@
     </div>
   </div>
   <div class="sp-group">
+    <div class="sp-label" data-i18n="accessibility">Accessibility</div>
+    <div class="sp-row"><span data-i18n="reduceMotion">Reduce motion</span>
+      <button class="sw" id="swMotion" role="switch" aria-label="Reduce motion"><span class="sw-k"></span></button></div>
+    <div class="sp-row"><span data-i18n="highContrast">High contrast</span>
+      <button class="sw" id="swContrast" role="switch" aria-label="High contrast"><span class="sw-k"></span></button></div>
+  </div>
+  <div class="sp-group">
     <div class="sp-label" data-i18n="journeyPrefs">Journey</div>
     <div class="sp-row"><span data-i18n="preferRoute">Show best route by</span></div>
     <div class="seg spseg" id="prefSeg">
@@ -555,12 +611,42 @@
       <button data-pref="easy" data-i18n="prefEasy">☺ Fewest changes</button>
     </div>
     <div class="sp-hint" data-i18n="prefHint">“Fewest changes” prefers fewer transfers, even if it's a little slower.</div>
+    <div class="sp-row" style="margin-top:12px"><span data-i18n="walkPace">Walking pace</span>
+      <div class="seg" id="paceSeg">
+        <button data-pace="slow" data-i18n="walkSlow">Slow</button>
+        <button data-pace="normal" class="active" data-i18n="walkNormal">Normal</button>
+        <button data-pace="fast" data-i18n="walkFast">Fast</button>
+      </div>
+    </div>
+    <div class="sp-row"><span data-i18n="avoidFerry">Avoid ferries</span>
+      <button class="sw" id="swAvoidFerry" role="switch" aria-label="Avoid ferries"><span class="sw-k"></span></button></div>
+    <div class="sp-row"><span data-i18n="avoidBus">Avoid buses</span>
+      <button class="sw" id="swAvoidBus" role="switch" aria-label="Avoid buses"><span class="sw-k"></span></button></div>
+    <div class="sp-row"><span data-i18n="distUnit">Distance</span>
+      <div class="seg" id="unitSeg"><button data-u="metric" class="active">km</button><button data-u="imperial">mi</button></div></div>
+    <div class="sp-row"><span data-i18n="clockFmt">Clock</span>
+      <div class="seg" id="clockSeg"><button data-ck="24" class="active">24h</button><button data-ck="12">12h</button></div></div>
+  </div>
+  <div class="sp-group" id="placesGroup">
+    <div class="sp-label" data-i18n="places">Saved places</div>
+    <div class="sp-place"><span class="sp-p-ico">🏠</span><span class="sp-p-nm" id="homeVal">—</span>
+      <button class="mini" data-place="home" data-act="set" data-i18n="setPlace">Set</button>
+      <button class="mini" data-place="home" data-act="clear" data-i18n="clear">Clear</button></div>
+    <div class="sp-place"><span class="sp-p-ico">💼</span><span class="sp-p-nm" id="workVal">—</span>
+      <button class="mini" data-place="work" data-act="set" data-i18n="setPlace">Set</button>
+      <button class="mini" data-place="work" data-act="clear" data-i18n="clear">Clear</button></div>
+    <div class="sp-hint" data-i18n="placeHowto">Type a place in “From”, then tap Set.</div>
   </div>
   <div class="sp-group">
     <div class="sp-label" data-i18n="dataPrivacy">Data</div>
     <button class="btn ghost" id="resetTrips" data-i18n="resetTrips">Clear saved trips &amp; favourites</button>
     <div class="sp-hint" data-i18n="privacyNote">Your settings and saved trips stay on this device only.</div>
   </div>
+</div>
+
+<div class="near-panel glass" id="nearPanel">
+  <div class="np-head"><span data-i18n="nearbyTitle">Nearest stops</span><button class="x" id="nearX" aria-label="Close">✕</button></div>
+  <div class="np-body" id="nearBody"></div>
 </div>
 
 <div class="controls">
@@ -631,6 +717,7 @@
       <button data-pt="adv" data-i18n="advTab">✦ Adventure</button>
     </div>
     <div id="plannerTrip">
+    <button class="near-btn" id="nearBtn" data-i18n="nearMe">Stops near me</button>
     <div class="field"><label data-i18n="from">From</label>
       <div class="ac"><input id="selO" class="ac-input" type="text" data-i18n-ph="searchStop" placeholder="Search any stop or place…" autocomplete="off">
         <button class="ac-geo" data-for="O" data-i18n-title="useMyLocation" title="Use my location"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="12" cy="12" r="3.2"/><circle cx="12" cy="12" r="8"/><line x1="12" y1="2" x2="12" y2="4.2"/><line x1="12" y1="19.8" x2="12" y2="22"/><line x1="2" y1="12" x2="4.2" y2="12"/><line x1="19.8" y1="12" x2="22" y2="12"/></svg></button>
@@ -642,6 +729,10 @@
         <button class="ac-geo" data-for="D" data-i18n-title="useMyLocation" title="Use my location"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="12" cy="12" r="3.2"/><circle cx="12" cy="12" r="8"/><line x1="12" y1="2" x2="12" y2="4.2"/><line x1="12" y1="19.8" x2="12" y2="22"/><line x1="2" y1="12" x2="4.2" y2="12"/><line x1="19.8" y1="12" x2="22" y2="12"/></svg></button>
         <button class="ac-pin" data-for="D" data-i18n-title="pickPoint" title="Pick point on map">📍</button>
         <div class="ac-list" id="acD"></div></div></div>
+    <div class="place-chips" id="placeChips" style="display:none">
+      <button class="pchip" id="chipHome" data-place="home" style="display:none">🏠 <span data-i18n="homeP">Home</span></button>
+      <button class="pchip" id="chipWork" data-place="work" style="display:none">💼 <span data-i18n="workP">Work</span></button>
+    </div>
     <button class="btn" id="route" data-i18n="findPath">◇ Find Optimal Path</button>
     <button class="btn ghost" id="clear" data-i18n="clear">Clear</button>
     <div class="route-out" id="rout">
@@ -650,6 +741,7 @@
         <div class="c"><b id="rStops">–</b><span data-i18n="stops">Stops</span></div>
         <div class="c"><b id="rTr">–</b><span data-i18n="transfers">Transfers</span></div>
       </div>
+      <div class="rfare" id="rFare"></div>
       <div id="rOpts" class="ropts"></div>
       <div id="rJourney" class="jmap"></div>
       <div id="rSteps"></div>
@@ -786,7 +878,17 @@ const I18N = {
     journeyPrefs:"Journey", preferRoute:"Show best route by", prefFast:"⚡ Fastest", prefEasy:"☺ Fewest changes", easiest:"Easiest",
     prefHint:"“Fewest changes” prefers fewer transfers, even if it's a little slower.",
     dataPrivacy:"Data", resetTrips:"Clear saved trips & favourites", tripsCleared:"Saved trips cleared",
-    privacyNote:"Your settings and saved trips stay on this device only." },
+    privacyNote:"Your settings and saved trips stay on this device only.",
+    themeAuto:"Auto", textSize:"Text size", textNormal:"Normal", textLarge:"Large",
+    accessibility:"Accessibility", reduceMotion:"Reduce motion", highContrast:"High contrast",
+    walkPace:"Walking pace", walkSlow:"Slow", walkNormal:"Normal", walkFast:"Fast",
+    avoidFerry:"Avoid ferries", avoidBus:"Avoid buses", distUnit:"Distance", clockFmt:"Clock",
+    places:"Saved places", homeP:"Home", workP:"Work", setPlace:"Set", placeHowto:"Type a place in “From”, then tap Set.",
+    homeSaved:"Home saved", workSaved:"Work saved", placeCleared:"Cleared",
+    nearMe:"Stops near me", nearbyTitle:"Nearest stops", nearbyEmpty:"No stops within 2 km — try moving.",
+    walkAway:"min walk", fromHere:"From here",
+    fareApprox:"Fare", fareTaps:"taps", fareNote:"Approx İstanbulkart fare (transfers discounted) — rates change.",
+    needOrigin:"Set a starting point first." },
   tr:{ liveNet:"Canlı Raylı Ağ", source:"kaynak ↗", lines:"Hatlar", stations:"İstasyonlar", carriages:"Vagonlar",
     tabActive:"● Aktif", tabVision:"◇ Vizyon", tabBus:"▤ Otobüsler",
     baseMap:"Harita", dark:"Koyu", streets:"Sokaklar", satellite:"Uydu",
@@ -842,7 +944,17 @@ const I18N = {
     journeyPrefs:"Yolculuk", preferRoute:"En iyi rotayı şuna göre göster", prefFast:"⚡ En hızlı", prefEasy:"☺ En az aktarma", easiest:"En kolay",
     prefHint:"“En az aktarma”, biraz daha yavaş olsa bile daha az aktarmalı rotaları tercih eder.",
     dataPrivacy:"Veri", resetTrips:"Kayıtlı yolculukları ve favorileri temizle", tripsCleared:"Kayıtlı yolculuklar temizlendi",
-    privacyNote:"Ayarların ve kayıtlı yolculukların yalnızca bu cihazda saklanır." },
+    privacyNote:"Ayarların ve kayıtlı yolculukların yalnızca bu cihazda saklanır.",
+    themeAuto:"Otomatik", textSize:"Yazı boyutu", textNormal:"Normal", textLarge:"Büyük",
+    accessibility:"Erişilebilirlik", reduceMotion:"Hareketi azalt", highContrast:"Yüksek kontrast",
+    walkPace:"Yürüme hızı", walkSlow:"Yavaş", walkNormal:"Normal", walkFast:"Hızlı",
+    avoidFerry:"Vapurdan kaçın", avoidBus:"Otobüsten kaçın", distUnit:"Mesafe", clockFmt:"Saat",
+    places:"Kayıtlı yerler", homeP:"Ev", workP:"İş", setPlace:"Kaydet", placeHowto:"“Nereden” kutusuna bir yer yazıp Kaydet’e dokun.",
+    homeSaved:"Ev kaydedildi", workSaved:"İş kaydedildi", placeCleared:"Temizlendi",
+    nearMe:"Yakınımdaki duraklar", nearbyTitle:"En yakın duraklar", nearbyEmpty:"2 km içinde durak yok — biraz hareket edin.",
+    walkAway:"dk yürüme", fromHere:"Buradan",
+    fareApprox:"Ücret", fareTaps:"biniş", fareNote:"Yaklaşık İstanbulkart ücreti (aktarma indirimli) — ücretler değişir.",
+    needOrigin:"Önce bir başlangıç noktası seçin." },
   ar:{ liveNet:"شبكة النقل المباشرة", source:"المصدر ↗", lines:"الخطوط", stations:"المحطات", carriages:"العربات",
     tabActive:"● النشط", tabVision:"◇ الرؤية", tabBus:"▤ الحافلات", tabWeather:"☀ الطقس",
     baseMap:"خريطة الأساس", dark:"داكن", streets:"الشوارع", satellite:"قمر صناعي",
@@ -896,7 +1008,17 @@ const I18N = {
     journeyPrefs:"الرحلة", preferRoute:"أظهر أفضل مسار حسب", prefFast:"⚡ الأسرع", prefEasy:"☺ أقل تبديل", easiest:"الأسهل",
     prefHint:"«أقل تبديل» يفضّل المسارات ذات التبديلات الأقل، حتى لو كانت أبطأ قليلًا.",
     dataPrivacy:"البيانات", resetTrips:"مسح الرحلات والمفضلة", tripsCleared:"تم مسح الرحلات المحفوظة",
-    privacyNote:"تُحفظ إعداداتك ورحلاتك على هذا الجهاز فقط." },
+    privacyNote:"تُحفظ إعداداتك ورحلاتك على هذا الجهاز فقط.",
+    themeAuto:"تلقائي", textSize:"حجم النص", textNormal:"عادي", textLarge:"كبير",
+    accessibility:"إمكانية الوصول", reduceMotion:"تقليل الحركة", highContrast:"تباين عالٍ",
+    walkPace:"سرعة المشي", walkSlow:"بطيء", walkNormal:"عادي", walkFast:"سريع",
+    avoidFerry:"تجنّب العبّارات", avoidBus:"تجنّب الحافلات", distUnit:"المسافة", clockFmt:"الساعة",
+    places:"أماكن محفوظة", homeP:"المنزل", workP:"العمل", setPlace:"حفظ", placeHowto:"اكتب مكانًا في «من» ثم اضغط حفظ.",
+    homeSaved:"تم حفظ المنزل", workSaved:"تم حفظ العمل", placeCleared:"تم المسح",
+    nearMe:"محطات قريبة مني", nearbyTitle:"أقرب المحطات", nearbyEmpty:"لا محطات ضمن 2 كم — تحرّك قليلًا.",
+    walkAway:"د مشيًا", fromHere:"من هنا",
+    fareApprox:"الأجرة", fareTaps:"ركوب", fareNote:"أجرة إسطنبول كارت تقريبية (خصم التبديل) — الأسعار تتغيّر.",
+    needOrigin:"حدّد نقطة انطلاق أولًا." },
   fr:{ liveNet:"Réseau de transport en direct", source:"source ↗", lines:"Lignes", stations:"Stations", carriages:"Rames",
     tabActive:"● Actif", tabVision:"◇ Vision", tabBus:"▤ Bus", tabWeather:"☀ Météo",
     baseMap:"Fond de carte", dark:"Sombre", streets:"Rues", satellite:"Satellite",
@@ -950,7 +1072,17 @@ const I18N = {
     journeyPrefs:"Trajet", preferRoute:"Afficher le meilleur trajet selon", prefFast:"⚡ Le plus rapide", prefEasy:"☺ Moins de correspondances", easiest:"Le plus simple",
     prefHint:"« Moins de correspondances » privilégie les trajets avec moins de changements, même un peu plus lents.",
     dataPrivacy:"Données", resetTrips:"Effacer trajets et favoris", tripsCleared:"Trajets enregistrés effacés",
-    privacyNote:"Vos réglages et trajets restent uniquement sur cet appareil." }
+    privacyNote:"Vos réglages et trajets restent uniquement sur cet appareil.",
+    themeAuto:"Auto", textSize:"Taille du texte", textNormal:"Normal", textLarge:"Grand",
+    accessibility:"Accessibilité", reduceMotion:"Réduire les animations", highContrast:"Contraste élevé",
+    walkPace:"Vitesse de marche", walkSlow:"Lente", walkNormal:"Normale", walkFast:"Rapide",
+    avoidFerry:"Éviter les ferries", avoidBus:"Éviter les bus", distUnit:"Distance", clockFmt:"Heure",
+    places:"Lieux enregistrés", homeP:"Domicile", workP:"Travail", setPlace:"Définir", placeHowto:"Saisissez un lieu dans « De », puis Définir.",
+    homeSaved:"Domicile enregistré", workSaved:"Travail enregistré", placeCleared:"Effacé",
+    nearMe:"Arrêts près de moi", nearbyTitle:"Arrêts les plus proches", nearbyEmpty:"Aucun arrêt à moins de 2 km — déplacez-vous.",
+    walkAway:"min à pied", fromHere:"D'ici",
+    fareApprox:"Tarif", fareTaps:"trajets", fareNote:"Tarif İstanbulkart approx. (correspondances remisées) — les tarifs changent.",
+    needOrigin:"Définissez d'abord un point de départ." }
 };
 const LOCALE = { en:'en-GB', tr:'tr-TR', ar:'ar-u-nu-latn', fr:'fr-FR' };   // ar: Latin digits to match the UI's numerals
 let lang = (function(){ try{ const s=localStorage.getItem('irn_lang'); if(I18N[s]) return s; }catch(e){}
@@ -984,21 +1116,26 @@ function setLang(l){
    SETTINGS — theme (dark/light), route preference (fastest / fewest changes),
    and the settings panel. All choices persist in localStorage (this device).
    =========================================================================== */
-let theme = (function(){ try{ const s=localStorage.getItem('irn_theme'); if(s==='light'||s==='dark') return s; }catch(e){}
+const lsStr=(k,def)=>{ try{ const s=localStorage.getItem(k); return s==null?def:s; }catch(e){ return def; } };
+const lsJSON=(k)=>{ try{ return JSON.parse(localStorage.getItem(k)); }catch(e){ return null; } };
+let themePref = (function(){ const s=lsStr('irn_theme'); if(s==='light'||s==='dark'||s==='auto') return s;
   return (window.matchMedia && matchMedia('(prefers-color-scheme: light)').matches) ? 'light' : 'dark'; })();
-let routePref = (function(){ try{ const s=localStorage.getItem('irn_routePref'); if(s==='fast'||s==='easy') return s; }catch(e){} return 'fast'; })();
-function applyTheme(th, syncBase){
-  theme = th==='light' ? 'light' : 'dark';
-  document.body.classList.toggle('light', theme==='light');
-  try{ localStorage.setItem('irn_theme', theme); }catch(e){}
-  const tc=document.querySelector('meta[name="theme-color"]'); if(tc) tc.setAttribute('content', theme==='light'?'#E9EEF5':'#070A12');
-  document.querySelectorAll('#themeSeg button').forEach(b=> b.classList.toggle('active', b.dataset.theme===theme));
+let routePref = (function(){ const s=lsStr('irn_routePref'); return (s==='fast'||s==='easy')?s:'fast'; })();
+function resolveTheme(pref){ if(pref==='auto'){ const h=new Date().getHours(); return (h>=19||h<7)?'dark':'light'; } return pref==='light'?'light':'dark'; }
+function applyTheme(pref, syncBase){
+  themePref = (pref==='light'||pref==='auto') ? pref : 'dark';
+  try{ localStorage.setItem('irn_theme', themePref); }catch(e){}
+  const actual = resolveTheme(themePref);
+  document.body.classList.toggle('light', actual==='light');
+  const tc=document.querySelector('meta[name="theme-color"]'); if(tc) tc.setAttribute('content', actual==='light'?'#E9EEF5':'#070A12');
+  document.querySelectorAll('#themeSeg button').forEach(b=> b.classList.toggle('active', b.dataset.theme===themePref));
   // keep the map basemap in step with the UI theme (unless the user is on Satellite)
   if(syncBase && typeof setBase==='function'){
-    if(theme==='light' && curBaseKey==='dark') setBase('voyager');
-    else if(theme==='dark' && curBaseKey==='voyager') setBase('dark');
+    if(actual==='light' && curBaseKey==='dark') setBase('voyager');
+    else if(actual==='dark' && curBaseKey==='voyager') setBase('dark');
   }
 }
+setInterval(()=>{ if(themePref==='auto') applyTheme('auto', true); }, 300000);   // re-check auto theme every 5 min
 function setRoutePref(p, rerun){
   routePref = p==='easy' ? 'easy' : 'fast';
   try{ localStorage.setItem('irn_routePref', routePref); }catch(e){}
@@ -1015,6 +1152,125 @@ function sortOptsByPref(){
 function openSettings(){ document.getElementById('settingsPanel').classList.add('open'); document.getElementById('settingsOverlay').classList.add('on'); }
 function closeSettings(){ document.getElementById('settingsPanel').classList.remove('open'); document.getElementById('settingsOverlay').classList.remove('on'); }
 function resetTrips(){ planHistory=[]; planFavs=[]; lsSet(LS_HIST,planHistory); lsSet(LS_FAV,planFavs); renderPlanLists(); updateFavBtn(); showToast(t('tripsCleared')); }
+
+/* ---- display / accessibility ---- */
+let textSize   = lsStr('irn_textsize')==='large' ? 'large' : 'normal';
+let reduceMotionPref = lsStr('irn_motion')==='1';
+let highContrastPref = lsStr('irn_contrast')==='1';
+let unitSystem = lsStr('irn_units')==='imperial' ? 'imperial' : 'metric';
+let clock24    = lsStr('irn_clock')!=='12';        // default 24-hour
+let walkPaceKey= (function(){ const s=lsStr('irn_walk'); return (s==='slow'||s==='fast')?s:'normal'; })();
+const WALK_PACE={ slow:65, normal:80, fast:100 };
+let avoidModes = new Set((function(){ const a=lsJSON('irn_avoid'); return Array.isArray(a)?a:[]; })());
+let homePlace  = lsJSON('irn_home');   // {name,lat,lng} | null
+let workPlace  = lsJSON('irn_work');
+function applyDisplayPrefs(){
+  document.body.classList.toggle('large-text', textSize==='large');
+  document.body.classList.toggle('reduce-motion', reduceMotionPref);
+  document.body.classList.toggle('high-contrast', highContrastPref);
+}
+function setTextSize(s){ textSize=s==='large'?'large':'normal'; try{localStorage.setItem('irn_textsize',textSize);}catch(e){}
+  document.querySelectorAll('#textSeg button').forEach(b=>b.classList.toggle('active', b.dataset.ts===textSize)); applyDisplayPrefs(); }
+function setReduceMotion(on){ reduceMotionPref=!!on; try{localStorage.setItem('irn_motion',on?'1':'0');}catch(e){}
+  const c=document.getElementById('swMotion'); if(c) c.classList.toggle('on',reduceMotionPref); applyDisplayPrefs(); }
+function setHighContrast(on){ highContrastPref=!!on; try{localStorage.setItem('irn_contrast',on?'1':'0');}catch(e){}
+  const c=document.getElementById('swContrast'); if(c) c.classList.toggle('on',highContrastPref); applyDisplayPrefs(); }
+
+/* ---- units + clock ---- */
+function distStr(km){ if(unitSystem==='imperial'){ const mi=km*0.621371; return mi.toFixed(mi<10?1:0)+' mi'; } return km.toFixed(1)+' km'; }
+function distNum(km){ return unitSystem==='imperial' ? (km*0.621371) : km; }
+function distUnit(){ return unitSystem==='imperial'?'mi':'km'; }
+function timeOpts(o){ return Object.assign({ timeZone:'Europe/Istanbul', hour12:!clock24 }, o||{}); }
+function setUnits(u){ unitSystem=u==='imperial'?'imperial':'metric'; try{localStorage.setItem('irn_units',unitSystem);}catch(e){}
+  document.querySelectorAll('#unitSeg button').forEach(b=>b.classList.toggle('active', b.dataset.u===unitSystem)); }
+function setClock(c){ clock24=c!=='12'; try{localStorage.setItem('irn_clock',clock24?'24':'12');}catch(e){}
+  document.querySelectorAll('#clockSeg button').forEach(b=>b.classList.toggle('active', b.dataset.ck===(clock24?'24':'12'))); }
+
+/* ---- walking pace → router walk speed ---- */
+function setWalkPace(k, rerun){ walkPaceKey=(k==='slow'||k==='fast')?k:'normal'; WALK=WALK_PACE[walkPaceKey];
+  try{localStorage.setItem('irn_walk',walkPaceKey);}catch(e){}
+  document.querySelectorAll('#paceSeg button').forEach(b=>b.classList.toggle('active', b.dataset.pace===walkPaceKey));
+  if(rerun && originPt && destPt && currentOpts && currentOpts.length) runRoute(); }
+
+/* ---- avoid modes (ferry / bus) — read by routeXY ---- */
+function nodeMode(k){ const m=nodeMeta[k]; if(!m) return null; if(m.kind==='bus') return 'bus'; const ln=lineByRef[m.ref]; return ln?ln.kind:null; }
+function setAvoid(mode, on, rerun){
+  if(on) avoidModes.add(mode); else avoidModes.delete(mode);
+  try{ localStorage.setItem('irn_avoid', JSON.stringify([...avoidModes])); }catch(e){}
+  const sw=document.getElementById(mode==='ferry'?'swAvoidFerry':'swAvoidBus'); if(sw) sw.classList.toggle('on', avoidModes.has(mode));
+  if(rerun && originPt && destPt && currentOpts && currentOpts.length) runRoute(); }
+
+/* ---- İstanbulkart fare estimate (clearly approximate — fares change) ---- */
+const FARE_FULL=27, FARE_TRANSFER=17;   // ≈ TL per tap: full fare vs discounted transfer (early 2026)
+function estimateFare(it){ const rides=(it.steps||[]).filter(s=>s.type==='ride').length;
+  return { taps:rides, tl: rides ? FARE_FULL+(rides-1)*FARE_TRANSFER : 0 }; }
+
+/* ---- saved places (Home / Work) ---- */
+function setPlaceFromOrigin(which){
+  const pt = resolveTyped('O') || originPt;
+  if(!pt){ showToast(t('needOrigin'),'err'); return; }
+  const rec={name:pt.name,lat:pt.lat,lng:pt.lng};
+  if(which==='home'){ homePlace=rec; try{localStorage.setItem('irn_home',JSON.stringify(rec));}catch(e){} showToast(t('homeSaved')); }
+  else { workPlace=rec; try{localStorage.setItem('irn_work',JSON.stringify(rec));}catch(e){} showToast(t('workSaved')); }
+  renderPlaces();
+}
+function clearPlace(which){ if(which==='home'){ homePlace=null; try{localStorage.removeItem('irn_home');}catch(e){} }
+  else { workPlace=null; try{localStorage.removeItem('irn_work');}catch(e){} } showToast(t('placeCleared')); renderPlaces(); }
+function useSavedPlace(which){ const p=which==='home'?homePlace:workPlace; if(!p) return;
+  setPlannerTab('trip'); setPoint('D',{name:p.name,lat:p.lat,lng:p.lng}); if(originPt) runRoute();
+  else if(IS_MOBILE && typeof openSheet==='function') openSheet('planner'); }
+function renderPlaces(){
+  const hv=document.getElementById('homeVal'), wv=document.getElementById('workVal');
+  if(hv) hv.textContent = homePlace?homePlace.name:'—';
+  if(wv) wv.textContent = workPlace?workPlace.name:'—';
+  const hc=document.getElementById('chipHome'), wc=document.getElementById('chipWork'), wrap=document.getElementById('placeChips');
+  if(hc) hc.style.display = homePlace?'':'none';
+  if(wc) wc.style.display = workPlace?'':'none';
+  if(wrap) wrap.style.display = (homePlace||workPlace)?'':'none';
+}
+
+/* ---- nearest stops to the user's GPS position ---- */
+function showNearby(){
+  if(!geoSupported()){ showToast(t('geoUnsupported'),'err'); return; }
+  showToast(t('locating'));
+  navigator.geolocation.getCurrentPosition(p=>{
+    geoPos={lat:p.coords.latitude,lng:p.coords.longitude,acc:p.coords.accuracy}; renderGeo();
+    const here=[geoPos.lat,geoPos.lng]; map.setView(here, Math.max(map.getZoom(),14));
+    const near = stationList.map(c=>({c,d:metersBetween(here,[c.lat,c.lng])}))
+                            .filter(x=>x.d<=2000).sort((a,b)=>a.d-b.d).slice(0,8);
+    renderNearby(near);
+  }, geoErr, {enableHighAccuracy:true,timeout:12000,maximumAge:15000});
+}
+function renderNearby(near){
+  const panel=document.getElementById('nearPanel'), body=document.getElementById('nearBody'); if(!panel||!body) return;
+  if(!near.length){ body.innerHTML=`<div class="none">${t('nearbyEmpty')}</div>`; }
+  else body.innerHTML = near.map((x,i)=>{
+    const c=x.c, wmin=Math.max(1,Math.round(x.d/WALK));
+    const chips=[...c.lines].slice(0,5).map(r=>`<span class="nb-badge" style="background:${colorForLine(r)};color:${inkOn(colorForLine(r))}">${svgEsc(r)}</span>`).join('');
+    return `<div class="nb-row" data-i="${i}"><div class="nb-main"><div class="nb-nm">${svgEsc(c.name)}</div><div class="nb-ch">${chips}</div></div>
+      <div class="nb-meta">${Math.round(x.d)} m<span>${wmin} ${t('walkAway')}</span></div></div>`;
+  }).join('');
+  body.querySelectorAll('.nb-row').forEach(el=>el.addEventListener('click', ()=>{
+    const x=near[+el.dataset.i]; if(!x) return;
+    setPlannerTab('trip'); setPoint('O',{name:x.c.name,lat:x.c.lat,lng:x.c.lng}); closeNearby();
+    if(destPt) runRoute(); else if(IS_MOBILE && typeof openSheet==='function') openSheet('planner');
+  }));
+  panel.classList.add('open');
+}
+function closeNearby(){ const p=document.getElementById('nearPanel'); if(p) p.classList.remove('open'); }
+// sync every settings control to the saved state (called once on boot)
+function initSettingsUI(){
+  applyDisplayPrefs();
+  WALK = WALK_PACE[walkPaceKey];
+  document.querySelectorAll('#textSeg button').forEach(b=>b.classList.toggle('active', b.dataset.ts===textSize));
+  document.querySelectorAll('#paceSeg button').forEach(b=>b.classList.toggle('active', b.dataset.pace===walkPaceKey));
+  document.querySelectorAll('#unitSeg button').forEach(b=>b.classList.toggle('active', b.dataset.u===unitSystem));
+  document.querySelectorAll('#clockSeg button').forEach(b=>b.classList.toggle('active', b.dataset.ck===(clock24?'24':'12')));
+  const set=(id,on)=>{ const el=document.getElementById(id); if(el) el.classList.toggle('on',on); };
+  set('swMotion',reduceMotionPref); set('swContrast',highContrastPref);
+  set('swAvoidFerry',avoidModes.has('ferry')); set('swAvoidBus',avoidModes.has('bus'));
+  renderPlaces();
+}
 // localized line-category label (legend groups + planner steps); falls back to KIND.label
 function kindLabel(kind){ const k=I18N[lang]['kind_'+kind]; return k!==undefined ? k : ((KIND[kind]&&KIND[kind].label)||kind); }
 /* --- TR→EN disruption translator (same code the scraper uses — injected at build).
@@ -1456,7 +1712,7 @@ const PLACES = (()=>{ const seen=new Set(), arr=[];
     const f=fold(m.name); if(seen.has(f)) continue; seen.add(f);
     arr.push({ name:m.name, lat:m.lat, lng:m.lng, ref:m.ref, bus:m.kind==='bus', _f:f }); }
   arr.sort((a,b)=>a.name.localeCompare(b.name,'tr')); return arr; })();
-const WALK = 80;      // metres / minute
+let WALK = 80;        // metres / minute (adjustable via Settings → Walking pace)
 const ACCESS = 1100;  // max access-walk to the first/last stop (m)
 // route between two arbitrary points (or selected stops): walk to nearby stops → Dijkstra → walk out.
 // penalty = optional Set of line refs to discourage boarding (used to surface alternative routes).
@@ -1465,15 +1721,18 @@ function routeXY(o, d, penalty){
   const dArr = nearbyNodes(d.lat,d.lng,ACCESS,12);
   if(!srcs.length || !dArr.length) return null;
   const pen = penalty && penalty.size ? penalty : null;
-  const dsts = new Map(); dArr.forEach(([k,dist])=> dsts.set(k, dist/WALK));
+  const avoid = avoidModes.size ? avoidModes : null;             // Settings → Avoid ferries/buses
+  const blocked = avoid ? (k=>avoid.has(nodeMode(k))) : (()=>false);
+  const dsts = new Map(); dArr.forEach(([k,dist])=>{ if(!blocked(k)) dsts.set(k, dist/WALK); });
+  if(!dsts.size) return null;
   const dist={}, prev={}, done={}, h=new MinHeap();
-  srcs.forEach(([k,mm])=>{ let w=mm/WALK; if(pen && pen.has(nodeMeta[k].ref)) w+=18;   // discourage starting on a used line
+  srcs.forEach(([k,mm])=>{ if(blocked(k)) return; let w=mm/WALK; if(pen && pen.has(nodeMeta[k].ref)) w+=18;   // discourage starting on a used line
     if(dist[k]===undefined||w<dist[k]){ dist[k]=w; prev[k]=null; h.push(k,w); } });
   let best=Infinity, bestEnd=null;
   while(true){ const top=h.pop(); if(!top) break; const du=top[0], u=top[1];
     if(done[u]) continue; done[u]=true; if(du>best) break;
     if(dsts.has(u)){ const tot=du+dsts.get(u); if(tot<best){ best=tot; bestEnd=u; } }
-    const adj=G[u]||[]; for(const e of adj){ if(done[e.to]) continue; let nd=du+e.w;
+    const adj=G[u]||[]; for(const e of adj){ if(done[e.to] || blocked(e.to)) continue; let nd=du+e.w;
       if(pen){ const vr=nodeMeta[e.to].ref; if(vr!==nodeMeta[u].ref && pen.has(vr)) nd+=18; }  // discourage re-boarding a used line
       if(dist[e.to]===undefined||nd<dist[e.to]){ dist[e.to]=nd; prev[e.to]=u; h.push(e.to,nd); } }
   }
@@ -1940,9 +2199,9 @@ function fmtLaunch(d){
   const p=d.split('-'); return `${+p[2]} ${M[+p[1]-1]} ${p[0]}`;
 }
 function lineTooltip(line){
-  const km=(line._len/1000).toFixed(1);
+  const km=distStr(line._len/1000);
   const dref = line.partOf || line.ref;
-  if(isLive(line)) return `<b>${dref}</b> · ${km} km · ${line.stations.length||'–'} stops`;
+  if(isLive(line)) return `<b>${dref}</b> · ${km} · ${line.stations.length||'–'} stops`;
   const when = line.launch ? ('opens '+fmtLaunch(line.launch)) : (line.status||'planned');
   return `<b>${dref}</b> ◇ ${when} · ${km} km`;
 }
@@ -2081,7 +2340,7 @@ function openLine(line){
   });
   const third = live ? conns.length : (line.launch ? fmtLaunch(line.launch) : t('soonWord'));
   document.getElementById('lpStats').innerHTML =
-    `<div class="c"><b>${(line._len/1000).toFixed(1)}</b><span>km</span></div>
+    `<div class="c"><b>${distNum(line._len/1000).toFixed(1)}</b><span>${distUnit()}</span></div>
      <div class="c"><b>${line.stations.length||'—'}</b><span>${t('stationsLower')}</span></div>
      <div class="c"><b style="font-size:${live?'15px':'11px'}">${third}</b><span>${live?t('interchangesWord'):t('targetOpen')}</span></div>`;
   const strip=document.getElementById('lpStrip'), stripBt=document.getElementById('lpStripBt');
@@ -2470,6 +2729,8 @@ function showItinerary(res, it){
   document.getElementById('rEta').textContent=Math.round(it.total);
   document.getElementById('rStops').textContent=it.stops;
   document.getElementById('rTr').textContent=it.transfers;
+  { const fe=estimateFare(it), fEl=document.getElementById('rFare');
+    if(fEl) fEl.innerHTML = fe.taps ? `<span class="rf-ico">🎫</span><span class="rf-main">≈ ${fe.tl} ₺</span><span class="rf-sub">${fe.taps} ${t('fareTaps')}</span><span class="rf-i" title="${attrEsc(t('fareNote'))}">ⓘ</span>` : ''; }
   const allPts=[], legs=[];
   drawItin(res, it, allPts, legs);
   if(allPts.length) map.fitBounds(L.latLngBounds(allPts).pad(0.25));
@@ -2612,6 +2873,7 @@ function planAdventure(){
 }
 function setPlannerTab(m){
   plannerMode=m;
+  try{ localStorage.setItem('irn_planmode', m); }catch(e){}
   document.querySelectorAll('#plannerTabs button').forEach(b=>b.classList.toggle('active', b.dataset.pt===m));
   document.getElementById('plannerTrip').style.display = m==='trip' ? '' : 'none';
   document.getElementById('plannerAdv').style.display  = m==='adv'  ? '' : 'none';
@@ -2626,7 +2888,7 @@ function runRoute(){
   const out=document.getElementById('rout'), stepsEl=document.getElementById('rSteps');
   routeLayer.clearLayers(); ++routeToken;
   document.getElementById('rOpts').innerHTML=''; currentOpts=[]; currentOptIdx=0;
-  { const jm=document.getElementById('rJourney'); if(jm) jm.innerHTML=''; }
+  { const jm=document.getElementById('rJourney'); if(jm) jm.innerHTML=''; const fEl=document.getElementById('rFare'); if(fEl) fEl.innerHTML=''; }
   if(!o || !d){ out.classList.add('show');
     document.getElementById('rEta').textContent='–'; document.getElementById('rStops').textContent='–'; document.getElementById('rTr').textContent='–';
     stepsEl.innerHTML=`<div class="none">${t('pickOD')}</div>`; updateFavBtn(); return; }
@@ -2749,7 +3011,7 @@ function renderWeather(){
     map.flyTo([+row.dataset.lat, +row.dataset.lng], Math.max(map.getZoom(),12), {duration:.6})));
   const upd=document.getElementById('wxUpd');
   if(upd) upd.textContent = t('wxUpdated')+' '+new Intl.DateTimeFormat(LOCALE[lang]||'en-GB',
-    {timeZone:'Europe/Istanbul',hour:'2-digit',minute:'2-digit'}).format(new Date(wxFetchedAt));
+    timeOpts({hour:'2-digit',minute:'2-digit'})).format(new Date(wxFetchedAt));
   // map badges: temp + emoji at each district centre
   weatherLayer.clearLayers();
   DISTRICTS.forEach((d,i)=>{
@@ -2768,7 +3030,7 @@ setInterval(()=>{
   const el=document.getElementById('wxClock'); if(!el || currentTab!=='weather') return;
   const now=new Date();
   el.textContent=new Intl.DateTimeFormat(LOCALE[lang]||'en-GB',
-    {timeZone:'Europe/Istanbul',hour:'2-digit',minute:'2-digit',second:'2-digit'}).format(now);
+    timeOpts({hour:'2-digit',minute:'2-digit',second:'2-digit'})).format(now);
   const de=document.getElementById('wxDate');
   if(de) de.textContent=new Intl.DateTimeFormat(LOCALE[lang]||'en-GB',
     {timeZone:'Europe/Istanbul',weekday:'long',day:'numeric',month:'long'}).format(now);
@@ -2883,8 +3145,21 @@ document.getElementById('settingsX').addEventListener('click', closeSettings);
 document.getElementById('settingsOverlay').addEventListener('click', closeSettings);
 document.getElementById('themeSeg').addEventListener('click', e=>{ const b=e.target.closest('button'); if(b&&b.dataset.theme) applyTheme(b.dataset.theme, true); });
 document.getElementById('prefSeg').addEventListener('click', e=>{ const b=e.target.closest('button'); if(b&&b.dataset.pref) setRoutePref(b.dataset.pref, true); });
+document.getElementById('textSeg').addEventListener('click', e=>{ const b=e.target.closest('button'); if(b&&b.dataset.ts) setTextSize(b.dataset.ts); });
+document.getElementById('paceSeg').addEventListener('click', e=>{ const b=e.target.closest('button'); if(b&&b.dataset.pace) setWalkPace(b.dataset.pace, true); });
+document.getElementById('unitSeg').addEventListener('click', e=>{ const b=e.target.closest('button'); if(b&&b.dataset.u) setUnits(b.dataset.u); });
+document.getElementById('clockSeg').addEventListener('click', e=>{ const b=e.target.closest('button'); if(b&&b.dataset.ck) setClock(b.dataset.ck); });
+document.getElementById('swMotion').addEventListener('click', ()=> setReduceMotion(!reduceMotionPref));
+document.getElementById('swContrast').addEventListener('click', ()=> setHighContrast(!highContrastPref));
+document.getElementById('swAvoidFerry').addEventListener('click', ()=> setAvoid('ferry', !avoidModes.has('ferry'), true));
+document.getElementById('swAvoidBus').addEventListener('click', ()=> setAvoid('bus', !avoidModes.has('bus'), true));
+document.getElementById('placesGroup').addEventListener('click', e=>{ const b=e.target.closest('button[data-place]'); if(!b) return;
+  if(b.dataset.act==='set') setPlaceFromOrigin(b.dataset.place); else clearPlace(b.dataset.place); });
+document.getElementById('placeChips').addEventListener('click', e=>{ const b=e.target.closest('.pchip'); if(b) useSavedPlace(b.dataset.place); });
+document.getElementById('nearBtn').addEventListener('click', showNearby);
+document.getElementById('nearX').addEventListener('click', closeNearby);
 document.getElementById('resetTrips').addEventListener('click', resetTrips);
-document.addEventListener('keydown', e=>{ if(e.key==='Escape') closeSettings(); });
+document.addEventListener('keydown', e=>{ if(e.key==='Escape'){ closeSettings(); closeNearby(); } });
 document.getElementById('speedSeg').addEventListener('click', e=>{
   const s=e.target.dataset.s; if(!s) return;
   [...e.currentTarget.children].forEach(x=>x.classList.toggle('active', x.dataset.s===s));
@@ -3192,8 +3467,10 @@ function init(){
   setupMobile();              // phone app shell (bottom nav + sheets) — no-op on desktop
   { const lf=document.getElementById('locateFab');
     if(lf){ if(geoSupported()) lf.addEventListener('click', toggleLocate); else lf.style.display='none'; } }
-  applyTheme(theme, true);          // restore saved dark/light theme (+ matching basemap)
+  applyTheme(themePref, true);      // restore saved dark/light/auto theme (+ matching basemap)
   setRoutePref(routePref, false);   // restore saved route preference
+  initSettingsUI();                 // sync text size, pace, units, clock, switches, saved places
+  try{ const pm=lsStr('irn_planmode'); if(pm==='adv') setPlannerTab('adv'); }catch(e){}
   document.querySelectorAll('#langSeg button').forEach(b=> b.classList.toggle('active', b.dataset.lang===lang));
   applyI18n();
   ensureEnglish(DISRUPTIONS); // safety net: translate any Turkish left in the baked-in feed
