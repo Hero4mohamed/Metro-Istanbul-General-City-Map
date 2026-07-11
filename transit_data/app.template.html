@@ -486,6 +486,10 @@
   .sp-row:last-child{margin-bottom:0;}
   .sp-row>span{font-size:12.5px;font-weight:600;color:var(--text);}
   .settings-panel .seg{margin:0;}
+  /* roomier segmented toggles inside settings rows (Dark/Light/Auto, Normal/Large, EN/TR/…) */
+  .settings-panel .sp-row .seg{gap:5px;padding:4px;}
+  .settings-panel .sp-row .seg button{flex:0 0 auto;padding:7px 15px;letter-spacing:.2px;}
+  .settings-panel .sp-row .langseg button{padding:7px 11px;}
   .settings-panel .spseg{width:100%;margin-top:3px;}
   .settings-panel .spseg button{flex:1;}
   .sp-hint{font-size:10.5px;color:var(--dim);line-height:1.5;margin-top:8px;}
@@ -501,6 +505,11 @@
   /* saved places rows */
   .sp-place{display:flex;align-items:center;gap:8px;margin-bottom:8px;font-size:12px;}
   .sp-p-nm{flex:1;color:var(--text);font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .sp-place .mini{flex:0 0 auto;background:var(--surface-2);border:1px solid var(--stroke);color:var(--text);
+    font:600 10.5px var(--font);padding:5px 11px;border-radius:8px;cursor:pointer;transition:all .15s var(--ease);}
+  .sp-place .mini:hover{border-color:var(--ring);color:var(--accent);}
+  .sp-place .mini[data-act="clear"]{color:var(--muted);background:transparent;}
+  .sp-place .mini[data-act="clear"]:hover{color:#ff7a7a;border-color:rgba(229,72,77,.5);}
   /* fare row */
   .rfare{display:flex;align-items:center;gap:8px;margin:8px 0 2px;padding:8px 11px;border-radius:12px;background:var(--surface);border:1px solid var(--stroke);}
   .rfare:empty{display:none;}
@@ -887,7 +896,7 @@ const I18N = {
     homeSaved:"Home saved", workSaved:"Work saved", placeCleared:"Cleared",
     nearMe:"Stops near me", nearbyTitle:"Nearest stops", nearbyEmpty:"No stops within 2 km — try moving.",
     walkAway:"min walk", fromHere:"From here",
-    fareApprox:"Fare", fareTaps:"taps", fareNote:"Approx İstanbulkart fare (transfers discounted) — rates change.",
+    fareApprox:"Fare", fareTaps:"taps", fareNote:"İstanbulkart estimate: 42₺ + discounted transfers (90-min window, rates of 16 Feb 2026). Ferries & Metrobüs may cost more.",
     needOrigin:"Set a starting point first." },
   tr:{ liveNet:"Canlı Raylı Ağ", source:"kaynak ↗", lines:"Hatlar", stations:"İstasyonlar", carriages:"Vagonlar",
     tabActive:"● Aktif", tabVision:"◇ Vizyon", tabBus:"▤ Otobüsler",
@@ -953,7 +962,7 @@ const I18N = {
     homeSaved:"Ev kaydedildi", workSaved:"İş kaydedildi", placeCleared:"Temizlendi",
     nearMe:"Yakınımdaki duraklar", nearbyTitle:"En yakın duraklar", nearbyEmpty:"2 km içinde durak yok — biraz hareket edin.",
     walkAway:"dk yürüme", fromHere:"Buradan",
-    fareApprox:"Ücret", fareTaps:"biniş", fareNote:"Yaklaşık İstanbulkart ücreti (aktarma indirimli) — ücretler değişir.",
+    fareApprox:"Ücret", fareTaps:"biniş", fareNote:"İstanbulkart tahmini: 42₺ + indirimli aktarmalar (90 dk, 16 Şub 2026 tarifesi). Vapur ve Metrobüs daha pahalı olabilir.",
     needOrigin:"Önce bir başlangıç noktası seçin." },
   ar:{ liveNet:"شبكة النقل المباشرة", source:"المصدر ↗", lines:"الخطوط", stations:"المحطات", carriages:"العربات",
     tabActive:"● النشط", tabVision:"◇ الرؤية", tabBus:"▤ الحافلات", tabWeather:"☀ الطقس",
@@ -1017,7 +1026,7 @@ const I18N = {
     homeSaved:"تم حفظ المنزل", workSaved:"تم حفظ العمل", placeCleared:"تم المسح",
     nearMe:"محطات قريبة مني", nearbyTitle:"أقرب المحطات", nearbyEmpty:"لا محطات ضمن 2 كم — تحرّك قليلًا.",
     walkAway:"د مشيًا", fromHere:"من هنا",
-    fareApprox:"الأجرة", fareTaps:"ركوب", fareNote:"أجرة إسطنبول كارت تقريبية (خصم التبديل) — الأسعار تتغيّر.",
+    fareApprox:"الأجرة", fareTaps:"ركوب", fareNote:"تقدير إسطنبول كارت: ٤٢₺ + تبديلات مخفّضة (خلال ٩٠ دقيقة، تعرفة ١٦ فبراير ٢٠٢٦). العبّارات والمتروبوس قد تكون أغلى.",
     needOrigin:"حدّد نقطة انطلاق أولًا." },
   fr:{ liveNet:"Réseau de transport en direct", source:"source ↗", lines:"Lignes", stations:"Stations", carriages:"Rames",
     tabActive:"● Actif", tabVision:"◇ Vision", tabBus:"▤ Bus", tabWeather:"☀ Météo",
@@ -1081,7 +1090,7 @@ const I18N = {
     homeSaved:"Domicile enregistré", workSaved:"Travail enregistré", placeCleared:"Effacé",
     nearMe:"Arrêts près de moi", nearbyTitle:"Arrêts les plus proches", nearbyEmpty:"Aucun arrêt à moins de 2 km — déplacez-vous.",
     walkAway:"min à pied", fromHere:"D'ici",
-    fareApprox:"Tarif", fareTaps:"trajets", fareNote:"Tarif İstanbulkart approx. (correspondances remisées) — les tarifs changent.",
+    fareApprox:"Tarif", fareTaps:"trajets", fareNote:"Estimation İstanbulkart : 42₺ + correspondances remisées (fenêtre 90 min, tarifs du 16 fév. 2026). Ferries et Metrobüs peuvent coûter plus.",
     needOrigin:"Définissez d'abord un point de départ." }
 };
 const LOCALE = { en:'en-GB', tr:'tr-TR', ar:'ar-u-nu-latn', fr:'fr-FR' };   // ar: Latin digits to match the UI's numerals
@@ -1200,10 +1209,16 @@ function setAvoid(mode, on, rerun){
   const sw=document.getElementById(mode==='ferry'?'swAvoidFerry':'swAvoidBus'); if(sw) sw.classList.toggle('on', avoidModes.has(mode));
   if(rerun && originPt && destPt && currentOpts && currentOpts.length) runRoute(); }
 
-/* ---- İstanbulkart fare estimate (clearly approximate — fares change) ---- */
-const FARE_FULL=27, FARE_TRANSFER=17;   // ≈ TL per tap: full fare vs discounted transfer (early 2026)
-function estimateFare(it){ const rides=(it.steps||[]).filter(s=>s.type==='ride').length;
-  return { taps:rides, tl: rides ? FARE_FULL+(rides-1)*FARE_TRANSFER : 0 }; }
+/* ---- İstanbulkart fare estimate ----
+   Official aktarma (transfer) schedule, TL, effective 16 Feb 2026: full fare 42,
+   then discounted transfers within a 90-min window (1st 31.27, 2nd 24.02, 3rd+ 15.62).
+   A solid estimate for rail/bus journeys; ferries & Metrobüs (distance-based) can cost more. */
+const FARE_SCHEDULE=[42, 31.27, 24.02, 15.62];
+function estimateFare(it){
+  const rides=(it.steps||[]).filter(s=>s.type==='ride').length;
+  let tl=0; for(let i=0;i<rides;i++) tl += FARE_SCHEDULE[Math.min(i, FARE_SCHEDULE.length-1)];
+  return { taps:rides, tl: Math.round(tl) };
+}
 
 /* ---- saved places (Home / Work) ---- */
 function setPlaceFromOrigin(which){
