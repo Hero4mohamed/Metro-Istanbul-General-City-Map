@@ -1,0 +1,44 @@
+name: Refresh bus GTFS (routes + schedules)
+
+# Rebuilds both-direction bus routes and real departure schedules from the official İETT
+# GTFS feed (data.ibb.gov.tr), then rebuilds the site. İETT republishes the feed periodically,
+# so a monthly refresh keeps routes and timetables current. Needs `unzip` (present on ubuntu)
+# and extra Node heap for the 150 MB stop_times stream.
+
+on:
+  schedule:
+    - cron: '41 4 3 * *'        # 04:41 UTC on the 3rd of each month
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+
+concurrency:
+  group: bus-gtfs
+  cancel-in-progress: false
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Build routes + schedules from İETT GTFS
+        run: node --max-old-space-size=3072 transit_data/fetch-bus-gtfs.cjs
+      - name: Rebuild site
+        run: node transit_data/build.cjs
+      - name: Commit if changed
+        run: |
+          if ! git diff --quiet -- transit_data/bus-graph.json transit_data/bus-schedules.json index.html; then
+            git config user.name  "bus-gtfs-bot"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git add transit_data/bus-graph.json transit_data/bus-schedules.json index.html sw.js
+            git commit -m "chore: refresh İETT bus GTFS routes + schedules [skip ci]"
+            git pull --rebase --autostash origin main || true
+            git push
+            echo "Bus GTFS refreshed."
+          else
+            echo "No change — bus GTFS already current."
+          fi

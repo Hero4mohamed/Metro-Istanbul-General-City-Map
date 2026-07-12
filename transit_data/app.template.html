@@ -540,6 +540,15 @@
   body.light .acc-badge.ok{color:#067A54;} body.light .acc-badge.no{color:#B45309;} body.light .acc-badge.lim{color:#B45309;}
   .acc-counts{font-size:11px;color:var(--muted);font-weight:600;}
   .acc-src{font-size:9.5px;color:var(--dim);margin-top:1px;}
+  /* bus line schedule + directions */
+  .bus-detail{margin:2px 0 8px;} .bus-detail:empty{display:none;}
+  .bd-h{font-size:10px;font-weight:700;letter-spacing:.7px;text-transform:uppercase;color:var(--dim);margin:4px 0 5px;}
+  .bd-dir{font-size:11.5px;font-weight:700;color:var(--text);display:flex;align-items:center;gap:6px;margin:8px 0 3px;}
+  .bd-arr{color:var(--gold);font-weight:800;flex:0 0 auto;}
+  .bd-rows{background:var(--surface);border:1px solid var(--stroke);border-radius:10px;padding:5px 9px;}
+  .bd-r{display:flex;justify-content:space-between;gap:10px;padding:2px 0;}
+  .bd-r>span{color:var(--muted);font-size:11px;} .bd-r>b{color:var(--text);font-family:var(--mono);font-weight:600;font-size:10.5px;}
+  .bd-src{font-size:9.5px;color:var(--dim);margin-top:6px;}
   /* planner quick chips */
   .place-chips{display:flex;gap:6px;margin:2px 0 9px;}
   .pchip{flex:1;padding:8px;border-radius:10px;border:1px solid var(--stroke-2);background:var(--surface);color:var(--text);font:650 11.5px var(--font);cursor:pointer;transition:all .15s var(--ease);}
@@ -728,6 +737,7 @@
     <div class="sec" data-i18n="busDir">Bus Directory · İETT</div>
     <input id="busSearch" class="bus-search" data-i18n-ph="busSearchPh" placeholder="Search line no. or stop (e.g. 500T, Kadıköy)" autocomplete="off" />
     <div class="bus-count" id="busCount"></div>
+    <div class="bus-detail" id="busDetail"></div>
     <div class="bus-list" id="busList"></div>
   </div>
 
@@ -913,7 +923,9 @@ const I18N = {
     needOrigin:"Set a starting point first.",
     prefStepFree:"Prefer step-free (♿)", stepFreeHint:"Prefers stations with elevators (İBB open data + OpenStreetMap). Not guaranteed where data is missing.",
     accStepFree:"Step-free access", accNotStepFree:"No step-free access", accLimited:"Limited access",
-    accLifts:"lifts", accEscalators:"escalators", accSource:"Source:" },
+    accLifts:"lifts", accEscalators:"escalators", accSource:"Source:",
+    departures:"Departures", dayWd:"Mon–Fri", daySat:"Sat", daySun:"Sun", perDay:"day", busEvery:"every",
+    direction1:"direction", directionN:"directions", schedNote:"scheduled departures from origin" },
   tr:{ liveNet:"Canlı Raylı Ağ", source:"kaynak ↗", lines:"Hatlar", stations:"İstasyonlar", carriages:"Vagonlar",
     tabActive:"● Aktif", tabVision:"◇ Vizyon", tabBus:"▤ Otobüsler",
     baseMap:"Harita", dark:"Koyu", streets:"Sokaklar", satellite:"Uydu",
@@ -982,7 +994,9 @@ const I18N = {
     needOrigin:"Önce bir başlangıç noktası seçin.",
     prefStepFree:"Basamaksız tercih (♿)", stepFreeHint:"Asansörlü istasyonları tercih eder (İBB açık veri + OpenStreetMap). Veri yoksa garanti edilmez.",
     accStepFree:"Basamaksız erişim", accNotStepFree:"Basamaksız erişim yok", accLimited:"Sınırlı erişim",
-    accLifts:"asansör", accEscalators:"yürüyen merdiven", accSource:"Kaynak:" },
+    accLifts:"asansör", accEscalators:"yürüyen merdiven", accSource:"Kaynak:",
+    departures:"Kalkışlar", dayWd:"Pzt–Cum", daySat:"Cmt", daySun:"Paz", perDay:"gün", busEvery:"her",
+    direction1:"yön", directionN:"yön", schedNote:"başlangıçtan planlanan kalkışlar" },
   ar:{ liveNet:"شبكة النقل المباشرة", source:"المصدر ↗", lines:"الخطوط", stations:"المحطات", carriages:"العربات",
     tabActive:"● النشط", tabVision:"◇ الرؤية", tabBus:"▤ الحافلات", tabWeather:"☀ الطقس",
     baseMap:"خريطة الأساس", dark:"داكن", streets:"الشوارع", satellite:"قمر صناعي",
@@ -1049,7 +1063,9 @@ const I18N = {
     needOrigin:"حدّد نقطة انطلاق أولًا.",
     prefStepFree:"تفضيل بلا درجات (♿)", stepFreeHint:"يفضّل المحطات ذات المصاعد (بيانات İBB المفتوحة + OpenStreetMap). غير مضمون عند نقص البيانات.",
     accStepFree:"وصول بلا درجات", accNotStepFree:"لا يوجد وصول بلا درجات", accLimited:"وصول محدود",
-    accLifts:"مصاعد", accEscalators:"سلالم متحركة", accSource:"المصدر:" },
+    accLifts:"مصاعد", accEscalators:"سلالم متحركة", accSource:"المصدر:",
+    departures:"المغادرات", dayWd:"إثنين–جمعة", daySat:"سبت", daySun:"أحد", perDay:"يوم", busEvery:"كل",
+    direction1:"اتجاه", directionN:"اتجاهات", schedNote:"مغادرات مجدولة من نقطة البداية" },
   fr:{ liveNet:"Réseau de transport en direct", source:"source ↗", lines:"Lignes", stations:"Stations", carriages:"Rames",
     tabActive:"● Actif", tabVision:"◇ Vision", tabBus:"▤ Bus", tabWeather:"☀ Météo",
     baseMap:"Fond de carte", dark:"Sombre", streets:"Rues", satellite:"Satellite",
@@ -1116,7 +1132,9 @@ const I18N = {
     needOrigin:"Définissez d'abord un point de départ.",
     prefStepFree:"Préférer sans marches (♿)", stepFreeHint:"Privilégie les stations avec ascenseurs (données ouvertes İBB + OpenStreetMap). Non garanti si données manquantes.",
     accStepFree:"Accès sans marches", accNotStepFree:"Pas d'accès sans marches", accLimited:"Accès limité",
-    accLifts:"ascenseurs", accEscalators:"escaliers méc.", accSource:"Source :" }
+    accLifts:"ascenseurs", accEscalators:"escaliers méc.", accSource:"Source :",
+    departures:"Départs", dayWd:"Lun–Ven", daySat:"Sam", daySun:"Dim", perDay:"jour", busEvery:"toutes les",
+    direction1:"sens", directionN:"sens", schedNote:"départs planifiés du terminus" }
 };
 const LOCALE = { en:'en-GB', tr:'tr-TR', ar:'ar-u-nu-latn', fr:'fr-FR' };   // ar: Latin digits to match the UI's numerals
 let lang = (function(){ try{ const s=localStorage.getItem('irn_lang'); if(I18N[s]) return s; }catch(e){}
@@ -1360,8 +1378,15 @@ const BUS_DIR = __BUS_JSON__;
 /* --- Live disruptions: faults / closures / suspensions (editable transit_data/disruptions.json) --- */
 let DISRUPTIONS = __DISRUPTIONS_JSON__;   // baked-in fallback; overridden by the live fetch below
 /* --- Bus routing graph: per İETT line ordered stops [[lat,lng,name],...] for the trip planner --- */
-const BUS_GRAPH = __BUSGRAPH_JSON__;
+const BUS_GRAPH = __BUSGRAPH_JSON__;   // İETT GTFS: per line per direction {ref,dir,head,stops}
+const BUS_SCHED = __BUSSCHED_JSON__;   // İETT GTFS departure schedules {ref:[{dir,head,wd,sat,sun}]}
 const BUS_COLOR = '#E8A33D';
+// bus directions available for a line ref (0/1 = the two directions, from the GTFS graph)
+function busDirs(ref){ return BUS_GRAPH.filter(l=>l.ref===ref); }
+// typical headway (min) for a ref across directions/day-types — for a compact "every ~N min" label
+function busHeadway(ref){ const s=BUS_SCHED[ref]; if(!s) return null;
+  const hs=[]; for(const d of s) for(const k of ['wd','sat','sun']) if(d[k]&&d[k].hw) hs.push(d[k].hw);
+  if(!hs.length) return null; hs.sort((a,b)=>a-b); return hs[Math.floor(hs.length/2)]; }
 /* --- Official Metro İstanbul station registry [[Id,LineName,lat,lng,Name],...] — resolves a
        clicked station to its official ID for EXACT scheduled departures (api.ibb.gov.tr, CORS-open) --- */
 const MI_STATIONS = __MISTATIONS_JSON__;
@@ -2761,9 +2786,11 @@ function stepsHTML(it){
         const show=s.siblings.slice(0,6), more=s.siblings.length-show.length;
         alt=`<div class="mt alt">${t('also')} ${show.map(r=>`<span class="altbus">${r}</span>`).join(' ')}${more>0?` <span class="altmore">+${more}</span>`:''}</div>`;
       }
+      const hw = s.bus ? busHeadway(s.ref) : null;                      // İETT GTFS frequency
+      const freq = hw ? ` · ${t('busEvery')} ~${hw} ${t('minUnit')}` : '';
       return `<div class="step"><div class="rail"><span class="nd" style="border-color:${c}"></span><span class="pipe" style="background:${c}"></span></div>
         <div class="tx"><div class="nm"><span class="badge" style="background:${c}">${s.bus?'🚌 '+s.ref:s.ref}</span>${label}</div>
-        <div class="mt">${s.from} → ${s.to} · ${s.stops} ${s.stops===1?t('stop_one'):t('stop_many')}</div>${alt}</div></div>`;
+        <div class="mt">${s.from} → ${s.to} · ${s.stops} ${s.stops===1?t('stop_one'):t('stop_many')}${freq}</div>${alt}</div></div>`;
     } else {
       const c = s.bus ? BUS_COLOR : colorForLine(s.ref);
       return `<div class="step"><div class="rail"><span class="nd" style="border-color:var(--gold)"></span><span class="pipe" style="background:var(--gold)"></span></div>
@@ -3058,11 +3085,46 @@ function renderBusList(q){
   document.querySelectorAll('#busList .bus-row').forEach(row =>
     row.addEventListener('click', () => selectBus(row.dataset.id, row)));
 }
+// draw every direction of a bus line from the GTFS stop sequences (dir 0 solid, others dashed)
+function drawBusDirs(dirs){
+  busLayer.clearLayers(); const all=[];
+  dirs.forEach((d, di)=>{
+    const pts=d.stops.map(s=>[s[0],s[1]]);
+    L.polyline(pts,{color:'#fff',weight:6,opacity:.45,lineCap:'round',lineJoin:'round'}).addTo(busLayer);
+    L.polyline(pts,{color:BUS_COLOR,weight:3.4,opacity:.95,lineCap:'round',lineJoin:'round',dashArray: di>0?'8,7':null}).addTo(busLayer);
+    d.stops.forEach(s=> L.circleMarker([s[0],s[1]],{radius:2.6,color:BUS_COLOR,weight:1.4,fillColor:'#1a1206',fillOpacity:1})
+      .bindTooltip(s[2],{className:'lt',direction:'top'}).addTo(busLayer));
+    all.push(...pts);
+  });
+  return all;
+}
+const fmtSchedBucket = b => (!b||!b.first) ? '—' : (b.first+'–'+b.last + (b.hw?` · ~${b.hw} ${t('minUnit')}`:'') + (b.n?` · ${b.n}/${t('perDay')}`:''));
+function busScheduleHTML(ref){
+  const s = BUS_SCHED[ref]; if(!s || !s.length) return '';
+  let h = `<div class="bd-h">${t('departures')} · İETT</div>`;
+  for(const d of s){
+    h += `<div class="bd-dir"><span class="bd-arr">→</span>${svgEsc(d.head||'')}</div><div class="bd-rows">`
+       + `<div class="bd-r"><span>${t('dayWd')}</span><b>${fmtSchedBucket(d.wd)}</b></div>`
+       + `<div class="bd-r"><span>${t('daySat')}</span><b>${fmtSchedBucket(d.sat)}</b></div>`
+       + `<div class="bd-r"><span>${t('daySun')}</span><b>${fmtSchedBucket(d.sun)}</b></div></div>`;
+  }
+  return h + `<div class="bd-src">${t('accSource')} İETT GTFS · ${t('schedNote')}</div>`;
+}
 async function selectBus(id, row){
   document.querySelectorAll('#busList .bus-row').forEach(r=>r.classList.remove('sel'));
   if(row) row.classList.add('sel');
   busLayer.clearLayers();
-  const countEl = document.getElementById('busCount');
+  const countEl=document.getElementById('busCount'), detail=document.getElementById('busDetail');
+  const ref = row ? row.dataset.ref : null;
+  const dirs = ref ? busDirs(ref) : [];
+  if(dirs.length){                              // GTFS: draw all directions + show the real schedule
+    const all=drawBusDirs(dirs);
+    if(all.length) map.fitBounds(L.latLngBounds(all).pad(0.2));
+    detail.innerHTML = busScheduleHTML(ref);
+    countEl.textContent = ref+' · '+dirs.length+' '+(dirs.length===1?t('direction1'):t('directionN'));
+    return;
+  }
+  detail.innerHTML='';                          // fallback: OSM road geometry for lines not in the GTFS feed
   countEl.textContent = t('loadingGeom');
   try{
     const q = `[out:json][timeout:60];relation(${id});out geom;`;

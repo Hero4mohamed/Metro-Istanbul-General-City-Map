@@ -23,25 +23,37 @@ function relStops(rel){
   return out;
 }
 
-// group by ref, keep the richest single direction
+// group relations by ref, then keep BOTH directions (İETT lines often run different
+// outbound/return streets, which the planner needs to board the correct direction).
 const byRef = {};
 for (const rel of rels){
   const ref = (rel.tags && rel.tags.ref || '').trim(); if(!ref) continue;
   const stops = relStops(rel);
   if (stops.length < 2) continue;
-  if (!byRef[ref] || stops.length > byRef[ref].length) byRef[ref] = stops;
+  (byRef[ref] = byRef[ref] || []).push({ stops, to:(rel.tags.to||'').trim(), from:(rel.tags.from||'').trim(),
+                                          head: stops[stops.length-1].name });
 }
-
+// a direction is identified by its (first stop → last stop) endpoints; keep the richest per distinct
+// direction, cap at 3 variants/ref so short-turn duplicates don't bloat the graph.
+const sig = d => (d.stops[0].name||d.stops[0].lat.toFixed(3)) + '»' + (d.head||d.stops[d.stops.length-1].lat.toFixed(3));
 const out = [];
-let totalStops = 0;
+let totalStops = 0, dirLines = 0;
 for (const ref of Object.keys(byRef)){
-  const stops = byRef[ref].map(s=>[ +s.lat.toFixed(5), +s.lon.toFixed(5), s.name ]);
-  totalStops += stops.length;
-  out.push({ ref, stops });
+  const dirs = byRef[ref].sort((a,b)=>b.stops.length-a.stops.length);
+  const bySig = new Map();
+  for (const d of dirs){ const s = sig(d); if(!bySig.has(s)) bySig.set(s, d); }   // richest per endpoint-signature
+  const keep = [...bySig.values()].slice(0, 3);
+  if (keep.length > 1) dirLines++;
+  keep.forEach((d, di) => {
+    const stops = d.stops.map(s=>[ +s.lat.toFixed(5), +s.lon.toFixed(5), s.name ]);
+    totalStops += stops.length;
+    out.push({ ref, dir: di, head: d.head, stops });     // dir 0 = primary, 1 = return, 2 = variant
+  });
 }
-out.sort((a,b)=>{ const na=parseInt(a.ref)||9999, nb=parseInt(b.ref)||9999; return na-nb || a.ref.localeCompare(b.ref,'tr'); });
+out.sort((a,b)=>{ const na=parseInt(a.ref)||9999, nb=parseInt(b.ref)||9999; return na-nb || a.ref.localeCompare(b.ref,'tr') || a.dir-b.dir; });
 
 fs.writeFileSync(path.join(DIR,'bus-graph.json'), JSON.stringify(out));
 const kb = (fs.statSync(path.join(DIR,'bus-graph.json')).size/1024).toFixed(0);
-console.log('BUS LINES:', out.length, ' TOTAL STOPS:', totalStops, ' FILE:', kb, 'KB');
-console.log('sample:', out.slice(0,3).map(l=>l.ref+'('+l.stops.length+')').join(' '));
+const refs = new Set(out.map(o=>o.ref)).size;
+console.log('BUS ENTRIES:', out.length, ' REFS:', refs, ' both-direction refs:', dirLines, ' TOTAL STOPS:', totalStops, ' FILE:', kb, 'KB');
+console.log('sample:', out.slice(0,4).map(l=>l.ref+'#'+l.dir+'('+l.stops.length+')').join(' '));
