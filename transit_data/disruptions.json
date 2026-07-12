@@ -21,17 +21,5 @@
     "title": "Section affected",
     "message": "Due to maintenance works, trains operate between Çağlayan and Mahmutbey, with a transfer at Yıldız-Mecidiyeköy and Nurtepe.",
     "messageTr": "Onarım çalışması nedeniyle seferler Yıldız-Mecidiyeköy ve Nurtepe istasyonundan aktarmalı olarak Çağlayan-Mahmutbey istasyonları arasında yapılmaktadır."
-  },
-  {
-    "id": "t4-demirkap",
-    "ref": "T4",
-    "source": "metro.istanbul",
-    "scope": "segment",
-    "from": "Demirkapı",
-    "to": "Bosna çukurçeşme",
-    "severity": "partial",
-    "title": "Section affected",
-    "message": "Due to a technical fault, trains Topkapı-Şehitlik and Ali Fuat Başgil-Mescidi Selam between the stations are operating.",
-    "messageTr": "Teknik bir arıza nedeniyle seferler Topkapı-Şehitlik ve Ali Fuat Başgil-Mescidi Selam istasyonları arasında yapılmaktadır."
   }
 ]
