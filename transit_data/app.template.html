@@ -3085,17 +3085,39 @@ function renderBusList(q){
   document.querySelectorAll('#busList .bus-row').forEach(row =>
     row.addEventListener('click', () => selectBus(row.dataset.id, row)));
 }
-// draw every direction of a bus line from the GTFS stop sequences (dir 0 solid, others dashed)
-function drawBusDirs(dirs){
+// real OSM route geometry (per direction, road-following) for a line ref — cached; null if Overpass can't answer
+let busSelToken = 0;
+const busShapeCache = {};
+async function busOsmShapes(ref){
+  if(ref in busShapeCache) return busShapeCache[ref];
+  try{
+    const q = `[out:json][timeout:60];relation[route="bus"]["ref"="${(ref||'').replace(/["\\]/g,'')}"];out geom;`;
+    const resp = await fetch('https://overpass-api.de/api/interpreter', { method:'POST', body:q });
+    if(!resp.ok) throw 0;
+    const data = await resp.json();
+    const shapes = (data.elements||[]).filter(e=>e.type==='relation')
+      .map(rel => (rel.members||[]).filter(m=>m.type==='way'&&m.geometry).map(m=>m.geometry.map(g=>[g.lat,g.lon])))
+      .filter(ways => ways.length);
+    return busShapeCache[ref] = shapes.length ? shapes : null;
+  }catch(e){ return busShapeCache[ref] = null; }
+}
+// draw a bus line: real OSM road geometry when available, else straight GTFS stop-lines; always the GTFS stop dots
+function drawBusDirs(dirs, osmShapes){
   busLayer.clearLayers(); const all=[];
-  dirs.forEach((d, di)=>{
-    const pts=d.stops.map(s=>[s[0],s[1]]);
-    L.polyline(pts,{color:'#fff',weight:6,opacity:.45,lineCap:'round',lineJoin:'round'}).addTo(busLayer);
-    L.polyline(pts,{color:BUS_COLOR,weight:3.4,opacity:.95,lineCap:'round',lineJoin:'round',dashArray: di>0?'8,7':null}).addTo(busLayer);
-    d.stops.forEach(s=> L.circleMarker([s[0],s[1]],{radius:2.6,color:BUS_COLOR,weight:1.4,fillColor:'#1a1206',fillOpacity:1})
-      .bindTooltip(s[2],{className:'lt',direction:'top'}).addTo(busLayer));
-    all.push(...pts);
-  });
+  if(osmShapes && osmShapes.length){
+    osmShapes.forEach((ways, ri)=> ways.forEach(w=>{
+      L.polyline(w,{color:'#fff',weight:6,opacity:.4,lineCap:'round',lineJoin:'round'}).addTo(busLayer);
+      L.polyline(w,{color:BUS_COLOR,weight:3.4,opacity:.95,lineCap:'round',lineJoin:'round',dashArray: ri>0?'8,7':null}).addTo(busLayer);
+      for(const p of w) all.push(p);
+    }));
+  } else {
+    dirs.forEach((d, di)=>{ const pts=d.stops.map(s=>[s[0],s[1]]);
+      L.polyline(pts,{color:'#fff',weight:6,opacity:.4,lineCap:'round',lineJoin:'round'}).addTo(busLayer);
+      L.polyline(pts,{color:BUS_COLOR,weight:3.4,opacity:.95,lineCap:'round',lineJoin:'round',dashArray: di>0?'8,7':null}).addTo(busLayer);
+      for(const p of pts) all.push(p); });
+  }
+  dirs.forEach(d=> d.stops.forEach(s=> L.circleMarker([s[0],s[1]],{radius:2.6,color:BUS_COLOR,weight:1.4,fillColor:'#1a1206',fillOpacity:1})
+      .bindTooltip(s[2],{className:'lt',direction:'top'}).addTo(busLayer)));
   return all;
 }
 const fmtSchedBucket = b => (!b||!b.first) ? '—' : (b.first+'–'+b.last + (b.hw?` · ~${b.hw} ${t('minUnit')}`:'') + (b.n?` · ${b.n}/${t('perDay')}`:''));
@@ -3117,11 +3139,17 @@ async function selectBus(id, row){
   const countEl=document.getElementById('busCount'), detail=document.getElementById('busDetail');
   const ref = row ? row.dataset.ref : null;
   const dirs = ref ? busDirs(ref) : [];
-  if(dirs.length){                              // GTFS: draw all directions + show the real schedule
-    const all=drawBusDirs(dirs);
+  const tok = ++busSelToken;
+  if(dirs.length){                              // GTFS line: schedule + all directions, upgraded to real road geometry
+    const all=drawBusDirs(dirs, null);          // instant straight placeholder + stop dots
     if(all.length) map.fitBounds(L.latLngBounds(all).pad(0.2));
     detail.innerHTML = busScheduleHTML(ref);
-    countEl.textContent = ref+' · '+dirs.length+' '+(dirs.length===1?t('direction1'):t('directionN'));
+    const dl = dirs.length+' '+(dirs.length===1?t('direction1'):t('directionN'));
+    countEl.textContent = ref+' · '+dl+' · '+t('loadingGeom');
+    const shapes = await busOsmShapes(ref);     // real OSM route ways (road-following)
+    if(tok!==busSelToken) return;               // another line selected in the meantime
+    if(shapes) drawBusDirs(dirs, shapes);
+    countEl.textContent = ref+' · '+dl;
     return;
   }
   detail.innerHTML='';                          // fallback: OSM road geometry for lines not in the GTFS feed
