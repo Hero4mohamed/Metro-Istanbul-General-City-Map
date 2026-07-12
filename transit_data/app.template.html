@@ -549,6 +549,34 @@
   .bd-r{display:flex;justify-content:space-between;gap:10px;padding:2px 0;}
   .bd-r>span{color:var(--muted);font-size:11px;} .bd-r>b{color:var(--text);font-family:var(--mono);font-weight:600;font-size:10.5px;}
   .bd-src{font-size:9.5px;color:var(--dim);margin-top:6px;}
+  /* live "Go" journey mode */
+  .go-start{margin:4px 0 2px;background:linear-gradient(135deg,#4ADE80,#14B8A6);}
+  .go-overlay{position:fixed;inset:0;pointer-events:none;background:linear-gradient(to top,rgba(3,6,10,.35),transparent 32%);opacity:0;transition:opacity .25s;z-index:1660;}
+  .go-overlay.on{opacity:1;}
+  .go-panel{position:fixed;left:50%;bottom:16px;transform:translate(-50%,120%);width:min(440px,94vw);z-index:1670;
+    padding:14px 16px 12px;opacity:0;transition:transform .32s var(--ease),opacity .25s;max-height:82vh;overflow-y:auto;}
+  .go-panel.open{transform:translate(-50%,0);opacity:1;}
+  body.mobile .go-panel{width:100%;left:0;bottom:0;border-radius:22px 22px 0 0;transform:translateY(105%);}
+  body.mobile .go-panel.open{transform:translateY(0);}
+  .go-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:11px;}
+  .go-title{font-family:var(--display);font-weight:700;font-size:14px;letter-spacing:.4px;color:var(--accent);}
+  .go-head .x{background:none;border:none;color:var(--muted);font-size:15px;cursor:pointer;width:28px;height:28px;border-radius:8px;transition:all .15s var(--ease);}
+  .go-head .x:hover{background:var(--surface-2);color:var(--text);}
+  .go-now{display:flex;align-items:center;gap:13px;padding:13px;border-radius:16px;background:var(--surface);border:1px solid var(--stroke);margin-bottom:12px;}
+  .go-ic{flex:0 0 auto;width:46px;height:46px;border-radius:13px;display:flex;align-items:center;justify-content:center;font-size:22px;}
+  .go-txt{min-width:0;}
+  .go-big{font-family:var(--display);font-weight:700;font-size:17px;line-height:1.15;color:var(--text);}
+  .go-sub{font-size:12px;color:var(--muted);margin-top:3px;display:flex;align-items:center;gap:5px;flex-wrap:wrap;}
+  .go-progress{max-height:34vh;overflow-y:auto;margin-bottom:11px;}
+  .gp-row{display:flex;align-items:center;gap:9px;padding:5px 2px;font-size:11.5px;color:var(--muted);}
+  .gp-dot{flex:0 0 auto;width:9px;height:9px;border-radius:50%;background:var(--stroke-2);box-shadow:0 0 0 3px var(--panel);}
+  .gp-row.done{opacity:.5;} .gp-row.done .gp-dot{background:var(--accent);}
+  .gp-row.cur{color:var(--text);font-weight:700;} .gp-row.cur .gp-dot{background:var(--accent);box-shadow:0 0 0 3px rgba(52,211,153,.3);animation:pulse 1.8s infinite;}
+  .gp-badge{font:700 9px var(--mono);padding:1px 5px;border-radius:5px;}
+  .go-controls{display:flex;align-items:center;gap:10px;}
+  .go-controls button{flex:0 0 auto;width:46px;height:40px;border-radius:12px;border:1px solid var(--stroke-2);background:var(--surface);color:var(--text);font-size:15px;cursor:pointer;transition:all .15s var(--ease);}
+  .go-controls button:hover{border-color:var(--ring);color:var(--accent);} .go-controls button:active{transform:scale(.94);}
+  .go-arrive{flex:1;text-align:center;font-size:12.5px;font-weight:700;color:var(--text);font-family:var(--mono);}
   /* planner quick chips */
   .place-chips{display:flex;gap:6px;margin:2px 0 9px;}
   .pchip{flex:1;padding:8px;border-radius:10px;border:1px solid var(--stroke-2);background:var(--surface);color:var(--text);font:650 11.5px var(--font);cursor:pointer;transition:all .15s var(--ease);}
@@ -679,6 +707,18 @@
   <div class="np-body" id="nearBody"></div>
 </div>
 
+<div class="go-overlay" id="goOverlay"></div>
+<div class="go-panel glass" id="goPanel" role="dialog" aria-label="Live journey">
+  <div class="go-head"><span class="go-title">▶ <span data-i18n="liveJourney">Live journey</span></span><button class="x" id="goExit" aria-label="Close">✕</button></div>
+  <div class="go-now" id="goNow"></div>
+  <div class="go-progress" id="goProgress"></div>
+  <div class="go-controls">
+    <button id="goPrev" aria-label="Previous step">◀</button>
+    <span class="go-arrive" id="goArrive"></span>
+    <button id="goNext" aria-label="Next step">▶</button>
+  </div>
+</div>
+
 <div class="controls">
   <div class="card glass" style="padding:7px;">
     <div class="tabs" id="tabs">
@@ -775,6 +815,7 @@
       <div class="rfare" id="rFare"></div>
       <div id="rOpts" class="ropts"></div>
       <div id="rJourney" class="jmap"></div>
+      <button class="btn go-start" id="goStart" style="display:none">▶ <span data-i18n="startJourney">Start journey</span></button>
       <div id="rSteps"></div>
       <button class="btn ghost favbtn" id="favBtn">☆ Save to Favourites</button>
     </div>
@@ -925,7 +966,9 @@ const I18N = {
     accStepFree:"Step-free access", accNotStepFree:"No step-free access", accLimited:"Limited access",
     accLifts:"lifts", accEscalators:"escalators", accSource:"Source:",
     departures:"Departures", dayWd:"Mon–Fri", daySat:"Sat", daySun:"Sun", perDay:"day", busEvery:"every",
-    direction1:"direction", directionN:"directions", schedNote:"scheduled departures from origin" },
+    direction1:"direction", directionN:"directions", schedNote:"scheduled departures from origin",
+    liveJourney:"Live journey", startJourney:"Start journey", getOffIn:"Get off in", getOffNow:"Get off now",
+    take:"take", walkToDest:"Walk to your destination", arrive:"arrive" },
   tr:{ liveNet:"Canlı Raylı Ağ", source:"kaynak ↗", lines:"Hatlar", stations:"İstasyonlar", carriages:"Vagonlar",
     tabActive:"● Aktif", tabVision:"◇ Vizyon", tabBus:"▤ Otobüsler",
     baseMap:"Harita", dark:"Koyu", streets:"Sokaklar", satellite:"Uydu",
@@ -996,7 +1039,9 @@ const I18N = {
     accStepFree:"Basamaksız erişim", accNotStepFree:"Basamaksız erişim yok", accLimited:"Sınırlı erişim",
     accLifts:"asansör", accEscalators:"yürüyen merdiven", accSource:"Kaynak:",
     departures:"Kalkışlar", dayWd:"Pzt–Cum", daySat:"Cmt", daySun:"Paz", perDay:"gün", busEvery:"her",
-    direction1:"yön", directionN:"yön", schedNote:"başlangıçtan planlanan kalkışlar" },
+    direction1:"yön", directionN:"yön", schedNote:"başlangıçtan planlanan kalkışlar",
+    liveJourney:"Canlı yolculuk", startJourney:"Yolculuğu başlat", getOffIn:"Kalan", getOffNow:"Şimdi in",
+    take:"bin:", walkToDest:"Hedefine yürü", arrive:"varış" },
   ar:{ liveNet:"شبكة النقل المباشرة", source:"المصدر ↗", lines:"الخطوط", stations:"المحطات", carriages:"العربات",
     tabActive:"● النشط", tabVision:"◇ الرؤية", tabBus:"▤ الحافلات", tabWeather:"☀ الطقس",
     baseMap:"خريطة الأساس", dark:"داكن", streets:"الشوارع", satellite:"قمر صناعي",
@@ -1065,7 +1110,9 @@ const I18N = {
     accStepFree:"وصول بلا درجات", accNotStepFree:"لا يوجد وصول بلا درجات", accLimited:"وصول محدود",
     accLifts:"مصاعد", accEscalators:"سلالم متحركة", accSource:"المصدر:",
     departures:"المغادرات", dayWd:"إثنين–جمعة", daySat:"سبت", daySun:"أحد", perDay:"يوم", busEvery:"كل",
-    direction1:"اتجاه", directionN:"اتجاهات", schedNote:"مغادرات مجدولة من نقطة البداية" },
+    direction1:"اتجاه", directionN:"اتجاهات", schedNote:"مغادرات مجدولة من نقطة البداية",
+    liveJourney:"رحلة مباشرة", startJourney:"ابدأ الرحلة", getOffIn:"انزل بعد", getOffNow:"انزل الآن",
+    take:"استقل", walkToDest:"امشِ إلى وجهتك", arrive:"الوصول" },
   fr:{ liveNet:"Réseau de transport en direct", source:"source ↗", lines:"Lignes", stations:"Stations", carriages:"Rames",
     tabActive:"● Actif", tabVision:"◇ Vision", tabBus:"▤ Bus", tabWeather:"☀ Météo",
     baseMap:"Fond de carte", dark:"Sombre", streets:"Rues", satellite:"Satellite",
@@ -1134,7 +1181,9 @@ const I18N = {
     accStepFree:"Accès sans marches", accNotStepFree:"Pas d'accès sans marches", accLimited:"Accès limité",
     accLifts:"ascenseurs", accEscalators:"escaliers méc.", accSource:"Source :",
     departures:"Départs", dayWd:"Lun–Ven", daySat:"Sam", daySun:"Dim", perDay:"jour", busEvery:"toutes les",
-    direction1:"sens", directionN:"sens", schedNote:"départs planifiés du terminus" }
+    direction1:"sens", directionN:"sens", schedNote:"départs planifiés du terminus",
+    liveJourney:"Trajet en direct", startJourney:"Démarrer le trajet", getOffIn:"Descendez dans", getOffNow:"Descendez maintenant",
+    take:"prenez", walkToDest:"Marchez vers votre destination", arrive:"arrivée" }
 };
 const LOCALE = { en:'en-GB', tr:'tr-TR', ar:'ar-u-nu-latn', fr:'fr-FR' };   // ar: Latin digits to match the UI's numerals
 let lang = (function(){ try{ const s=localStorage.getItem('irn_lang'); if(I18N[s]) return s; }catch(e){}
@@ -2771,6 +2820,94 @@ function showItinerary(res, it){
     stepsEl.insertBefore(note, stepsEl.firstChild);
     upgradeRoute(legs, token, it.total);
   }
+  goCurrent = { res, it };                                  // remember the shown itinerary for "Go" mode
+  const gs=document.getElementById('goStart'); if(gs) gs.style.display='';
+}
+
+/* ===========================================================================
+   LIVE "GO" JOURNEY MODE — an in-trip companion. After planning, tap ▶ Start and
+   the app tracks you with GPS along the route: current step, "get off in N stops",
+   transfer prompts, a buzz when your stop is next, and live progress. Manual ◀ ▶
+   for tunnels where GPS drops. Uses only the plan + GPS already in the app.
+   =========================================================================== */
+let goCurrent=null;    // {res,it} currently shown
+let goState=null;      // active run: {plan, si, stopIdx, watchId, lastBuzz}
+function buildGoPlan(res, it){
+  const pm=res.path.map(k=>nodeMeta[k]);
+  const oName=(res.origin&&res.origin.name)||t('from'), dName=(res.dest&&res.dest.name)||t('to');
+  const steps=[];
+  if(res.oWalk>0.5 && pm.length) steps.push({type:'walk', to:pm[0].name, toLat:pm[0].lat, toLng:pm[0].lng, mins:res.oWalk});
+  let i=0, prevAlight=null;
+  while(i<pm.length){
+    const ref=pm[i].ref, bus=pm[i].kind==='bus'; let j=i;
+    while(j+1<pm.length && pm[j+1].ref===ref && (pm[j+1].kind==='bus')===bus) j++;
+    const ls=pm.slice(i,j+1);
+    if(prevAlight) steps.push({type:'transfer', at:pm[i].name, toLat:pm[i].lat, toLng:pm[i].lng, ref, bus});
+    steps.push({type:'ride', ref, bus, from:ls[0].name, to:ls[ls.length-1].name, stops:ls.map(s=>({name:s.name,lat:s.lat,lng:s.lng}))});
+    prevAlight=ls[ls.length-1].name; i=j+1;
+  }
+  if(res.dWalk>0.5) steps.push({type:'walk', dest:true, to:dName, toLat:res.dest.lat, toLng:res.dest.lng, mins:res.dWalk});
+  return { steps, oName, dName, total:it.total, startedAt:Date.now() };
+}
+function startGo(){
+  if(!goCurrent) return;
+  const plan=buildGoPlan(goCurrent.res, goCurrent.it); if(!plan.steps.length) return;
+  goState={ plan, si:0, stopIdx:0, watchId:null, lastBuzz:-1 };
+  document.getElementById('goPanel').classList.add('open');
+  document.getElementById('goOverlay').classList.add('on');
+  document.body.classList.add('go-active');
+  if(geoSupported()){ try{ goState.watchId=navigator.geolocation.watchPosition(goTick, ()=>{}, {enableHighAccuracy:true,maximumAge:5000,timeout:15000}); }catch(e){} }
+  renderGo();
+}
+function exitGo(){
+  if(goState && goState.watchId!=null){ try{ navigator.geolocation.clearWatch(goState.watchId); }catch(e){} }
+  goState=null;
+  document.getElementById('goPanel').classList.remove('open');
+  document.getElementById('goOverlay').classList.remove('on');
+  document.body.classList.remove('go-active');
+}
+function goStep(delta){ if(!goState) return; goState.si=Math.max(0,Math.min(goState.plan.steps.length-1, goState.si+delta)); goState.stopIdx=0; renderGo(); }
+function goTick(p){
+  if(!goState) return;
+  const here=[p.coords.latitude, p.coords.longitude];
+  geoPos={lat:here[0], lng:here[1], acc:p.coords.accuracy}; renderGeo();
+  const st=goState.plan.steps[goState.si];
+  if(st){
+    if(st.type==='ride'){
+      let bi=goState.stopIdx, bd=Infinity;
+      st.stops.forEach((s,k)=>{ const d=metersBetween(here,[s.lat,s.lng]); if(d<bd){bd=d; bi=k;} });
+      if(bd<700 && bi>=goState.stopIdx) goState.stopIdx=bi;                 // forward-only, trust GPS within 700 m
+      const remaining=(st.stops.length-1)-goState.stopIdx;
+      if(remaining===1 && goState.lastBuzz!==goState.si){ goState.lastBuzz=goState.si; if(navigator.vibrate) try{navigator.vibrate([120,60,120]);}catch(e){} }
+      if(remaining<=0 && bd<250 && goState.si<goState.plan.steps.length-1){ goStep(1); return; }
+    } else if(st.toLat!=null && metersBetween(here,[st.toLat,st.toLng])<45 && goState.si<goState.plan.steps.length-1){ goStep(1); return; }
+  }
+  renderGo();
+}
+function renderGo(){
+  if(!goState) return;
+  const st=goState.plan.steps[goState.si];
+  let icon='🚶', big='', sub='', col='var(--muted)', badge='';
+  if(st.type==='ride'){
+    col = st.bus?BUS_COLOR:colorForLine(st.ref);
+    icon = st.bus?'🚌':mGlyph(lineByRef[st.ref]&&lineByRef[st.ref].kind, false);
+    const remaining=Math.max(0,(st.stops.length-1)-goState.stopIdx);
+    big = remaining>0 ? `${t('getOffIn')} ${remaining} ${remaining===1?t('stop_one'):t('stop_many')}` : `${t('getOffNow')} · ${st.to}`;
+    sub = `→ ${st.to}`; badge=st.ref;
+  } else if(st.type==='transfer'){ icon='⇄'; col='var(--gold)'; big=`${t('transferAt')} ${st.at}`; sub=`${t('take')} ${st.ref}`; badge=st.ref; }
+  else { icon='🚶'; big = st.dest ? t('walkToDest') : `${t('walkToShort')} ${st.to}`; sub=`~${Math.max(1,Math.round(st.mins||1))} ${t('minUnit')}`; }
+  document.getElementById('goNow').innerHTML =
+    `<div class="go-ic" style="background:${st.type==='ride'?col:'var(--surface-2)'};color:${st.type==='ride'?inkOn(col):'var(--text)'}">${icon}</div>`
+    +`<div class="go-txt"><div class="go-big">${svgEsc(big)}</div><div class="go-sub">${badge?`<span class="badge" style="background:${col};color:${inkOn(col)}">${svgEsc(badge)}</span> `:''}${svgEsc(sub)}</div></div>`;
+  document.getElementById('goProgress').innerHTML = goState.plan.steps.map((s,ix)=>{
+    const cls=(ix<goState.si?'done ':'')+(ix===goState.si?'cur':'');
+    let lb; if(s.type==='ride'){ const c=s.bus?BUS_COLOR:colorForLine(s.ref); lb=`<span class="gp-badge" style="background:${c};color:${inkOn(c)}">${svgEsc(s.ref)}</span> ${svgEsc(s.from)} → ${svgEsc(s.to)}`; }
+    else if(s.type==='transfer') lb=`⇄ ${svgEsc(s.at)}`;
+    else lb=`🚶 ${s.dest?t('toYourDest'):svgEsc(s.to)}`;
+    return `<div class="gp-row ${cls}"><span class="gp-dot"></span><span class="gp-lb">${lb}</span></div>`;
+  }).join('');
+  const arr=new Date(goState.plan.startedAt + goState.plan.total*60000);
+  document.getElementById('goArrive').textContent = t('arrive')+' '+new Intl.DateTimeFormat(LOCALE[lang]||'en-GB', timeOpts({hour:'2-digit',minute:'2-digit'})).format(arr);
 }
 function stepsHTML(it){
   return it.steps.map(s=>{
@@ -2918,8 +3055,10 @@ function runRoute(){
   renderEndpoints();
   const out=document.getElementById('rout'), stepsEl=document.getElementById('rSteps');
   routeLayer.clearLayers(); ++routeToken;
+  if(goState) exitGo();                                   // a fresh plan ends any active live journey
   document.getElementById('rOpts').innerHTML=''; currentOpts=[]; currentOptIdx=0;
-  { const jm=document.getElementById('rJourney'); if(jm) jm.innerHTML=''; const fEl=document.getElementById('rFare'); if(fEl) fEl.innerHTML=''; }
+  { const jm=document.getElementById('rJourney'); if(jm) jm.innerHTML=''; const fEl=document.getElementById('rFare'); if(fEl) fEl.innerHTML='';
+    const gs=document.getElementById('goStart'); if(gs) gs.style.display='none'; }
   if(!o || !d){ out.classList.add('show');
     document.getElementById('rEta').textContent='–'; document.getElementById('rStops').textContent='–'; document.getElementById('rTr').textContent='–';
     stepsEl.innerHTML=`<div class="none">${t('pickOD')}</div>`; updateFavBtn(); return; }
@@ -3253,8 +3392,12 @@ document.getElementById('placesGroup').addEventListener('click', e=>{ const b=e.
 document.getElementById('placeChips').addEventListener('click', e=>{ const b=e.target.closest('.pchip'); if(b) useSavedPlace(b.dataset.place); });
 document.getElementById('nearBtn').addEventListener('click', showNearby);
 document.getElementById('nearX').addEventListener('click', closeNearby);
+document.getElementById('goStart').addEventListener('click', startGo);
+document.getElementById('goExit').addEventListener('click', exitGo);
+document.getElementById('goPrev').addEventListener('click', ()=>goStep(-1));
+document.getElementById('goNext').addEventListener('click', ()=>goStep(1));
 document.getElementById('resetTrips').addEventListener('click', resetTrips);
-document.addEventListener('keydown', e=>{ if(e.key==='Escape'){ closeSettings(); closeNearby(); } });
+document.addEventListener('keydown', e=>{ if(e.key==='Escape'){ closeSettings(); closeNearby(); exitGo(); } });
 document.getElementById('speedSeg').addEventListener('click', e=>{
   const s=e.target.dataset.s; if(!s) return;
   [...e.currentTarget.children].forEach(x=>x.classList.toggle('active', x.dataset.s===s));
