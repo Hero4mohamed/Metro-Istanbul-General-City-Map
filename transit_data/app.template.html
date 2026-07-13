@@ -3799,7 +3799,12 @@ document.getElementById('annHead').addEventListener('click', ()=>
    feature cards are REPARENTED into sheets (same DOM, same listeners), so the
    phone gets its own UI without duplicating any logic.
    =========================================================================== */
-const IS_MOBILE = matchMedia('(max-width:720px)').matches;
+// Robust phone detection: the layout-viewport width alone is unreliable (a heavy page can
+// momentarily report a wide viewport during load, locking a phone into the desktop layout).
+// So ALSO treat any touch device with a small physical screen as mobile — stable across
+// orientation and viewport-settling, so phones reliably get the app shell.
+const IS_MOBILE = matchMedia('(max-width:720px)').matches
+  || (matchMedia('(pointer:coarse)').matches && Math.min(screen.width||9999, screen.height||9999) <= 500);
 let mSheets={}, mNavBtns={};
 function mkSheet(id){
   const s=document.createElement('div'); s.className='msheet glass'; s.id='sheet_'+id;
