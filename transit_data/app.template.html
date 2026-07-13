@@ -614,6 +614,14 @@
   .pp-badge{font:700 10px var(--mono);padding:4px 8px;border-radius:7px;background:var(--surface-2);color:var(--dim);border:1px solid var(--stroke);opacity:.55;}
   .pp-badge.on{opacity:1;border-color:transparent;box-shadow:0 2px 8px -3px rgba(0,0,0,.5);}
   .pp-note{font-size:10px;color:var(--dim);line-height:1.5;}
+  /* proactive alerts: follow button + leave reminder */
+  .lp-follow{width:100%;padding:8px;margin:2px 0 8px;border:1px solid var(--stroke-2);border-radius:11px;background:var(--surface);color:var(--text);font:650 11.5px var(--font);cursor:pointer;transition:all .15s var(--ease);}
+  .lp-follow:hover{border-color:var(--ring);}
+  .lp-follow.on{background:linear-gradient(135deg,rgba(251,191,36,.18),rgba(251,146,60,.18));border-color:rgba(251,191,36,.5);color:var(--gold);}
+  .leave-remind{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-top:10px;font-size:10.5px;color:var(--muted);}
+  .leave-remind .lr-mins{display:inline-flex;gap:4px;}
+  .leave-remind button{width:31px;height:26px;border:1px solid var(--stroke-2);border-radius:8px;background:var(--surface);color:var(--text);font:700 10.5px var(--mono);cursor:pointer;transition:all .15s var(--ease);}
+  .leave-remind button:hover{border-color:var(--ring);color:var(--accent);} .leave-remind button:active{transform:scale(.92);}
   /* planner quick chips */
   .place-chips{display:flex;gap:6px;margin:2px 0 9px;}
   .pchip{flex:1;padding:8px;border-radius:10px;border:1px solid var(--stroke-2);background:var(--surface);color:var(--text);font:650 11.5px var(--font);cursor:pointer;transition:all .15s var(--ease);}
@@ -871,6 +879,11 @@
         <button class="btn ghost favbtn" id="favBtn">☆ Save to Favourites</button>
         <button class="btn ghost" id="shareBtn">🔗 <span data-i18n="share">Share</span></button>
       </div>
+      <div class="leave-remind" id="leaveRemind">
+        <span data-i18n="remindLeaveLabel">🔔 Remind me to leave in</span>
+        <span class="lr-mins"><button data-min="10">10</button><button data-min="20">20</button><button data-min="30">30</button><button data-min="60">60</button></span>
+        <small data-i18n="minUnit">min</small>
+      </div>
     </div>
     <div class="plan-sec" id="favSec">
       <div class="plan-h" data-i18n="favourites">★ Favourites</div>
@@ -922,6 +935,7 @@
     <div><div class="lp-ref" id="lpRef"></div><div class="lp-name" id="lpName"></div></div>
   </div>
   <div class="lp-kind" id="lpKind"></div>
+  <button class="lp-follow" id="lpFollow"></button>
   <div class="lp-stats" id="lpStats"></div>
   <div class="bt" id="lpStripBt" data-i18n="lineMap">Line map</div>
   <div class="lp-strip" id="lpStrip"></div>
@@ -1026,7 +1040,9 @@ const I18N = {
     liveArrivals:"Next departures", dueNow:"now",
     goHere:"Go here", share:"Share", linkCopied:"Trip link copied", exploreAttr:"Explore attractions", nearbyAttr:"Nearby attractions",
     funStats:"You", passport:"Your travel passport", linesRidden:"lines ridden", tripOne:"trip", tripMany:"trips",
-    passportNote:"Complete a journey with ▶ Start to light up its lines. Saved on this device." },
+    passportNote:"Complete a journey with ▶ Start to light up its lines. Saved on this device.",
+    followLine:"Follow for alerts", following:"Following · alerts on", timeToLeave:"Time to leave",
+    reminderSet:"Reminder set for {n} min", remindLeaveLabel:"🔔 Remind me to leave in" },
   tr:{ liveNet:"Canlı Raylı Ağ", source:"kaynak ↗", lines:"Hatlar", stations:"İstasyonlar", carriages:"Vagonlar",
     tabActive:"● Aktif", tabVision:"◇ Vizyon", tabBus:"▤ Otobüsler",
     baseMap:"Harita", dark:"Koyu", streets:"Sokaklar", satellite:"Uydu",
@@ -1103,7 +1119,9 @@ const I18N = {
     liveArrivals:"Sonraki kalkışlar", dueNow:"şimdi",
     goHere:"Oraya git", share:"Paylaş", linkCopied:"Yolculuk bağlantısı kopyalandı", exploreAttr:"Gezilecek yerler", nearbyAttr:"Yakındaki yerler",
     funStats:"Sen", passport:"Seyahat pasaportun", linesRidden:"hat binildi", tripOne:"yolculuk", tripMany:"yolculuk",
-    passportNote:"▶ Başlat ile bir yolculuğu tamamla, hatları aydınlansın. Bu cihazda saklanır." },
+    passportNote:"▶ Başlat ile bir yolculuğu tamamla, hatları aydınlansın. Bu cihazda saklanır.",
+    followLine:"Uyarı için takip et", following:"Takip ediliyor · uyarılar açık", timeToLeave:"Yola çıkma vakti",
+    reminderSet:"{n} dk için hatırlatıcı kuruldu", remindLeaveLabel:"🔔 Şu kadar sonra hatırlat:" },
   ar:{ liveNet:"شبكة النقل المباشرة", source:"المصدر ↗", lines:"الخطوط", stations:"المحطات", carriages:"العربات",
     tabActive:"● النشط", tabVision:"◇ الرؤية", tabBus:"▤ الحافلات", tabWeather:"☀ الطقس",
     baseMap:"خريطة الأساس", dark:"داكن", streets:"الشوارع", satellite:"قمر صناعي",
@@ -1178,7 +1196,9 @@ const I18N = {
     liveArrivals:"المغادرات القادمة", dueNow:"الآن",
     goHere:"اذهب إلى هنا", share:"مشاركة", linkCopied:"تم نسخ رابط الرحلة", exploreAttr:"استكشف المعالم", nearbyAttr:"معالم قريبة",
     funStats:"أنت", passport:"جواز سفرك", linesRidden:"خطوط مركوبة", tripOne:"رحلة", tripMany:"رحلات",
-    passportNote:"أكمل رحلة بزر ▶ ابدأ لتُضيء خطوطها. محفوظ على هذا الجهاز." },
+    passportNote:"أكمل رحلة بزر ▶ ابدأ لتُضيء خطوطها. محفوظ على هذا الجهاز.",
+    followLine:"تابع للتنبيهات", following:"متابَع · التنبيهات مفعّلة", timeToLeave:"حان وقت المغادرة",
+    reminderSet:"تم ضبط تذكير خلال {n} د", remindLeaveLabel:"🔔 ذكّرني بالمغادرة بعد" },
   fr:{ liveNet:"Réseau de transport en direct", source:"source ↗", lines:"Lignes", stations:"Stations", carriages:"Rames",
     tabActive:"● Actif", tabVision:"◇ Vision", tabBus:"▤ Bus", tabWeather:"☀ Météo",
     baseMap:"Fond de carte", dark:"Sombre", streets:"Rues", satellite:"Satellite",
@@ -1253,7 +1273,9 @@ const I18N = {
     liveArrivals:"Prochains départs", dueNow:"à l'instant",
     goHere:"Y aller", share:"Partager", linkCopied:"Lien du trajet copié", exploreAttr:"Explorer les lieux", nearbyAttr:"Lieux à proximité",
     funStats:"Vous", passport:"Votre passeport de voyage", linesRidden:"lignes parcourues", tripOne:"trajet", tripMany:"trajets",
-    passportNote:"Terminez un trajet avec ▶ Démarrer pour allumer ses lignes. Enregistré sur cet appareil." }
+    passportNote:"Terminez un trajet avec ▶ Démarrer pour allumer ses lignes. Enregistré sur cet appareil.",
+    followLine:"Suivre pour alertes", following:"Suivi · alertes activées", timeToLeave:"Il est temps de partir",
+    reminderSet:"Rappel réglé dans {n} min", remindLeaveLabel:"🔔 Me rappeler de partir dans" }
 };
 const LOCALE = { en:'en-GB', tr:'tr-TR', ar:'ar-u-nu-latn', fr:'fr-FR' };   // ar: Latin digits to match the UI's numerals
 let lang = (function(){ try{ const s=localStorage.getItem('irn_lang'); if(I18N[s]) return s; }catch(e){}
@@ -2544,6 +2566,8 @@ function journeyHTML(it,res){ const s=journeySVG(it,res); return s ? `<div class
 function openLine(line){
   selected = null; document.getElementById('stn').classList.remove('show');
   const live = isLive(line);
+  curLineRef = live ? line.ref : null;   // only live lines can be followed for alerts
+  updateFollowBtn();
   const meta = LINE_META[line.ref] || {};
   const official = line.official || meta.official || line.ref;
   document.getElementById('lpSw').style.background = line.color;
@@ -3100,6 +3124,56 @@ function renderPassport(){
     +`<div class="pp-stat"><b>${Math.round(rideKm)}</b><span>km</span></div></div>`
     +`<div class="pp-grid">${grid}</div><div class="pp-note">${t('passportNote')}</div>`;
 }
+/* ===========================================================================
+   PROACTIVE ALERTS — follow lines for disruption notifications + a "leave" reminder.
+   No backend, so notifications fire while the app is open / recently active (reliable
+   on Android, limited on iOS PWAs). Everything stays on-device.
+   =========================================================================== */
+let followedLines = new Set((function(){ const a=lsJSON('irn_follow'); return Array.isArray(a)?a:[]; })());
+let alertedIds = new Set((function(){ const a=lsJSON('irn_alerted'); return Array.isArray(a)?a:[]; })());
+let curLineRef = null, leaveTimer=null;
+function askNotify(){ try{ if('Notification' in window && Notification.permission==='default') Notification.requestPermission(); }catch(e){} }
+function notify(title, body, kind){
+  showToast(body||title, kind);                                   // always show in-app
+  try{ if('Notification' in window && Notification.permission==='granted'){
+    if(navigator.serviceWorker && navigator.serviceWorker.ready)
+      navigator.serviceWorker.ready.then(reg=>reg.showNotification(title,{body, icon:'assets/icon-192.png', badge:'assets/icon-192.png', tag:'irn-alert'})).catch(()=>{ try{ new Notification(title,{body}); }catch(_){}} );
+    else new Notification(title,{body});
+  } }catch(e){}
+}
+function toggleFollow(){
+  const ref=curLineRef; if(!ref) return;
+  if(followedLines.has(ref)) followedLines.delete(ref); else { followedLines.add(ref); askNotify(); }
+  try{ localStorage.setItem('irn_follow', JSON.stringify([...followedLines])); }catch(e){}
+  updateFollowBtn(); checkDisruptionAlerts(true);                 // silent: mark current state as seen
+}
+function updateFollowBtn(){
+  const b=document.getElementById('lpFollow'); if(!b) return;
+  if(!curLineRef){ b.style.display='none'; return; }
+  const on=followedLines.has(curLineRef); b.style.display='';
+  b.textContent = on ? '🔔 '+t('following') : '🔕 '+t('followLine');
+  b.classList.toggle('on', on);
+}
+// notify when a followed line is newly disrupted (called after each live-disruptions refresh)
+function checkDisruptionAlerts(silent){
+  const active=new Set();
+  for(const d of (DISRUPTIONS||[])){ if(!d||!d.ref) continue; active.add(d.id);
+    if(followedLines.has(d.ref) && !alertedIds.has(d.id)){
+      alertedIds.add(d.id);
+      if(!silent) notify('⚠ '+d.ref+' · '+disTitle(d), disMsg(d), d.severity==='major'?'err':null);
+    }
+  }
+  alertedIds = new Set([...alertedIds].filter(id=>active.has(id)));   // clear resolved so they re-alert if they recur
+  try{ localStorage.setItem('irn_alerted', JSON.stringify([...alertedIds])); }catch(e){}
+}
+// local "time to leave" reminder for the planned trip
+function remindLeave(mins){
+  if(!originPt||!destPt){ showToast(t('pickOD'),'err'); return; }
+  askNotify(); clearTimeout(leaveTimer);
+  const o=originPt.name, d=destPt.name, it=(currentOpts[currentOptIdx]||{}).it, dur=it?Math.round(it.total):null;
+  leaveTimer=setTimeout(()=>{ notify('🔔 '+t('timeToLeave'), o+' → '+d+(dur?` · ~${dur} ${t('minUnit')}`:'')); }, mins*60000);
+  showToast(t('reminderSet').replace('{n}', mins));
+}
 function stepsHTML(it){
   return it.steps.map(s=>{
     if(s.type==="walk"){
@@ -3592,6 +3666,8 @@ document.getElementById('shareBtn').addEventListener('click', shareTrip);
 document.getElementById('openPassport').addEventListener('click', ()=>{ closeSettings(); openPassport(); });
 document.getElementById('passX').addEventListener('click', closePassport);
 document.getElementById('passOverlay').addEventListener('click', closePassport);
+document.getElementById('lpFollow').addEventListener('click', toggleFollow);
+document.getElementById('leaveRemind').addEventListener('click', e=>{ const b=e.target.closest('button[data-min]'); if(b) remindLeave(+b.dataset.min); });
 document.getElementById('resetTrips').addEventListener('click', resetTrips);
 document.addEventListener('keydown', e=>{ if(e.key==='Escape'){ closeSettings(); closeNearby(); exitGo(); closePassport(); } });
 document.getElementById('speedSeg').addEventListener('click', e=>{
@@ -3940,7 +4016,7 @@ async function loadLiveDisruptions(){
     const r = await fetch('transit_data/disruptions.json?t='+Date.now(), { cache:'no-store' });
     if(!r.ok) return;
     const data = await r.json();
-    if(Array.isArray(data)){ ensureEnglish(data); DISRUPTIONS = data; renderAnnouncements(); renderDisruptionMarkers(); refreshClosed(); }
+    if(Array.isArray(data)){ ensureEnglish(data); DISRUPTIONS = data; renderAnnouncements(); renderDisruptionMarkers(); refreshClosed(); checkDisruptionAlerts(); }
   }catch(e){ /* offline / file:// → keep the baked-in DISRUPTIONS */ }
 }
 init();
