@@ -589,6 +589,31 @@
   .cd-none,.cd-next{font-size:11px;color:var(--dim);font-weight:600;}
   .cd-next{color:var(--muted);font-family:var(--mono);}
   .arr-fl{font-size:9px;color:var(--dim);margin-top:2px;}
+  /* Explore attractions */
+  .attr-ic{background:none!important;border:none!important;}
+  .attr-pin{width:26px;height:26px;display:flex;align-items:center;justify-content:center;font-size:14px;background:var(--panel);border:1.6px solid var(--gold);border-radius:50%;box-shadow:0 3px 9px -2px rgba(0,0,0,.6);}
+  .attr-pop .leaflet-popup-content-wrapper{background:var(--panel);color:var(--text);border-radius:14px;border:1px solid var(--stroke-2);backdrop-filter:blur(14px);}
+  .attr-pop .leaflet-popup-tip{background:var(--panel);}
+  .attr-pop .leaflet-popup-content{margin:11px 13px;}
+  .ap-nm{font-size:12.5px;font-weight:700;color:var(--text);margin-bottom:5px;}
+  .ap-st{font-size:11px;color:var(--muted);margin-bottom:9px;display:flex;align-items:center;gap:5px;flex-wrap:wrap;}
+  .ap-go{width:100%;padding:7px;border:none;border-radius:9px;background:var(--grad-accent);color:#03130A;font:700 11px var(--font);cursor:pointer;}
+  .ap-go:hover{filter:brightness(1.06);}
+  .st-attr .bt{margin-top:8px;}
+  .sa-list{display:flex;flex-wrap:wrap;gap:6px;margin:2px 0;}
+  .sa-chip{font-size:11px;padding:4px 9px;border-radius:99px;background:var(--surface);border:1px solid var(--stroke-2);color:var(--text);cursor:pointer;transition:all .15s var(--ease);}
+  .sa-chip:hover{border-color:var(--ring);color:var(--accent);}
+  /* share row */
+  .route-btns{display:flex;gap:6px;} .route-btns .btn{margin-top:0;flex:1;}
+  /* travel passport */
+  .pp-stats{display:flex;gap:8px;margin:2px 0 13px;}
+  .pp-stat{flex:1;text-align:center;padding:11px 4px;border-radius:13px;background:var(--surface);border:1px solid var(--stroke);}
+  .pp-stat b{display:block;font-family:var(--display);font-size:22px;font-weight:700;color:var(--accent);line-height:1;}
+  .pp-stat span{font-size:9.5px;color:var(--muted);}
+  .pp-grid{display:flex;flex-wrap:wrap;gap:5px;margin-bottom:11px;}
+  .pp-badge{font:700 10px var(--mono);padding:4px 8px;border-radius:7px;background:var(--surface-2);color:var(--dim);border:1px solid var(--stroke);opacity:.55;}
+  .pp-badge.on{opacity:1;border-color:transparent;box-shadow:0 2px 8px -3px rgba(0,0,0,.5);}
+  .pp-note{font-size:10px;color:var(--dim);line-height:1.5;}
   /* planner quick chips */
   .place-chips{display:flex;gap:6px;margin:2px 0 9px;}
   .pchip{flex:1;padding:8px;border-radius:10px;border:1px solid var(--stroke-2);background:var(--surface);color:var(--text);font:650 11.5px var(--font);cursor:pointer;transition:all .15s var(--ease);}
@@ -708,6 +733,10 @@
     <div class="sp-hint" data-i18n="placeHowto">Type a place in “From”, then tap Set.</div>
   </div>
   <div class="sp-group">
+    <div class="sp-label" data-i18n="funStats">You</div>
+    <button class="btn" id="openPassport" style="background:linear-gradient(135deg,#4ADE80,#14B8A6);">🎫 <span data-i18n="passport">Your travel passport</span></button>
+  </div>
+  <div class="sp-group">
     <div class="sp-label" data-i18n="dataPrivacy">Data</div>
     <button class="btn ghost" id="resetTrips" data-i18n="resetTrips">Clear saved trips &amp; favourites</button>
     <div class="sp-hint" data-i18n="privacyNote">Your settings and saved trips stay on this device only.</div>
@@ -731,6 +760,12 @@
   </div>
 </div>
 
+<div class="settings-overlay" id="passOverlay"></div>
+<div class="settings-panel glass" id="passPanel" role="dialog" aria-label="Travel passport">
+  <div class="sp-head"><span>🎫 <span data-i18n="passport">Your travel passport</span></span><button class="x" id="passX" aria-label="Close">✕</button></div>
+  <div id="passBody"></div>
+</div>
+
 <div class="controls">
   <div class="card glass" style="padding:7px;">
     <div class="tabs" id="tabs">
@@ -752,6 +787,9 @@
     </div>
     <div class="row"><span data-i18n="stationMarkers">Station markers</span>
       <label class="switch"><input type="checkbox" id="tglStations" checked><span class="sl"></span></label>
+    </div>
+    <div class="row"><span data-i18n="exploreAttr">✨ Explore attractions</span>
+      <label class="switch"><input type="checkbox" id="tglExplore"><span class="sl"></span></label>
     </div>
     <div class="sec" style="margin-top:14px" data-i18n="simSpeed">Simulation Speed</div>
     <div class="seg" id="speedSeg">
@@ -829,7 +867,10 @@
       <div id="rJourney" class="jmap"></div>
       <button class="btn go-start" id="goStart" style="display:none">▶ <span data-i18n="startJourney">Start journey</span></button>
       <div id="rSteps"></div>
-      <button class="btn ghost favbtn" id="favBtn">☆ Save to Favourites</button>
+      <div class="route-btns">
+        <button class="btn ghost favbtn" id="favBtn">☆ Save to Favourites</button>
+        <button class="btn ghost" id="shareBtn">🔗 <span data-i18n="share">Share</span></button>
+      </div>
     </div>
     <div class="plan-sec" id="favSec">
       <div class="plan-h" data-i18n="favourites">★ Favourites</div>
@@ -871,6 +912,7 @@
   <div id="stnSched"></div>
   <div id="stnService"></div>
   <div id="stnAccess"></div>
+  <div id="stnAttr"></div>
 </div>
 
 <div class="linep glass" id="linp">
@@ -981,7 +1023,10 @@ const I18N = {
     direction1:"direction", directionN:"directions", schedNote:"scheduled departures from origin",
     liveJourney:"Live journey", startJourney:"Start journey", getOffIn:"Get off in", getOffNow:"Get off now",
     take:"take", walkToDest:"Walk to your destination", arrive:"arrive",
-    liveArrivals:"Next departures", dueNow:"now" },
+    liveArrivals:"Next departures", dueNow:"now",
+    goHere:"Go here", share:"Share", linkCopied:"Trip link copied", exploreAttr:"Explore attractions", nearbyAttr:"Nearby attractions",
+    funStats:"You", passport:"Your travel passport", linesRidden:"lines ridden", tripOne:"trip", tripMany:"trips",
+    passportNote:"Complete a journey with ▶ Start to light up its lines. Saved on this device." },
   tr:{ liveNet:"Canlı Raylı Ağ", source:"kaynak ↗", lines:"Hatlar", stations:"İstasyonlar", carriages:"Vagonlar",
     tabActive:"● Aktif", tabVision:"◇ Vizyon", tabBus:"▤ Otobüsler",
     baseMap:"Harita", dark:"Koyu", streets:"Sokaklar", satellite:"Uydu",
@@ -1055,7 +1100,10 @@ const I18N = {
     direction1:"yön", directionN:"yön", schedNote:"başlangıçtan planlanan kalkışlar",
     liveJourney:"Canlı yolculuk", startJourney:"Yolculuğu başlat", getOffIn:"Kalan", getOffNow:"Şimdi in",
     take:"bin:", walkToDest:"Hedefine yürü", arrive:"varış",
-    liveArrivals:"Sonraki kalkışlar", dueNow:"şimdi" },
+    liveArrivals:"Sonraki kalkışlar", dueNow:"şimdi",
+    goHere:"Oraya git", share:"Paylaş", linkCopied:"Yolculuk bağlantısı kopyalandı", exploreAttr:"Gezilecek yerler", nearbyAttr:"Yakındaki yerler",
+    funStats:"Sen", passport:"Seyahat pasaportun", linesRidden:"hat binildi", tripOne:"yolculuk", tripMany:"yolculuk",
+    passportNote:"▶ Başlat ile bir yolculuğu tamamla, hatları aydınlansın. Bu cihazda saklanır." },
   ar:{ liveNet:"شبكة النقل المباشرة", source:"المصدر ↗", lines:"الخطوط", stations:"المحطات", carriages:"العربات",
     tabActive:"● النشط", tabVision:"◇ الرؤية", tabBus:"▤ الحافلات", tabWeather:"☀ الطقس",
     baseMap:"خريطة الأساس", dark:"داكن", streets:"الشوارع", satellite:"قمر صناعي",
@@ -1127,7 +1175,10 @@ const I18N = {
     direction1:"اتجاه", directionN:"اتجاهات", schedNote:"مغادرات مجدولة من نقطة البداية",
     liveJourney:"رحلة مباشرة", startJourney:"ابدأ الرحلة", getOffIn:"انزل بعد", getOffNow:"انزل الآن",
     take:"استقل", walkToDest:"امشِ إلى وجهتك", arrive:"الوصول",
-    liveArrivals:"المغادرات القادمة", dueNow:"الآن" },
+    liveArrivals:"المغادرات القادمة", dueNow:"الآن",
+    goHere:"اذهب إلى هنا", share:"مشاركة", linkCopied:"تم نسخ رابط الرحلة", exploreAttr:"استكشف المعالم", nearbyAttr:"معالم قريبة",
+    funStats:"أنت", passport:"جواز سفرك", linesRidden:"خطوط مركوبة", tripOne:"رحلة", tripMany:"رحلات",
+    passportNote:"أكمل رحلة بزر ▶ ابدأ لتُضيء خطوطها. محفوظ على هذا الجهاز." },
   fr:{ liveNet:"Réseau de transport en direct", source:"source ↗", lines:"Lignes", stations:"Stations", carriages:"Rames",
     tabActive:"● Actif", tabVision:"◇ Vision", tabBus:"▤ Bus", tabWeather:"☀ Météo",
     baseMap:"Fond de carte", dark:"Sombre", streets:"Rues", satellite:"Satellite",
@@ -1199,7 +1250,10 @@ const I18N = {
     direction1:"sens", directionN:"sens", schedNote:"départs planifiés du terminus",
     liveJourney:"Trajet en direct", startJourney:"Démarrer le trajet", getOffIn:"Descendez dans", getOffNow:"Descendez maintenant",
     take:"prenez", walkToDest:"Marchez vers votre destination", arrive:"arrivée",
-    liveArrivals:"Prochains départs", dueNow:"à l'instant" }
+    liveArrivals:"Prochains départs", dueNow:"à l'instant",
+    goHere:"Y aller", share:"Partager", linkCopied:"Lien du trajet copié", exploreAttr:"Explorer les lieux", nearbyAttr:"Lieux à proximité",
+    funStats:"Vous", passport:"Votre passeport de voyage", linesRidden:"lignes parcourues", tripOne:"trajet", tripMany:"trajets",
+    passportNote:"Terminez un trajet avec ▶ Démarrer pour allumer ses lignes. Enregistré sur cet appareil." }
 };
 const LOCALE = { en:'en-GB', tr:'tr-TR', ar:'ar-u-nu-latn', fr:'fr-FR' };   // ar: Latin digits to match the UI's numerals
 let lang = (function(){ try{ const s=localStorage.getItem('irn_lang'); if(I18N[s]) return s; }catch(e){}
@@ -1552,6 +1606,10 @@ const MI_STATIONS = [[20,1,"M2",41.0056,28.95133,"Yenikapı"],[21,1,"M2",41.0114
 /* --- Step-free / accessibility per station: İBB open data (elevator + escalator counts)
        merged with OpenStreetMap wheelchair tags. {name,elevators,escalators,size,district,wheelchair,stepFree}. --- */
 const ACCESS_RAW = [{"name":"4.LEVENT","elevators":5,"escalators":20,"size":6600,"district":"BEŞİKTAŞ","wheelchair":null,"lines":["M2"],"stepFree":true},{"name":"50. YIL BAŞTABYA","elevators":0,"escalators":0,"size":505,"district":"SULTANGAZİ","wheelchair":null,"lines":["T4"],"stepFree":false},{"name":"ACIBADEM","elevators":4,"escalators":10,"size":10243,"district":"KADIKÖY","wheelchair":null,"lines":["M4"],"stepFree":true},{"name":"AKINCILAR","elevators":0,"escalators":0,"size":211.275,"district":"GÜNGÖREN","wheelchair":null,"lines":["T1"],"stepFree":false},{"name":"AKSARAY","elevators":1,"escalators":4,"size":670,"district":"FATİH","wheelchair":null,"lines":["M1","T1"],"stepFree":true},{"name":"AKŞEMSETTİN","elevators":0,"escalators":0,"size":328.725,"district":"ZEYTİNBURNU","wheelchair":null,"lines":["T1"],"stepFree":false},{"name":"ALİ FUAT BAŞGİL","elevators":1,"escalators":2,"size":1680,"district":"BAYRAMPAŞA","wheelchair":null,"lines":["T4"],"stepFree":true},{"name":"ALİBEYKÖY","elevators":4,"escalators":8,"size":4368,"district":"EYÜP","wheelchair":null,"lines":["M7"],"stepFree":true},{"name":"ALTINŞEHİR","elevators":3,"escalators":13,"size":6702.44,"district":"ÜMRANİYE","wheelchair":null,"lines":["M5"],"stepFree":true},{"name":"ALTIYOL","elevators":0,"escalators":0,"size":null,"district":"KADIKÖY","wheelchair":null,"lines":["T3"],"stepFree":false},{"name":"ALTUNİZADE","elevators":9,"escalators":32,"size":12336.439999999999,"district":"ÜSKÜDAR","wheelchair":null,"lines":["M5"],"stepFree":true},{"name":"ATAKÖY","elevators":4,"escalators":4,"size":1322,"district":"BAKIRKÖY","wheelchair":null,"lines":["M1"],"stepFree":true},{"name":"ATARTÜRK HAVALİMANI","elevators":2,"escalators":2,"size":1109,"district":"BAKIRKÖY","wheelchair":null,"lines":["M1"],"stepFree":true},{"name":"ATATÜRK OTO SANAYİ","elevators":2,"escalators":15,"size":9600,"district":"ŞİŞLİ","wheelchair":null,"lines":["M2"],"stepFree":true},{"name":"AYRILIKÇEŞMESİ","elevators":3,"escalators":18,"size":14336,"district":"KADIKÖY","wheelchair":null,"lines":["M4"],"stepFree":true},{"name":"BAĞCILAR","elevators":0,"escalators":0,"size":517.18,"district":"BAĞCILAR","wheelchair":null,"lines":["T1"],"stepFree":false},{"name":"BAĞCILAR MEYDAN","elevators":9,"escalators":20,"size":32000,"district":"BAĞCILAR","wheelchair":null,"lines":["M1"],"stepFree":true},{"name":"BAĞLARBAŞI","elevators":4,"escalators":18,"size":7432.83,"district":"ÜSKÜDAR","wheelchair":null,"lines":["M5"],"stepFree":true},{"name":"BAHARİYE","elevators":0,"escalators":0,"size":null,"district":"KADIKÖY","wheelchair":null,"lines":["T3"],"stepFree":false},{"name":"BAHÇELİEVLER","elevators":2,"escalators":7,"size":2548,"district":"BAHÇELİEVLER","wheelchair":null,"lines":["M1"],"stepFree":true},{"name":"BAKIRKÖY - İNCİRLİ","elevators":3,"escalators":6,"size":2658,"district":"BAKIRKÖY","wheelchair":null,"lines":["M1"],"stepFree":true},{"name":"BAŞAK KONUTLARI","elevators":2,"escalators":13,"size":16113,"district":"BAŞAKŞEHİR","wheelchair":null,"lines":["M3"],"stepFree":true},{"name":"BAŞAKŞEHİR METROKENT","elevators":2,"escalators":22,"size":37442,"district":"BAŞAKŞEHİR","wheelchair":null,"lines":["M3"],"stepFree":true},{"name":"BAYRAMPAŞA","elevators":3,"escalators":2,"size":1157,"district":"BAYRAMPAŞA","wheelchair":null,"lines":["M1"],"stepFree":true},{"name":"BEŞİKTAŞ","elevators":8,"escalators":10,"size":10429.3,"district":"BEŞİKTAŞ","wheelchair":null,"lines":["M7"],"stepFree":true},{"name":"BEYAZIT","elevators":0,"escalators":0,"size":786.2,"district":"FATİH","wheelchair":null,"lines":["T1"],"stepFree":false},{"name":"BOSNA ÇUKURÇEŞME","elevators":0,"escalators":0,"size":505,"district":"BAYRAMPAŞA","wheelchair":null,"lines":["T4"],"stepFree":false},{"name":"BOSTANCI","elevators":9,"escalators":22,"size":14859,"district":"KADIKÖY","wheelchair":null,"lines":["M4"],"stepFree":true},{"name":"BULGURLU","elevators":3,"escalators":12,"size":6703.87,"district":"ÜSKÜDAR","wheelchair":null,"lines":["M5"],"stepFree":true},{"name":"CAMİİ","elevators":0,"escalators":0,"size":null,"district":"KADIKÖY","wheelchair":null,"lines":["T3"],"stepFree":false},{"name":"CEBECİ","elevators":0,"escalators":0,"size":960,"district":"SULTANGAZİ","wheelchair":null,"lines":["T4"],"stepFree":false},{"name":"CEVİZLİBAĞ","elevators":0,"escalators":0,"size":751.68,"district":"ZEYTİNBURNU","wheelchair":null,"lines":["T1"],"stepFree":false},{"name":"CUMHURİYET MAHALLESİ","elevators":0,"escalators":0,"size":960,"district":"SULTANGAZİ","wheelchair":null,"lines":["T4"],"stepFree":false},{"name":"ÇAĞLAYAN","elevators":15,"escalators":16,"size":15157.3,"district":"ŞİŞLİ","wheelchair":null,"lines":["M7"],"stepFree":true},{"name":"ÇAKMAK","elevators":3,"escalators":8,"size":6335.16,"district":"ÜMRANİYE","wheelchair":null,"lines":["M5"],"stepFree":true},{"name":"ÇAPA","elevators":0,"escalators":0,"size":717.3,"district":"FATİH","wheelchair":null,"lines":["T1"],"stepFree":false},{"name":"ÇARŞI","elevators":2,"escalators":19,"size":9744.73,"district":"ÜMRANİYE","wheelchair":null,"lines":["M5","T3"],"stepFree":true},{"name":"ÇEKMEKÖY","elevators":6,"escalators":12,"size":14338.599999999999,"district":"ÇEKMEKÖY","wheelchair":null,"lines":["M5"],"stepFree":true},{"name":"ÇEMBERLİTAŞ","elevators":0,"escalators":0,"size":355.95,"district":"FATİH","wheelchair":null,"lines":["T1"],"stepFree":false},{"name":"ÇIRÇIR","elevators":9,"escalators":14,"size":12464.36,"district":"EYÜP","wheelchair":null,"lines":["M7"],"stepFree":true},{"name":"DAMGA SOKAK","elevators":0,"escalators":0,"size":null,"district":"KADIKÖY","wheelchair":null,"lines":["T3"],"stepFree":false},{"name":"DARÜŞŞAFAKA","elevators":4,"escalators":20,"size":14800,"district":"SARIYER","wheelchair":null,"lines":["M2"],"stepFree":true},{"name":"DAVUTPAŞA","elevators":2,"escalators":2,"size":1289,"district":"GÜNGÖREN","wheelchair":null,"lines":["M1"],"stepFree":true},{"name":"DEMİRKAPI","elevators":0,"escalators":0,"size":505,"district":"EYÜPSULTAN","wheelchair":null,"lines":["T4"],"stepFree":false},{"name":"DTM - İSTANBUL FUAR MWERKEZİ","elevators":1,"escalators":2,"size":1132,"district":"BAKIRKÖY","wheelchair":null,"lines":["M1"],"stepFree":true},{"name":"DUDULLU","elevators":3,"escalators":18,"size":14241.59,"district":"ÜMRANİYE","wheelchair":null,"lines":["M5"],"stepFree":true},{"name":"EDİRNEKAPI","elevators":4,"escalators":4,"size":2304,"district":"EYÜPSULTAN","wheelchair":null,"lines":["T4"],"stepFree":true},{"name":"EMİNÖNÜ","elevators":0,"escalators":0,"size":941.15,"district":"FATİH","wheelchair":null,"lines":["T1"],"stepFree":false},{"name":"EMNİYET","elevators":4,"escalators":2,"size":1816,"district":"FATİH","wheelchair":null,"lines":["M1"],"stepFree":true},{"name":"ESENKENT","elevators":5,"escalators":20,"size":13795,"district":"MALTEPE","wheelchair":null,"lines":["M4"],"stepFree":true},{"name":"ESENLER","elevators":3,"escalators":4,"size":1540,"district":"ESENLER","wheelchair":null,"lines":["M1"],"stepFree":true},{"name":"ETİLER","elevators":3,"escalators":1,"size":6750,"district":"BEŞİKTAŞ","wheelchair":null,"lines":["M6"],"stepFree":true},{"name":"EYÜP","elevators":1,"escalators":0,"size":null,"district":"EYÜP","wheelchair":null,"lines":["TF1"],"stepFree":true},{"name":"FETİHKAPI","elevators":0,"escalators":0,"size":564,"district":"FATİH","wheelchair":null,"lines":["T4"],"stepFree":false},{"name":"FINDIKLI","elevators":0,"escalators":0,"size":188.36,"district":"BEYOĞLU","wheelchair":null,"lines":["T1"],"stepFree":false},{"name":"FINDIKZADE","elevators":0,"escalators":0,"size":330,"district":"FATİH","wheelchair":null,"lines":["T1"],"stepFree":false},{"name":"FISTIKAĞACI","elevators":4,"escalators":8,"size":6800.280000000001,"district":"ÜSKÜDAR","wheelchair":null,"lines":["M5"],"stepFree":true},{"name":"FULYA - DARPHANE","elevators":9,"escalators":15,"size":13461.2,"district":"BEŞİKTAŞ","wheelchair":null,"lines":["M7"],"stepFree":true},{"name":"GAYRETTEPE","elevators":11,"escalators":18,"size":9600,"district":"ŞİŞLİ","wheelchair":null,"lines":["M2"],"stepFree":true},{"name":"GİYİMKENT-TEKSTİLKENT","elevators":3,"escalators":15,"size":12528.5,"district":"ESENLER","wheelchair":null,"lines":["M7"],"stepFree":true},{"name":"GÖZTEPE","elevators":4,"escalators":14,"size":11199,"district":"ÜSKÜDAR","wheelchair":null,"lines":["M4","M7"],"stepFree":true},{"name":"GÜLHANE","elevators":0,"escalators":0,"size":228.105,"district":"FATİH","wheelchair":null,"lines":["T1"],"stepFree":false},{"name":"GÜLSUYU","elevators":3,"escalators":16,"size":14680,"district":"MALTEPE","wheelchair":null,"lines":["M4"],"stepFree":true},{"name":"GÜNEŞTEPE","elevators":0,"escalators":0,"size":289.8,"district":"GÜNGÖREN","wheelchair":null,"lines":["T1"],"stepFree":false},{"name":"GÜNGÖREN","elevators":0,"escalators":0,"size":516.675,"district":"GÜNGÖREN","wheelchair":null,"lines":["T1"],"stepFree":false},{"name":"HACIOSMAN","elevators":6,"escalators":48,"size":33400,"district":"SARIYER","wheelchair":null,"lines":["M2"],"stepFree":true},{"name":"HACIŞÜKRÜ","elevators":0,"escalators":0,"size":960,"district":"SULTANGAZİ","wheelchair":null,"lines":["T4"],"stepFree":false},{"name":"HALİÇ","elevators":6,"escalators":8,"size":5500,"district":"BEYOĞLU","wheelchair":null,"lines":["M2"],"stepFree":true},{"name":"HASEKİ","elevators":0,"escalators":0,"size":340.2,"district":"FATİH","wheelchair":null,"lines":["T1"],"stepFree":false},{"name":"HASTANE - ADLİYE","elevators":7,"escalators":30,"size":11409,"district":"KARTAL","wheelchair":null,"lines":["M4"],"stepFree":true},{"name":"HİSARÜSTÜ - BOĞAZİÇİ ÜNİVERSİTESİ","elevators":3,"escalators":3,"size":6915,"district":"BEŞİKTAŞ","wheelchair":null,"lines":["M6"],"stepFree":true},{"name":"HUZUREVİ","elevators":4,"escalators":10,"size":8258,"district":"MALTEPE","wheelchair":null,"lines":["M4"],"stepFree":true},{"name":"IHLAMURKAYA","elevators":2,"escalators":8,"size":6182.16,"district":"ÜMRANİYE","wheelchair":null,"lines":["M5"],"stepFree":true},{"name":"ITU AYAZAGA","elevators":3,"escalators":20,"size":15350,"district":"SARIYER","wheelchair":null,"lines":["M2"],"stepFree":true},{"name":"İDO -İSKELE","elevators":0,"escalators":0,"size":null,"district":"KADIKÖY","wheelchair":null,"lines":["T3"],"stepFree":false},{"name":"İKİTELLİ  SANAYİ","elevators":4,"escalators":34,"size":109510,"district":"BAŞAKŞEHİR","wheelchair":null,"lines":["M3"],"stepFree":true},{"name":"İMAM HATİP","elevators":2,"escalators":9,"size":6225.360000000001,"district":"ÜMRANİYE","wheelchair":null,"lines":["M5"],"stepFree":true},{"name":"İSTOÇ","elevators":2,"escalators":20,"size":21209,"district":"BAĞCILAR","wheelchair":null,"lines":["M3"],"stepFree":true},{"name":"KABATAŞ","elevators":6,"escalators":15,"size":15993.6,"district":"BEYOĞLU","wheelchair":null,"lines":["F1","T1","M7"],"stepFree":true},{"name":"KADIKÖY","elevators":6,"escalators":16,"size":15947,"district":"KADIKÖY","wheelchair":null,"lines":["M4"],"stepFree":true},{"name":"KAĞITHANE","elevators":4,"escalators":8,"size":5281,"district":"KAĞITHANE","wheelchair":null,"lines":["M7"],"stepFree":true},{"name":"KARADENİZ","elevators":1,"escalators":2,"size":1680,"district":"BAYRAMPAŞA","wheelchair":null,"lines":["T4"],"stepFree":true},{"name":"KARADENİZ MAHALLESİ","elevators":14,"escalators":26,"size":16253.5,"district":"ESENLER","wheelchair":null,"lines":["M7"],"stepFree":true},{"name":"KARAKÖY","elevators":0,"escalators":0,"size":409.33,"district":"BEYOĞLU","wheelchair":null,"lines":["T1"],"stepFree":false},{"name":"KARTAL","elevators":5,"escalators":20,"size":10197,"district":"KARTAL","wheelchair":null,"lines":["M4"],"stepFree":true},{"name":"KAZIM KARABEKİR","elevators":5,"escalators":16,"size":12990,"district":"GAZİOSMANPAŞA","wheelchair":null,"lines":["M7"],"stepFree":true},{"name":"KISIKLI","elevators":10,"escalators":4,"size":6904.23,"district":"ÜSKÜDAR","wheelchair":null,"lines":["M5"],"stepFree":true},{"name":"KİLİSE","elevators":0,"escalators":0,"size":null,"district":"KADIKÖY","wheelchair":null,"lines":["T3"],"stepFree":false},{"name":"KİRAZLI","elevators":3,"escalators":14,"size":14147,"district":"BAĞCILAR","wheelchair":null,"lines":["M1","M3"],"stepFree":true},{"name":"KOCATEPE","elevators":1,"escalators":2,"size":745,"district":"BAYRAMPAŞA","wheelchair":null,"lines":["M1"],"stepFree":true},{"name":"KOZYATAĞI","elevators":5,"escalators":18,"size":11053,"district":"ATAŞEHİR","wheelchair":null,"lines":["M4"],"stepFree":true},{"name":"KÜÇÜKYALI","elevators":3,"escalators":10,"size":8796,"district":"MALTEPE","wheelchair":null,"lines":["M4"],"stepFree":true},{"name":"LALELİ","elevators":0,"escalators":0,"size":297,"district":"FATİH","wheelchair":null,"lines":["T1"],"stepFree":false},{"name":"LEVENT","elevators":4,"escalators":24,"size":15500,"district":"BEŞİKTAŞ","wheelchair":null,"lines":["M2","M6"],"stepFree":true},{"name":"MAÇKA","elevators":0,"escalators":0,"size":null,"district":"ŞİŞLİ","wheelchair":null,"lines":["TF2"],"stepFree":false},{"name":"MAHMUTBEY","elevators":3,"escalators":42,"size":56915,"district":"BAĞCILAR","wheelchair":null,"lines":["M3","M7"],"stepFree":true},{"name":"MALTEPE","elevators":8,"escalators":28,"size":9285,"district":"MALTEPE","wheelchair":null,"lines":["M4"],"stepFree":true},{"name":"MECİDİYEKÖY","elevators":11,"escalators":29,"size":20835.62,"district":"ŞİŞLİ","wheelchair":null,"lines":["M7"],"stepFree":true},{"name":"MEHMETAKİF","elevators":0,"escalators":0,"size":173.536,"district":"GÜNGÖREN/BAHÇELİEVLER","wheelchair":null,"lines":["T1"],"stepFree":false},{"name":"MENDERES","elevators":5,"escalators":18,"size":28400,"district":"ESENLER","wheelchair":null,"lines":["M1"],"stepFree":true},{"name":"MERKEZEFENDİ","elevators":0,"escalators":0,"size":338.35,"district":"ZEYTİNBURNU","wheelchair":null,"lines":["T1"],"stepFree":false},{"name":"MERTER","elevators":2,"escalators":4,"size":1676,"district":"GÜNGÖREN","wheelchair":null,"lines":["M1"],"stepFree":true},{"name":"MERTER/ Tekstil Merkezi /Keresteciler","elevators":0,"escalators":0,"size":346.3375,"district":"GÜNGÖREN/BAHÇELİEVLER","wheelchair":null,"lines":["T1"],"stepFree":false},{"name":"MESCİD-İ SELAM","elevators":0,"escalators":0,"size":505,"district":"SULTANGAZİ","wheelchair":null,"lines":["T4"],"stepFree":false},{"name":"METRİS","elevators":0,"escalators":0,"size":800,"district":"GAZİOSMANPAŞA","wheelchair":null,"lines":["T4"],"stepFree":false},{"name":"MİTHATPAŞA","elevators":0,"escalators":0,"size":413.21,"district":"ZEYTİNBURNU","wheelchair":null,"lines":["T1"],"stepFree":false},{"name":"MODA CADDESİ","elevators":0,"escalators":0,"size":null,"district":"KADIKÖY","wheelchair":null,"lines":["T3"],"stepFree":false},{"name":"MODA İLKOKULU","elevators":0,"escalators":0,"size":null,"district":"KADIKÖY","wheelchair":null,"lines":["T3"],"stepFree":false},{"name":"MÜHÜRDAR","elevators":0,"escalators":0,"size":null,"district":"KADIKÖY","wheelchair":null,"lines":["T3"],"stepFree":false},{"name":"NECİP FAZIL","elevators":4,"escalators":10,"size":5758.43,"district":"ÜMRANİYE","wheelchair":null,"lines":["M5"],"stepFree":true},{"name":"NİSPETİYE","elevators":5,"escalators":4,"size":5765,"district":"BEŞİKTAŞ","wheelchair":null,"lines":["M6"],"stepFree":true},{"name":"NURTEPE","elevators":9,"escalators":14,"size":14008.68,"district":"KAĞITHANE","wheelchair":null,"lines":["M7"],"stepFree":true},{"name":"OLİMPİYAT","elevators":4,"escalators":18,"size":23949,"district":"BAŞAKŞEHİR","wheelchair":null,"lines":["M3"],"stepFree":true},{"name":"ORUÇ REİS (YÜZYIL )","elevators":8,"escalators":10,"size":14388,"district":"BAĞCILAR","wheelchair":null,"lines":["M7"],"stepFree":true},{"name":"OSMANBEY","elevators":2,"escalators":15,"size":6200,"district":"ŞİŞLİ","wheelchair":null,"lines":["M2"],"stepFree":true},{"name":"OTOGAR","elevators":2,"escalators":4,"size":2673,"district":"BAYRAMPAŞA","wheelchair":null,"lines":["M1"],"stepFree":true},{"name":"PAZARTEKKE","elevators":0,"escalators":0,"size":371.7,"district":"FATİH","wheelchair":null,"lines":["T1"],"stepFree":false},{"name":"PENDİK","elevators":9,"escalators":29,"size":4089,"district":"PENDİK","wheelchair":null,"lines":["M4"],"stepFree":true},{"name":"PİYERLOTİ","elevators":1,"escalators":2,"size":null,"district":"EYÜP","wheelchair":null,"lines":["TF1"],"stepFree":true},{"name":"RAMİ","elevators":1,"escalators":2,"size":1680,"district":"BAYRAMPAŞA","wheelchair":null,"lines":["T4"],"stepFree":true},{"name":"SAĞMACILAR","elevators":2,"escalators":1,"size":1157,"district":"BAYRAMPAŞA","wheelchair":null,"lines":["M1"],"stepFree":true},{"name":"SAĞMALCILAR","elevators":0,"escalators":0,"size":505,"district":"BAYRAMPAŞA","wheelchair":null,"lines":["T4"],"stepFree":false},{"name":"SANAYI MAHALLESİ","elevators":4,"escalators":26,"size":12000,"district":"KAĞITHANE","wheelchair":null,"lines":["M2"],"stepFree":true},{"name":"SEYRANTEPE","elevators":5,"escalators":14,"size":15414,"district":"SARIYER","wheelchair":null,"lines":["M2"],"stepFree":true},{"name":"SİRKECİ","elevators":0,"escalators":0,"size":424.28,"district":"FATİH","wheelchair":null,"lines":["T1"],"stepFree":false},{"name":"SİTELER","elevators":2,"escalators":14,"size":16120,"district":"BAŞAKŞEHİR","wheelchair":null,"lines":["M3"],"stepFree":true},{"name":"SOĞANLI","elevators":0,"escalators":0,"size":216,"district":"GÜNGÖREN","wheelchair":null,"lines":["T1"],"stepFree":false},{"name":"SOĞANLIK","elevators":3,"escalators":18,"size":13334,"district":"KARTAL","wheelchair":null,"lines":["M4"],"stepFree":true},{"name":"SULTANAHMET","elevators":0,"escalators":0,"size":330.75,"district":"FATİH","wheelchair":null,"lines":["T1"],"stepFree":false},{"name":"SULTANÇİFTLİĞİ","elevators":0,"escalators":0,"size":960,"district":"SULTANGAZİ","wheelchair":null,"lines":["T4"],"stepFree":false},{"name":"ŞEHİTLİK","elevators":0,"escalators":0,"size":505,"district":"EYÜPSULTAN","wheelchair":null,"lines":["T4"],"stepFree":false},{"name":"ŞİŞHANE","elevators":5,"escalators":30,"size":20000,"district":"BEYOĞLU","wheelchair":null,"lines":["M2"],"stepFree":true},{"name":"ŞİŞLİ-MECİDİYEKÖY","elevators":4,"escalators":25,"size":6100,"district":"ŞİŞLİ","wheelchair":null,"lines":["M2"],"stepFree":true},{"name":"TAKSİM","elevators":8,"escalators":28,"size":11000,"district":"BEYOĞLU","wheelchair":null,"lines":["M2","F1"],"stepFree":true},{"name":"TAŞKIŞLA","elevators":0,"escalators":0,"size":null,"district":"ŞİŞLİ","wheelchair":null,"lines":["TF2"],"stepFree":false},{"name":"TAŞKÖPRÜ","elevators":1,"escalators":2,"size":1680,"district":"BAYRAMPAŞA","wheelchair":null,"lines":["T4"],"stepFree":true},{"name":"TAVŞANTEPE","elevators":4,"escalators":18,"size":9250,"district":"PENDİK","wheelchair":null,"lines":["M4"],"stepFree":true},{"name":"TOPÇULAR","elevators":1,"escalators":2,"size":1680,"district":"EYÜPSULTAN","wheelchair":null,"lines":["T4"],"stepFree":true},{"name":"TOPHANE","elevators":0,"escalators":0,"size":185.59,"district":"BEYOĞLU","wheelchair":null,"lines":["T1"],"stepFree":false},{"name":"TOPKAPI","elevators":1,"escalators":0,"size":950.55,"district":"ZEYTİNBURNU","wheelchair":null,"lines":["T1","T4"],"stepFree":true},{"name":"TREZİDERE","elevators":4,"escalators":4,"size":1357,"district":"ESENLER","wheelchair":null,"lines":["M1"],"stepFree":true},{"name":"TURGUT ÖZAL","elevators":2,"escalators":13,"size":14885,"district":"BAŞAKŞEHİR","wheelchair":null,"lines":["M3"],"stepFree":true},{"name":"ULUBATLI","elevators":4,"escalators":2,"size":1738,"district":"FATİH","wheelchair":null,"lines":["M1"],"stepFree":true},{"name":"ULUYOL BEREÇ","elevators":1,"escalators":2,"size":1680,"district":"BAYRAMPAŞA","wheelchair":null,"lines":["T4"],"stepFree":true},{"name":"ÜÇYÜZLÜ","elevators":2,"escalators":18,"size":29650,"district":"ESENLER","wheelchair":null,"lines":["M1"],"stepFree":true},{"name":"ÜMRANİYE","elevators":2,"escalators":8,"size":5923.17,"district":"ÜMRANİYE","wheelchair":null,"lines":["M5"],"stepFree":true},{"name":"ÜNALAN","elevators":7,"escalators":27,"size":12335,"district":"ÜSKÜDAR","wheelchair":null,"lines":["M4"],"stepFree":true},{"name":"ÜSKÜDAR","elevators":4,"escalators":14,"size":9318.59,"district":"ÜSKÜDAR","wheelchair":null,"lines":["M5"],"stepFree":true},{"name":"VATAN","elevators":2,"escalators":4,"size":1057.66,"district":"EYÜPSULTAN","wheelchair":null,"lines":["T4"],"stepFree":true},{"name":"VEYSEL KARANİ","elevators":11,"escalators":16,"size":12624.36,"district":"EYÜP","wheelchair":null,"lines":["M7"],"stepFree":true},{"name":"VEZNECİLER","elevators":10,"escalators":19,"size":16000,"district":"FATİH","wheelchair":null,"lines":["M2"],"stepFree":true},{"name":"YAKACIK - ADNAN KAHVECİ","elevators":5,"escalators":18,"size":5390,"district":"KARTAL","wheelchair":null,"lines":["M4"],"stepFree":true},{"name":"YAMANEVLER","elevators":2,"escalators":8,"size":5803.58,"district":"ÜMRANİYE","wheelchair":null,"lines":["M5"],"stepFree":true},{"name":"YAVUZSELİM / Cami","elevators":0,"escalators":0,"size":209.22,"district":"GÜNGÖREN","wheelchair":null,"lines":["T1"],"stepFree":false},{"name":"YENİBOSNA","elevators":1,"escalators":2,"size":1845,"district":"BAKIRKÖY","wheelchair":null,"lines":["M1"],"stepFree":true},{"name":"YENİKAPI","elevators":5,"escalators":16,"size":20000,"district":"FATİH","wheelchair":null,"lines":["M1","M2"],"stepFree":true},{"name":"YENİMAHALLE","elevators":3,"escalators":10,"size":10820,"district":"SULTANGAZİ","wheelchair":null,"lines":["T4","M7"],"stepFree":true},{"name":"YENİMAHLLE","elevators":2,"escalators":18,"size":27455,"district":"BAĞCILAR","wheelchair":null,"lines":["M3"],"stepFree":true},{"name":"YENİSAHRA","elevators":3,"escalators":14,"size":13330,"district":"KADIKÖY","wheelchair":null,"lines":["M4"],"stepFree":true},{"name":"YEŞİLPINAR","elevators":4,"escalators":10,"size":12871,"district":"EYÜP","wheelchair":null,"lines":["M7"],"stepFree":true},{"name":"YILDIZ","elevators":10,"escalators":20,"size":16542,"district":"BEŞİKTAŞ","wheelchair":null,"lines":["M7"],"stepFree":true},{"name":"YUSUFPAŞA","elevators":0,"escalators":0,"size":577.5,"district":"FATİH","wheelchair":null,"lines":["T1"],"stepFree":false},{"name":"ZEYTİNBURNU","elevators":5,"escalators":3,"size":1667,"district":"ZEYTİNBURNU","wheelchair":null,"lines":["M1","T1"],"stepFree":true},{"name":"ZİYA GÖKALP MAH.","elevators":3,"escalators":16,"size":14175,"district":"BAŞAKŞEHİR","wheelchair":null,"lines":["M3"],"stepFree":true}];
+/* --- curated İstanbul landmarks for the "Explore" layer (real places; the app computes the
+       nearest station + walk). {name,cat,lat,lng} --- */
+const ATTRACTIONS = [{"name":"Hagia Sophia","cat":"historic","lat":41.0086,"lng":28.9802},{"name":"Blue Mosque","cat":"mosque","lat":41.0054,"lng":28.9768},{"name":"Topkapı Palace","cat":"palace","lat":41.0115,"lng":28.9833},{"name":"Basilica Cistern","cat":"historic","lat":41.0084,"lng":28.9779},{"name":"Hippodrome (Sultanahmet Sq.)","cat":"historic","lat":41.006,"lng":28.9754},{"name":"Gülhane Park","cat":"park","lat":41.0134,"lng":28.9814},{"name":"Grand Bazaar","cat":"market","lat":41.0106,"lng":28.968},{"name":"Spice Bazaar","cat":"market","lat":41.0165,"lng":28.9705},{"name":"Süleymaniye Mosque","cat":"mosque","lat":41.0165,"lng":28.9639},{"name":"Galata Bridge","cat":"landmark","lat":41.0201,"lng":28.9737},{"name":"Galata Tower","cat":"viewpoint","lat":41.0256,"lng":28.9744},{"name":"İstiklal Avenue","cat":"market","lat":41.0335,"lng":28.9778},{"name":"Taksim Square","cat":"landmark","lat":41.037,"lng":28.9857},{"name":"İstanbul Modern","cat":"museum","lat":41.0264,"lng":28.9805},{"name":"Dolmabahçe Palace","cat":"palace","lat":41.0391,"lng":29.0006},{"name":"Yıldız Park","cat":"park","lat":41.049,"lng":29.011},{"name":"Ortaköy Mosque","cat":"mosque","lat":41.0475,"lng":29.027},{"name":"Bebek Bay","cat":"waterfront","lat":41.0776,"lng":29.0433},{"name":"Rumeli Fortress","cat":"historic","lat":41.0847,"lng":29.0566},{"name":"Emirgan Park","cat":"park","lat":41.1085,"lng":29.0546},{"name":"Maiden's Tower","cat":"viewpoint","lat":41.0211,"lng":29.0041},{"name":"Kadıköy & Moda","cat":"waterfront","lat":40.988,"lng":29.027},{"name":"Beylerbeyi Palace","cat":"palace","lat":41.0428,"lng":29.0419},{"name":"Büyük Çamlıca Hill","cat":"viewpoint","lat":41.0289,"lng":29.0686},{"name":"Çamlıca Mosque","cat":"mosque","lat":41.0275,"lng":29.0669},{"name":"Üsküdar Waterfront","cat":"waterfront","lat":41.0256,"lng":29.015},{"name":"Chora (Kariye) Mosque","cat":"historic","lat":41.0312,"lng":28.9391},{"name":"Eyüp Sultan Mosque","cat":"mosque","lat":41.0479,"lng":28.9337},{"name":"Pierre Loti Hill","cat":"viewpoint","lat":41.049,"lng":28.9337},{"name":"Balat & Fener","cat":"landmark","lat":41.0296,"lng":28.949},{"name":"Miniatürk","cat":"park","lat":41.062,"lng":28.9497},{"name":"Panorama 1453","cat":"museum","lat":41.0186,"lng":28.92},{"name":"Zorlu Center","cat":"market","lat":41.0668,"lng":29.017},{"name":"Vialand / İsfanbul","cat":"park","lat":41.073,"lng":28.933},{"name":"Princes' Islands (ferry)","cat":"waterfront","lat":40.876,"lng":29.129}];
+const ATTR_CAT = { historic:'🏛️', mosque:'🕌', palace:'👑', museum:'🖼️', market:'🛍️', viewpoint:'🌆', park:'🌳', waterfront:'🌊', landmark:'📍', tower:'🗼' };
 
 /* --- line kind metadata: travel speed (km/h) + render style --- */
 const KIND = {
@@ -1748,6 +1806,44 @@ let accByStation = new Map();          // folded network station name -> accessi
   }
 })();
 function accFor(name){ return name ? accByStation.get(fold(name)) : undefined; }
+
+/* ===========================================================================
+   EXPLORE — İstanbul landmarks as a toggleable map layer. Each shows its nearest
+   station + walk, and a "Go here" button that plans a trip to it.
+   =========================================================================== */
+ATTRACTIONS.forEach(a=>{ let best=null,bd=Infinity; for(const c of stationList){ const d=metersBetween([a.lat,a.lng],[c.lat,c.lng]); if(d<bd){bd=d;best=c;} }
+  a.near = best ? { name:best.name, d:bd, lines:[...best.lines] } : null; });
+const attractionLayer = L.layerGroup();
+let attractionsOn=false;
+function attrPopup(a,i){
+  const walk = a.near ? Math.max(1,Math.round(a.near.d/WALK)) : null;
+  const chips = a.near ? a.near.lines.slice(0,4).map(r=>`<span class="badge" style="background:${colorForLine(r)};color:${inkOn(colorForLine(r))}">${svgEsc(r)}</span>`).join('') : '';
+  return `<div class="ap"><div class="ap-nm">${ATTR_CAT[a.cat]||'📍'} ${svgEsc(a.name)}</div>`
+    + (a.near?`<div class="ap-st">🚉 ${svgEsc(a.near.name)} · ${walk} ${t('walkAway')} ${chips}</div>`:'')
+    + `<button class="ap-go" onclick="goToAttraction(${i})">▸ ${t('goHere')}</button></div>`;
+}
+function renderAttractions(){
+  attractionLayer.clearLayers(); if(!attractionsOn) return;
+  ATTRACTIONS.forEach((a,i)=>{
+    L.marker([a.lat,a.lng],{ icon:L.divIcon({className:'attr-ic', html:`<div class="attr-pin">${ATTR_CAT[a.cat]||'📍'}</div>`, iconSize:[26,26], iconAnchor:[13,13]}), zIndexOffset:850 })
+      .bindPopup(attrPopup(a,i), {className:'attr-pop', maxWidth:230}).addTo(attractionLayer);
+  });
+}
+function toggleAttractions(on){
+  attractionsOn = (on!=null) ? !!on : !attractionsOn;
+  if(attractionsOn) attractionLayer.addTo(map); else map.removeLayer(attractionLayer);
+  renderAttractions();
+  const cb=document.getElementById('tglExplore'); if(cb) cb.checked=attractionsOn;
+}
+function goToAttraction(i){
+  const a=ATTRACTIONS[i]; if(!a) return;
+  setTab('active'); setPlannerTab('trip'); setPoint('D',{name:a.name,lat:a.lat,lng:a.lng});
+  try{ map.closePopup(); }catch(e){}
+  if(originPt) runRoute(); else if(typeof IS_MOBILE!=='undefined' && IS_MOBILE && typeof openSheet==='function') openSheet('planner');
+}
+// attractions within walking distance of an open station (for the station panel)
+function attractionsNear(lat,lng,within){ return ATTRACTIONS.map((a,i)=>({a,i,d:metersBetween([lat,lng],[a.lat,a.lng])}))
+  .filter(x=>x.d<=(within||700)).sort((x,y)=>x.d-y.d).slice(0,4); }
 // planned-line stops — shown as markers in the Vision tab, not in the routing graph
 const plannedStationList = [];
 visionLines.forEach(line => line.stations.forEach(st => {
@@ -2254,6 +2350,16 @@ function openStation(reg){
         + `</div><div class="acc-src">${t('accSource')} ${src}</div>`;
       ael.style.display='';
     } else { ael.innerHTML=''; ael.style.display='none'; }
+  }
+  // nearby attractions (Explore)
+  const atEl=document.getElementById('stnAttr');
+  if(atEl){
+    const near=attractionsNear(reg.lat, reg.lng, 700);
+    atEl.innerHTML = near.length
+      ? `<div class="st-attr"><div class="bt">✨ ${t('nearbyAttr')}</div><div class="sa-list">`
+        + near.map(x=>`<span class="sa-chip" onclick="goToAttraction(${x.i})">${ATTR_CAT[x.a.cat]||'📍'} ${svgEsc(x.a.name)} · ${Math.max(1,Math.round(x.d/WALK))}${t('minUnit')}</span>`).join('')
+        + `</div></div>`
+      : '';
   }
   document.getElementById('stn').classList.add('show');
   renderBoard();
@@ -2995,7 +3101,9 @@ function exitGo(){
   document.getElementById('goOverlay').classList.remove('on');
   document.body.classList.remove('go-active');
 }
-function goStep(delta){ if(!goState) return; goState.si=Math.max(0,Math.min(goState.plan.steps.length-1, goState.si+delta)); goState.stopIdx=0; renderGo(); }
+function goStep(delta){ if(!goState) return; goState.si=Math.max(0,Math.min(goState.plan.steps.length-1, goState.si+delta)); goState.stopIdx=0;
+  if(goState.si===goState.plan.steps.length-1 && !goState.recorded){ goState.recorded=true; recordJourney(goState.plan); }  // completed → passport
+  renderGo(); }
 function goTick(p){
   if(!goState) return;
   const here=[p.coords.latitude, p.coords.longitude];
@@ -3037,6 +3145,54 @@ function renderGo(){
   }).join('');
   const arr=new Date(goState.plan.startedAt + goState.plan.total*60000);
   document.getElementById('goArrive').textContent = t('arrive')+' '+new Intl.DateTimeFormat(LOCALE[lang]||'en-GB', timeOpts({hour:'2-digit',minute:'2-digit'})).format(arr);
+}
+
+/* ---- share a planned trip: deep link (#go=…) that re-opens the exact trip + Web Share ---- */
+function tripDeepLink(){
+  const base=location.origin+location.pathname;
+  if(!originPt||!destPt) return base;
+  const enc=p=>encodeURIComponent(p.name)+'@'+(+p.lat).toFixed(5)+','+(+p.lng).toFixed(5);
+  return base+'#go='+enc(originPt)+'|'+enc(destPt);
+}
+async function shareTrip(){
+  if(!originPt||!destPt){ showToast(t('pickOD'),'err'); return; }
+  const it=(currentOpts[currentOptIdx]||{}).it;
+  const text=`${originPt.name} → ${destPt.name}`+(it?` · ${Math.round(it.total)} ${t('minUnit')} · ${optLines(it)}`:'');
+  const url=tripDeepLink();
+  try{ if(navigator.share){ await navigator.share({title:'İSTANBUL · RAY-NET', text, url}); return; } }catch(e){ if(e && e.name==='AbortError') return; }
+  try{ await navigator.clipboard.writeText(text+'\n'+url); showToast(t('linkCopied')); }catch(e){ showToast(url); }
+}
+function applyTripHash(){
+  const m=(location.hash||'').match(/go=([^|]+)\|(.+)$/); if(!m) return false;
+  const dec=s=>{ let at; try{ at=decodeURIComponent(s); }catch(e){ return null; } const i=at.lastIndexOf('@'); if(i<0) return null;
+    const c=at.slice(i+1).split(','); const la=+c[0], ln=+c[1]; if(isNaN(la)||isNaN(ln)) return null; return {name:at.slice(0,i), lat:la, lng:ln}; };
+  const o=dec(m[1]), d=dec(m[2]); if(!o||!d) return false;
+  try{ setTab('active'); setPlannerTab('trip'); setPoint('O',o); setPoint('D',d); runRoute(); }catch(e){ return false; }
+  return true;
+}
+
+/* ---- passport / light gamification: lines ridden, trips & km, saved on this device ---- */
+let rideRidden = new Set((function(){ const a=lsJSON('irn_ridden'); return Array.isArray(a)?a:[]; })());
+let rideTrips = +lsStr('irn_trips','0')||0;
+let rideKm = +lsStr('irn_km','0')||0;
+function recordJourney(plan){
+  if(!plan) return; let km=0; const refs=new Set();
+  for(const s of plan.steps){ if(s.type==='ride'){ if(!s.bus) refs.add(s.ref);
+    for(let i=1;i<s.stops.length;i++) km+=metersBetween([s.stops[i-1].lat,s.stops[i-1].lng],[s.stops[i].lat,s.stops[i].lng])/1000; } }
+  if(!refs.size && km<0.2) return;
+  refs.forEach(r=>rideRidden.add(r)); rideTrips++; rideKm+=km;
+  try{ localStorage.setItem('irn_ridden', JSON.stringify([...rideRidden])); localStorage.setItem('irn_trips', ''+rideTrips); localStorage.setItem('irn_km', rideKm.toFixed(1)); }catch(e){}
+}
+function openPassport(){ renderPassport(); document.getElementById('passPanel').classList.add('open'); document.getElementById('passOverlay').classList.add('on'); }
+function closePassport(){ document.getElementById('passPanel').classList.remove('open'); document.getElementById('passOverlay').classList.remove('on'); }
+function renderPassport(){
+  const lines=liveLines.filter(l=>!l.partOf);
+  const grid=lines.map(l=>{ const on=rideRidden.has(l.ref); return `<span class="pp-badge ${on?'on':''}" style="${on?`background:${l.color};color:${inkOn(l.color)}`:''}">${svgEsc(l.ref)}</span>`; }).join('');
+  document.getElementById('passBody').innerHTML =
+    `<div class="pp-stats"><div class="pp-stat"><b>${rideRidden.size}</b><span>/ ${lines.length} ${t('linesRidden')}</span></div>`
+    +`<div class="pp-stat"><b>${rideTrips}</b><span>${rideTrips===1?t('tripOne'):t('tripMany')}</span></div>`
+    +`<div class="pp-stat"><b>${Math.round(rideKm)}</b><span>km</span></div></div>`
+    +`<div class="pp-grid">${grid}</div><div class="pp-note">${t('passportNote')}</div>`;
 }
 function stepsHTML(it){
   return it.steps.map(s=>{
@@ -3525,8 +3681,13 @@ document.getElementById('goStart').addEventListener('click', startGo);
 document.getElementById('goExit').addEventListener('click', exitGo);
 document.getElementById('goPrev').addEventListener('click', ()=>goStep(-1));
 document.getElementById('goNext').addEventListener('click', ()=>goStep(1));
+document.getElementById('tglExplore').addEventListener('change', e=>toggleAttractions(e.target.checked));
+document.getElementById('shareBtn').addEventListener('click', shareTrip);
+document.getElementById('openPassport').addEventListener('click', ()=>{ closeSettings(); openPassport(); });
+document.getElementById('passX').addEventListener('click', closePassport);
+document.getElementById('passOverlay').addEventListener('click', closePassport);
 document.getElementById('resetTrips').addEventListener('click', resetTrips);
-document.addEventListener('keydown', e=>{ if(e.key==='Escape'){ closeSettings(); closeNearby(); exitGo(); } });
+document.addEventListener('keydown', e=>{ if(e.key==='Escape'){ closeSettings(); closeNearby(); exitGo(); closePassport(); } });
 document.getElementById('speedSeg').addEventListener('click', e=>{
   const s=e.target.dataset.s; if(!s) return;
   [...e.currentTarget.children].forEach(x=>x.classList.toggle('active', x.dataset.s===s));
@@ -3838,6 +3999,7 @@ function init(){
   setRoutePref(routePref, false);   // restore saved route preference
   initSettingsUI();                 // sync text size, pace, units, clock, switches, saved places
   try{ const pm=lsStr('irn_planmode'); if(pm==='adv') setPlannerTab('adv'); }catch(e){}
+  try{ applyTripHash(); }catch(e){} // open a shared trip link (#go=…)
   document.querySelectorAll('#langSeg button').forEach(b=> b.classList.toggle('active', b.dataset.lang===lang));
   applyI18n();
   ensureEnglish(DISRUPTIONS); // safety net: translate any Turkish left in the baked-in feed

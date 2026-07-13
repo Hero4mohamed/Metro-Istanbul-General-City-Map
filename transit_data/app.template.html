@@ -589,6 +589,31 @@
   .cd-none,.cd-next{font-size:11px;color:var(--dim);font-weight:600;}
   .cd-next{color:var(--muted);font-family:var(--mono);}
   .arr-fl{font-size:9px;color:var(--dim);margin-top:2px;}
+  /* Explore attractions */
+  .attr-ic{background:none!important;border:none!important;}
+  .attr-pin{width:26px;height:26px;display:flex;align-items:center;justify-content:center;font-size:14px;background:var(--panel);border:1.6px solid var(--gold);border-radius:50%;box-shadow:0 3px 9px -2px rgba(0,0,0,.6);}
+  .attr-pop .leaflet-popup-content-wrapper{background:var(--panel);color:var(--text);border-radius:14px;border:1px solid var(--stroke-2);backdrop-filter:blur(14px);}
+  .attr-pop .leaflet-popup-tip{background:var(--panel);}
+  .attr-pop .leaflet-popup-content{margin:11px 13px;}
+  .ap-nm{font-size:12.5px;font-weight:700;color:var(--text);margin-bottom:5px;}
+  .ap-st{font-size:11px;color:var(--muted);margin-bottom:9px;display:flex;align-items:center;gap:5px;flex-wrap:wrap;}
+  .ap-go{width:100%;padding:7px;border:none;border-radius:9px;background:var(--grad-accent);color:#03130A;font:700 11px var(--font);cursor:pointer;}
+  .ap-go:hover{filter:brightness(1.06);}
+  .st-attr .bt{margin-top:8px;}
+  .sa-list{display:flex;flex-wrap:wrap;gap:6px;margin:2px 0;}
+  .sa-chip{font-size:11px;padding:4px 9px;border-radius:99px;background:var(--surface);border:1px solid var(--stroke-2);color:var(--text);cursor:pointer;transition:all .15s var(--ease);}
+  .sa-chip:hover{border-color:var(--ring);color:var(--accent);}
+  /* share row */
+  .route-btns{display:flex;gap:6px;} .route-btns .btn{margin-top:0;flex:1;}
+  /* travel passport */
+  .pp-stats{display:flex;gap:8px;margin:2px 0 13px;}
+  .pp-stat{flex:1;text-align:center;padding:11px 4px;border-radius:13px;background:var(--surface);border:1px solid var(--stroke);}
+  .pp-stat b{display:block;font-family:var(--display);font-size:22px;font-weight:700;color:var(--accent);line-height:1;}
+  .pp-stat span{font-size:9.5px;color:var(--muted);}
+  .pp-grid{display:flex;flex-wrap:wrap;gap:5px;margin-bottom:11px;}
+  .pp-badge{font:700 10px var(--mono);padding:4px 8px;border-radius:7px;background:var(--surface-2);color:var(--dim);border:1px solid var(--stroke);opacity:.55;}
+  .pp-badge.on{opacity:1;border-color:transparent;box-shadow:0 2px 8px -3px rgba(0,0,0,.5);}
+  .pp-note{font-size:10px;color:var(--dim);line-height:1.5;}
   /* planner quick chips */
   .place-chips{display:flex;gap:6px;margin:2px 0 9px;}
   .pchip{flex:1;padding:8px;border-radius:10px;border:1px solid var(--stroke-2);background:var(--surface);color:var(--text);font:650 11.5px var(--font);cursor:pointer;transition:all .15s var(--ease);}
@@ -708,6 +733,10 @@
     <div class="sp-hint" data-i18n="placeHowto">Type a place in “From”, then tap Set.</div>
   </div>
   <div class="sp-group">
+    <div class="sp-label" data-i18n="funStats">You</div>
+    <button class="btn" id="openPassport" style="background:linear-gradient(135deg,#4ADE80,#14B8A6);">🎫 <span data-i18n="passport">Your travel passport</span></button>
+  </div>
+  <div class="sp-group">
     <div class="sp-label" data-i18n="dataPrivacy">Data</div>
     <button class="btn ghost" id="resetTrips" data-i18n="resetTrips">Clear saved trips &amp; favourites</button>
     <div class="sp-hint" data-i18n="privacyNote">Your settings and saved trips stay on this device only.</div>
@@ -731,6 +760,12 @@
   </div>
 </div>
 
+<div class="settings-overlay" id="passOverlay"></div>
+<div class="settings-panel glass" id="passPanel" role="dialog" aria-label="Travel passport">
+  <div class="sp-head"><span>🎫 <span data-i18n="passport">Your travel passport</span></span><button class="x" id="passX" aria-label="Close">✕</button></div>
+  <div id="passBody"></div>
+</div>
+
 <div class="controls">
   <div class="card glass" style="padding:7px;">
     <div class="tabs" id="tabs">
@@ -752,6 +787,9 @@
     </div>
     <div class="row"><span data-i18n="stationMarkers">Station markers</span>
       <label class="switch"><input type="checkbox" id="tglStations" checked><span class="sl"></span></label>
+    </div>
+    <div class="row"><span data-i18n="exploreAttr">✨ Explore attractions</span>
+      <label class="switch"><input type="checkbox" id="tglExplore"><span class="sl"></span></label>
     </div>
     <div class="sec" style="margin-top:14px" data-i18n="simSpeed">Simulation Speed</div>
     <div class="seg" id="speedSeg">
@@ -829,7 +867,10 @@
       <div id="rJourney" class="jmap"></div>
       <button class="btn go-start" id="goStart" style="display:none">▶ <span data-i18n="startJourney">Start journey</span></button>
       <div id="rSteps"></div>
-      <button class="btn ghost favbtn" id="favBtn">☆ Save to Favourites</button>
+      <div class="route-btns">
+        <button class="btn ghost favbtn" id="favBtn">☆ Save to Favourites</button>
+        <button class="btn ghost" id="shareBtn">🔗 <span data-i18n="share">Share</span></button>
+      </div>
     </div>
     <div class="plan-sec" id="favSec">
       <div class="plan-h" data-i18n="favourites">★ Favourites</div>
@@ -871,6 +912,7 @@
   <div id="stnSched"></div>
   <div id="stnService"></div>
   <div id="stnAccess"></div>
+  <div id="stnAttr"></div>
 </div>
 
 <div class="linep glass" id="linp">
@@ -981,7 +1023,10 @@ const I18N = {
     direction1:"direction", directionN:"directions", schedNote:"scheduled departures from origin",
     liveJourney:"Live journey", startJourney:"Start journey", getOffIn:"Get off in", getOffNow:"Get off now",
     take:"take", walkToDest:"Walk to your destination", arrive:"arrive",
-    liveArrivals:"Next departures", dueNow:"now" },
+    liveArrivals:"Next departures", dueNow:"now",
+    goHere:"Go here", share:"Share", linkCopied:"Trip link copied", exploreAttr:"Explore attractions", nearbyAttr:"Nearby attractions",
+    funStats:"You", passport:"Your travel passport", linesRidden:"lines ridden", tripOne:"trip", tripMany:"trips",
+    passportNote:"Complete a journey with ▶ Start to light up its lines. Saved on this device." },
   tr:{ liveNet:"Canlı Raylı Ağ", source:"kaynak ↗", lines:"Hatlar", stations:"İstasyonlar", carriages:"Vagonlar",
     tabActive:"● Aktif", tabVision:"◇ Vizyon", tabBus:"▤ Otobüsler",
     baseMap:"Harita", dark:"Koyu", streets:"Sokaklar", satellite:"Uydu",
@@ -1055,7 +1100,10 @@ const I18N = {
     direction1:"yön", directionN:"yön", schedNote:"başlangıçtan planlanan kalkışlar",
     liveJourney:"Canlı yolculuk", startJourney:"Yolculuğu başlat", getOffIn:"Kalan", getOffNow:"Şimdi in",
     take:"bin:", walkToDest:"Hedefine yürü", arrive:"varış",
-    liveArrivals:"Sonraki kalkışlar", dueNow:"şimdi" },
+    liveArrivals:"Sonraki kalkışlar", dueNow:"şimdi",
+    goHere:"Oraya git", share:"Paylaş", linkCopied:"Yolculuk bağlantısı kopyalandı", exploreAttr:"Gezilecek yerler", nearbyAttr:"Yakındaki yerler",
+    funStats:"Sen", passport:"Seyahat pasaportun", linesRidden:"hat binildi", tripOne:"yolculuk", tripMany:"yolculuk",
+    passportNote:"▶ Başlat ile bir yolculuğu tamamla, hatları aydınlansın. Bu cihazda saklanır." },
   ar:{ liveNet:"شبكة النقل المباشرة", source:"المصدر ↗", lines:"الخطوط", stations:"المحطات", carriages:"العربات",
     tabActive:"● النشط", tabVision:"◇ الرؤية", tabBus:"▤ الحافلات", tabWeather:"☀ الطقس",
     baseMap:"خريطة الأساس", dark:"داكن", streets:"الشوارع", satellite:"قمر صناعي",
@@ -1127,7 +1175,10 @@ const I18N = {
     direction1:"اتجاه", directionN:"اتجاهات", schedNote:"مغادرات مجدولة من نقطة البداية",
     liveJourney:"رحلة مباشرة", startJourney:"ابدأ الرحلة", getOffIn:"انزل بعد", getOffNow:"انزل الآن",
     take:"استقل", walkToDest:"امشِ إلى وجهتك", arrive:"الوصول",
-    liveArrivals:"المغادرات القادمة", dueNow:"الآن" },
+    liveArrivals:"المغادرات القادمة", dueNow:"الآن",
+    goHere:"اذهب إلى هنا", share:"مشاركة", linkCopied:"تم نسخ رابط الرحلة", exploreAttr:"استكشف المعالم", nearbyAttr:"معالم قريبة",
+    funStats:"أنت", passport:"جواز سفرك", linesRidden:"خطوط مركوبة", tripOne:"رحلة", tripMany:"رحلات",
+    passportNote:"أكمل رحلة بزر ▶ ابدأ لتُضيء خطوطها. محفوظ على هذا الجهاز." },
   fr:{ liveNet:"Réseau de transport en direct", source:"source ↗", lines:"Lignes", stations:"Stations", carriages:"Rames",
     tabActive:"● Actif", tabVision:"◇ Vision", tabBus:"▤ Bus", tabWeather:"☀ Météo",
     baseMap:"Fond de carte", dark:"Sombre", streets:"Rues", satellite:"Satellite",
@@ -1199,7 +1250,10 @@ const I18N = {
     direction1:"sens", directionN:"sens", schedNote:"départs planifiés du terminus",
     liveJourney:"Trajet en direct", startJourney:"Démarrer le trajet", getOffIn:"Descendez dans", getOffNow:"Descendez maintenant",
     take:"prenez", walkToDest:"Marchez vers votre destination", arrive:"arrivée",
-    liveArrivals:"Prochains départs", dueNow:"à l'instant" }
+    liveArrivals:"Prochains départs", dueNow:"à l'instant",
+    goHere:"Y aller", share:"Partager", linkCopied:"Lien du trajet copié", exploreAttr:"Explorer les lieux", nearbyAttr:"Lieux à proximité",
+    funStats:"Vous", passport:"Votre passeport de voyage", linesRidden:"lignes parcourues", tripOne:"trajet", tripMany:"trajets",
+    passportNote:"Terminez un trajet avec ▶ Démarrer pour allumer ses lignes. Enregistré sur cet appareil." }
 };
 const LOCALE = { en:'en-GB', tr:'tr-TR', ar:'ar-u-nu-latn', fr:'fr-FR' };   // ar: Latin digits to match the UI's numerals
 let lang = (function(){ try{ const s=localStorage.getItem('irn_lang'); if(I18N[s]) return s; }catch(e){}
@@ -1458,6 +1512,10 @@ const MI_STATIONS = __MISTATIONS_JSON__;
 /* --- Step-free / accessibility per station: İBB open data (elevator + escalator counts)
        merged with OpenStreetMap wheelchair tags. {name,elevators,escalators,size,district,wheelchair,stepFree}. --- */
 const ACCESS_RAW = __ACCESS_JSON__;
+/* --- curated İstanbul landmarks for the "Explore" layer (real places; the app computes the
+       nearest station + walk). {name,cat,lat,lng} --- */
+const ATTRACTIONS = __ATTRACTIONS_JSON__;
+const ATTR_CAT = { historic:'🏛️', mosque:'🕌', palace:'👑', museum:'🖼️', market:'🛍️', viewpoint:'🌆', park:'🌳', waterfront:'🌊', landmark:'📍', tower:'🗼' };
 
 /* --- line kind metadata: travel speed (km/h) + render style --- */
 const KIND = {
@@ -1654,6 +1712,44 @@ let accByStation = new Map();          // folded network station name -> accessi
   }
 })();
 function accFor(name){ return name ? accByStation.get(fold(name)) : undefined; }
+
+/* ===========================================================================
+   EXPLORE — İstanbul landmarks as a toggleable map layer. Each shows its nearest
+   station + walk, and a "Go here" button that plans a trip to it.
+   =========================================================================== */
+ATTRACTIONS.forEach(a=>{ let best=null,bd=Infinity; for(const c of stationList){ const d=metersBetween([a.lat,a.lng],[c.lat,c.lng]); if(d<bd){bd=d;best=c;} }
+  a.near = best ? { name:best.name, d:bd, lines:[...best.lines] } : null; });
+const attractionLayer = L.layerGroup();
+let attractionsOn=false;
+function attrPopup(a,i){
+  const walk = a.near ? Math.max(1,Math.round(a.near.d/WALK)) : null;
+  const chips = a.near ? a.near.lines.slice(0,4).map(r=>`<span class="badge" style="background:${colorForLine(r)};color:${inkOn(colorForLine(r))}">${svgEsc(r)}</span>`).join('') : '';
+  return `<div class="ap"><div class="ap-nm">${ATTR_CAT[a.cat]||'📍'} ${svgEsc(a.name)}</div>`
+    + (a.near?`<div class="ap-st">🚉 ${svgEsc(a.near.name)} · ${walk} ${t('walkAway')} ${chips}</div>`:'')
+    + `<button class="ap-go" onclick="goToAttraction(${i})">▸ ${t('goHere')}</button></div>`;
+}
+function renderAttractions(){
+  attractionLayer.clearLayers(); if(!attractionsOn) return;
+  ATTRACTIONS.forEach((a,i)=>{
+    L.marker([a.lat,a.lng],{ icon:L.divIcon({className:'attr-ic', html:`<div class="attr-pin">${ATTR_CAT[a.cat]||'📍'}</div>`, iconSize:[26,26], iconAnchor:[13,13]}), zIndexOffset:850 })
+      .bindPopup(attrPopup(a,i), {className:'attr-pop', maxWidth:230}).addTo(attractionLayer);
+  });
+}
+function toggleAttractions(on){
+  attractionsOn = (on!=null) ? !!on : !attractionsOn;
+  if(attractionsOn) attractionLayer.addTo(map); else map.removeLayer(attractionLayer);
+  renderAttractions();
+  const cb=document.getElementById('tglExplore'); if(cb) cb.checked=attractionsOn;
+}
+function goToAttraction(i){
+  const a=ATTRACTIONS[i]; if(!a) return;
+  setTab('active'); setPlannerTab('trip'); setPoint('D',{name:a.name,lat:a.lat,lng:a.lng});
+  try{ map.closePopup(); }catch(e){}
+  if(originPt) runRoute(); else if(typeof IS_MOBILE!=='undefined' && IS_MOBILE && typeof openSheet==='function') openSheet('planner');
+}
+// attractions within walking distance of an open station (for the station panel)
+function attractionsNear(lat,lng,within){ return ATTRACTIONS.map((a,i)=>({a,i,d:metersBetween([lat,lng],[a.lat,a.lng])}))
+  .filter(x=>x.d<=(within||700)).sort((x,y)=>x.d-y.d).slice(0,4); }
 // planned-line stops — shown as markers in the Vision tab, not in the routing graph
 const plannedStationList = [];
 visionLines.forEach(line => line.stations.forEach(st => {
@@ -2160,6 +2256,16 @@ function openStation(reg){
         + `</div><div class="acc-src">${t('accSource')} ${src}</div>`;
       ael.style.display='';
     } else { ael.innerHTML=''; ael.style.display='none'; }
+  }
+  // nearby attractions (Explore)
+  const atEl=document.getElementById('stnAttr');
+  if(atEl){
+    const near=attractionsNear(reg.lat, reg.lng, 700);
+    atEl.innerHTML = near.length
+      ? `<div class="st-attr"><div class="bt">✨ ${t('nearbyAttr')}</div><div class="sa-list">`
+        + near.map(x=>`<span class="sa-chip" onclick="goToAttraction(${x.i})">${ATTR_CAT[x.a.cat]||'📍'} ${svgEsc(x.a.name)} · ${Math.max(1,Math.round(x.d/WALK))}${t('minUnit')}</span>`).join('')
+        + `</div></div>`
+      : '';
   }
   document.getElementById('stn').classList.add('show');
   renderBoard();
@@ -2901,7 +3007,9 @@ function exitGo(){
   document.getElementById('goOverlay').classList.remove('on');
   document.body.classList.remove('go-active');
 }
-function goStep(delta){ if(!goState) return; goState.si=Math.max(0,Math.min(goState.plan.steps.length-1, goState.si+delta)); goState.stopIdx=0; renderGo(); }
+function goStep(delta){ if(!goState) return; goState.si=Math.max(0,Math.min(goState.plan.steps.length-1, goState.si+delta)); goState.stopIdx=0;
+  if(goState.si===goState.plan.steps.length-1 && !goState.recorded){ goState.recorded=true; recordJourney(goState.plan); }  // completed → passport
+  renderGo(); }
 function goTick(p){
   if(!goState) return;
   const here=[p.coords.latitude, p.coords.longitude];
@@ -2943,6 +3051,54 @@ function renderGo(){
   }).join('');
   const arr=new Date(goState.plan.startedAt + goState.plan.total*60000);
   document.getElementById('goArrive').textContent = t('arrive')+' '+new Intl.DateTimeFormat(LOCALE[lang]||'en-GB', timeOpts({hour:'2-digit',minute:'2-digit'})).format(arr);
+}
+
+/* ---- share a planned trip: deep link (#go=…) that re-opens the exact trip + Web Share ---- */
+function tripDeepLink(){
+  const base=location.origin+location.pathname;
+  if(!originPt||!destPt) return base;
+  const enc=p=>encodeURIComponent(p.name)+'@'+(+p.lat).toFixed(5)+','+(+p.lng).toFixed(5);
+  return base+'#go='+enc(originPt)+'|'+enc(destPt);
+}
+async function shareTrip(){
+  if(!originPt||!destPt){ showToast(t('pickOD'),'err'); return; }
+  const it=(currentOpts[currentOptIdx]||{}).it;
+  const text=`${originPt.name} → ${destPt.name}`+(it?` · ${Math.round(it.total)} ${t('minUnit')} · ${optLines(it)}`:'');
+  const url=tripDeepLink();
+  try{ if(navigator.share){ await navigator.share({title:'İSTANBUL · RAY-NET', text, url}); return; } }catch(e){ if(e && e.name==='AbortError') return; }
+  try{ await navigator.clipboard.writeText(text+'\n'+url); showToast(t('linkCopied')); }catch(e){ showToast(url); }
+}
+function applyTripHash(){
+  const m=(location.hash||'').match(/go=([^|]+)\|(.+)$/); if(!m) return false;
+  const dec=s=>{ let at; try{ at=decodeURIComponent(s); }catch(e){ return null; } const i=at.lastIndexOf('@'); if(i<0) return null;
+    const c=at.slice(i+1).split(','); const la=+c[0], ln=+c[1]; if(isNaN(la)||isNaN(ln)) return null; return {name:at.slice(0,i), lat:la, lng:ln}; };
+  const o=dec(m[1]), d=dec(m[2]); if(!o||!d) return false;
+  try{ setTab('active'); setPlannerTab('trip'); setPoint('O',o); setPoint('D',d); runRoute(); }catch(e){ return false; }
+  return true;
+}
+
+/* ---- passport / light gamification: lines ridden, trips & km, saved on this device ---- */
+let rideRidden = new Set((function(){ const a=lsJSON('irn_ridden'); return Array.isArray(a)?a:[]; })());
+let rideTrips = +lsStr('irn_trips','0')||0;
+let rideKm = +lsStr('irn_km','0')||0;
+function recordJourney(plan){
+  if(!plan) return; let km=0; const refs=new Set();
+  for(const s of plan.steps){ if(s.type==='ride'){ if(!s.bus) refs.add(s.ref);
+    for(let i=1;i<s.stops.length;i++) km+=metersBetween([s.stops[i-1].lat,s.stops[i-1].lng],[s.stops[i].lat,s.stops[i].lng])/1000; } }
+  if(!refs.size && km<0.2) return;
+  refs.forEach(r=>rideRidden.add(r)); rideTrips++; rideKm+=km;
+  try{ localStorage.setItem('irn_ridden', JSON.stringify([...rideRidden])); localStorage.setItem('irn_trips', ''+rideTrips); localStorage.setItem('irn_km', rideKm.toFixed(1)); }catch(e){}
+}
+function openPassport(){ renderPassport(); document.getElementById('passPanel').classList.add('open'); document.getElementById('passOverlay').classList.add('on'); }
+function closePassport(){ document.getElementById('passPanel').classList.remove('open'); document.getElementById('passOverlay').classList.remove('on'); }
+function renderPassport(){
+  const lines=liveLines.filter(l=>!l.partOf);
+  const grid=lines.map(l=>{ const on=rideRidden.has(l.ref); return `<span class="pp-badge ${on?'on':''}" style="${on?`background:${l.color};color:${inkOn(l.color)}`:''}">${svgEsc(l.ref)}</span>`; }).join('');
+  document.getElementById('passBody').innerHTML =
+    `<div class="pp-stats"><div class="pp-stat"><b>${rideRidden.size}</b><span>/ ${lines.length} ${t('linesRidden')}</span></div>`
+    +`<div class="pp-stat"><b>${rideTrips}</b><span>${rideTrips===1?t('tripOne'):t('tripMany')}</span></div>`
+    +`<div class="pp-stat"><b>${Math.round(rideKm)}</b><span>km</span></div></div>`
+    +`<div class="pp-grid">${grid}</div><div class="pp-note">${t('passportNote')}</div>`;
 }
 function stepsHTML(it){
   return it.steps.map(s=>{
@@ -3431,8 +3587,13 @@ document.getElementById('goStart').addEventListener('click', startGo);
 document.getElementById('goExit').addEventListener('click', exitGo);
 document.getElementById('goPrev').addEventListener('click', ()=>goStep(-1));
 document.getElementById('goNext').addEventListener('click', ()=>goStep(1));
+document.getElementById('tglExplore').addEventListener('change', e=>toggleAttractions(e.target.checked));
+document.getElementById('shareBtn').addEventListener('click', shareTrip);
+document.getElementById('openPassport').addEventListener('click', ()=>{ closeSettings(); openPassport(); });
+document.getElementById('passX').addEventListener('click', closePassport);
+document.getElementById('passOverlay').addEventListener('click', closePassport);
 document.getElementById('resetTrips').addEventListener('click', resetTrips);
-document.addEventListener('keydown', e=>{ if(e.key==='Escape'){ closeSettings(); closeNearby(); exitGo(); } });
+document.addEventListener('keydown', e=>{ if(e.key==='Escape'){ closeSettings(); closeNearby(); exitGo(); closePassport(); } });
 document.getElementById('speedSeg').addEventListener('click', e=>{
   const s=e.target.dataset.s; if(!s) return;
   [...e.currentTarget.children].forEach(x=>x.classList.toggle('active', x.dataset.s===s));
@@ -3744,6 +3905,7 @@ function init(){
   setRoutePref(routePref, false);   // restore saved route preference
   initSettingsUI();                 // sync text size, pace, units, clock, switches, saved places
   try{ const pm=lsStr('irn_planmode'); if(pm==='adv') setPlannerTab('adv'); }catch(e){}
+  try{ applyTripHash(); }catch(e){} // open a shared trip link (#go=…)
   document.querySelectorAll('#langSeg button').forEach(b=> b.classList.toggle('active', b.dataset.lang===lang));
   applyI18n();
   ensureEnglish(DISRUPTIONS); // safety net: translate any Turkish left in the baked-in feed
