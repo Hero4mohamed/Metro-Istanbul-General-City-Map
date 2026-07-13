@@ -577,6 +577,18 @@
   .go-controls button{flex:0 0 auto;width:46px;height:40px;border-radius:12px;border:1px solid var(--stroke-2);background:var(--surface);color:var(--text);font-size:15px;cursor:pointer;transition:all .15s var(--ease);}
   .go-controls button:hover{border-color:var(--ring);color:var(--accent);} .go-controls button:active{transform:scale(.94);}
   .go-arrive{flex:1;text-align:center;font-size:12.5px;font-weight:700;color:var(--text);font-family:var(--mono);}
+  /* live arrivals countdown board */
+  .arr-row{display:flex;align-items:flex-start;gap:9px;padding:6px 0;border-top:1px solid var(--stroke);}
+  .arr-row:first-of-type{border-top:none;}
+  .arr-tx{flex:1;min-width:0;}
+  .arr-to{font-size:11.5px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .arr-mins{display:flex;align-items:baseline;gap:7px;margin-top:2px;}
+  .cd-min{font-family:var(--mono);font-weight:800;font-size:15px;color:var(--muted);}
+  .cd-min.soon{color:var(--accent);font-size:19px;text-shadow:0 0 14px rgba(52,211,153,.4);}
+  .cd-unit{font-size:10px;color:var(--dim);margin-left:-3px;}
+  .cd-none,.cd-next{font-size:11px;color:var(--dim);font-weight:600;}
+  .cd-next{color:var(--muted);font-family:var(--mono);}
+  .arr-fl{font-size:9px;color:var(--dim);margin-top:2px;}
   /* planner quick chips */
   .place-chips{display:flex;gap:6px;margin:2px 0 9px;}
   .pchip{flex:1;padding:8px;border-radius:10px;border:1px solid var(--stroke-2);background:var(--surface);color:var(--text);font:650 11.5px var(--font);cursor:pointer;transition:all .15s var(--ease);}
@@ -968,7 +980,8 @@ const I18N = {
     departures:"Departures", dayWd:"Mon–Fri", daySat:"Sat", daySun:"Sun", perDay:"day", busEvery:"every",
     direction1:"direction", directionN:"directions", schedNote:"scheduled departures from origin",
     liveJourney:"Live journey", startJourney:"Start journey", getOffIn:"Get off in", getOffNow:"Get off now",
-    take:"take", walkToDest:"Walk to your destination", arrive:"arrive" },
+    take:"take", walkToDest:"Walk to your destination", arrive:"arrive",
+    liveArrivals:"Next departures", dueNow:"now" },
   tr:{ liveNet:"Canlı Raylı Ağ", source:"kaynak ↗", lines:"Hatlar", stations:"İstasyonlar", carriages:"Vagonlar",
     tabActive:"● Aktif", tabVision:"◇ Vizyon", tabBus:"▤ Otobüsler",
     baseMap:"Harita", dark:"Koyu", streets:"Sokaklar", satellite:"Uydu",
@@ -1041,7 +1054,8 @@ const I18N = {
     departures:"Kalkışlar", dayWd:"Pzt–Cum", daySat:"Cmt", daySun:"Paz", perDay:"gün", busEvery:"her",
     direction1:"yön", directionN:"yön", schedNote:"başlangıçtan planlanan kalkışlar",
     liveJourney:"Canlı yolculuk", startJourney:"Yolculuğu başlat", getOffIn:"Kalan", getOffNow:"Şimdi in",
-    take:"bin:", walkToDest:"Hedefine yürü", arrive:"varış" },
+    take:"bin:", walkToDest:"Hedefine yürü", arrive:"varış",
+    liveArrivals:"Sonraki kalkışlar", dueNow:"şimdi" },
   ar:{ liveNet:"شبكة النقل المباشرة", source:"المصدر ↗", lines:"الخطوط", stations:"المحطات", carriages:"العربات",
     tabActive:"● النشط", tabVision:"◇ الرؤية", tabBus:"▤ الحافلات", tabWeather:"☀ الطقس",
     baseMap:"خريطة الأساس", dark:"داكن", streets:"الشوارع", satellite:"قمر صناعي",
@@ -1112,7 +1126,8 @@ const I18N = {
     departures:"المغادرات", dayWd:"إثنين–جمعة", daySat:"سبت", daySun:"أحد", perDay:"يوم", busEvery:"كل",
     direction1:"اتجاه", directionN:"اتجاهات", schedNote:"مغادرات مجدولة من نقطة البداية",
     liveJourney:"رحلة مباشرة", startJourney:"ابدأ الرحلة", getOffIn:"انزل بعد", getOffNow:"انزل الآن",
-    take:"استقل", walkToDest:"امشِ إلى وجهتك", arrive:"الوصول" },
+    take:"استقل", walkToDest:"امشِ إلى وجهتك", arrive:"الوصول",
+    liveArrivals:"المغادرات القادمة", dueNow:"الآن" },
   fr:{ liveNet:"Réseau de transport en direct", source:"source ↗", lines:"Lignes", stations:"Stations", carriages:"Rames",
     tabActive:"● Actif", tabVision:"◇ Vision", tabBus:"▤ Bus", tabWeather:"☀ Météo",
     baseMap:"Fond de carte", dark:"Sombre", streets:"Rues", satellite:"Satellite",
@@ -1183,7 +1198,8 @@ const I18N = {
     departures:"Départs", dayWd:"Lun–Ven", daySat:"Sam", daySun:"Dim", perDay:"jour", busEvery:"toutes les",
     direction1:"sens", directionN:"sens", schedNote:"départs planifiés du terminus",
     liveJourney:"Trajet en direct", startJourney:"Démarrer le trajet", getOffIn:"Descendez dans", getOffNow:"Descendez maintenant",
-    take:"prenez", walkToDest:"Marchez vers votre destination", arrive:"arrivée" }
+    take:"prenez", walkToDest:"Marchez vers votre destination", arrive:"arrivée",
+    liveArrivals:"Prochains départs", dueNow:"à l'instant" }
 };
 const LOCALE = { en:'en-GB', tr:'tr-TR', ar:'ar-u-nu-latn', fr:'fr-FR' };   // ar: Latin digits to match the UI's numerals
 let lang = (function(){ try{ const s=localStorage.getItem('irn_lang'); if(I18N[s]) return s; }catch(e){}
@@ -2266,13 +2282,15 @@ function nowIstanbulMin(){   // minutes since midnight in Europe/Istanbul
        const [h,m]=p.split(':').map(Number); return h*60+m; }
   catch(e){ const d=new Date(); return d.getHours()*60+d.getMinutes(); }
 }
+let schedData=null;   // [{ref,color,target,times:[HH:MM,...]}] for the open station → live countdown
 async function loadSchedule(reg){
   const el=document.getElementById('stnSched'); if(!el) return;
+  schedData=null;
   const tok=++schedToken;
   const refs=[...reg.lines].filter(r=>MI_STATIONS.some(s=>s[2]===r));
   if(!refs.length){ el.innerHTML=''; return; }
-  el.innerHTML=`<div class="bt">⏱ ${t('schedDep')} <span class="live">${t('official')}</span></div><div class="none">${t('schedLoading')}</div>`;
-  const blocks=[];
+  el.innerHTML=`<div class="bt">⏱ ${t('liveArrivals')} <span class="live">${t('official')}</span></div><div class="none">${t('schedLoading')}</div>`;
+  const data=[];
   for(const ref of refs){
     const st=miMatch(reg,ref); if(!st) continue;
     try{
@@ -2286,20 +2304,37 @@ async function loadSchedule(reg){
           miTTCache[tkey]=(Array.isArray(ti)?(ti[0]&&ti[0].Times):(ti&&ti.Times))||[];
         }
         if(tok!==schedToken) return;               // user opened another station meanwhile
-        const times=miTTCache[tkey];
-        const nowM=nowIstanbulMin();
-        const next=times.filter(x=>{const [h,m]=x.split(':').map(Number);return h*60+m>=nowM;}).slice(0,3);
-        const target=(d.DirectionName||'').split('->').pop().trim();
         const ln=lineByRef[ref];
-        blocks.push(`<div class="svc-row"><span class="svc-cd" style="background:${ln?ln.color:'#888'}">${ref}</span>`+
-          `<span class="svc-tx">→ ${target} · <b>${next.length?next.join(' · '):t('schedNone')}</b>`+
-          (times.length?` <small>(${t('firstDep')} ${times[0]} · ${t('lastDep')} ${times[times.length-1]})</small>`:'')+`</span></div>`);
+        data.push({ ref, color: ln?ln.color:'#888', target:(d.DirectionName||'').split('->').pop().trim(), times: miTTCache[tkey] });
       }
-    }catch(e){ /* API hiccup → just skip this line's block */ }
+    }catch(e){ /* API hiccup → skip this line's block */ }
   }
   if(tok!==schedToken) return;
-  el.innerHTML = blocks.length ? `<div class="bt">⏱ ${t('schedDep')} <span class="live">${t('official')}</span></div>`+blocks.join('') : '';
+  schedData=data;
+  renderSched();
 }
+// live minute-countdown to the next departures (recomputed each tick from the official timetable)
+function renderSched(){
+  const el=document.getElementById('stnSched'); if(!el) return;
+  if(!schedData || !schedData.length){ el.innerHTML=''; return; }
+  const nowM=nowIstanbulMin();
+  const blocks=schedData.map(b=>{
+    if(!b.times || !b.times.length) return '';
+    const allDm=b.times.map(x=>{const p=x.split(':'); return (+p[0])*60+(+p[1]);})
+      .map(tm=> tm>=nowM ? tm-nowM : tm+1440-nowM).filter(dm=> dm>=0).sort((a,b)=>a-b);
+    const mins=allDm.filter(dm=> dm<=120).slice(0,3);
+    let chips;
+    if(mins.length) chips = mins.map((dm,i)=>`<span class="cd-min ${i===0?'soon':''}">${dm===0?t('dueNow'):dm}</span>`).join('')+(mins[0]===0&&mins.length===1?'':`<span class="cd-unit">${t('minUnit')}</span>`);
+    else if(allDm.length){ const nm=(nowM+allDm[0])%1440; chips = `<span class="cd-next">${t('nextArr')} ${String(Math.floor(nm/60)).padStart(2,'0')}:${String(nm%60).padStart(2,'0')}</span>`; }
+    else chips = `<span class="cd-none">${t('schedNone')}</span>`;
+    return `<div class="arr-row"><span class="svc-cd" style="background:${b.color}">${svgEsc(b.ref)}</span>`+
+      `<div class="arr-tx"><div class="arr-to">→ ${svgEsc(b.target)}</div><div class="arr-mins">${chips}</div>`+
+      `<div class="arr-fl">${t('firstDep')} ${b.times[0]} · ${t('lastDep')} ${b.times[b.times.length-1]}</div></div></div>`;
+  }).filter(Boolean);
+  el.innerHTML = blocks.length ? `<div class="bt">⏱ ${t('liveArrivals')} <span class="live">${t('official')}</span></div>`+blocks.join('') : '';
+}
+// tick the countdown while a station panel is open (no re-fetch — recompute from cached times)
+setInterval(()=>{ try{ if(schedData && document.getElementById('stn').classList.contains('show')) renderSched(); }catch(e){} }, 15000);
 function renderBoard(){
   if(!selected) return;
   const el = document.getElementById('stnBoard');
