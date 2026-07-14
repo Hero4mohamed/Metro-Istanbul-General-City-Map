@@ -376,6 +376,12 @@
   .ann-foot a:hover{text-decoration:underline;}
   .ann-item{cursor:pointer;}
   .ann-none{font-size:11px;color:#7CF0BE;padding:8px 9px;}
+  .ann-open{border-left-color:#2FBF71;}
+  .ann-open .ann-until{color:#7CF0BE;}
+  .ann-soon{background:#2FBF71 !important;}
+  .ann-sub{font-size:9px;font-weight:800;letter-spacing:.8px;text-transform:uppercase;color:var(--dim);margin:10px 2px 2px;display:flex;align-items:center;gap:5px;}
+  .ann-note{font-size:8.5px;color:var(--dim);margin:3px 2px 0;font-style:italic;line-height:1.5;}
+  body.light .ann-open .ann-until{color:#067A54;}
   /* map warning markers for disruptions — clean static signage plate */
   .warn-icon span{display:flex;align-items:center;justify-content:center;width:21px;height:21px;border-radius:7px;
     background:var(--wc,#E5484D);color:#fff;font-size:12px;font-weight:800;
@@ -988,6 +994,9 @@ const I18N = {
     annNone:"✓ No reported disruptions — network running normally.",
     annFoot:"Reported service faults &amp; closures. Live official status:",
     until:"until", daysLeft:"days left", endsToday:"ends today", ended:"ended",
+    openHdr:"Coming soon", openTtl:"New line opening", opensOn:"Opens", openSoon:"SOON",
+    inMonths:"in ~{n} mo", inWeeks:"in ~{n} wk", inDays:"in {n} d", kmU:"km", stnU:"stations",
+    openFoot:"Projected İBB opening dates — subject to change.",
     sevMajor:"Major", sevPartial:"Partial", sevMinor:"Minor",
     "ttl:Service suspended":"Service suspended", "ttl:Section affected":"Section affected", "ttl:Service notice":"Service notice",
     serviceHours:"Service hours", every:"every", hours24:"24 hours", interchange:"Interchange", transferWord:"transfer",
@@ -1067,6 +1076,9 @@ const I18N = {
     annNone:"✓ Bildirilen aksama yok — ağ normal çalışıyor.",
     annFoot:"Bildirilen servis arızaları ve kapanışları. Canlı resmi durum:",
     until:"şu tarihe kadar:", daysLeft:"gün kaldı", endsToday:"bugün bitiyor", ended:"sona erdi",
+    openHdr:"Yakında açılıyor", openTtl:"Yeni hat açılışı", opensOn:"Açılış", openSoon:"YAKINDA",
+    inMonths:"~{n} ay içinde", inWeeks:"~{n} hafta içinde", inDays:"{n} gün içinde", kmU:"km", stnU:"istasyon",
+    openFoot:"İBB öngörülen açılış tarihleri — değişebilir.",
     sevMajor:"Büyük", sevPartial:"Kısmi", sevMinor:"Hafif",
     "ttl:Service suspended":"Seferler durduruldu", "ttl:Section affected":"Etkilenen kesim", "ttl:Service notice":"Servis bildirimi",
     serviceHours:"Servis saatleri", every:"her", hours24:"24 saat", interchange:"Aktarma noktası", transferWord:"aktarma",
@@ -1146,6 +1158,9 @@ const I18N = {
     annNone:"✓ لا اضطرابات مبلّغة — الشبكة تعمل بشكل طبيعي.",
     annFoot:"الأعطال والإغلاقات المبلّغة. الحالة الرسمية:",
     until:"حتى", daysLeft:"يومًا متبقيًا", endsToday:"ينتهي اليوم", ended:"انتهى",
+    openHdr:"قريبًا", openTtl:"افتتاح خط جديد", opensOn:"يفتتح", openSoon:"قريبًا",
+    inMonths:"خلال ~{n} شهر", inWeeks:"خلال ~{n} أسبوع", inDays:"خلال {n} يوم", kmU:"كم", stnU:"محطة",
+    openFoot:"تواريخ افتتاح تقديرية من بلدية إسطنبول — قابلة للتغيير.",
     sevMajor:"كبير", sevPartial:"جزئي", sevMinor:"طفيف",
     "ttl:Service suspended":"الخدمة متوقفة", "ttl:Section affected":"قسم متأثر", "ttl:Service notice":"إشعار خدمة",
     serviceHours:"ساعات الخدمة", every:"كل", hours24:"على مدار الساعة", interchange:"محطة تحويل", transferWord:"تحويل",
@@ -1223,6 +1238,9 @@ const I18N = {
     annNone:"✓ Aucune perturbation signalée — réseau normal.",
     annFoot:"Pannes et fermetures signalées. Statut officiel :",
     until:"jusqu'au", daysLeft:"jours restants", endsToday:"se termine aujourd'hui", ended:"terminé",
+    openHdr:"Bientôt", openTtl:"Nouvelle ligne", opensOn:"Ouvre", openSoon:"BIENTÔT",
+    inMonths:"dans ~{n} mois", inWeeks:"dans ~{n} sem", inDays:"dans {n} j", kmU:"km", stnU:"stations",
+    openFoot:"Dates d'ouverture prévues (İBB) — sujettes à changement.",
     sevMajor:"Majeure", sevPartial:"Partielle", sevMinor:"Mineure",
     "ttl:Service suspended":"Service suspendu", "ttl:Section affected":"Section affectée", "ttl:Service notice":"Avis de service",
     serviceHours:"Horaires de service", every:"toutes les", hours24:"24h/24", interchange:"Pôle d'échange", transferWord:"correspondance",
@@ -1518,6 +1536,9 @@ const NETWORK = __NETWORK_JSON__;
 const BUS_DIR = __BUS_JSON__;
 /* --- Live disruptions: faults / closures / suspensions (editable transit_data/disruptions.json) --- */
 let DISRUPTIONS = __DISRUPTIONS_JSON__;   // baked-in fallback; overridden by the live fetch below
+/* --- Upcoming line openings: curated İBB projected launch dates (subject to change). Shown as
+       "coming soon" cards in the announcements panel; auto-hide once the projected date passes. --- */
+const OPENINGS = __OPENINGS_JSON__;
 /* --- Bus routing graph: per İETT line ordered stops [[lat,lng,name],...] for the trip planner --- */
 const BUS_GRAPH = __BUSGRAPH_JSON__;   // İETT GTFS: per line per direction {ref,dir,head,stops}
 const BUS_SCHED = __BUSSCHED_JSON__;   // İETT GTFS departure schedules {ref:[{dir,head,wd,sat,sun}]}
@@ -3847,8 +3868,28 @@ function untilText(d){
   const rel = days>0 ? ` · ${days} ${t('daysLeft')}` : (days===0?' · '+t('endsToday'):' · '+t('ended'));
   return t('until') + ' ' + fmtLaunch(d.until) + rel;
 }
+// upcoming line openings: keep visible until ~3 days past the projected date, soonest first
+function openIso(o){ return o.open.length===7 ? o.open+'-01' : o.open; }
+function upcomingOpenings(){
+  const now = Date.now();
+  return OPENINGS.filter(o => Date.parse(openIso(o)+'T00:00:00') > now - 3*86400000)
+                 .sort((a,b) => openIso(a) < openIso(b) ? -1 : 1);
+}
+function opensRel(o){
+  const days = Math.ceil((Date.parse(openIso(o)+'T00:00:00') - Date.now())/86400000);
+  if(days<=0) return '';
+  if(days>=60) return t('inMonths').replace('{n}', Math.round(days/30));
+  if(days>=14) return t('inWeeks').replace('{n}', Math.round(days/7));
+  return t('inDays').replace('{n}', Math.max(1,days));
+}
+function openOpening(o){
+  setTab('vision');                                   // upcoming lines live on the Vision map
+  const line = lineByRef[o.ref];
+  if(line) openLine(line);                             // focus it if we already draw it (M12/M10…)
+}
 function renderAnnouncements(){
-  document.getElementById('annCount').textContent = DISRUPTIONS.length;
+  const ops = upcomingOpenings();
+  document.getElementById('annCount').textContent = DISRUPTIONS.length + ops.length;
   const rows = DISRUPTIONS.map(d=>{
     const col = SEV_COLOR[d.severity] || SEV_COLOR.major;
     return `<div class="ann-item" data-id="${d.id}" style="border-left-color:${col};cursor:pointer">
@@ -3860,11 +3901,27 @@ function renderAnnouncements(){
       <div class="ann-msg">${disMsg(d)}</div>
       ${d.until?`<div class="ann-until">⏱ ${untilText(d)}</div>`:''}</div>`;
   }).join('');
+  const opRows = ops.map((o,i)=>{
+    const col = o.color || colorForLine(o.ref);
+    const rel = opensRel(o);
+    return `<div class="ann-item ann-open" data-open="${i}">
+      <div class="ann-row1">
+        <span class="ann-line" style="background:${col}">${o.ref}</span>
+        <span class="ann-sev ann-soon">${t('openSoon')}</span>
+        <span class="ann-ttl">🚈 ${t('openTtl')}</span>
+      </div>
+      <div class="ann-msg">${o.name} · ${o.km} ${t('kmU')} · ${o.stations} ${t('stnU')}</div>
+      <div class="ann-until">🗓 ${t('opensOn')} ${o.disp}${rel?' · '+rel:''}</div></div>`;
+  }).join('');
   const body = document.getElementById('annBody');
   body.innerHTML = (DISRUPTIONS.length ? rows : `<div class="ann-none">${t('annNone')}</div>`)
+    + (opRows ? `<div class="ann-sub">🚈 ${t('openHdr')}</div>${opRows}<div class="ann-note">${t('openFoot')}</div>` : '')
     + `<div class="ann-foot">${t('annFoot')} <a href="https://www.metro.istanbul/SeferDurumlari/SeferDetaylari" target="_blank" rel="noopener">metro.istanbul ↗</a></div>`;
-  body.querySelectorAll('.ann-item').forEach(el => el.addEventListener('click', ()=>{
+  body.querySelectorAll('.ann-item[data-id]').forEach(el => el.addEventListener('click', ()=>{
     const d = DISRUPTIONS.find(x=>x.id===el.dataset.id); if(d) openDisruption(d);
+  }));
+  body.querySelectorAll('.ann-open').forEach(el => el.addEventListener('click', ()=>{
+    const o = ops[+el.dataset.open]; if(o) openOpening(o);
   }));
 }
 document.getElementById('annHead').addEventListener('click', ()=>

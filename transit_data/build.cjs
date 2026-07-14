@@ -18,6 +18,7 @@ const disrupt = JSON.parse(fs.readFileSync(path.join(DIR, 'disruptions.json'), '
 const miStns  = JSON.parse(fs.readFileSync(path.join(DIR, 'mi-stations.json'), 'utf8'));     // official station ids (exact timetables)
 const access  = JSON.parse(fs.readFileSync(path.join(DIR, 'accessibility.json'), 'utf8'));   // İBB+OSM step-free/elevator data
 const attract = JSON.parse(fs.readFileSync(path.join(DIR, 'attractions.json'), 'utf8'));     // curated İstanbul landmarks for Explore
+const openings= JSON.parse(fs.readFileSync(path.join(DIR, 'openings.json'), 'utf8'));        // curated projected new-line opening dates (İBB targets)
 const data = JSON.stringify(active.concat(b2, ferry, cable, planned, manual));
 
 // lift the TR→EN translator out of the scraper so the CLIENT can re-translate any
@@ -27,13 +28,14 @@ const tStart = scraper.indexOf('// ==TRANSLATOR-START=='), tEnd = scraper.indexO
 if (tStart < 0 || tEnd < 0) { console.error('translator markers missing in scrape-disruptions.cjs'); process.exit(1); }
 const translatorJS = scraper.slice(tStart, tEnd);
 
-for (const t of ['__NETWORK_JSON__','__BUS_JSON__','__BUSGRAPH_JSON__','__BUSSCHED_JSON__','__DISRUPTIONS_JSON__','__MISTATIONS_JSON__','__ACCESS_JSON__','__ATTRACTIONS_JSON__','__TRANSLATOR_JS__'])
+for (const t of ['__NETWORK_JSON__','__BUS_JSON__','__BUSGRAPH_JSON__','__BUSSCHED_JSON__','__DISRUPTIONS_JSON__','__OPENINGS_JSON__','__MISTATIONS_JSON__','__ACCESS_JSON__','__ATTRACTIONS_JSON__','__TRANSLATOR_JS__'])
   if (!template.includes(t)) { console.error('token missing:', t); process.exit(1); }
 const html = template.replace('__NETWORK_JSON__', data)
                      .replace('__BUS_JSON__', JSON.stringify(buses))
                      .replace('__BUSGRAPH_JSON__', JSON.stringify(busGraph))
                      .replace('__BUSSCHED_JSON__', () => JSON.stringify(busSched))
                      .replace('__DISRUPTIONS_JSON__', JSON.stringify(disrupt))
+                     .replace('__OPENINGS_JSON__', () => JSON.stringify(openings))
                      .replace('__MISTATIONS_JSON__', JSON.stringify(miStns))
                      .replace('__ACCESS_JSON__', () => JSON.stringify(access))
                      .replace('__ATTRACTIONS_JSON__', () => JSON.stringify(attract))
