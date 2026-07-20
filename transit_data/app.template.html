@@ -476,6 +476,21 @@
   .topbar h1{padding-right:30px;}
   body.mobile .topbar h1{padding-right:4px;}
   body.mobile .settings-btn{position:static;flex:0 0 auto;}
+  .help-btn{right:51px;font-size:14px;font-weight:800;color:var(--muted);}
+  /* first-visit welcome card */
+  .wc-overlay{position:fixed;inset:0;z-index:1600;display:none;align-items:center;justify-content:center;
+    background:rgba(2,4,8,.55);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);padding:20px;}
+  .wc-overlay.show{display:flex;}
+  .wc-card{max-width:340px;width:100%;padding:22px 20px 18px;text-align:center;}
+  .wc-logo{display:block;margin:0 auto 10px;}
+  .wc-card h2{font-size:16px;font-weight:800;margin:0 0 14px;color:var(--text);letter-spacing:.3px;}
+  .wc-row{display:flex;align-items:flex-start;gap:10px;text-align:start;font-size:12.5px;color:var(--muted);
+    line-height:1.5;padding:7px 2px;border-top:1px solid var(--stroke);}
+  .wc-row:first-of-type{border-top:none;}
+  .wc-ic{flex:none;font-size:15px;}
+  .wc-go{width:100%;margin-top:14px;padding:11px;border:none;border-radius:12px;cursor:pointer;
+    font-weight:800;font-size:13px;color:#03130A;background:var(--grad-accent);letter-spacing:.3px;}
+  .wc-go:active{transform:scale(.98);}
   .settings-overlay{position:fixed;inset:0;background:rgba(3,6,10,.55);backdrop-filter:blur(2px);opacity:0;pointer-events:none;z-index:1650;transition:opacity .25s;}
   .settings-overlay.on{opacity:1;pointer-events:auto;}
   .settings-panel{position:fixed;top:50%;left:50%;transform:translate(-50%,-46%) scale(.98);opacity:0;pointer-events:none;
@@ -673,6 +688,25 @@
   <button id="settingsBtn" class="settings-btn" data-i18n-title="settings" title="Settings" aria-label="Settings">
     <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
   </button>
+  <button id="helpBtn" class="settings-btn help-btn" data-i18n-title="helpBtnT" title="Guide" aria-label="Guide">?</button>
+</div>
+
+<!-- first-visit welcome / feature guide (reopenable via the ? button) -->
+<div class="wc-overlay" id="wcOverlay">
+  <div class="wc-card glass" role="dialog" aria-modal="true" aria-labelledby="wcTitle">
+    <svg class="wc-logo" viewBox="0 0 34 34" width="44" height="44" aria-hidden="true">
+      <rect x="1.2" y="1.2" width="31.6" height="31.6" rx="9.5" fill="rgba(4,7,13,.85)" stroke="rgba(255,255,255,.16)" stroke-width="1.2"/>
+      <path d="M8 24 V11 L17 19.5 26 11 V24" fill="none" stroke="url(#lgM)" stroke-width="3.3" stroke-linecap="round" stroke-linejoin="round"/>
+      <circle cx="8" cy="11" r="2" fill="#fff"/><circle cx="26" cy="11" r="2" fill="#fff"/>
+      <circle cx="17" cy="19.5" r="2.3" fill="#E5484D"/>
+    </svg>
+    <h2 id="wcTitle" data-i18n="wcTitle">Welcome aboard!</h2>
+    <div class="wc-row"><span class="wc-ic">🗺️</span><span data-i18n="wcTap">Tap any line or station for live details &amp; arrivals</span></div>
+    <div class="wc-row"><span class="wc-ic">🧭</span><span data-i18n="wcPlan">Plan door-to-door trips — metro, tram, ferry &amp; bus</span></div>
+    <div class="wc-row"><span class="wc-ic">🚇</span><span data-i18n="wcLive">Watch carriages move live &amp; follow lines for alerts</span></div>
+    <div class="wc-row"><span class="wc-ic">⚙️</span><span data-i18n="wcLang">Language, dark mode &amp; more in Settings</span></div>
+    <button class="wc-go" id="wcGo" data-i18n="wcGo">Start exploring</button>
+  </div>
 </div>
 
 <div class="settings-overlay" id="settingsOverlay"></div>
@@ -997,6 +1031,10 @@ const I18N = {
     openHdr:"Coming soon", openTtl:"New line opening", opensOn:"Opens", openSoon:"SOON",
     inMonths:"in ~{n} mo", inWeeks:"in ~{n} wk", inDays:"in {n} d", kmU:"km", stnU:"stations",
     openFoot:"Projected İBB opening dates — subject to change.",
+    wcTitle:"Welcome aboard!", wcTap:"Tap any line or station for live details & arrivals",
+    wcPlan:"Plan door-to-door trips — metro, tram, ferry & bus",
+    wcLive:"Watch carriages move live & follow lines for alerts",
+    wcLang:"Language, dark mode & more in Settings", wcGo:"Start exploring", helpBtnT:"Guide",
     sevMajor:"Major", sevPartial:"Partial", sevMinor:"Minor",
     "ttl:Service suspended":"Service suspended", "ttl:Section affected":"Section affected", "ttl:Service notice":"Service notice",
     serviceHours:"Service hours", every:"every", hours24:"24 hours", interchange:"Interchange", transferWord:"transfer",
@@ -1079,6 +1117,10 @@ const I18N = {
     openHdr:"Yakında açılıyor", openTtl:"Yeni hat açılışı", opensOn:"Açılış", openSoon:"YAKINDA",
     inMonths:"~{n} ay içinde", inWeeks:"~{n} hafta içinde", inDays:"{n} gün içinde", kmU:"km", stnU:"istasyon",
     openFoot:"İBB öngörülen açılış tarihleri — değişebilir.",
+    wcTitle:"Hoş geldiniz!", wcTap:"Canlı ayrıntılar ve varışlar için bir hatta veya istasyona dokunun",
+    wcPlan:"Kapıdan kapıya yolculuk planlayın — metro, tramvay, vapur ve otobüs",
+    wcLive:"Vagonları canlı izleyin, uyarılar için hatları takip edin",
+    wcLang:"Dil, karanlık mod ve fazlası Ayarlar'da", wcGo:"Keşfetmeye başla", helpBtnT:"Rehber",
     sevMajor:"Büyük", sevPartial:"Kısmi", sevMinor:"Hafif",
     "ttl:Service suspended":"Seferler durduruldu", "ttl:Section affected":"Etkilenen kesim", "ttl:Service notice":"Servis bildirimi",
     serviceHours:"Servis saatleri", every:"her", hours24:"24 saat", interchange:"Aktarma noktası", transferWord:"aktarma",
@@ -1161,6 +1203,10 @@ const I18N = {
     openHdr:"قريبًا", openTtl:"افتتاح خط جديد", opensOn:"يفتتح", openSoon:"قريبًا",
     inMonths:"خلال ~{n} شهر", inWeeks:"خلال ~{n} أسبوع", inDays:"خلال {n} يوم", kmU:"كم", stnU:"محطة",
     openFoot:"تواريخ افتتاح تقديرية من بلدية إسطنبول — قابلة للتغيير.",
+    wcTitle:"أهلاً بك!", wcTap:"انقر على أي خط أو محطة للتفاصيل والوصول المباشر",
+    wcPlan:"خطط رحلات من الباب إلى الباب — مترو وترام وعبّارة وحافلة",
+    wcLive:"شاهد العربات مباشرة وتابع الخطوط للتنبيهات",
+    wcLang:"اللغة والوضع الداكن والمزيد في الإعدادات", wcGo:"ابدأ الاستكشاف", helpBtnT:"الدليل",
     sevMajor:"كبير", sevPartial:"جزئي", sevMinor:"طفيف",
     "ttl:Service suspended":"الخدمة متوقفة", "ttl:Section affected":"قسم متأثر", "ttl:Service notice":"إشعار خدمة",
     serviceHours:"ساعات الخدمة", every:"كل", hours24:"على مدار الساعة", interchange:"محطة تحويل", transferWord:"تحويل",
@@ -1241,6 +1287,10 @@ const I18N = {
     openHdr:"Bientôt", openTtl:"Nouvelle ligne", opensOn:"Ouvre", openSoon:"BIENTÔT",
     inMonths:"dans ~{n} mois", inWeeks:"dans ~{n} sem", inDays:"dans {n} j", kmU:"km", stnU:"stations",
     openFoot:"Dates d'ouverture prévues (İBB) — sujettes à changement.",
+    wcTitle:"Bienvenue à bord !", wcTap:"Touchez une ligne ou une station pour les détails en direct",
+    wcPlan:"Planifiez porte-à-porte — métro, tram, ferry et bus",
+    wcLive:"Suivez les rames en direct et les lignes pour les alertes",
+    wcLang:"Langue, mode sombre et plus dans Réglages", wcGo:"Commencer l'exploration", helpBtnT:"Guide",
     sevMajor:"Majeure", sevPartial:"Partielle", sevMinor:"Mineure",
     "ttl:Service suspended":"Service suspendu", "ttl:Section affected":"Section affectée", "ttl:Service notice":"Avis de service",
     serviceHours:"Horaires de service", every:"toutes les", hours24:"24h/24", interchange:"Pôle d'échange", transferWord:"correspondance",
@@ -1540,8 +1590,16 @@ let DISRUPTIONS = __DISRUPTIONS_JSON__;   // baked-in fallback; overridden by th
        "coming soon" cards in the announcements panel; auto-hide once the projected date passes. --- */
 const OPENINGS = __OPENINGS_JSON__;
 /* --- Bus routing graph: per İETT line ordered stops [[lat,lng,name],...] for the trip planner --- */
-const BUS_GRAPH = __BUSGRAPH_JSON__;   // İETT GTFS: per line per direction {ref,dir,head,stops}
-const BUS_SCHED = __BUSSCHED_JSON__;   // İETT GTFS departure schedules {ref:[{dir,head,wd,sat,sun}]}
+/* İETT GTFS bus graph + schedules are ~3.1 MB — 85% of the whole app — so they are NOT baked
+   in. They are fetched from transit_data/bus-data.json right after first paint (see
+   loadBusData in the boot section): the map is interactive in a fraction of the time, and
+   bus routing/schedules light up seconds later. Until then both stay empty and every
+   consumer (busDirs, siblingBuses, busScheduleHTML, planner) degrades gracefully. */
+let BUS_GRAPH = [];   // İETT GTFS: per line per direction {ref,dir,head,stops}
+let BUS_SCHED = {};   // İETT GTFS departure schedules {ref:[{dir,head,wd,sat,sun}]}
+let busReady = false;
+let busReadyResolve;
+const busDataPromise = new Promise(res => { busReadyResolve = res; });
 const BUS_COLOR = '#E8A33D';
 // bus directions available for a line ref (0/1 = the two directions, from the GTFS graph)
 function busDirs(ref){ return BUS_GRAPH.filter(l=>l.ref===ref); }
@@ -1838,8 +1896,11 @@ for(let i=0;i<allKeys.length;i++){
 }
 
 // ---- buses in the routing graph (multimodal planning) ----
+// Runs once when the lazy bus data arrives (loadBusData in the boot section). Until then the
+// planner is rail/ferry-only; afterwards bus nodes + walking transfers join the same graph.
 const BUS_SPEED = 18;     // km/h commercial city-bus average
 const BUS_DWELL = 0.45;   // minutes per stop
+function integrateBuses(){
 BUS_GRAPH.forEach((line, li) => {
   const st = line.stops;
   for(let i=0;i<st.length;i++){
@@ -1854,7 +1915,6 @@ BUS_GRAPH.forEach((line, li) => {
   }
 });
 // walking transfers involving buses (bus↔bus & bus↔rail) via a spatial grid, capped per stop
-(function(){
   const CELL = 0.0022, grid = new Map(), all = Object.keys(nodeMeta);
   for(const k of all){ const m=nodeMeta[k]; const ck=Math.round(m.lat/CELL)+'_'+Math.round(m.lng/CELL);
     let arr=grid.get(ck); if(!arr){ arr=[]; grid.set(ck,arr); } arr.push(k); }
@@ -1871,7 +1931,7 @@ BUS_GRAPH.forEach((line, li) => {
     for(let n=0;n<Math.min(cands.length,5);n++){ const dd=cands[n][0], k2=cands[n][1], w=TRANSFER_MIN+dd/80;
       G[k].push({to:k2,w}); G[k2].push({to:k,w}); }
   }
-})();
+}
 
 // binary min-heap (graph is now ~15k nodes → linear-scan Dijkstra too slow)
 function MinHeap(){ this.a=[]; }
@@ -3563,8 +3623,13 @@ async function selectBus(id, row){
   busLayer.clearLayers();
   const countEl=document.getElementById('busCount'), detail=document.getElementById('busDetail');
   const ref = row ? row.dataset.ref : null;
-  const dirs = ref ? busDirs(ref) : [];
   const tok = ++busSelToken;
+  if(ref && !busReady){                         // clicked before the lazy GTFS data landed:
+    countEl.textContent = t('loadingGeom');     // wait briefly for it (usually <2s on first load)
+    await Promise.race([busDataPromise, new Promise(res=>setTimeout(res, 5000))]);
+    if(tok!==busSelToken) return;               // another line selected while waiting
+  }
+  const dirs = ref ? busDirs(ref) : [];
   if(dirs.length){                              // GTFS line: schedule + all directions, upgraded to real road geometry
     const all=drawBusDirs(dirs, null);          // instant straight placeholder + stop dots
     if(all.length) map.fitBounds(L.latLngBounds(all).pad(0.2));
@@ -4064,6 +4129,25 @@ function init(){
   renderDisruptionMarkers();
   animRaf=requestAnimationFrame(frame);
   loadLiveDisruptions();      // refresh from the auto-updated JSON (falls back to baked-in)
+  loadBusData();              // 3.1 MB GTFS bus graph+schedules, fetched after first paint
+}
+// ---- lazy bus data: fetched post-paint so the map is interactive immediately. The service
+// worker caches it stale-while-revalidate, so repeat/offline launches get it instantly. ----
+let busLoadTries = 0;
+async function loadBusData(){
+  try{
+    const r = await fetch('transit_data/bus-data.json');
+    if(!r.ok) throw new Error('HTTP '+r.status);
+    const d = await r.json();
+    BUS_GRAPH = d.graph || [];  BUS_SCHED = d.sched || {};
+    // graph integration builds ~70k nodes — run it off the critical path
+    const go = ()=>{ integrateBuses(); busReady = true; busReadyResolve(); };
+    if('requestIdleCallback' in window) requestIdleCallback(go, { timeout: 4000 });
+    else setTimeout(go, 200);
+  }catch(e){
+    // offline first-visit or transient failure: retry a few times, then leave rail-only
+    if(++busLoadTries < 4) setTimeout(loadBusData, 8000 * busLoadTries);
+  }
 }
 // pull the latest auto-scraped disruptions (committed by the GitHub Action) at runtime, so the
 // panel/map go live without rebuilding the page. Same-origin on Pages; silently keeps the
@@ -4076,6 +4160,15 @@ async function loadLiveDisruptions(){
     if(Array.isArray(data)){ ensureEnglish(data); DISRUPTIONS = data; renderAnnouncements(); renderDisruptionMarkers(); refreshClosed(); checkDisruptionAlerts(); }
   }catch(e){ /* offline / file:// → keep the baked-in DISRUPTIONS */ }
 }
+// ---- first-visit welcome / guide (reopenable from the ? header button) ----
+(function(){
+  const ov = document.getElementById('wcOverlay');
+  const close = ()=>{ ov.classList.remove('show'); try{ localStorage.setItem('irn_welcomed','1'); }catch(e){} };
+  document.getElementById('wcGo').addEventListener('click', close);
+  ov.addEventListener('click', e=>{ if(e.target===ov) close(); });
+  document.getElementById('helpBtn').addEventListener('click', ()=> ov.classList.add('show'));
+  try{ if(!localStorage.getItem('irn_welcomed')) ov.classList.add('show'); }catch(e){}
+})();
 init();
 </script>
 </body>

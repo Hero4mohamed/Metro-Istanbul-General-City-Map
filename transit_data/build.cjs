@@ -28,12 +28,10 @@ const tStart = scraper.indexOf('// ==TRANSLATOR-START=='), tEnd = scraper.indexO
 if (tStart < 0 || tEnd < 0) { console.error('translator markers missing in scrape-disruptions.cjs'); process.exit(1); }
 const translatorJS = scraper.slice(tStart, tEnd);
 
-for (const t of ['__NETWORK_JSON__','__BUS_JSON__','__BUSGRAPH_JSON__','__BUSSCHED_JSON__','__DISRUPTIONS_JSON__','__OPENINGS_JSON__','__MISTATIONS_JSON__','__ACCESS_JSON__','__ATTRACTIONS_JSON__','__TRANSLATOR_JS__'])
+for (const t of ['__NETWORK_JSON__','__BUS_JSON__','__DISRUPTIONS_JSON__','__OPENINGS_JSON__','__MISTATIONS_JSON__','__ACCESS_JSON__','__ATTRACTIONS_JSON__','__TRANSLATOR_JS__'])
   if (!template.includes(t)) { console.error('token missing:', t); process.exit(1); }
 const html = template.replace('__NETWORK_JSON__', data)
                      .replace('__BUS_JSON__', JSON.stringify(buses))
-                     .replace('__BUSGRAPH_JSON__', JSON.stringify(busGraph))
-                     .replace('__BUSSCHED_JSON__', () => JSON.stringify(busSched))
                      .replace('__DISRUPTIONS_JSON__', JSON.stringify(disrupt))
                      .replace('__OPENINGS_JSON__', () => JSON.stringify(openings))
                      .replace('__MISTATIONS_JSON__', JSON.stringify(miStns))
@@ -45,6 +43,12 @@ console.log('ACTIVE:', active.length, ' B2:', b2.length, ' FERRY:', ferry.length
 const outPath = path.join(ROOT, 'index.html');   // GitHub Pages serves the repo-root index.html
 fs.writeFileSync(outPath, html);
 console.log('WROTE', outPath, (fs.statSync(outPath).size/1024).toFixed(1), 'KB');
+
+// bus graph + schedules are the heaviest datasets (~3.1 MB) and most visitors never plan a
+// bus trip in the first seconds — served as a separate file the app fetches after first paint
+const busDataPath = path.join(DIR, 'bus-data.json');
+fs.writeFileSync(busDataPath, JSON.stringify({ graph: busGraph, sched: busSched }));
+console.log('WROTE', busDataPath, (fs.statSync(busDataPath).size/1024).toFixed(1), 'KB  (lazy-loaded)');
 
 // emit the service worker with a fresh version stamp → installed apps self-update on deploy
 const swTpl = fs.readFileSync(path.join(DIR, 'sw.template.js'), 'utf8');

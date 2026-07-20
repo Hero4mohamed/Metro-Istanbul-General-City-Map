@@ -22,6 +22,20 @@ self.addEventListener('fetch', e => {
 
   // live data & map tiles: always straight to the network (freshness is the product)
   if (/api\.ibb|overpass|open-meteo|routing\.openstreetmap|cartocdn|arcgisonline|openstreetmap\.org/.test(url.host)) return;
+
+  // the big lazy-loaded bus dataset: stale-while-revalidate → instant on repeat visits, works
+  // offline after the first load, silently refreshed in the background when it changes
+  if (url.pathname.endsWith('/transit_data/bus-data.json')) {
+    e.respondWith((async () => {
+      const cached = await caches.match(e.request);
+      const fresh = fetch(e.request).then(r => {
+        if (r && r.ok) caches.open(STATIC).then(c => c.put(e.request, r.clone()));
+        return r;
+      }).catch(() => null);
+      return cached || (await fresh) || Response.error();
+    })());
+    return;
+  }
   if (url.pathname.includes('/transit_data/')) return;   // live disruptions JSON stays no-store
 
   // the app page: network-first, cache fallback for offline launches
