@@ -426,6 +426,32 @@ const ROUTES = [
     places:['Bostancı','Kınalıada','Burgazada','Heybeliada','Büyükada'] }
 ];
 
+// remove harbour-manoeuvre / stitching zigzags: drop an interior vertex when the course
+// reverses sharply there AND the detour is short — real course changes (headlands, island
+// sweeps) are long and gentle; noise is tight and local. Vertices within `protM` of a pier
+// are protected: at an interior stop (Kadıköy on Bostancı–Karaköy) the boat genuinely
+// reverses out of the dock, and that turn must survive.
+function despike(c, protPts, maxSeg, maxAng){
+  maxSeg = maxSeg || 450; maxAng = maxAng || 100;
+  const protM = 150;
+  const isProt = p => (protPts||[]).some(q => meters(p,q) < protM);
+  let changed = true;
+  while(changed && c.length > 3){
+    changed = false;
+    for(let i=1;i<c.length-1;i++){
+      const a=c[i-1], b=c[i], d=c[i+1];
+      if(isProt(b)) continue;
+      const s1=meters(a,b), s2=meters(b,d);
+      if(s1>maxSeg && s2>maxSeg) continue;
+      const b1=Math.atan2(b[1]-a[1], b[0]-a[0]);
+      const b2=Math.atan2(d[1]-b[1], d[0]-b[0]);
+      let ang=Math.abs(b1-b2)*180/Math.PI; if(ang>180) ang=360-ang;
+      if(ang>maxAng){ c.splice(i,1); changed=true; i--; }
+    }
+  }
+  return c;
+}
+
 const out = [];
 const missing = [];
 let geomUsed = 0;
@@ -442,10 +468,19 @@ for (const r of ROUTES){
   const round = p => [ +p[0].toFixed(5), +p[1].toFixed(5) ];
   let path, src;
   if (g){
+    const protPts = stations.map(s=>[s.lat,s.lng]);
     let c = trimToPiers(g.coords, start, end);      // drop stitched overshoot tails
+    c = despike(c, protPts);                        // strip harbour-manoeuvre zigzag noise
     c = fixLandCrossings(c);                        // repair chords that cut headlands
     c = smoothOnWater(c, 6);                        // relax the jagged pier approaches
     c = fixLandCrossings(simplify(c, 0.00004));     // simplify LAST re-adds chords → repair after
+    c = fixLandCrossings(despike(c, protPts));      // smoothing/simplify can mint NEW switchbacks
+    // dock the line: OSM route geometry ends in open water 80–250 m off the pier — connect
+    // the path ends to the exact pier coordinates so the line meets its station marker
+    if(meters(c[0], protPts[0]) > 30) c.unshift(protPts[0].slice());
+    const lastPr = protPts[protPts.length-1];
+    if(meters(c[c.length-1], lastPr) > 30) c.push(lastPr.slice());
+    snapPiers(c, protPts);                          // interior piers too (Haliç Karaköy sat 59 m off)
     path = c.map(round); src='osm'; geomUsed++;
   }
   else {
@@ -466,7 +501,13 @@ for (const r of ROUTES){
     }
     let c = waterRoute(route, DIR_PUSH[r.ref]);
     c = fixLandCrossings(simplify(c, 0.00003));     // segment-level repair AFTER simplify
-    snapPiers(c, piers);
+    c = despike(c, piers);                          // strip repel/spline jitter (piers protected)
+    snapPiers(c, piers);                            // snap AFTER despike — pier vertices must survive
+    // trim overshoot beyond the TERMINAL piers: the spline can run past the dock and double
+    // back, leaving a stub hanging off the line's end (seen on Üsküdar–Beşiktaş)
+    const eq=(p,q)=>p[0]===q[0]&&p[1]===q[1];
+    const iA=c.findIndex(p=>eq(p,piers[0])), iB=c.findIndex(p=>eq(p,piers[piers.length-1]));
+    if(iA>=0 && iB>=0){ if(iA<iB) c=c.slice(iA,iB+1); else if(iB<iA) c=c.slice(iB,iA+1).reverse(); }
     path = c.map(round);                            // clean line on water
     src='piers';
   }
