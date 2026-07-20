@@ -534,6 +534,14 @@
   /* fare row */
   .rfare{display:flex;align-items:center;gap:8px;margin:8px 0 2px;padding:8px 11px;border-radius:12px;background:var(--surface);border:1px solid var(--stroke);}
   .rfare:empty{display:none;}
+  /* service warnings on a planned route (last departure / line not running) */
+  .rwarn{display:flex;flex-direction:column;gap:6px;margin:6px 0 2px;}
+  .rwarn:empty{display:none;}
+  .rw{display:flex;align-items:flex-start;gap:7px;padding:7px 10px;border-radius:11px;font-size:10.5px;font-weight:600;line-height:1.45;}
+  .rw.last{background:rgba(245,166,35,.1);border:1px solid rgba(245,166,35,.4);color:#F5C36A;}
+  .rw.closed{background:rgba(229,72,77,.1);border:1px solid rgba(229,72,77,.45);color:#F08287;}
+  body.light .rw.last{color:#7A5200;}
+  body.light .rw.closed{color:#A32227;}
   .rf-ico{font-size:14px;} .rf-main{font-family:var(--mono);font-weight:800;font-size:14px;color:var(--text);}
   .rf-sub{font-size:10.5px;color:var(--muted);} .rf-i{margin-left:auto;color:var(--dim);cursor:help;font-size:12px;}
   /* nearby-stops button + panel */
@@ -902,6 +910,10 @@
       <button class="pchip" id="chipHome" data-place="home" style="display:none">🏠 <span data-i18n="homeP">Home</span></button>
       <button class="pchip" id="chipWork" data-place="work" style="display:none">💼 <span data-i18n="workP">Work</span></button>
     </div>
+    <div class="place-chips" id="airportChips">
+      <button class="pchip" data-ap="IST" data-i18n-title="toAirport" title="Route to this airport">✈ İstanbul (IST)</button>
+      <button class="pchip" data-ap="SAW" data-i18n-title="toAirport" title="Route to this airport">✈ Sabiha Gökçen (SAW)</button>
+    </div>
     <button class="btn" id="route" data-i18n="findPath">◇ Find Optimal Path</button>
     <button class="btn ghost" id="clear" data-i18n="clear">Clear</button>
     <div class="route-out" id="rout">
@@ -911,6 +923,7 @@
         <div class="c"><b id="rTr">–</b><span data-i18n="transfers">Transfers</span></div>
       </div>
       <div class="rfare" id="rFare"></div>
+      <div class="rwarn" id="rWarn"></div>
       <div id="rOpts" class="ropts"></div>
       <div id="rJourney" class="jmap"></div>
       <button class="btn go-start" id="goStart" style="display:none">▶ <span data-i18n="startJourney">Start journey</span></button>
@@ -1075,7 +1088,9 @@ const I18N = {
     homeSaved:"Home saved", workSaved:"Work saved", placeCleared:"Cleared",
     nearMe:"Stops near me", nearbyTitle:"Nearest stops", nearbyEmpty:"No stops within 2 km — try moving.",
     walkAway:"min walk", fromHere:"From here",
-    fareApprox:"Fare", fareTaps:"taps", fareNote:"İstanbulkart estimate: 42₺ + discounted transfers (90-min window, rates of 16 Feb 2026). Ferries & Metrobüs may cost more.",
+    fareApprox:"Fare", fareTaps:"taps", fareNote:"İstanbulkart estimate — İBB tariff of 20 Jul 2026: 46.20₺ per boarding + discounted transfers (120-min window). Marmaray & Metrobüs priced by distance; ferries have their own tariff.",
+    warnSusp:"is currently suspended — this route may not be usable", warnClosed:"isn't running right now — first service {h}",
+    warnLast:"Last {ref} around {h} (~{n} min) — don't miss it!", toAirport:"Route to this airport",
     needOrigin:"Set a starting point first.",
     prefStepFree:"Prefer step-free (♿)", stepFreeHint:"Prefers stations with elevators (İBB open data + OpenStreetMap). Not guaranteed where data is missing.",
     accStepFree:"Step-free access", accNotStepFree:"No step-free access", accLimited:"Limited access",
@@ -1161,7 +1176,9 @@ const I18N = {
     homeSaved:"Ev kaydedildi", workSaved:"İş kaydedildi", placeCleared:"Temizlendi",
     nearMe:"Yakınımdaki duraklar", nearbyTitle:"En yakın duraklar", nearbyEmpty:"2 km içinde durak yok — biraz hareket edin.",
     walkAway:"dk yürüme", fromHere:"Buradan",
-    fareApprox:"Ücret", fareTaps:"biniş", fareNote:"İstanbulkart tahmini: 42₺ + indirimli aktarmalar (90 dk, 16 Şub 2026 tarifesi). Vapur ve Metrobüs daha pahalı olabilir.",
+    fareApprox:"Ücret", fareTaps:"biniş", fareNote:"İstanbulkart tahmini — 20 Tem 2026 İBB tarifesi: biniş 46,20₺ + indirimli aktarmalar (120 dk). Marmaray ve Metrobüs mesafeye göre; vapurların kendi tarifesi vardır.",
+    warnSusp:"şu anda askıya alınmış — bu rota kullanılamayabilir", warnClosed:"şu an çalışmıyor — ilk sefer {h}",
+    warnLast:"Son {ref} yaklaşık {h} (~{n} dk) — kaçırmayın!", toAirport:"Bu havalimanına rota",
     needOrigin:"Önce bir başlangıç noktası seçin.",
     prefStepFree:"Basamaksız tercih (♿)", stepFreeHint:"Asansörlü istasyonları tercih eder (İBB açık veri + OpenStreetMap). Veri yoksa garanti edilmez.",
     accStepFree:"Basamaksız erişim", accNotStepFree:"Basamaksız erişim yok", accLimited:"Sınırlı erişim",
@@ -1245,7 +1262,9 @@ const I18N = {
     homeSaved:"تم حفظ المنزل", workSaved:"تم حفظ العمل", placeCleared:"تم المسح",
     nearMe:"محطات قريبة مني", nearbyTitle:"أقرب المحطات", nearbyEmpty:"لا محطات ضمن 2 كم — تحرّك قليلًا.",
     walkAway:"د مشيًا", fromHere:"من هنا",
-    fareApprox:"الأجرة", fareTaps:"ركوب", fareNote:"تقدير إسطنبول كارت: ٤٢₺ + تبديلات مخفّضة (خلال ٩٠ دقيقة، تعرفة ١٦ فبراير ٢٠٢٦). العبّارات والمتروبوس قد تكون أغلى.",
+    fareApprox:"الأجرة", fareTaps:"ركوب", fareNote:"تقدير إسطنبول كارت — تعرفة بلدية إسطنبول ٢٠ يوليو ٢٠٢٦: ٤٦٫٢٠₺ للركوب + تبديلات مخفّضة (خلال ١٢٠ دقيقة). مرمراي والمتروبوس حسب المسافة؛ وللعبّارات تعرفتها الخاصة.",
+    warnSusp:"معلّق حاليًا — قد لا يكون هذا المسار متاحًا", warnClosed:"لا يعمل الآن — أول رحلة {h}",
+    warnLast:"آخر {ref} حوالي {h} (~{n} دقيقة) — لا تفوّته!", toAirport:"مسار إلى هذا المطار",
     needOrigin:"حدّد نقطة انطلاق أولًا.",
     prefStepFree:"تفضيل بلا درجات (♿)", stepFreeHint:"يفضّل المحطات ذات المصاعد (بيانات İBB المفتوحة + OpenStreetMap). غير مضمون عند نقص البيانات.",
     accStepFree:"وصول بلا درجات", accNotStepFree:"لا يوجد وصول بلا درجات", accLimited:"وصول محدود",
@@ -1329,7 +1348,9 @@ const I18N = {
     homeSaved:"Domicile enregistré", workSaved:"Travail enregistré", placeCleared:"Effacé",
     nearMe:"Arrêts près de moi", nearbyTitle:"Arrêts les plus proches", nearbyEmpty:"Aucun arrêt à moins de 2 km — déplacez-vous.",
     walkAway:"min à pied", fromHere:"D'ici",
-    fareApprox:"Tarif", fareTaps:"trajets", fareNote:"Estimation İstanbulkart : 42₺ + correspondances remisées (fenêtre 90 min, tarifs du 16 fév. 2026). Ferries et Metrobüs peuvent coûter plus.",
+    fareApprox:"Tarif", fareTaps:"trajets", fareNote:"Estimation İstanbulkart — tarif İBB du 20 juil. 2026 : 46,20₺ par montée + correspondances remisées (fenêtre 120 min). Marmaray et Metrobüs selon la distance ; les ferries ont leur propre tarif.",
+    warnSusp:"est actuellement suspendu — cet itinéraire peut être inutilisable", warnClosed:"ne circule pas actuellement — premier départ {h}",
+    warnLast:"Dernier {ref} vers {h} (~{n} min) — ne le manquez pas !", toAirport:"Itinéraire vers cet aéroport",
     needOrigin:"Définissez d'abord un point de départ.",
     prefStepFree:"Préférer sans marches (♿)", stepFreeHint:"Privilégie les stations avec ascenseurs (données ouvertes İBB + OpenStreetMap). Non garanti si données manquantes.",
     accStepFree:"Accès sans marches", accNotStepFree:"Pas d'accès sans marches", accLimited:"Accès limité",
@@ -1465,15 +1486,65 @@ function setStepFree(on, rerun){ stepFreePref=!!on; try{localStorage.setItem('ir
   const sw=document.getElementById('swStepFree'); if(sw) sw.classList.toggle('on', stepFreePref);
   if(rerun && originPt && destPt && currentOpts && currentOpts.length) runRoute(); }
 
-/* ---- İstanbulkart fare estimate ----
-   Official aktarma (transfer) schedule, TL, effective 16 Feb 2026: full fare 42,
-   then discounted transfers within a 90-min window (1st 31.27, 2nd 24.02, 3rd+ 15.62).
-   A solid estimate for rail/bus journeys; ferries & Metrobüs (distance-based) can cost more. */
-const FARE_SCHEDULE=[42, 31.27, 24.02, 15.62];
+/* ---- İstanbulkart fare estimate — İBB tariff effective 20 Jul 2026 (+10% council decision).
+   Exact published figures: full boarding 46.20; Marmaray distance bands 37.40–82.17;
+   Metrobüs stop bands 33.08–68.59; Şehir Hatları 58.52 (short crossing) / 65.21 (Kadıköy
+   runs) / 171.89 (Adalar). Transfer tiers are the Feb tiers +10% (34.40/26.42/17.18) — the
+   exact post-hike tiers weren't published at ship time, hence the "≈" and the ⓘ note.
+   Intermediate Marmaray/Metrobüs bands are interpolated between the published endpoints.
+   Banded modes are charged full band fare even mid-chain (conservative: never under-quotes). */
+const FARE = {
+  base:46.20, xfer:[34.40,26.42,17.18],
+  marmaray:{min:37.40,max:82.17,bands:[3,9,15,25,35,43]},
+  metrobus:{min:33.08,max:68.59,bands:[1,3,9,15,21,33,43]},
+  ferry:65.21, ferryShort:58.52, adalar:171.89
+};
+function bandFare(b,n){
+  let i=b.bands.findIndex(x=>n<=x); if(i<0) i=b.bands.length-1;
+  return b.min + (b.max-b.min)*(i/(b.bands.length-1));
+}
 function estimateFare(it){
-  const rides=(it.steps||[]).filter(s=>s.type==='ride').length;
-  let tl=0; for(let i=0;i<rides;i++) tl += FARE_SCHEDULE[Math.min(i, FARE_SCHEDULE.length-1)];
-  return { taps:rides, tl: Math.round(tl) };
+  const rides=(it.steps||[]).filter(s=>s.type==='ride');
+  if(!rides.length) return { taps:0, tl:0 };
+  let tl=0, chain=0;                       // chain = position in the 120-min aktarma sequence
+  for(const r of rides){
+    const line=lineByRef[r.ref];
+    const kind=r.bus?'bus':(line?line.kind:'subway');
+    const n=Math.max(1,(r.stops||[]).length-1);
+    if(kind==='ferry'){                    // Şehir Hatları: own tariff, outside the aktarma chain
+      tl += /ada/i.test(r.ref||'') ? FARE.adalar : (n<=1?FARE.ferryShort:FARE.ferry);
+      continue;
+    }
+    if(r.ref==='Marmaray')       tl += bandFare(FARE.marmaray,n);
+    else if(r.ref==='Metrobüs')  tl += bandFare(FARE.metrobus,n);
+    else tl += chain===0 ? FARE.base : FARE.xfer[Math.min(chain-1,2)];
+    chain++;
+  }
+  return { taps:rides.length, tl: Math.round(tl) };
+}
+
+/* ---- service warnings for a planned route: a rail leg's line is suspended / out of
+   hours (lineClosedNow), or its service window ends within 45 min → "last train" nudge.
+   İETT buses are skipped (per-line hours vary too much to promise anything honest). ---- */
+function renderRouteWarnings(it){
+  const el=document.getElementById('rWarn'); if(!el) return;
+  el.innerHTML='';
+  const seen=new Set(); let html='';
+  (it.steps||[]).forEach(s=>{
+    if(s.type!=='ride' || s.bus || seen.has(s.ref)) return;
+    seen.add(s.ref);
+    const c=lineClosedNow(s.ref);
+    if(c){
+      html += `<div class="rw closed">⛔ <span><b>${s.ref}</b> ${c.why==='susp'?t('warnSusp'):t('warnClosed').replace('{h}', c.opens||'')}</span></div>`;
+      return;
+    }
+    const h=(lineTiming(s.ref).hours)||''; if(/24/.test(h)) return;
+    const m=h.match(/(\d{1,2}):(\d{2})\s*[–—-]\s*(\d{1,2}):(\d{2})/); if(!m) return;
+    const end=+m[3]*60+ +m[4];
+    let left=end-nowIstanbulMin(); if(left<0) left+=1440;   // window spanning midnight
+    if(left<=45) html += `<div class="rw last">⏰ <span>${t('warnLast').replace('{ref}', s.ref).replace('{h}', m[3]+':'+m[4]).replace('{n}', left)}</span></div>`;
+  });
+  el.innerHTML=html;
 }
 
 /* ---- saved places (Home / Work) ---- */
@@ -3148,7 +3219,8 @@ function showItinerary(res, it){
   document.getElementById('rStops').textContent=it.stops;
   document.getElementById('rTr').textContent=it.transfers;
   { const fe=estimateFare(it), fEl=document.getElementById('rFare');
-    if(fEl) fEl.innerHTML = fe.taps ? `<span class="rf-ico">🎫</span><span class="rf-main">≈ ${fe.tl} ₺</span><span class="rf-sub">${fe.taps} ${t('fareTaps')}</span><span class="rf-i" title="${attrEsc(t('fareNote'))}">ⓘ</span>` : ''; }
+    if(fEl) fEl.innerHTML = fe.taps ? `<span class="rf-ico">🎫</span><span class="rf-main">≈ ${fe.tl} ₺</span><span class="rf-sub">${fe.taps} ${t('fareTaps')}</span><span class="rf-i" title="${attrEsc(t('fareNote'))}">ⓘ</span>` : '';
+    renderRouteWarnings(it); }
   const allPts=[], legs=[];
   drawItin(res, it, allPts, legs);
   if(allPts.length) map.fitBounds(L.latLngBounds(allPts).pad(0.25));
@@ -3498,6 +3570,7 @@ function runRoute(){
   if(goState) exitGo();                                   // a fresh plan ends any active live journey
   document.getElementById('rOpts').innerHTML=''; currentOpts=[]; currentOptIdx=0;
   { const jm=document.getElementById('rJourney'); if(jm) jm.innerHTML=''; const fEl=document.getElementById('rFare'); if(fEl) fEl.innerHTML='';
+    const wEl=document.getElementById('rWarn'); if(wEl) wEl.innerHTML='';
     const gs=document.getElementById('goStart'); if(gs) gs.style.display='none'; }
   if(!o || !d){ out.classList.add('show');
     document.getElementById('rEta').textContent='–'; document.getElementById('rStops').textContent='–'; document.getElementById('rTr').textContent='–';
@@ -3835,6 +3908,19 @@ document.getElementById('swStepFree').addEventListener('click', ()=> setStepFree
 document.getElementById('placesGroup').addEventListener('click', e=>{ const b=e.target.closest('button[data-place]'); if(!b) return;
   if(b.dataset.act==='set') setPlaceFromOrigin(b.dataset.place); else clearPlace(b.dataset.place); });
 document.getElementById('placeChips').addEventListener('click', e=>{ const b=e.target.closest('.pchip'); if(b) useSavedPlace(b.dataset.place); });
+// airport quick actions: the single most common visitor trip, one tap to destination
+const AIRPORTS = {
+  IST:{ name:'İstanbul Havalimanı',      lat:41.25603, lng:28.7426  },   // M11
+  SAW:{ name:'Sabiha Gökçen Havalimanı', lat:40.90644, lng:29.31148 }    // M4
+};
+document.getElementById('airportChips').addEventListener('click', e=>{
+  const b=e.target.closest('.pchip'); if(!b) return;
+  const a=AIRPORTS[b.dataset.ap]; if(!a) return;
+  setPlannerTab('trip');
+  setPoint('D', { name:a.name, lat:a.lat, lng:a.lng });
+  if(originPt) runRoute();
+  else { showToast(t('needOrigin'),'err'); const so=document.getElementById('selO'); if(so) so.focus(); }
+});
 document.getElementById('nearBtn').addEventListener('click', showNearby);
 document.getElementById('nearX').addEventListener('click', closeNearby);
 document.getElementById('goStart').addEventListener('click', startGo);
