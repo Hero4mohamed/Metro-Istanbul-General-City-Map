@@ -1048,6 +1048,7 @@ const I18N = {
     wcPlan:"Plan door-to-door trips — metro, tram, ferry & bus",
     wcLive:"Watch carriages move live & follow lines for alerts",
     wcLang:"Language, dark mode & more in Settings", wcGo:"Start exploring", helpBtnT:"Guide",
+    reportProblem:"Report a problem",
     sevMajor:"Major", sevPartial:"Partial", sevMinor:"Minor",
     "ttl:Service suspended":"Service suspended", "ttl:Section affected":"Section affected", "ttl:Service notice":"Service notice",
     serviceHours:"Service hours", every:"every", hours24:"24 hours", interchange:"Interchange", transferWord:"transfer",
@@ -1136,6 +1137,7 @@ const I18N = {
     wcPlan:"Kapıdan kapıya yolculuk planlayın — metro, tramvay, vapur ve otobüs",
     wcLive:"Vagonları canlı izleyin, uyarılar için hatları takip edin",
     wcLang:"Dil, karanlık mod ve fazlası Ayarlar'da", wcGo:"Keşfetmeye başla", helpBtnT:"Rehber",
+    reportProblem:"Sorun bildir",
     sevMajor:"Büyük", sevPartial:"Kısmi", sevMinor:"Hafif",
     "ttl:Service suspended":"Seferler durduruldu", "ttl:Section affected":"Etkilenen kesim", "ttl:Service notice":"Servis bildirimi",
     serviceHours:"Servis saatleri", every:"her", hours24:"24 saat", interchange:"Aktarma noktası", transferWord:"aktarma",
@@ -1224,6 +1226,7 @@ const I18N = {
     wcPlan:"خطط رحلات من الباب إلى الباب — مترو وترام وعبّارة وحافلة",
     wcLive:"شاهد العربات مباشرة وتابع الخطوط للتنبيهات",
     wcLang:"اللغة والوضع الداكن والمزيد في الإعدادات", wcGo:"ابدأ الاستكشاف", helpBtnT:"الدليل",
+    reportProblem:"أبلغ عن مشكلة",
     sevMajor:"كبير", sevPartial:"جزئي", sevMinor:"طفيف",
     "ttl:Service suspended":"الخدمة متوقفة", "ttl:Section affected":"قسم متأثر", "ttl:Service notice":"إشعار خدمة",
     serviceHours:"ساعات الخدمة", every:"كل", hours24:"على مدار الساعة", interchange:"محطة تحويل", transferWord:"تحويل",
@@ -1310,6 +1313,7 @@ const I18N = {
     wcPlan:"Planifiez porte-à-porte — métro, tram, ferry et bus",
     wcLive:"Suivez les rames en direct et les lignes pour les alertes",
     wcLang:"Langue, mode sombre et plus dans Réglages", wcGo:"Commencer l'exploration", helpBtnT:"Guide",
+    reportProblem:"Signaler un problème",
     sevMajor:"Majeure", sevPartial:"Partielle", sevMinor:"Mineure",
     "ttl:Service suspended":"Service suspendu", "ttl:Section affected":"Section affectée", "ttl:Service notice":"Avis de service",
     serviceHours:"Horaires de service", every:"toutes les", hours24:"24h/24", interchange:"Pôle d'échange", transferWord:"correspondance",
@@ -1580,6 +1584,17 @@ function showNearby(){
     const here=[geoPos.lat,geoPos.lng]; map.setView(here, Math.max(map.getZoom(),14));
     const near = stationList.map(c=>({c,d:metersBetween(here,[c.lat,c.lng])}))
                             .filter(x=>x.d<=2000).sort((a,b)=>a.d-b.d).slice(0,8);
+    // nearest bus stops too (available once the lazy GTFS data has integrated)
+    if(busReady){
+      const seenB=new Set(near.map(x=>fold(x.c.name))), busNear=[];
+      for(const [k,d] of nearbyNodes(here[0],here[1],2000,80)){
+        const m=nodeMeta[k]; if(m.kind!=='bus') continue;
+        const f=fold(m.name); if(seenB.has(f)) continue; seenB.add(f);
+        busNear.push({ c:{name:m.name,lat:m.lat,lng:m.lng,lines:new Set([m.ref])}, d, bus:true });
+        if(busNear.length>=4) break;
+      }
+      near.push(...busNear); near.sort((a,b)=>a.d-b.d); near.length=Math.min(near.length,10);
+    }
     renderNearby(near);
   }, geoErr, {enableHighAccuracy:true,timeout:12000,maximumAge:15000});
 }
@@ -1588,7 +1603,11 @@ function renderNearby(near){
   if(!near.length){ body.innerHTML=`<div class="none">${t('nearbyEmpty')}</div>`; }
   else body.innerHTML = near.map((x,i)=>{
     const c=x.c, wmin=Math.max(1,Math.round(x.d/WALK));
-    const chips=[...c.lines].slice(0,5).map(r=>`<span class="nb-badge" style="background:${colorForLine(r)};color:${inkOn(colorForLine(r))}">${svgEsc(r)}</span>`).join('');
+    const chips=[...c.lines].slice(0,5).map(r=>{
+      const col = x.bus ? BUS_COLOR : colorForLine(r);
+      const closed = !x.bus && closedCache[r];       // suspended / out-of-hours → dim + strike
+      return `<span class="nb-badge" style="background:${col};color:${inkOn(col)}${closed?';opacity:.45;text-decoration:line-through':''}">${svgEsc(r)}</span>`;
+    }).join('');
     return `<div class="nb-row" data-i="${i}"><div class="nb-main"><div class="nb-nm">${svgEsc(c.name)}</div><div class="nb-ch">${chips}</div></div>
       <div class="nb-meta">${Math.round(x.d)} m<span>${wmin} ${t('walkAway')}</span></div></div>`;
   }).join('');
@@ -2002,6 +2021,7 @@ BUS_GRAPH.forEach((line, li) => {
     for(let n=0;n<Math.min(cands.length,5);n++){ const dd=cands[n][0], k2=cands[n][1], w=TRANSFER_MIN+dd/80;
       G[k].push({to:k2,w}); G[k2].push({to:k,w}); }
   }
+  registerBusPlaces();   // late bus stops join place search + the door-to-door spatial grid
 }
 
 // binary min-heap (graph is now ~15k nodes → linear-scan Dijkstra too slow)
@@ -2046,13 +2066,64 @@ function nearbyNodes(lat,lng,radius,cap){
   }
   out.sort((a,b)=>a[1]-b[1]); return out.slice(0, cap||12);
 }
+// query-side folding: ALSO strips Turkish diacritics, so a visitor without a Turkish
+// keyboard can type "sisli" / "uskudar" / "kadikoy" and still find Şişli / Üsküdar / Kadıköy.
+// (fold() itself must stay diacritic-preserving — station clustering & routing key on it.)
+const foldQ = s => fold(s).normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/\u0131/g,'i');
 // searchable places: unique named stops across rail + ferry + bus (rail wins name clashes)
 const PLACES = (()=>{ const seen=new Set(), arr=[];
   for(const k in nodeMeta){ const m=nodeMeta[k]; if(!m.name) continue;
     if(m.kind==='bus' && m.name===m.ref+' durağı') continue;       // skip auto-named placeholder stops
     const f=fold(m.name); if(seen.has(f)) continue; seen.add(f);
-    arr.push({ name:m.name, lat:m.lat, lng:m.lng, ref:m.ref, bus:m.kind==='bus', _f:f }); }
+    arr.push({ name:m.name, lat:m.lat, lng:m.lng, ref:m.ref, bus:m.kind==='bus', _f:f, _q:foldQ(m.name) }); }
   arr.sort((a,b)=>a.name.localeCompare(b.name,'tr')); return arr; })();
+// bus stops arrive AFTER first paint (lazy bus-data.json) → register them into the search
+// list + the door-to-door spatial grid once integrateBuses has built their nodes
+function registerBusPlaces(){
+  const seen=new Set(PLACES.map(p=>p._f));
+  for(const k in nodeMeta){ const m=nodeMeta[k]; if(m.kind!=='bus') continue;
+    // EVERY bus node joins the routing grid (same stop name is served by many line-nodes)
+    const ck=Math.round(m.lat/GCELL)+'_'+Math.round(m.lng/GCELL);
+    let a=nodeGrid.get(ck); if(!a){ a=[]; nodeGrid.set(ck,a); } a.push(k);
+    // …but the search list only wants one entry per unique real name
+    if(!m.name || m.name===m.ref+' durağı') continue;
+    const f=fold(m.name); if(seen.has(f)) continue; seen.add(f);
+    PLACES.push({ name:m.name, lat:m.lat, lng:m.lng, ref:m.ref, bus:true, _f:f, _q:foldQ(m.name) });
+  }
+  PLACES.sort((a,b)=>a.name.localeCompare(b.name,'tr'));
+}
+// banded Levenshtein, early-exit past 2 — cheap enough for a no-match fallback sweep
+function editDist2(a,b){
+  const n=a.length, m=b.length; if(Math.abs(n-m)>2) return 3;
+  let prev=Array.from({length:m+1},(_,j)=>j), cur=new Array(m+1);
+  for(let i=1;i<=n;i++){ cur[0]=i; let rowMin=i;
+    for(let j=1;j<=m;j++){ cur[j]=Math.min(prev[j]+1, cur[j-1]+1, prev[j-1]+(a[i-1]===b[j-1]?0:1));
+      if(cur[j]<rowMin) rowMin=cur[j]; }
+    if(rowMin>2) return 3; const t2=prev; prev=cur; cur=t2; }
+  return prev[m];
+}
+// shared stop search: diacritic-insensitive prefix > substring > small-typo fallback
+function searchPlaces(q){
+  const f=foldQ(q); if(!f) return [];
+  const pre=[], sub=[];
+  for(const pl of PLACES){ if(pl._q.startsWith(f)) pre.push(pl); else if(pl._q.includes(f)) sub.push(pl); }
+  let out=pre.concat(sub);
+  if(!out.length && f.length>=3){                       // no direct hit → tolerate 1–2 typos
+    const maxD=f.length<=5?1:2, scored=[];
+    for(const pl of PLACES){
+      let best=3;
+      for(const tok of pl._q.split(/[\s\-–—\/().]+/)){
+        if(!tok || Math.abs(tok.length-f.length)>maxD) continue;
+        const d=editDist2(f,tok); if(d<best) best=d;
+      }
+      if(best<=maxD) scored.push([best,pl]);
+    }
+    // rank: closer edit distance, then rail stations before bus streets, then shorter names
+    scored.sort((a,b)=> a[0]-b[0] || (a[1].bus?1:0)-(b[1].bus?1:0) || a[1].name.length-b[1].name.length);
+    out=scored.map(x=>x[1]);
+  }
+  return out.slice(0,30);
+}
 let WALK = 80;        // metres / minute (adjustable via Settings → Walking pace)
 const ACCESS = 1100;  // max access-walk to the first/last stop (m)
 // route between two arbitrary points (or selected stops): walk to nearby stops → Dijkstra → walk out.
@@ -2847,13 +2918,11 @@ function useMyLocation(which, btn){
   }, e=>{ if(btn) btn.classList.remove('busy'); geoErr(e); }, {enableHighAccuracy:true,timeout:12000,maximumAge:15000});
 }
 
-// live search over every stop (rail + ferry + bus); prefix matches first
+// live search over every stop (rail + ferry + bus); diacritic-insensitive + typo-tolerant
 function acRender(which, q){
-  const listEl=document.getElementById(which==='O'?'acO':'acD'), f=fold(q);
-  if(!f){ listEl.classList.remove('show'); listEl.innerHTML=''; return; }
-  const pre=[], sub=[];
-  for(const pl of PLACES){ if(pl._f.startsWith(f)) pre.push(pl); else if(pl._f.includes(f)) sub.push(pl); }
-  const out=pre.concat(sub).slice(0,30);
+  const listEl=document.getElementById(which==='O'?'acO':'acD');
+  if(!foldQ(q)){ listEl.classList.remove('show'); listEl.innerHTML=''; return; }
+  const out=searchPlaces(q);
   if(!out.length){ listEl.innerHTML='<div class="ac-item" style="color:var(--dim)">No match — or drop a 📍 pin on the map</div>'; listEl.classList.add('show'); return; }
   listEl.innerHTML=out.map((pl,ix)=>{
     const col = pl.bus ? BUS_COLOR : colorForLine(pl.ref);
@@ -2878,8 +2947,8 @@ function resolveTyped(which){
   const val = document.getElementById(which==='O'?'selO':'selD').value.trim();
   if(!val){ if(which==='O') originPt=null; else destPt=null; return null; }
   if(cur && cur.name===val) return cur;             // already a chosen stop / pinned point
-  const f=fold(val);
-  const m = PLACES.find(p=>p._f===f) || PLACES.find(p=>p._f.startsWith(f)) || PLACES.find(p=>p._f.includes(f));
+  const f=foldQ(val);
+  const m = PLACES.find(p=>p._q===f) || PLACES.find(p=>p._q.startsWith(f)) || PLACES.find(p=>p._q.includes(f)) || searchPlaces(val)[0];
   if(m){ const pt={name:m.name,lat:m.lat,lng:m.lng}; if(which==='O') originPt=pt; else destPt=pt;
     document.getElementById(which==='O'?'selO':'selD').value=m.name; return pt; }
   return null;
@@ -3365,11 +3434,8 @@ function setAdvStop(i, pt){
 }
 function acRenderAdv(i, q){
   const listEl=document.getElementById('advL'+i); if(!listEl) return;
-  const f=fold(q);
-  if(!f){ listEl.classList.remove('show'); listEl.innerHTML=''; return; }
-  const pre=[], sub=[];
-  for(const pl of PLACES){ if(pl._f.startsWith(f)) pre.push(pl); else if(pl._f.includes(f)) sub.push(pl); }
-  const out=pre.concat(sub).slice(0,30);
+  if(!foldQ(q)){ listEl.classList.remove('show'); listEl.innerHTML=''; return; }
+  const out=searchPlaces(q);
   if(!out.length){ listEl.innerHTML=`<div class="ac-item" style="color:var(--dim)">${t('noLines')}</div>`; listEl.classList.add('show'); return; }
   listEl.innerHTML=out.map((pl,ix)=>{
     const col = pl.bus ? BUS_COLOR : colorForLine(pl.ref);
@@ -3419,8 +3485,8 @@ function resolveAdv(i){
   if(advStops[i]) return advStops[i];
   const inp=document.getElementById('advI'+i); const val=inp?inp.value.trim():'';
   if(!val) return null;
-  const f=fold(val);
-  const m = PLACES.find(p=>p._f===f) || PLACES.find(p=>p._f.startsWith(f)) || PLACES.find(p=>p._f.includes(f));
+  const f=foldQ(val);
+  const m = PLACES.find(p=>p._q===f) || PLACES.find(p=>p._q.startsWith(f)) || PLACES.find(p=>p._q.includes(f)) || searchPlaces(val)[0];
   if(m){ const pt={name:m.name,lat:m.lat,lng:m.lng}; advStops[i]=pt; if(inp) inp.value=m.name; return pt; }
   return null;
 }
@@ -4067,7 +4133,8 @@ function renderAnnouncements(){
   const body = document.getElementById('annBody');
   body.innerHTML = (DISRUPTIONS.length ? rows : `<div class="ann-none">${t('annNone')}</div>`)
     + (opRows ? `<div class="ann-sub">🚈 ${t('openHdr')}</div>${opRows}<div class="ann-note">${t('openFoot')}</div>` : '')
-    + `<div class="ann-foot">${t('annFoot')} <a href="https://www.metro.istanbul/SeferDurumlari/SeferDetaylari" target="_blank" rel="noopener">metro.istanbul ↗</a></div>`;
+    + `<div class="ann-foot">${t('annFoot')} <a href="https://www.metro.istanbul/SeferDurumlari/SeferDetaylari" target="_blank" rel="noopener">metro.istanbul ↗</a>
+       · <a href="https://github.com/Hero4mohamed/Metro-Istanbul-General-City-Map/issues/new" target="_blank" rel="noopener">🐞 ${t('reportProblem')}</a></div>`;
   body.querySelectorAll('.ann-item[data-id]').forEach(el => el.addEventListener('click', ()=>{
     const d = DISRUPTIONS.find(x=>x.id===el.dataset.id); if(d) openDisruption(d);
   }));
