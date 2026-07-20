@@ -137,6 +137,28 @@
   .tabs button[data-tab="vision"].active{background:rgba(192,132,252,.16);color:#DDB9FF;box-shadow:inset 0 0 0 1px rgba(192,132,252,.5),0 2px 12px -5px #C084FC;}
   .tabs button[data-tab="bus"].active{background:rgba(251,191,36,.15);color:#FCD97C;box-shadow:inset 0 0 0 1px rgba(251,191,36,.5),0 2px 12px -5px #FBBF24;}
   .tabs button[data-tab="weather"].active{background:rgba(56,189,248,.16);color:#9BDCFB;box-shadow:inset 0 0 0 1px rgba(56,189,248,.5),0 2px 12px -5px #38BDF8;}
+  .tabs button[data-tab="intercity"].active{background:rgba(200,16,46,.16);color:#FF9AA6;box-shadow:inset 0 0 0 1px rgba(200,16,46,.5),0 2px 12px -5px #C8102E;}
+  /* intercity (TCDD) service list */
+  .ic-list{display:flex;flex-direction:column;gap:6px;max-height:44vh;overflow-y:auto;margin-top:8px;}
+  .ic-row{padding:9px 10px;border-radius:12px;background:var(--surface);border:1px solid var(--stroke);cursor:pointer;transition:all .15s var(--ease);}
+  .ic-row:hover{background:var(--surface-2);transform:translateX(2px);}
+  .ic-row.sel{border-color:var(--accent);box-shadow:0 0 0 2px var(--ring);}
+  .ic-head{display:flex;align-items:center;gap:7px;margin-bottom:5px;}
+  .ic-dot{width:9px;height:9px;border-radius:3px;flex:none;}
+  .ic-nm{font-size:12px;font-weight:700;color:var(--text);flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .ic-mode{font-size:8px;font-weight:800;letter-spacing:.5px;padding:2px 6px;border-radius:99px;flex:none;
+    background:rgba(255,255,255,.09);color:var(--muted);}
+  .ic-mode.yht{background:rgba(200,16,46,.18);color:#FF9AA6;}
+  .ic-bits{display:flex;flex-wrap:wrap;gap:5px;}
+  .ic-b{font-size:9.5px;font-weight:600;color:var(--muted);background:var(--track);padding:2px 7px;border-radius:7px;}
+  .ic-b.ic-fare{color:#7CF0BE;}
+  .ic-when{font-size:9.5px;color:var(--muted);margin-top:4px;font-weight:600;}
+  .ic-stops{font-size:9px;color:var(--dim);margin-top:3px;}
+  .ic-foot{font-size:9px;color:var(--dim);padding-top:7px;margin-top:7px;border-top:1px solid var(--stroke);line-height:1.55;}
+  .ic-foot a{color:var(--accent);text-decoration:none;font-weight:700;display:block;margin-top:3px;}
+  .ic-foot a:hover{text-decoration:underline;}
+  body.light .ic-b.ic-fare{color:#067A54;}
+  body.light .tabs button[data-tab="intercity"].active{color:#B4121F;}
   /* weather card */
   .wx-clockbox{text-align:center;padding:10px 0 12px;border-bottom:1px solid var(--stroke);margin-bottom:10px;
     background:radial-gradient(60% 100% at 50% 0%,rgba(56,189,248,.09),transparent 70%);border-radius:12px 12px 0 0;}
@@ -828,6 +850,7 @@
       <button data-tab="active" class="active" data-i18n="tabActive">● Active</button>
       <button data-tab="vision" data-i18n="tabVision">◇ Vision</button>
       <button data-tab="bus" data-i18n="tabBus">▤ Buses</button>
+      <button data-tab="intercity" data-i18n="tabIntercity">🚄 Intercity</button>
       <button data-tab="weather" data-i18n="tabWeather">☀ Weather</button>
     </div>
   </div>
@@ -885,6 +908,20 @@
     <div class="bus-count" id="busCount"></div>
     <div class="bus-detail" id="busDetail"></div>
     <div class="bus-list" id="busList"></div>
+  </div>
+
+  <div class="card glass" id="cardIntercity" style="display:none;">
+    <div class="sec" data-i18n="intercityTitle">Intercity Rail · TCDD</div>
+    <div class="seg ptabs" id="icModeSeg">
+      <button data-icm="all" class="active" data-i18n="icAll">All</button>
+      <button data-icm="yht" data-i18n="icYht">🚄 YHT</button>
+      <button data-icm="mainline" data-i18n="icMain">🛏 Ana Hat</button>
+    </div>
+    <div class="ic-list" id="icList"></div>
+    <div class="ic-foot">
+      <span data-i18n="icFareNote">Fares = TCDD tariff of 15 Jan 2026, standard class. Times are typical.</span>
+      <a href="https://ebilet.tcddtasimacilik.gov.tr/" target="_blank" rel="noopener" data-i18n="icBook">Book &amp; live times · TCDD ↗</a>
+    </div>
   </div>
 
   <div class="card glass" id="cardPlanner">
@@ -1049,6 +1086,11 @@ const I18N = {
     wcLive:"Watch carriages move live & follow lines for alerts",
     wcLang:"Language, dark mode & more in Settings", wcGo:"Start exploring", helpBtnT:"Guide",
     reportProblem:"Report a problem",
+    journeyWord:"Journey",
+    tabIntercity:"🚄 Intercity", intercityTitle:"Intercity Rail · TCDD",
+    icAll:"All", icYht:"🚄 YHT", icMain:"🛏 Ana Hat", icPerDay:"day", icSleeper:"sleeper", icRegional:"Regional",
+    icFareNote:"Fares = TCDD tariff of 15 Jan 2026, standard class. Times are typical journey times.",
+    icBook:"Book & live times · TCDD ↗",
     sevMajor:"Major", sevPartial:"Partial", sevMinor:"Minor",
     "ttl:Service suspended":"Service suspended", "ttl:Section affected":"Section affected", "ttl:Service notice":"Service notice",
     serviceHours:"Service hours", every:"every", hours24:"24 hours", interchange:"Interchange", transferWord:"transfer",
@@ -1138,6 +1180,11 @@ const I18N = {
     wcLive:"Vagonları canlı izleyin, uyarılar için hatları takip edin",
     wcLang:"Dil, karanlık mod ve fazlası Ayarlar'da", wcGo:"Keşfetmeye başla", helpBtnT:"Rehber",
     reportProblem:"Sorun bildir",
+    journeyWord:"Yolculuk",
+    tabIntercity:"🚄 Şehirlerarası", intercityTitle:"Şehirlerarası Tren · TCDD",
+    icAll:"Tümü", icYht:"🚄 YHT", icMain:"🛏 Ana Hat", icPerDay:"gün", icSleeper:"yataklı", icRegional:"Bölgesel",
+    icFareNote:"Ücretler = 15 Oca 2026 TCDD tarifesi, standart sınıf. Süreler tipik yolculuk süreleridir.",
+    icBook:"Bilet & canlı saatler · TCDD ↗",
     sevMajor:"Büyük", sevPartial:"Kısmi", sevMinor:"Hafif",
     "ttl:Service suspended":"Seferler durduruldu", "ttl:Section affected":"Etkilenen kesim", "ttl:Service notice":"Servis bildirimi",
     serviceHours:"Servis saatleri", every:"her", hours24:"24 saat", interchange:"Aktarma noktası", transferWord:"aktarma",
@@ -1227,6 +1274,11 @@ const I18N = {
     wcLive:"شاهد العربات مباشرة وتابع الخطوط للتنبيهات",
     wcLang:"اللغة والوضع الداكن والمزيد في الإعدادات", wcGo:"ابدأ الاستكشاف", helpBtnT:"الدليل",
     reportProblem:"أبلغ عن مشكلة",
+    journeyWord:"الرحلة",
+    tabIntercity:"🚄 بين المدن", intercityTitle:"قطارات بين المدن · TCDD",
+    icAll:"الكل", icYht:"🚄 سريع", icMain:"🛏 الخط الرئيسي", icPerDay:"يوم", icSleeper:"عربة نوم", icRegional:"إقليمي",
+    icFareNote:"الأسعار = تعرفة TCDD في ١٥ يناير ٢٠٢٦، الدرجة العادية. الأوقات تقريبية.",
+    icBook:"الحجز والمواعيد المباشرة · TCDD ↗",
     sevMajor:"كبير", sevPartial:"جزئي", sevMinor:"طفيف",
     "ttl:Service suspended":"الخدمة متوقفة", "ttl:Section affected":"قسم متأثر", "ttl:Service notice":"إشعار خدمة",
     serviceHours:"ساعات الخدمة", every:"كل", hours24:"على مدار الساعة", interchange:"محطة تحويل", transferWord:"تحويل",
@@ -1314,6 +1366,11 @@ const I18N = {
     wcLive:"Suivez les rames en direct et les lignes pour les alertes",
     wcLang:"Langue, mode sombre et plus dans Réglages", wcGo:"Commencer l'exploration", helpBtnT:"Guide",
     reportProblem:"Signaler un problème",
+    journeyWord:"Trajet",
+    tabIntercity:"🚄 Interurbain", intercityTitle:"Trains interurbains · TCDD",
+    icAll:"Tous", icYht:"🚄 YHT", icMain:"🛏 Grandes lignes", icPerDay:"jour", icSleeper:"couchettes", icRegional:"Régional",
+    icFareNote:"Tarifs = grille TCDD du 15 janv. 2026, classe standard. Durées typiques.",
+    icBook:"Réserver &amp; horaires en direct · TCDD ↗",
     sevMajor:"Majeure", sevPartial:"Partielle", sevMinor:"Mineure",
     "ttl:Service suspended":"Service suspendu", "ttl:Section affected":"Section affectée", "ttl:Service notice":"Avis de service",
     serviceHours:"Horaires de service", every:"toutes les", hours24:"24h/24", interchange:"Pôle d'échange", transferWord:"correspondance",
@@ -1717,9 +1774,10 @@ const KIND = {
   funicular:{ speed:28, weight:3.5, dash:null,    label:"Funicular" },
   cable:    { speed:14, weight:3.5, dash:null,    label:"Cable Car" },
   metrobus: { speed:42, weight:3.5, dash:"7,6",   label:"Metrobüs (BRT)" },
-  ferry:    { speed:26, weight:1.5, dash:"1,7",   label:"Ferry (Vapur)" }
+  ferry:    { speed:26, weight:1.5, dash:"1,7",   label:"Ferry (Vapur)" },
+  intercity:{ speed:200,weight:3,   dash:null,    label:"Intercity (TCDD)" }
 };
-const GROUP_ORDER = ["subway","marmaray","suburban","tram","funicular","cable","metrobus","ferry"];
+const GROUP_ORDER = ["subway","marmaray","suburban","tram","funicular","cable","metrobus","ferry","intercity"];
 const DWELL = 4;             // seconds dwell at each station (sim time)
 const TRANSFER_MIN = 4;      // walking-transfer penalty (minutes)
 // typical Metro İstanbul service hours / headways (per mode)
@@ -1853,8 +1911,12 @@ function isLive(line){
   if(line.launch) return Date.now() >= Date.parse(line.launch+'T00:00:00');
   return false;
 }
-const liveLines   = NETWORK.filter(isLive);
-const visionLines = NETWORK.filter(l => !isLive(l));
+// Intercity (TCDD national rail) is its OWN scope: it must stay out of liveLines, which drives
+// the station registry, the routing graph, carriage sim, legend and the headline stats — a YHT
+// stop 500 km away has no business in the İstanbul trip planner.
+const intercityLines = NETWORK.filter(l => l.scope==='intercity');
+const liveLines   = NETWORK.filter(l => isLive(l) && l.scope!=='intercity');
+const visionLines = NETWORK.filter(l => !isLive(l) && l.scope!=='intercity');
 
 /* ===========================================================================
    2. STATION REGISTRY (merge same-named stops → interchanges)
@@ -2184,7 +2246,8 @@ function siblingBuses(b, a, exclude){
 /* ===========================================================================
    4. LEAFLET MAP + LAYERS
    =========================================================================== */
-const map = L.map('map', { zoomControl:true, preferCanvas:true, minZoom:9, maxZoom:18 })
+// minZoom 6 (not 9) so the Intercity tab can show the whole country — Ankara–Kars is 1,300 km
+const map = L.map('map', { zoomControl:true, preferCanvas:true, minZoom:6, maxZoom:18 })
              .setView([41.045, 29.00], 11);
 L.control.zoom({ position:'bottomright' });
 
@@ -2805,6 +2868,15 @@ function openLine(line){
     if(cl && cl.lines.size>1){ const others=[...cl.lines].filter(r=>r!==line.ref); if(others.length) conns.push({at:st.name, others}); }
   });
   const third = live ? conns.length : (line.launch ? fmtLaunch(line.launch) : t('soonWord'));
+  if(line.scope==='intercity'){
+    // never derive length from geometry here: an intercity relation stitches with gaps, so
+    // _len under-reports badly (İstanbul–Ankara → 244 of 533 km). Curated km or nothing.
+    const km = line.km ? distNum(line.km).toFixed(0) : '—';
+    document.getElementById('lpStats').innerHTML =
+      `<div class="c"><b>${km}</b><span>${distUnit()}</span></div>
+       <div class="c"><b>${icDur(line.mins)}</b><span>${t('journeyWord')}</span></div>
+       <div class="c"><b style="font-size:${line.fare?'15px':'11px'}">${line.fare?line.fare+' ₺':'—'}</b><span>${t('fareApprox')}</span></div>`;
+  } else
   document.getElementById('lpStats').innerHTML =
     `<div class="c"><b>${distNum(line._len/1000).toFixed(1)}</b><span>${distUnit()}</span></div>
      <div class="c"><b>${line.stations.length||'—'}</b><span>${t('stationsLower')}</span></div>
@@ -3564,7 +3636,8 @@ function runRoute(){
    8. UI WIRING
    =========================================================================== */
 let showTrains=true, showStations=true, simSpeed=3, currentTab='active';
-function tabLines(){ return currentTab==='active' ? liveLines : visionLines; }
+function tabLines(){ return currentTab==='active' ? liveLines
+                          : currentTab==='intercity' ? intercityLines : visionLines; }
 
 // switch between Active Network, Vision & Expansion, and Bus Directory scopes
 let busListBuilt = false;
@@ -3576,11 +3649,15 @@ function setTab(t){
   map.removeLayer(ghostGroup); map.removeLayer(stationGroup); map.removeLayer(plannedStationGroup);
   busLayer.clearLayers(); map.removeLayer(weatherLayer);
   map.removeLayer(disruptionLayer);                          // hazard overlays belong to Active only
-  const hideCore = (t==='bus' || t==='weather');
+  const hideCore = (t==='bus' || t==='weather' || t==='intercity');
   document.getElementById('cardLines').style.display   = hideCore ? 'none' : '';
   document.getElementById('cardPlanner').style.display = hideCore ? 'none' : '';
   document.getElementById('cardBus').style.display     = (t==='bus') ? '' : 'none';
   document.getElementById('cardWeather').style.display = (t==='weather') ? '' : 'none';
+  document.getElementById('cardIntercity').style.display = (t==='intercity') ? '' : 'none';
+  if(t!=='intercity' && icReturn){                           // restore the İstanbul view on the way out
+    map.setView(icReturn.c, icReturn.z, {animate:false}); icReturn=null;
+  }
   if(t==='active'){
     liveLines.forEach(l => { if(lineLayers[l.ref].on) lineLayers[l.ref].group.addTo(map); });
     if(showStations) stationGroup.addTo(map);
@@ -3591,6 +3668,14 @@ function setTab(t){
     visionLines.forEach(l => { if(lineLayers[l.ref].on) lineLayers[l.ref].group.addTo(map); });
     if(showStations) plannedStationGroup.addTo(map);
     buildLegend();
+  } else if(t==='intercity'){
+    // national scale: remember the İstanbul view, then frame the whole TCDD network
+    if(!icReturn) icReturn = { c:map.getCenter(), z:map.getZoom() };
+    intercityLines.forEach(l => { if(lineLayers[l.ref].on) lineLayers[l.ref].group.addTo(map); });
+    intercityStationGroup.addTo(map);
+    if(!icListBuilt){ renderIntercityList(); icListBuilt = true; }
+    fitIntercity();
+    buildLegend();
   } else if(t==='weather'){
     ghostGroup.addTo(map);                                   // faint network for orientation
     weatherLayer.addTo(map);
@@ -3600,6 +3685,68 @@ function setTab(t){
     if(!busListBuilt){ renderBusList(''); busListBuilt = true; }
   }
 }
+
+/* ===========================================================================
+   INTERCITY RAIL (TCDD) — national YHT + Ana Hat services on their own tab.
+   Separate scope from the İstanbul network: own station layer, own list card,
+   own map framing. Fares/times are curated published figures (see the card
+   footer for the tariff date) and every row links out to TCDD for live booking.
+   =========================================================================== */
+let icReturn = null, icListBuilt = false, icMode = 'all', icSelected = null;
+const intercityStationGroup = L.layerGroup();
+intercityLines.forEach(line => line.stations.forEach(st => {
+  L.circleMarker([st.lat, st.lng], { renderer:lineRenderer, radius:3.4, color:line.color,
+      weight:1.6, fillColor:'#0b0f16', fillOpacity:1 })
+    .bindTooltip(`${svgEsc(st.name)} · ${svgEsc(line.ref)}`, { className:'lt', direction:'top' })
+    .on('click', ()=> openLine(line))
+    .addTo(intercityStationGroup);
+}));
+function fitIntercity(lines){
+  const src = (lines && lines.length) ? lines : intercityLines;
+  const pts = [];
+  src.forEach(l => l.paths.forEach(p => { pts.push(p[0], p[p.length-1], p[Math.floor(p.length/2)]); }));
+  if(pts.length) map.fitBounds(L.latLngBounds(pts).pad(0.08), { animate:false });
+}
+function icDur(m){
+  if(m==null) return '—';
+  const h=Math.floor(m/60), mm=m%60;
+  return h ? (h+'h'+(mm?' '+mm+'m':'')) : mm+'m';
+}
+function icRows(){
+  return intercityLines.filter(l => icMode==='all' ? true
+        : icMode==='yht' ? l.mode==='yht' : (l.mode==='mainline' || l.mode==='regional'));
+}
+function renderIntercityList(){
+  const el = document.getElementById('icList'); if(!el) return;
+  const rows = icRows();
+  el.innerHTML = rows.map((l,i)=>{
+    const ends = l.official.split('·').pop().trim();
+    const bits = [];
+    if(l.mins)  bits.push(`<span class="ic-b">⏱ ${icDur(l.mins)}</span>`);
+    if(l.fare)  bits.push(`<span class="ic-b ic-fare">🎫 ${l.fare} ₺</span>`);
+    if(l.daily) bits.push(`<span class="ic-b">${l.daily}×/${t('icPerDay')}</span>`);
+    if(l.km)    bits.push(`<span class="ic-b">${distNum(l.km).toFixed(0)} ${distUnit()}</span>`);
+    if(l.sleeper) bits.push(`<span class="ic-b">🛏 ${t('icSleeper')}</span>`);
+    const when = (l.first && l.last) ? `<div class="ic-when">🕑 ${l.first} – ${l.last}</div>` : '';
+    return `<div class="ic-row${icSelected===l.ref?' sel':''}" data-i="${i}">
+      <div class="ic-head"><span class="ic-dot" style="background:${l.color}"></span>
+        <span class="ic-nm">${svgEsc(ends)}</span>
+        <span class="ic-mode ${l.mode}">${l.mode==='yht'?'YHT':(l.mode==='regional'?t('icRegional'):'Ana Hat')}</span></div>
+      <div class="ic-bits">${bits.join('')}</div>${when}
+      <div class="ic-stops">${l.stations.length} ${t('stationsLower')} · ${svgEsc(l.operator)}</div></div>`;
+  }).join('') || `<div class="none">${t('noLines')}</div>`;
+  el.querySelectorAll('.ic-row').forEach(r => r.addEventListener('click', ()=>{
+    const l = rows[+r.dataset.i]; if(!l) return;
+    icSelected = l.ref; renderIntercityList();
+    fitIntercity([l]); openLine(l);
+  }));
+}
+document.getElementById('icModeSeg').addEventListener('click', e=>{
+  const b = e.target.closest('button[data-icm]'); if(!b) return;
+  icMode = b.dataset.icm;
+  document.querySelectorAll('#icModeSeg button').forEach(x=>x.classList.toggle('active', x===b));
+  renderIntercityList();
+});
 
 /* ---- Weather & time per belediye (39 ilçe) — Open-Meteo, keyless + CORS-open ---- */
 const DISTRICTS = [
@@ -4211,7 +4358,8 @@ function setupMobile(){
     b.addEventListener('click',()=>{
       if(k==='map'){ openSheet(null); return; }
       if(k==='weather'){ setTab('weather'); }
-      if(k==='planner' && (currentTab==='weather'||currentTab==='bus')) setTab('active');
+      // the planner only works on the İstanbul network — leave any non-metro scope first
+      if(k==='planner' && (currentTab==='weather'||currentTab==='bus'||currentTab==='intercity')) setTab('active');
       openSheet(k);
     });
     mNavBtns[k]=b; nav.appendChild(b);

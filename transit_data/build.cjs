@@ -19,7 +19,9 @@ const miStns  = JSON.parse(fs.readFileSync(path.join(DIR, 'mi-stations.json'), '
 const access  = JSON.parse(fs.readFileSync(path.join(DIR, 'accessibility.json'), 'utf8'));   // İBB+OSM step-free/elevator data
 const attract = JSON.parse(fs.readFileSync(path.join(DIR, 'attractions.json'), 'utf8'));     // curated İstanbul landmarks for Explore
 const openings= JSON.parse(fs.readFileSync(path.join(DIR, 'openings.json'), 'utf8'));        // curated projected new-line opening dates (İBB targets)
-const data = JSON.stringify(active.concat(b2, ferry, cable, planned, manual));
+const intercity=JSON.parse(fs.readFileSync(path.join(DIR, 'intercity-lines.json'), 'utf8')); // TCDD national rail (YHT + ana hat), scope:'intercity'
+// intercity joins NETWORK so it inherits project()/lineLayers/openLine; scope keeps it off the metro tabs
+const data = JSON.stringify(active.concat(b2, ferry, cable, planned, manual, intercity));
 
 // lift the TR→EN translator out of the scraper so the CLIENT can re-translate any
 // disruption that still contains Turkish (safety net for wording newer than the vocab)
@@ -38,7 +40,7 @@ const html = template.replace('__NETWORK_JSON__', data)
                      .replace('__ACCESS_JSON__', () => JSON.stringify(access))
                      .replace('__ATTRACTIONS_JSON__', () => JSON.stringify(attract))
                      .replace('__TRANSLATOR_JS__', () => translatorJS);
-console.log('ACTIVE:', active.length, ' B2:', b2.length, ' FERRY:', ferry.length, ' CABLE:', cable.length, ' PLANNED:', planned.length, ' MANUAL:', manual.length, ' BUSES:', buses.length, ' BUSGRAPH:', busGraph.length, ' DISRUPTIONS:', disrupt.length, ' MISTATIONS:', miStns.length, ' ACCESS:', access.length);
+console.log('ACTIVE:', active.length, ' B2:', b2.length, ' FERRY:', ferry.length, ' CABLE:', cable.length, ' PLANNED:', planned.length, ' MANUAL:', manual.length, ' INTERCITY:', intercity.length, ' BUSES:', buses.length, ' BUSGRAPH:', busGraph.length, ' DISRUPTIONS:', disrupt.length, ' MISTATIONS:', miStns.length, ' ACCESS:', access.length);
 
 const outPath = path.join(ROOT, 'index.html');   // GitHub Pages serves the repo-root index.html
 fs.writeFileSync(outPath, html);
