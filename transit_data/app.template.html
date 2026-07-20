@@ -33,7 +33,7 @@
 <style>
   :root{
     --obsidian:#070A12; --panel:rgba(13,17,27,0.74); --stroke:rgba(255,255,255,0.08);
-    --stroke-2:rgba(255,255,255,0.15); --text:#EEF2F8; --muted:#939DB2; --dim:#5E6880;
+    --stroke-2:rgba(255,255,255,0.15); --text:#EEF2F8; --muted:#9AA4B8; --dim:#78849C;
     --accent:#34D399; --accent-2:#2DD4BF; --gold:#FBBF24;
     --grad-accent:linear-gradient(135deg,#4ADE80,#14B8A6);
     --surface:rgba(255,255,255,.045); --surface-2:rgba(255,255,255,.08);
@@ -46,7 +46,7 @@
   }
   body.light{
     --obsidian:#E9EEF5; --panel:rgba(255,255,255,0.84); --stroke:rgba(15,23,42,0.10);
-    --stroke-2:rgba(15,23,42,0.16); --text:#141C2B; --muted:#586274; --dim:#93A0B3;
+    --stroke-2:rgba(15,23,42,0.16); --text:#141C2B; --muted:#4E5868; --dim:#6B7789;
     --surface:rgba(15,23,42,.04); --surface-2:rgba(15,23,42,.07); --track:rgba(15,23,42,.06);
     --ring:rgba(20,140,100,.28); --svg-hole:#ffffff;
   }
@@ -94,8 +94,8 @@
     box-shadow:0 24px 60px -18px rgba(0,0,0,.8),0 2px 8px rgba(0,0,0,.35),inset 0 1px 0 rgba(255,255,255,.07);}
 
   /* Top bar */
-  .topbar{position:fixed;top:14px;left:14px;padding:14px 17px;z-index:1000;max-width:320px;animation:cardIn .5s var(--ease) backwards;}
-  .topbar h1{font-family:var(--display);font-size:15px;letter-spacing:2.6px;font-weight:700;display:flex;align-items:center;gap:10px;cursor:default;}
+  .topbar{position:fixed;top:14px;left:14px;padding:14px 17px;z-index:1000;max-width:348px;animation:cardIn .5s var(--ease) backwards;}
+  .topbar h1{font-family:var(--display);font-size:15px;letter-spacing:2.1px;font-weight:700;display:flex;align-items:center;gap:10px;cursor:default;}
   .topbar .logo{flex:none;filter:drop-shadow(0 4px 12px rgba(52,211,153,.35));transition:transform .35s var(--ease);}
   .topbar h1:hover .logo{transform:rotate(-8deg) scale(1.08);}
   .logo-hub{animation:hubPulse 2.4s ease-in-out infinite;}
@@ -108,6 +108,19 @@
   .stats .kv span{font-size:7.8px;color:var(--dim);letter-spacing:1.1px;text-transform:uppercase;font-weight:600;}
   @keyframes pulse{0%,100%{opacity:1;transform:scale(1);}50%{opacity:.45;transform:scale(.82);}}
   @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important;}}
+
+  /* ---- accessibility: visible keyboard focus everywhere. Mouse clicks stay clean because
+     :focus-visible only matches keyboard/AT focus, so this costs the design nothing. ---- */
+  :focus{outline:none;}
+  button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,
+  [tabindex]:focus-visible,.ic-row:focus-visible,.bus-row:focus-visible,.nb-row:focus-visible,
+  .ann-item:focus-visible,.ropt:focus-visible,.plan-item:focus-visible{
+    outline:2px solid var(--accent);outline-offset:2px;border-radius:9px;}
+  .tabs button:focus-visible,.seg button:focus-visible{outline-offset:-1px;}
+  /* skip-link: first tab stop, jumps keyboard users straight to the trip planner */
+  .skip-link{position:fixed;top:-60px;left:14px;z-index:2000;padding:9px 14px;border-radius:0 0 12px 12px;
+    background:var(--accent);color:#03130A;font-size:12px;font-weight:800;text-decoration:none;transition:top .18s var(--ease);}
+  .skip-link:focus{top:0;}
 
   /* Right control stack */
   .controls{position:fixed;top:14px;right:14px;width:286px;z-index:1000;display:flex;flex-direction:column;gap:12px;
@@ -129,9 +142,12 @@
   .topbar .langseg{margin-top:11px;justify-content:flex-end;}
   .topbar .langseg button{flex:1 1 0;min-width:0;padding:5px 0;letter-spacing:1.2px;}
 
-  .tabs{display:flex;gap:4px;background:var(--track);border:1px solid var(--stroke);border-radius:13px;padding:3px;}
-  .tabs button{flex:1;padding:9px 0;border-radius:10px;border:none;background:transparent;color:var(--muted);
-    font-family:var(--font);font-size:10.5px;font-weight:700;cursor:pointer;transition:all .18s var(--ease);letter-spacing:.3px;}
+  /* 5 tabs never fit on one 286px row (labels are longer in tr/fr/ar), so they wrap into a
+     tidy 3+2 grid instead of squeezing the text onto two lines inside each button */
+  .tabs{display:flex;flex-wrap:wrap;gap:4px;background:var(--track);border:1px solid var(--stroke);border-radius:13px;padding:3px;}
+  .tabs button{flex:1 1 29%;min-width:0;padding:8px 5px;border-radius:10px;border:none;background:transparent;color:var(--muted);
+    font-family:var(--font);font-size:10px;font-weight:700;cursor:pointer;transition:all .18s var(--ease);letter-spacing:.2px;
+    white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
   .tabs button:hover{color:var(--text);background:var(--surface);}
   .tabs button[data-tab="active"].active{background:rgba(52,211,153,.17);color:#7CF0BE;box-shadow:inset 0 0 0 1px rgba(52,211,153,.5),0 2px 12px -5px var(--accent);}
   .tabs button[data-tab="vision"].active{background:rgba(192,132,252,.16);color:#DDB9FF;box-shadow:inset 0 0 0 1px rgba(192,132,252,.5),0 2px 12px -5px #C084FC;}
@@ -495,10 +511,14 @@
     background:var(--surface);color:var(--text);cursor:pointer;display:flex;align-items:center;justify-content:center;opacity:.85;transition:all .2s var(--ease);z-index:3;}
   .settings-btn:hover{opacity:1;color:var(--accent);border-color:var(--ring);transform:rotate(40deg);}
   .settings-btn:active{transform:scale(.9) rotate(40deg);}
-  .topbar h1{padding-right:30px;}
+  /* clear BOTH action buttons (settings at right:13 + help at right:49, 32px each) — with only
+     30px the gear sat on top of "RAY-NET" once the help button was added */
+  .topbar h1{padding-right:72px;}
   body.mobile .topbar h1{padding-right:4px;}
   body.mobile .settings-btn{position:static;flex:0 0 auto;}
-  .help-btn{right:51px;font-size:14px;font-weight:800;color:var(--muted);}
+  .help-btn{right:49px;font-size:14px;font-weight:800;color:var(--muted);}
+  .help-btn:hover{transform:none;color:var(--accent);}
+  .help-btn:active{transform:scale(.9);}
   /* first-visit welcome card */
   .wc-overlay{position:fixed;inset:0;z-index:1600;display:none;align-items:center;justify-content:center;
     background:rgba(2,4,8,.55);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);padding:20px;}
@@ -688,6 +708,7 @@
 </style>
 </head>
 <body>
+<a href="#cardPlanner" class="skip-link" data-i18n="skipToPlanner">Skip to trip planner</a>
 <div id="map"></div>
 <canvas id="trainCanvas"></canvas>
 <button id="locateFab" class="locate-fab glass" data-i18n-title="locateMe" title="My location" aria-label="My location">
@@ -846,12 +867,12 @@
 
 <div class="controls">
   <div class="card glass" style="padding:7px;">
-    <div class="tabs" id="tabs">
-      <button data-tab="active" class="active" data-i18n="tabActive">● Active</button>
-      <button data-tab="vision" data-i18n="tabVision">◇ Vision</button>
-      <button data-tab="bus" data-i18n="tabBus">▤ Buses</button>
-      <button data-tab="intercity" data-i18n="tabIntercity">🚄 Intercity</button>
-      <button data-tab="weather" data-i18n="tabWeather">☀ Weather</button>
+    <div class="tabs" id="tabs" role="tablist" aria-label="Map view">
+      <button data-tab="active" class="active" role="tab" aria-selected="true" data-i18n="tabActive">● Active</button>
+      <button data-tab="vision" role="tab" aria-selected="false" data-i18n="tabVision">◇ Vision</button>
+      <button data-tab="bus" role="tab" aria-selected="false" data-i18n="tabBus">▤ Buses</button>
+      <button data-tab="intercity" role="tab" aria-selected="false" data-i18n="tabIntercity">🚄 Intercity</button>
+      <button data-tab="weather" role="tab" aria-selected="false" data-i18n="tabWeather">☀ Weather</button>
     </div>
   </div>
   <div class="card glass">
@@ -1086,6 +1107,7 @@ const I18N = {
     wcLive:"Watch carriages move live & follow lines for alerts",
     wcLang:"Language, dark mode & more in Settings", wcGo:"Start exploring", helpBtnT:"Guide",
     reportProblem:"Report a problem",
+    skipToPlanner:"Skip to trip planner",
     journeyWord:"Journey",
     tabIntercity:"🚄 Intercity", intercityTitle:"Intercity Rail · TCDD",
     icAll:"All", icYht:"🚄 YHT", icMain:"🛏 Ana Hat", icPerDay:"day", icSleeper:"sleeper", icRegional:"Regional",
@@ -1180,6 +1202,7 @@ const I18N = {
     wcLive:"Vagonları canlı izleyin, uyarılar için hatları takip edin",
     wcLang:"Dil, karanlık mod ve fazlası Ayarlar'da", wcGo:"Keşfetmeye başla", helpBtnT:"Rehber",
     reportProblem:"Sorun bildir",
+    skipToPlanner:"Yolculuk planlayıcıya geç",
     journeyWord:"Yolculuk",
     tabIntercity:"🚄 Şehirlerarası", intercityTitle:"Şehirlerarası Tren · TCDD",
     icAll:"Tümü", icYht:"🚄 YHT", icMain:"🛏 Ana Hat", icPerDay:"gün", icSleeper:"yataklı", icRegional:"Bölgesel",
@@ -1274,6 +1297,7 @@ const I18N = {
     wcLive:"شاهد العربات مباشرة وتابع الخطوط للتنبيهات",
     wcLang:"اللغة والوضع الداكن والمزيد في الإعدادات", wcGo:"ابدأ الاستكشاف", helpBtnT:"الدليل",
     reportProblem:"أبلغ عن مشكلة",
+    skipToPlanner:"تخطَّ إلى مخطط الرحلة",
     journeyWord:"الرحلة",
     tabIntercity:"🚄 بين المدن", intercityTitle:"قطارات بين المدن · TCDD",
     icAll:"الكل", icYht:"🚄 سريع", icMain:"🛏 الخط الرئيسي", icPerDay:"يوم", icSleeper:"عربة نوم", icRegional:"إقليمي",
@@ -1366,6 +1390,7 @@ const I18N = {
     wcLive:"Suivez les rames en direct et les lignes pour les alertes",
     wcLang:"Langue, mode sombre et plus dans Réglages", wcGo:"Commencer l'exploration", helpBtnT:"Guide",
     reportProblem:"Signaler un problème",
+    skipToPlanner:"Aller au planificateur",
     journeyWord:"Trajet",
     tabIntercity:"🚄 Interurbain", intercityTitle:"Trains interurbains · TCDD",
     icAll:"Tous", icYht:"🚄 YHT", icMain:"🛏 Grandes lignes", icPerDay:"jour", icSleeper:"couchettes", icRegional:"Régional",
@@ -3643,7 +3668,11 @@ function tabLines(){ return currentTab==='active' ? liveLines
 let busListBuilt = false;
 function setTab(t){
   currentTab = t;
-  document.querySelectorAll('#tabs button').forEach(b=>b.classList.toggle('active', b.dataset.tab===t));
+  document.querySelectorAll('#tabs button').forEach(b=>{
+    const on = b.dataset.tab===t;
+    b.classList.toggle('active', on);
+    b.setAttribute('aria-selected', on ? 'true' : 'false');   // keep AT in sync with the visual state
+  });
   closeAllPanels();
   NETWORK.forEach(l => map.removeLayer(lineLayers[l.ref].group));
   map.removeLayer(ghostGroup); map.removeLayer(stationGroup); map.removeLayer(plannedStationGroup);
