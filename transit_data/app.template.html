@@ -259,7 +259,16 @@
   .ac-item{padding:8px 11px;font-size:11.5px;cursor:pointer;border-bottom:1px solid rgba(255,255,255,.04);display:flex;align-items:center;gap:8px;transition:background .12s;}
   .ac-item:hover,.ac-item.sel{background:rgba(52,211,153,.11);}
   .ac-item .ac-dot{width:7px;height:7px;border-radius:50%;flex:none;box-shadow:0 0 5px currentColor;}
-  .ac-item small{color:var(--dim);margin-left:auto;font-size:8.5px;text-transform:uppercase;letter-spacing:.6px;font-weight:600;}
+  .ac-item .ac-ic{width:14px;flex:none;text-align:center;font-size:11px;line-height:1;}
+  .ac-item .ac-nm{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .ac-item small{color:var(--dim);margin-left:auto;padding-left:8px;font-size:8.5px;text-transform:uppercase;letter-spacing:.6px;font-weight:600;flex:none;}
+  /* geocoder section divider + status rows */
+  .ac-sec{padding:5px 11px 3px;font-size:8px;font-weight:800;letter-spacing:1px;text-transform:uppercase;
+    color:var(--dim);background:rgba(255,255,255,.03);border-bottom:1px solid rgba(255,255,255,.04);}
+  .ac-hint{padding:9px 11px;font-size:10.5px;color:var(--dim);display:flex;align-items:center;gap:7px;}
+  .ac-hint.ac-loading::before{content:"";width:11px;height:11px;border-radius:50%;border:2px solid var(--stroke-2);
+    border-top-color:var(--accent);animation:spin .7s linear infinite;flex:none;}
+  @keyframes spin{to{transform:rotate(360deg);}}
   .btn{width:100%;padding:11px;border:none;border-radius:12px;cursor:pointer;font-family:var(--font);font-size:12px;
     font-weight:700;letter-spacing:.4px;color:#03130A;background:var(--grad-accent);position:relative;overflow:hidden;
     box-shadow:0 8px 22px -8px rgba(52,211,153,.75),inset 0 1px 0 rgba(255,255,255,.25);transition:all .18s var(--ease);}
@@ -1081,7 +1090,7 @@ const I18N = {
     liveCarr:"Live carriages", stationMarkers:"Station markers", simSpeed:"Simulation Speed",
     networkLines:"Network Lines", all:"All", none:"None",
     busDir:"Bus Directory · İETT", busSearchPh:"Search line no. or stop (e.g. 500T, Kadıköy)",
-    tripPlanner:"Trip Planner", from:"From", to:"To", searchStop:"Search any stop or place…",
+    tripPlanner:"Trip Planner", from:"From", to:"To", searchStop:"Search a stop, place or address…",
     pickPoint:"Pick point on map", swap:"Swap", findPath:"◇ Find Optimal Path", clear:"Clear",
     min:"Min", stops:"Stops", transfers:"Transfers", favourites:"★ Favourites",
     recentPlans:"Recent plans", clearAll:"clear all", setOrigin:"Set as Origin", setDest:"Set as Destination",
@@ -1108,6 +1117,7 @@ const I18N = {
     wcLang:"Language, dark mode & more in Settings", wcGo:"Start exploring", helpBtnT:"Guide",
     reportProblem:"Report a problem",
     skipToPlanner:"Skip to trip planner",
+    placesAddr:"Places & addresses", searchingPlace:"Searching places…", noPlaceMatch:"No match — try a landmark, area or address", landmarkWord:"Landmark", placeWord:"Place", placeNotFound:"Couldn’t find that place",
     journeyWord:"Journey",
     tabIntercity:"🚄 Intercity", intercityTitle:"Intercity Rail · TCDD",
     icAll:"All", icYht:"🚄 YHT", icMain:"🛏 Ana Hat", icPerDay:"day", icSleeper:"sleeper", icRegional:"Regional",
@@ -1176,7 +1186,7 @@ const I18N = {
     liveCarr:"Canlı vagonlar", stationMarkers:"Durak işaretleri", simSpeed:"Simülasyon Hızı",
     networkLines:"Ağ Hatları", all:"Tümü", none:"Hiçbiri",
     busDir:"Otobüs Rehberi · İETT", busSearchPh:"Hat no veya durak ara (örn. 500T, Kadıköy)",
-    tripPlanner:"Yol Planlayıcı", from:"Nereden", to:"Nereye", searchStop:"Durak veya yer ara…",
+    tripPlanner:"Yol Planlayıcı", from:"Nereden", to:"Nereye", searchStop:"Durak, yer veya adres ara…",
     pickPoint:"Haritada nokta seç", swap:"Yer değiştir", findPath:"◇ En İyi Rotayı Bul", clear:"Temizle",
     min:"Dk", stops:"Durak", transfers:"Aktarma", favourites:"★ Favoriler",
     recentPlans:"Son planlar", clearAll:"tümünü sil", setOrigin:"Başlangıç yap", setDest:"Varış yap",
@@ -1203,6 +1213,7 @@ const I18N = {
     wcLang:"Dil, karanlık mod ve fazlası Ayarlar'da", wcGo:"Keşfetmeye başla", helpBtnT:"Rehber",
     reportProblem:"Sorun bildir",
     skipToPlanner:"Yolculuk planlayıcıya geç",
+    placesAddr:"Yerler ve adresler", searchingPlace:"Yerler aranıyor…", noPlaceMatch:"Eşleşme yok — bir mekân, semt veya adres deneyin", landmarkWord:"Mekân", placeWord:"Yer", placeNotFound:"Bu yer bulunamadı",
     journeyWord:"Yolculuk",
     tabIntercity:"🚄 Şehirlerarası", intercityTitle:"Şehirlerarası Tren · TCDD",
     icAll:"Tümü", icYht:"🚄 YHT", icMain:"🛏 Ana Hat", icPerDay:"gün", icSleeper:"yataklı", icRegional:"Bölgesel",
@@ -1271,7 +1282,7 @@ const I18N = {
     liveCarr:"عربات مباشرة", stationMarkers:"علامات المحطات", simSpeed:"سرعة المحاكاة",
     networkLines:"خطوط الشبكة", all:"الكل", none:"لا شيء",
     busDir:"دليل الحافلات · İETT", busSearchPh:"ابحث عن خط أو محطة (مثل 500T)",
-    tripPlanner:"مخطّط الرحلات", from:"من", to:"إلى", searchStop:"ابحث عن محطة أو مكان…",
+    tripPlanner:"مخطّط الرحلات", from:"من", to:"إلى", searchStop:"ابحث عن محطة أو مكان أو عنوان…",
     pickPoint:"اختر نقطة على الخريطة", swap:"تبديل", findPath:"◇ إيجاد أفضل مسار", clear:"مسح",
     min:"دقيقة", stops:"محطات", transfers:"تحويلات", favourites:"★ المفضلة",
     recentPlans:"الرحلات الأخيرة", clearAll:"مسح الكل", setOrigin:"تعيين كانطلاق", setDest:"تعيين كوجهة",
@@ -1298,6 +1309,7 @@ const I18N = {
     wcLang:"اللغة والوضع الداكن والمزيد في الإعدادات", wcGo:"ابدأ الاستكشاف", helpBtnT:"الدليل",
     reportProblem:"أبلغ عن مشكلة",
     skipToPlanner:"تخطَّ إلى مخطط الرحلة",
+    placesAddr:"أماكن وعناوين", searchingPlace:"جارٍ البحث…", noPlaceMatch:"لا نتائج — جرّب معلمًا أو حيًا أو عنوانًا", landmarkWord:"معلم", placeWord:"مكان", placeNotFound:"تعذّر العثور على المكان",
     journeyWord:"الرحلة",
     tabIntercity:"🚄 بين المدن", intercityTitle:"قطارات بين المدن · TCDD",
     icAll:"الكل", icYht:"🚄 سريع", icMain:"🛏 الخط الرئيسي", icPerDay:"يوم", icSleeper:"عربة نوم", icRegional:"إقليمي",
@@ -1364,7 +1376,7 @@ const I18N = {
     liveCarr:"Rames en direct", stationMarkers:"Marqueurs de stations", simSpeed:"Vitesse de simulation",
     networkLines:"Lignes du réseau", all:"Tout", none:"Aucune",
     busDir:"Répertoire des bus · İETT", busSearchPh:"Ligne ou arrêt (ex. 500T, Kadıköy)",
-    tripPlanner:"Planificateur", from:"De", to:"À", searchStop:"Rechercher un arrêt ou un lieu…",
+    tripPlanner:"Planificateur", from:"De", to:"À", searchStop:"Arrêt, lieu ou adresse…",
     pickPoint:"Choisir un point sur la carte", swap:"Inverser", findPath:"◇ Meilleur itinéraire", clear:"Effacer",
     min:"Min", stops:"Arrêts", transfers:"Corresp.", favourites:"★ Favoris",
     recentPlans:"Trajets récents", clearAll:"tout effacer", setOrigin:"Définir comme départ", setDest:"Définir comme arrivée",
@@ -1391,6 +1403,7 @@ const I18N = {
     wcLang:"Langue, mode sombre et plus dans Réglages", wcGo:"Commencer l'exploration", helpBtnT:"Guide",
     reportProblem:"Signaler un problème",
     skipToPlanner:"Aller au planificateur",
+    placesAddr:"Lieux et adresses", searchingPlace:"Recherche de lieux…", noPlaceMatch:"Aucun résultat — essayez un lieu, un quartier ou une adresse", landmarkWord:"Lieu", placeWord:"Lieu", placeNotFound:"Lieu introuvable",
     journeyWord:"Trajet",
     tabIntercity:"🚄 Interurbain", intercityTitle:"Trains interurbains · TCDD",
     icAll:"Tous", icYht:"🚄 YHT", icMain:"🛏 Grandes lignes", icPerDay:"jour", icSleeper:"couchettes", icRegional:"Régional",
@@ -2163,6 +2176,9 @@ const PLACES = (()=>{ const seen=new Set(), arr=[];
     if(m.kind==='bus' && m.name===m.ref+' durağı') continue;       // skip auto-named placeholder stops
     const f=fold(m.name); if(seen.has(f)) continue; seen.add(f);
     arr.push({ name:m.name, lat:m.lat, lng:m.lng, ref:m.ref, bus:m.kind==='bus', _f:f, _q:foldQ(m.name) }); }
+  // curated landmarks so "Hagia Sophia", "Galata Tower", "Grand Bazaar" resolve instantly & offline
+  ATTRACTIONS.forEach(a=>{ const f=fold(a.name); if(seen.has(f)) return; seen.add(f);
+    arr.push({ name:a.name, lat:a.lat, lng:a.lng, poi:true, cat:a.cat, _f:f, _q:foldQ(a.name) }); });
   arr.sort((a,b)=>a.name.localeCompare(b.name,'tr')); return arr; })();
 // bus stops arrive AFTER first paint (lazy bus-data.json) → register them into the search
 // list + the door-to-door spatial grid once integrateBuses has built their nodes
@@ -2210,6 +2226,43 @@ function searchPlaces(q){
     out=scored.map(x=>x[1]);
   }
   return out.slice(0,30);
+}
+/* ---- live place/address geocoder — lets people TYPE any destination (a landmark, a
+   neighbourhood, a street) instead of pinning it on the map. Photon (photon.komoot.io) is
+   keyless, CORS-open and built for search-as-you-type over OpenStreetMap; results are biased
+   to İstanbul's centre and clipped to the city bounds (the door-to-door planner is city-scoped).
+   Cached per query, debounced by the caller, aborts after 4.5 s, and fails silently so the
+   local stop/landmark search always works offline / on file://. No API key — fits the static site. ---- */
+const GEO_CACHE = new Map();
+const IST_C = { lat:41.02, lng:28.97 };                 // bias centre (Eminönü-ish)
+const IST_BOX = { s:40.75, n:41.65, w:28.00, e:29.95 }; // greater İstanbul clip
+function geoName(p){
+  const ctx = p.district || p.city || p.county || p.state;
+  return [p.name, (ctx && ctx!==p.name) ? ctx : null].filter(Boolean).join(', ') || p.name || '—';
+}
+async function geocode(q){
+  const key = foldQ(q);
+  if(!key || key.length < 3) return [];
+  if(GEO_CACHE.has(key)) return GEO_CACHE.get(key);
+  const langP = /^(en|de|fr|it)$/.test(lang) ? '&lang='+lang : '';   // Photon's supported UI languages
+  const url = `https://photon.komoot.io/api/?q=${encodeURIComponent(q)}&limit=6&lat=${IST_C.lat}&lon=${IST_C.lng}${langP}`;
+  const ctrl = new AbortController(); const timer = setTimeout(()=>ctrl.abort(), 4500);
+  try{
+    const r = await fetch(url, { signal:ctrl.signal });
+    clearTimeout(timer);
+    if(!r.ok) throw 0;
+    const gj = await r.json();
+    const out = [];
+    for(const f of (gj.features||[])){
+      const c = f.geometry && f.geometry.coordinates; if(!c) continue;
+      const lng = +c[0], lat = +c[1];
+      if(lat < IST_BOX.s || lat > IST_BOX.n || lng < IST_BOX.w || lng > IST_BOX.e) continue;   // İstanbul only
+      const p = f.properties || {};
+      out.push({ name: geoName(p), lat, lng, geo:true, ctx: p.district || p.city || p.county || '' });
+    }
+    GEO_CACHE.set(key, out);
+    return out;
+  }catch(e){ clearTimeout(timer); GEO_CACHE.set(key, []); return []; }   // offline / blocked / timeout → local only
 }
 let WALK = 80;        // metres / minute (adjustable via Settings → Walking pace)
 const ACCESS = 1100;  // max access-walk to the first/last stop (m)
@@ -3016,21 +3069,49 @@ function useMyLocation(which, btn){
 }
 
 // live search over every stop (rail + ferry + bus); diacritic-insensitive + typo-tolerant
+// one dropdown row: rail/ferry stop (line-coloured dot), bus stop (amber), curated landmark
+// (★), or a live-geocoded place/address (📍)
+function acItemHTML(pl, id){
+  if(pl.geo) return `<div class="ac-item" data-id="${id}"><span class="ac-ic">📍</span><span class="ac-nm">${svgEsc(pl.name)}</span><small>${svgEsc(pl.ctx||t('placeWord'))}</small></div>`;
+  if(pl.poi) return `<div class="ac-item" data-id="${id}"><span class="ac-ic">★</span><span class="ac-nm">${svgEsc(pl.name)}</span><small>${t('landmarkWord')}</small></div>`;
+  const col = pl.bus ? BUS_COLOR : colorForLine(pl.ref);
+  const kl  = pl.bus ? (t('busLabel')||'Bus') : (lineByRef[pl.ref] ? kindLabel(lineByRef[pl.ref].kind) : 'Rail');
+  return `<div class="ac-item" data-id="${id}"><span class="ac-dot" style="background:${col}"></span><span class="ac-nm">${svgEsc(pl.name)}</span><small>${svgEsc(kl)}</small></div>`;
+}
+// drop geocoded hits that just duplicate a local stop/landmark (same name, or within 200 m)
+function dedupeGeo(geo, local){
+  return geo.filter(g => !local.some(l => fold(l.name)===fold(g.name) || metersBetween([g.lat,g.lng],[l.lat,l.lng])<200));
+}
+// shared autocomplete: local stops+landmarks render instantly; a debounced geocoder then
+// appends real places/addresses under a divider. `key` isolates each field's async token.
+const _acTok = {}, _acDeb = {};
+function acSearch(key, q, listEl, onPick){
+  if(!foldQ(q)){ listEl.classList.remove('show'); listEl.innerHTML=''; return; }
+  const local = searchPlaces(q);
+  const draw = (geo, loading)=>{
+    let html = local.map((pl,i)=>acItemHTML(pl,'L'+i)).join('');
+    if(geo && geo.length) html += `<div class="ac-sec">${t('placesAddr')}</div>` + geo.map((pl,i)=>acItemHTML(pl,'G'+i)).join('');
+    if(loading && !geo) html += `<div class="ac-hint ac-loading">${t('searchingPlace')}</div>`;
+    if(!html) html = `<div class="ac-hint">${t('noPlaceMatch')}</div>`;
+    listEl.innerHTML = html; listEl.classList.add('show');
+    listEl.querySelectorAll('.ac-item[data-id]').forEach(el=>el.addEventListener('mousedown', ev=>{
+      ev.preventDefault(); const id=el.dataset.id; const pl = id[0]==='G' ? (geo||[])[+id.slice(1)] : local[+id.slice(1)];
+      if(pl){ onPick({ name:pl.name, lat:pl.lat, lng:pl.lng }); listEl.classList.remove('show'); }
+    }));
+  };
+  const willGeo = foldQ(q).length>=3;
+  draw(null, willGeo);                                    // instant local results
+  const my = (_acTok[key]=(_acTok[key]||0)+1);
+  clearTimeout(_acDeb[key]);
+  if(willGeo) _acDeb[key]=setTimeout(async ()=>{
+    const geo = dedupeGeo(await geocode(q), local);
+    if(my!==_acTok[key]) return;                          // a newer keystroke superseded this one
+    draw(geo, false);
+  }, 350);
+}
 function acRender(which, q){
   const listEl=document.getElementById(which==='O'?'acO':'acD');
-  if(!foldQ(q)){ listEl.classList.remove('show'); listEl.innerHTML=''; return; }
-  const out=searchPlaces(q);
-  if(!out.length){ listEl.innerHTML='<div class="ac-item" style="color:var(--dim)">No match — or drop a 📍 pin on the map</div>'; listEl.classList.add('show'); return; }
-  listEl.innerHTML=out.map((pl,ix)=>{
-    const col = pl.bus ? BUS_COLOR : colorForLine(pl.ref);
-    const kl  = pl.bus ? 'Bus' : (lineByRef[pl.ref]&&KIND[lineByRef[pl.ref].kind] ? KIND[lineByRef[pl.ref].kind].label : 'Rail');
-    return `<div class="ac-item" data-ix="${ix}"><span class="ac-dot" style="background:${col}"></span>${pl.name}<small>${kl}</small></div>`;
-  }).join('');
-  listEl.classList.add('show');
-  listEl.querySelectorAll('.ac-item[data-ix]').forEach(el=>el.addEventListener('mousedown', ev=>{
-    ev.preventDefault(); const pl=out[+el.dataset.ix];
-    setPoint(which, { name:pl.name, lat:pl.lat, lng:pl.lng }); listEl.classList.remove('show');
-  }));
+  acSearch(which, q, listEl, pt=> setPoint(which, pt));
 }
 // arm/disarm "pick a point on the map" mode for a field
 function armPick(which){
@@ -3531,19 +3612,7 @@ function setAdvStop(i, pt){
 }
 function acRenderAdv(i, q){
   const listEl=document.getElementById('advL'+i); if(!listEl) return;
-  if(!foldQ(q)){ listEl.classList.remove('show'); listEl.innerHTML=''; return; }
-  const out=searchPlaces(q);
-  if(!out.length){ listEl.innerHTML=`<div class="ac-item" style="color:var(--dim)">${t('noLines')}</div>`; listEl.classList.add('show'); return; }
-  listEl.innerHTML=out.map((pl,ix)=>{
-    const col = pl.bus ? BUS_COLOR : colorForLine(pl.ref);
-    const kl  = pl.bus ? t('busLabel') : (lineByRef[pl.ref] ? kindLabel(lineByRef[pl.ref].kind) : 'Rail');
-    return `<div class="ac-item" data-ix="${ix}"><span class="ac-dot" style="background:${col}"></span>${pl.name}<small>${kl}</small></div>`;
-  }).join('');
-  listEl.classList.add('show');
-  listEl.querySelectorAll('.ac-item[data-ix]').forEach(el=>el.addEventListener('mousedown', ev=>{
-    ev.preventDefault(); const pl=out[+el.dataset.ix];
-    setAdvStop(i, { name:pl.name, lat:pl.lat, lng:pl.lng }); listEl.classList.remove('show');
-  }));
+  acSearch('A'+i, q, listEl, pt=> setAdvStop(i, pt));
 }
 function makeAdvRow(i){
   const row=document.createElement('div'); row.className='field adv-row';
@@ -3631,8 +3700,27 @@ function setPlannerTab(m){
   ++routeToken;
   if(m==='trip') renderEndpoints(); else { rebuildAdvRows(); drawAdvMarkers(); }
 }
+async function resolveGeocodeEndpoints(oTxt, dTxt){
+  if(oTxt){ const r=await geocode(oTxt); if(r[0]) setPoint('O',{name:r[0].name,lat:r[0].lat,lng:r[0].lng}); }
+  if(dTxt){ const r=await geocode(dTxt); if(r[0]) setPoint('D',{name:r[0].name,lat:r[0].lat,lng:r[0].lng}); }
+  const stillO = oTxt && !originPt, stillD = dTxt && !destPt;
+  if(stillO || stillD){                                  // geocoder found nothing for a typed field
+    document.getElementById('rSteps').innerHTML=`<div class="none">${t('placeNotFound')}</div>`;
+    showToast(t('placeNotFound'),'err'); return;
+  }
+  runRoute();
+}
 function runRoute(){
   const o=resolveTyped('O'), d=resolveTyped('D');
+  // a field holding TYPED text that matched no local stop/landmark → look it up as a real
+  // place/address, then re-run. So "just type where you're going" works without pinning.
+  const oTxt=document.getElementById('selO').value.trim(), dTxt=document.getElementById('selD').value.trim();
+  if((!o && oTxt) || (!d && dTxt)){
+    const out=document.getElementById('rout'); out.classList.add('show');
+    document.getElementById('rSteps').innerHTML=`<div class="none">${t('searchingPlace')}</div>`;
+    resolveGeocodeEndpoints(!o?oTxt:null, !d?dTxt:null);
+    return;
+  }
   renderEndpoints();
   const out=document.getElementById('rout'), stepsEl=document.getElementById('rSteps');
   routeLayer.clearLayers(); ++routeToken;
