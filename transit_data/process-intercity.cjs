@@ -14,6 +14,36 @@ function meters(a, b) {
 }
 const chainLen = c => { let s = 0; for (let i = 1; i < c.length; i++) s += meters(c[i - 1], c[i]); return s; };
 
+// order stations by their projected position ALONG the path (OSM member order is unsorted),
+// so strip maps and endpoint labels read geographically instead of jumbled
+function orderAlong(stations, path) {
+  if (!path || path.length < 2) return stations;
+  const cum = [0]; for (let i = 1; i < path.length; i++) cum[i] = cum[i - 1] + meters(path[i - 1], path[i]);
+  return stations.map(st => {
+    let best = Infinity, s = 0;
+    for (let i = 0; i < path.length - 1; i++) {
+      const a = path[i], b = path[i + 1], dx = b[0] - a[0], dy = b[1] - a[1], L2 = dx * dx + dy * dy;
+      let t = L2 ? ((st.lat - a[0]) * dx + (st.lng - a[1]) * dy) / L2 : 0; t = Math.max(0, Math.min(1, t));
+      const px = a[0] + dx * t, py = a[1] + dy * t, d = (st.lat - px) ** 2 + (st.lng - py) ** 2;
+      if (d < best) { best = d; s = cum[i] + meters(a, [px, py]); }
+    }
+    return { st, s };
+  }).sort((x, y) => x.s - y.s).map(x => x.st);
+}
+// flip so the first station matches the first city named in `official` (e.g. İstanbul–Bükreş → Halkalı first)
+function orientByOfficial(stations, official) {
+  if (stations.length < 2) return stations;
+  const first = ((official.split('·').pop() || '').split(/[–—-]/)[0] || '').trim().toLowerCase();
+  const nm = s => s.name.toLowerCase();
+  const hit = (s) => first && (nm(s).includes(first) || first.includes(nm(s)));
+  const isIst = first.includes('istanbul') || first.includes('i̇stanbul');
+  const endIsHalkali = /halkal/i.test(stations[stations.length - 1].name);
+  const startIsHalkali = /halkal/i.test(stations[0].name);
+  if ((isIst && endIsHalkali && !startIsHalkali) || (hit(stations[stations.length - 1]) && !hit(stations[0])))
+    return stations.slice().reverse();
+  return stations;
+}
+
 // merge ways by shared endpoints into connected chains (never bridge across gaps)
 function buildChains(ways, tol) {
   let ch = ways.map(w => w.slice()); let merged = 1;
@@ -86,11 +116,34 @@ const SERVICES = {
   1298494:  { ref:'Toros Ekspresi', kind:'mainline', color:'#C2410C', official:'Ana Hat · Adana – Konya',
               mins:450, daily:1, spd:120 },
   18430359: { ref:'Güney Kurtalan Eksp.', kind:'mainline', color:'#6D28D9', official:'Ana Hat · Ankara – Kurtalan',
-              mins:1560, spd:120, sleeper:true }
+              mins:1560, spd:120, sleeper:true },
+  // regional additions (put Samsun & Malatya on the map)
+  19785141: { ref:'Sivas–Samsun Böl.', kind:'regional', color:'#2E9E5B', official:'Bölgesel · Sivas – Samsun',
+              spd:100 },
+  20211500: { ref:'Sivas–Malatya Böl.', kind:'regional', color:'#8D6E63', official:'Bölgesel · Sivas – Malatya',
+              spd:100 },
+  // international sleeper — İstanbul → Bucharest (Bosfor Ekspresi). Real OSM geometry; the
+  // Bucharest cars split from the Sofia train at Dimitrovgrad (used to build Sofya below).
+  16225058: { ref:'Bosfor Ekspresi', kind:'intl', color:'#0057B7', official:'Uluslararası · İstanbul – Bükreş',
+              flag:'🇷🇴', intl:true, border:'Kapıkule', mins:1260, daily:1, first:'22:40', spd:100, sleeper:true }
+};
+// curated İstanbul→Sofia (Sofya Ekspresi): no clean OSM relation exists, so its path reuses the
+// REAL Bucharest corridor to Dimitrovgrad (shared train) then continues to Plovdiv→Sofia. Stations
+// & endpoints are real; the Bulgaria-west leg is approximate. Coords from the Bucharest relation.
+const SOFIA = {
+  ref:'Sofya Ekspresi', mode:'intl', color:'#009B74', official:'Uluslararası · İstanbul – Sofya',
+  flag:'🇧🇬', intl:true, approx:true, border:'Kapıkule', mins:600, daily:1, first:'22:40', spd:100, sleeper:true,
+  splitAt:[42.0548, 25.5931],                                  // Dimitrovgrad — where it leaves the Bucharest track
+  tail:[ {name:'Plovdiv', lat:42.1436, lng:24.7419}, {name:'Sofia', lat:42.7141, lng:23.3197} ],
+  stations:[ {name:'Halkalı',lat:41.0184,lng:28.7663}, {name:'Çerkezköy',lat:41.2860,lng:28.0000},
+             {name:'Kapıkule',lat:41.7191,lng:26.3616}, {name:'Svilengrad',lat:41.7744,lng:26.1439},
+             {name:'Dimitrovgrad',lat:42.0548,lng:25.5931}, {name:'Plovdiv',lat:42.1436,lng:24.7419},
+             {name:'Sofia',lat:42.7141,lng:23.3197} ]
 };
 
 const out = [];
-for (const file of ['yht-geom.json', 'anahat-geom.json']) {
+let bucharestChain = null;                                     // captured to build the Sofia corridor
+for (const file of ['yht-geom.json', 'anahat-geom.json', 'intl-geom.json']) {
   const { rels, nodeById } = loadRels(file);
   for (const rel of rels) {
     const svc = SERVICES[rel.id];
@@ -99,6 +152,7 @@ for (const file of ['yht-geom.json', 'anahat-geom.json']) {
                                     .map(m => m.geometry.map(g => [g.lat, g.lon]));
     if (!ways.length) { console.warn('  ! no geometry', svc.ref); continue; }
     const chains = buildChains(ways, 120).sort((a, b) => chainLen(b) - chainLen(a));
+    if (rel.id === 16225058) bucharestChain = chains[0];       // longest chain = the İstanbul↔Bucharest corridor
     // keep every substantial chain so a gapped route still draws end to end
     const paths = chains.filter(c => c.length > 1 && chainLen(c) > 2000)
                         .map(c => simplify(c, 0.0016).map(p => [+p[0].toFixed(4), +p[1].toFixed(4)]));
@@ -117,18 +171,45 @@ for (const file of ['yht-geom.json', 'anahat-geom.json']) {
       if (seen.has(nm)) continue; seen.add(nm);
       stations.push({ name: nm, lat: +n.lat.toFixed(5), lng: +n.lon.toFixed(5) });
     }
+    // OSM route relations list their stop members in travel sequence, so member order is
+    // reliable; only flip it so the first station matches the first city in `official`.
+    // (projecting onto the gapped geometry actually MIS-orders it — Halkalı sits on a spur.)
+    const ordered = orientByOfficial(stations.slice(), svc.official);   // copy: orient may return the same ref
+    stations.length = 0; stations.push(...ordered);
     // route length is CURATED (published figures only). Deriving it from the stitched geometry
     // under-reports badly when the relation has gaps (İstanbul–Ankara stitched to 244 of 533 km),
     // so an unknown length stays null and the UI simply omits it rather than showing a wrong number.
     out.push({ ref: svc.ref, kind: 'intercity', mode: svc.kind, color: svc.color, paths, stations,
-               scope: 'intercity', official: svc.official, operator: 'TCDD Taşımacılık',
+               scope: 'intercity', official: svc.official, operator: svc.intl ? 'TCDD · int’l' : 'TCDD Taşımacılık',
                km: svc.km ?? null, fare: svc.fare ?? null, mins: svc.mins ?? null, daily: svc.daily ?? null,
                first: svc.first || null, last: svc.last || null, spd: svc.spd || null,
-               sleeper: !!svc.sleeper, note: svc.note || null });
+               sleeper: !!svc.sleeper, note: svc.note || null,
+               flag: svc.flag || null, intl: !!svc.intl, border: svc.border || null });
   }
 }
 
-out.sort((a, b) => (a.mode === b.mode ? 0 : a.mode === 'yht' ? -1 : b.mode === 'yht' ? 1 : 0));
+// ---- build İstanbul→Sofia from the real Bucharest corridor (shared to Dimitrovgrad) + tail ----
+if (bucharestChain) {
+  // orient the chain so index 0 is the İstanbul (Halkalı) end
+  const halkali = [41.0184, 28.7663];
+  let chain = bucharestChain.slice();
+  if (meters(chain[0], halkali) > meters(chain[chain.length - 1], halkali)) chain.reverse();
+  // cut at the point nearest Dimitrovgrad (where Sofia leaves the Bucharest track)
+  let cut = chain.length - 1, best = Infinity;
+  chain.forEach((p, i) => { const d = meters(p, SOFIA.splitAt); if (d < best) { best = d; cut = i; } });
+  const shared = chain.slice(0, cut + 1);
+  const full = shared.concat(SOFIA.tail.map(s => [s.lat, s.lng]));
+  const sofiaPath = simplify(full, 0.0016).map(p => [+p[0].toFixed(4), +p[1].toFixed(4)]);
+  out.push({ ref: SOFIA.ref, kind: 'intercity', mode: SOFIA.mode, color: SOFIA.color, paths: [sofiaPath],
+             stations: SOFIA.stations, scope: 'intercity', official: SOFIA.official, operator: 'TCDD · int’l',
+             km: null, fare: null, mins: SOFIA.mins, daily: SOFIA.daily, first: SOFIA.first, last: null,
+             spd: SOFIA.spd, sleeper: SOFIA.sleeper, note: null, flag: SOFIA.flag, intl: true,
+             border: SOFIA.border, approx: true });
+  console.log('  Sofia: reused', shared.length, 'real corridor pts +', SOFIA.tail.length, 'tail →', sofiaPath.length, 'pts');
+} else console.warn('  ! Bucharest chain missing — Sofia not built');
+
+const MODE_ORDER = { yht:0, intl:1, mainline:2, regional:3 };   // YHT first, international next, then domestic long/regional
+out.sort((a, b) => (MODE_ORDER[a.mode] - MODE_ORDER[b.mode]) || a.ref.localeCompare(b.ref, 'tr'));
 fs.writeFileSync(path.join(DIR, 'intercity-lines.json'), JSON.stringify(out));
 console.log('REF'.padEnd(22), 'MODE'.padEnd(9), 'PTS'.padEnd(5), 'STOPS'.padEnd(6), 'KM'.padEnd(5), 'FARE');
 for (const l of out)

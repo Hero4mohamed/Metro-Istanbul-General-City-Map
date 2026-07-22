@@ -165,6 +165,18 @@
   .ic-mode{font-size:8px;font-weight:800;letter-spacing:.5px;padding:2px 6px;border-radius:99px;flex:none;
     background:rgba(255,255,255,.09);color:var(--muted);}
   .ic-mode.yht{background:rgba(200,16,46,.18);color:#FF9AA6;}
+  .ic-mode.intl{background:rgba(0,105,192,.22);color:#8FC6FF;}
+  .ic-b.ic-border{background:rgba(0,105,192,.14);color:#8FC6FF;}
+  .ic-appx{font-size:8.5px;color:#F5A623;margin-top:3px;font-weight:600;}
+  .ic-all{width:100%;margin-bottom:8px;padding:8px;border:1px solid var(--stroke);border-radius:11px;cursor:pointer;
+    background:var(--surface);color:var(--accent);font-weight:700;font-size:11px;font-family:var(--font);transition:all .15s var(--ease);}
+  .ic-all:hover{background:var(--surface-2);border-color:var(--ring);}
+  /* map terminus labels for the highlighted route (permanent tooltips) */
+  .ic-lbl{background:rgba(8,12,20,.92)!important;border:1px solid rgba(255,255,255,.18)!important;color:#fff!important;
+    font-weight:800!important;font-size:10.5px!important;padding:3px 8px!important;border-radius:8px!important;
+    box-shadow:0 6px 18px -6px rgba(0,0,0,.7)!important;}
+  .ic-lbl::before{display:none!important;}
+  body.light .ic-lbl{background:rgba(255,255,255,.95)!important;color:#141C2B!important;border-color:rgba(15,23,42,.15)!important;}
   .ic-bits{display:flex;flex-wrap:wrap;gap:5px;}
   .ic-b{font-size:9.5px;font-weight:600;color:var(--muted);background:var(--track);padding:2px 7px;border-radius:7px;}
   .ic-b.ic-fare{color:#7CF0BE;}
@@ -946,6 +958,7 @@
       <button data-icm="all" class="active" data-i18n="icAll">All</button>
       <button data-icm="yht" data-i18n="icYht">🚄 YHT</button>
       <button data-icm="mainline" data-i18n="icMain">🛏 Ana Hat</button>
+      <button data-icm="intl" data-i18n="icIntlF">🌍 Intl</button>
     </div>
     <div class="ic-list" id="icList"></div>
     <div class="ic-foot">
@@ -1122,6 +1135,7 @@ const I18N = {
     tabIntercity:"🚄 Intercity", intercityTitle:"Intercity Rail · TCDD",
     icAll:"All", icYht:"🚄 YHT", icMain:"🛏 Ana Hat", icPerDay:"day", icSleeper:"sleeper", icRegional:"Regional",
     icFareNote:"Fares = TCDD tariff of 15 Jan 2026, standard class. Times are typical journey times.",
+    icIntl:"INT’L", icIntlF:"🌍 Intl", icShowAll:"Show all routes", icApprox:"Approx. alignment", icDep:"dep.",
     icBook:"Book & live times · TCDD ↗",
     sevMajor:"Major", sevPartial:"Partial", sevMinor:"Minor",
     "ttl:Service suspended":"Service suspended", "ttl:Section affected":"Section affected", "ttl:Service notice":"Service notice",
@@ -1218,6 +1232,7 @@ const I18N = {
     tabIntercity:"🚄 Şehirlerarası", intercityTitle:"Şehirlerarası Tren · TCDD",
     icAll:"Tümü", icYht:"🚄 YHT", icMain:"🛏 Ana Hat", icPerDay:"gün", icSleeper:"yataklı", icRegional:"Bölgesel",
     icFareNote:"Ücretler = 15 Oca 2026 TCDD tarifesi, standart sınıf. Süreler tipik yolculuk süreleridir.",
+    icIntl:"ULUSLARARASI", icIntlF:"🌍 Uluslararası", icShowAll:"Tüm hatları göster", icApprox:"Yaklaşık güzergâh", icDep:"kalkış",
     icBook:"Bilet & canlı saatler · TCDD ↗",
     sevMajor:"Büyük", sevPartial:"Kısmi", sevMinor:"Hafif",
     "ttl:Service suspended":"Seferler durduruldu", "ttl:Section affected":"Etkilenen kesim", "ttl:Service notice":"Servis bildirimi",
@@ -1314,6 +1329,7 @@ const I18N = {
     tabIntercity:"🚄 بين المدن", intercityTitle:"قطارات بين المدن · TCDD",
     icAll:"الكل", icYht:"🚄 سريع", icMain:"🛏 الخط الرئيسي", icPerDay:"يوم", icSleeper:"عربة نوم", icRegional:"إقليمي",
     icFareNote:"الأسعار = تعرفة TCDD في ١٥ يناير ٢٠٢٦، الدرجة العادية. الأوقات تقريبية.",
+    icIntl:"دولي", icIntlF:"🌍 دولي", icShowAll:"عرض كل الخطوط", icApprox:"مسار تقريبي", icDep:"المغادرة",
     icBook:"الحجز والمواعيد المباشرة · TCDD ↗",
     sevMajor:"كبير", sevPartial:"جزئي", sevMinor:"طفيف",
     "ttl:Service suspended":"الخدمة متوقفة", "ttl:Section affected":"قسم متأثر", "ttl:Service notice":"إشعار خدمة",
@@ -1408,6 +1424,7 @@ const I18N = {
     tabIntercity:"🚄 Interurbain", intercityTitle:"Trains interurbains · TCDD",
     icAll:"Tous", icYht:"🚄 YHT", icMain:"🛏 Grandes lignes", icPerDay:"jour", icSleeper:"couchettes", icRegional:"Régional",
     icFareNote:"Tarifs = grille TCDD du 15 janv. 2026, classe standard. Durées typiques.",
+    icIntl:"INT’L", icIntlF:"🌍 Intl", icShowAll:"Voir toutes les lignes", icApprox:"Tracé approximatif", icDep:"départ",
     icBook:"Réserver &amp; horaires en direct · TCDD ↗",
     sevMajor:"Majeure", sevPartial:"Partielle", sevMinor:"Mineure",
     "ttl:Service suspended":"Service suspendu", "ttl:Section affected":"Section affectée", "ttl:Service notice":"Avis de service",
@@ -3772,8 +3789,10 @@ function setTab(t){
   document.getElementById('cardBus').style.display     = (t==='bus') ? '' : 'none';
   document.getElementById('cardWeather').style.display = (t==='weather') ? '' : 'none';
   document.getElementById('cardIntercity').style.display = (t==='intercity') ? '' : 'none';
-  if(t!=='intercity' && icReturn){                           // restore the İstanbul view on the way out
-    map.setView(icReturn.c, icReturn.z, {animate:false}); icReturn=null;
+  if(t!=='intercity'){                                       // leaving: drop the highlight, restore İstanbul view
+    if(map.hasLayer(intercityHi)) map.removeLayer(intercityHi);
+    dimIntercityBase(false); map.removeLayer(intercityStationGroup);
+    if(icReturn){ map.setView(icReturn.c, icReturn.z, {animate:false}); icReturn=null; }
   }
   if(t==='active'){
     liveLines.forEach(l => { if(lineLayers[l.ref].on) lineLayers[l.ref].group.addTo(map); });
@@ -3791,7 +3810,8 @@ function setTab(t){
     intercityLines.forEach(l => { if(lineLayers[l.ref].on) lineLayers[l.ref].group.addTo(map); });
     intercityStationGroup.addTo(map);
     if(!icListBuilt){ renderIntercityList(); icListBuilt = true; }
-    fitIntercity();
+    if(icSelected && lineByRef[icSelected]) selectIntercity(lineByRef[icSelected], false);   // re-apply highlight
+    else fitIntercity();
     buildLegend();
   } else if(t==='weather'){
     ghostGroup.addTo(map);                                   // faint network for orientation
@@ -3811,6 +3831,7 @@ function setTab(t){
    =========================================================================== */
 let icReturn = null, icListBuilt = false, icMode = 'all', icSelected = null;
 const intercityStationGroup = L.layerGroup();
+const intercityHi = L.layerGroup();                          // bold overlay for the selected route
 intercityLines.forEach(line => line.stations.forEach(st => {
   L.circleMarker([st.lat, st.lng], { renderer:lineRenderer, radius:3.4, color:line.color,
       weight:1.6, fillColor:'#0b0f16', fillOpacity:1 })
@@ -3821,41 +3842,116 @@ intercityLines.forEach(line => line.stations.forEach(st => {
 function fitIntercity(lines){
   const src = (lines && lines.length) ? lines : intercityLines;
   const pts = [];
-  src.forEach(l => l.paths.forEach(p => { pts.push(p[0], p[p.length-1], p[Math.floor(p.length/2)]); }));
-  if(pts.length) map.fitBounds(L.latLngBounds(pts).pad(0.08), { animate:false });
+  src.forEach(l => l.paths.forEach(p => { for(let i=0;i<p.length;i+=Math.max(1,(p.length/12|0))) pts.push(p[i]); pts.push(p[p.length-1]); }));
+  if(pts.length) map.fitBounds(L.latLngBounds(pts).pad(src===intercityLines?0.05:0.14), { animate:false });
 }
 function icDur(m){
   if(m==null) return '—';
   const h=Math.floor(m/60), mm=m%60;
   return h ? (h+'h'+(mm?' '+mm+'m':'')) : mm+'m';
 }
+// dim (or restore) all base intercity lines + station dots so the selected route stands out —
+// the same clarity the metro tab gets. Opacity only (weight stays owned by applyZoomStyling).
+function dimIntercityBase(dim){
+  intercityLines.forEach(l => {
+    const g = lineLayers[l.ref] && lineLayers[l.ref].group; if(!g) return;
+    g.eachLayer(pl => { if(!pl.setStyle) return;
+      if(pl._baseOp==null) pl._baseOp = pl.options.opacity;
+      pl.setStyle({ opacity: dim ? Math.min(pl._baseOp, 0.1) : pl._baseOp }); });
+  });
+  intercityStationGroup.eachLayer(m => { if(m.setStyle) m.setStyle({ opacity: dim?0.1:1, fillOpacity: dim?0.1:1 }); });
+}
+// the two termini = farthest-apart station pair (member order can start mid-route on sleepers)
+function routeTermini(l){
+  const s = l.stations; if(s.length < 2) return s.slice();
+  let a=0, b=1, best=-1;
+  for(let i=0;i<s.length;i++) for(let j=i+1;j<s.length;j++){
+    const d=(s[i].lat-s[j].lat)**2+(s[i].lng-s[j].lng)**2; if(d>best){ best=d; a=i; b=j; } }
+  return [s[a], s[b]];
+}
+// terminus CITY names come from the route's official title ("… · İstanbul – Bükreş"), positioned
+// at the geographic extremes — so labels read the advertised termini, not an intermediate stop
+function routeEndpoints(l){
+  const parts = (l.official.split('·').pop()||'').split(/[–—-]/).map(s=>s.trim()).filter(Boolean);
+  const term = routeTermini(l);
+  const cityA = parts[0] || (term[0]&&term[0].name) || '';
+  const cityB = parts[1] || (term[1]&&term[1].name) || '';
+  const hit = (city,st) => { const f=fold(city), n=st?fold(st.name):''; return f&&n&&(n.includes(f)||f.includes(n)); };
+  let pA = term.find(s=>hit(cityA,s)), pB = term.find(s=>hit(cityB,s));
+  const H=[41.0184,28.7663], dist=s=>metersBetween([s.lat,s.lng],H);
+  if(!pA && !pB){ const near = dist(term[0])<=dist(term[1])?term[0]:term[1];   // cityA is usually the origin
+    pA = near; pB = near===term[0]?term[1]:term[0]; }
+  else { if(!pA) pA = term.find(s=>s!==pB)||term[0]; if(!pB) pB = term.find(s=>s!==pA)||term[1]; }
+  return [{city:cityA, st:pA}, {city:cityB, st:pB}];
+}
+// select a route → highlight it boldly on the map (glow+core), label its two termini,
+// dim the rest, frame it, and open its detail panel. Passing null shows all routes again.
+function selectIntercity(l, openPanel){
+  intercityHi.clearLayers();
+  if(!l){ icSelected=null; dimIntercityBase(false); if(map.hasLayer(intercityHi)) map.removeLayer(intercityHi);
+    renderIntercityList(); fitIntercity(); return; }
+  icSelected = l.ref;
+  dimIntercityBase(true);
+  l.paths.forEach(p => {
+    L.polyline(p, { renderer:lineRenderer, color:l.color, weight:11, opacity:0.22, lineCap:'round', lineJoin:'round', interactive:false }).addTo(intercityHi);
+    L.polyline(p, { renderer:lineRenderer, color:l.color, weight:4.5, opacity:1, lineCap:'round', lineJoin:'round' })
+      .bindTooltip(l.official, { sticky:true, className:'lt' }).on('click', ()=> openLine(l)).addTo(intercityHi);
+  });
+  l.stations.forEach(st => L.circleMarker([st.lat, st.lng], { renderer:lineRenderer, radius:4, color:l.color,
+      weight:2, fillColor:'#080c14', fillOpacity:1 })
+      .bindTooltip(svgEsc(st.name), { direction:'top', className:'lt' }).addTo(intercityHi));
+  // labelled terminus markers: the route's advertised city names at the two geographic extremes.
+  // Label pushed outward (west→left, east→right); flag on the end farther from İstanbul (the
+  // foreign destination on int'l routes) so it never sits over the line.
+  const ends = routeEndpoints(l), HALK = [41.0184, 28.7663];
+  ends.forEach((e, idx) => { const st = e.st, other = (ends[1-idx]||e).st; if(!st||!other) return;
+    const dir = st.lng <= other.lng ? 'left' : 'right';
+    const foreign = l.intl && metersBetween([st.lat,st.lng],HALK) > metersBetween([other.lat,other.lng],HALK);
+    const flag = (foreign && l.flag) ? l.flag+' ' : '';
+    L.circleMarker([st.lat, st.lng], { renderer:lineRenderer, radius:6.5, color:l.color, weight:3, fillColor:'#fff', fillOpacity:1 })
+      .bindTooltip(`${flag}${svgEsc(e.city)}`, { permanent:true, direction:dir, className:'ic-lbl' }).addTo(intercityHi); });
+  intercityHi.addTo(map);
+  fitIntercity([l]);
+  renderIntercityList();
+  if(openPanel!==false) openLine(l);
+}
 function icRows(){
   return intercityLines.filter(l => icMode==='all' ? true
-        : icMode==='yht' ? l.mode==='yht' : (l.mode==='mainline' || l.mode==='regional'));
+        : icMode==='yht'  ? l.mode==='yht'
+        : icMode==='intl' ? l.mode==='intl'
+        : (l.mode==='mainline' || l.mode==='regional'));   // 'anahat' = domestic long-distance + regional
+}
+function modeBadge(l){
+  if(l.mode==='yht') return `<span class="ic-mode yht">YHT</span>`;
+  if(l.mode==='intl') return `<span class="ic-mode intl">${t('icIntl')}</span>`;
+  if(l.mode==='regional') return `<span class="ic-mode">${t('icRegional')}</span>`;
+  return `<span class="ic-mode">Ana Hat</span>`;
 }
 function renderIntercityList(){
   const el = document.getElementById('icList'); if(!el) return;
   const rows = icRows();
-  el.innerHTML = rows.map((l,i)=>{
+  const showAll = icSelected
+    ? `<button class="ic-all" id="icShowAll">↺ ${t('icShowAll')}</button>` : '';
+  el.innerHTML = showAll + (rows.map((l,i)=>{
     const ends = l.official.split('·').pop().trim();
     const bits = [];
     if(l.mins)  bits.push(`<span class="ic-b">⏱ ${icDur(l.mins)}</span>`);
     if(l.fare)  bits.push(`<span class="ic-b ic-fare">🎫 ${l.fare} ₺</span>`);
     if(l.daily) bits.push(`<span class="ic-b">${l.daily}×/${t('icPerDay')}</span>`);
     if(l.km)    bits.push(`<span class="ic-b">${distNum(l.km).toFixed(0)} ${distUnit()}</span>`);
-    if(l.sleeper) bits.push(`<span class="ic-b">🛏 ${t('icSleeper')}</span>`);
-    const when = (l.first && l.last) ? `<div class="ic-when">🕑 ${l.first} – ${l.last}</div>` : '';
+    if(l.sleeper) bits.push(`<span class="ic-b">🌙 ${t('icSleeper')}</span>`);
+    if(l.border) bits.push(`<span class="ic-b ic-border">🛂 ${svgEsc(l.border)}</span>`);
+    const when = (l.first) ? `<div class="ic-when">🕑 ${l.first}${l.last?' – '+l.last:' '+t('icDep')}</div>` : '';
+    const appx = l.approx ? `<div class="ic-appx">⚠ ${t('icApprox')}</div>` : '';
     return `<div class="ic-row${icSelected===l.ref?' sel':''}" data-i="${i}">
       <div class="ic-head"><span class="ic-dot" style="background:${l.color}"></span>
-        <span class="ic-nm">${svgEsc(ends)}</span>
-        <span class="ic-mode ${l.mode}">${l.mode==='yht'?'YHT':(l.mode==='regional'?t('icRegional'):'Ana Hat')}</span></div>
-      <div class="ic-bits">${bits.join('')}</div>${when}
+        <span class="ic-nm">${l.flag?l.flag+' ':''}${svgEsc(ends)}</span>${modeBadge(l)}</div>
+      <div class="ic-bits">${bits.join('')}</div>${when}${appx}
       <div class="ic-stops">${l.stations.length} ${t('stationsLower')} · ${svgEsc(l.operator)}</div></div>`;
-  }).join('') || `<div class="none">${t('noLines')}</div>`;
+  }).join('') || `<div class="none">${t('noLines')}</div>`);
+  const sa = document.getElementById('icShowAll'); if(sa) sa.addEventListener('click', ()=> selectIntercity(null));
   el.querySelectorAll('.ic-row').forEach(r => r.addEventListener('click', ()=>{
-    const l = rows[+r.dataset.i]; if(!l) return;
-    icSelected = l.ref; renderIntercityList();
-    fitIntercity([l]); openLine(l);
+    const l = rows[+r.dataset.i]; if(l) selectIntercity(l);
   }));
 }
 document.getElementById('icModeSeg').addEventListener('click', e=>{

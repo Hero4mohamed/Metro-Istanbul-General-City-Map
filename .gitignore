@@ -8,6 +8,8 @@ transit_data/b2-geom.json
 transit_data/b2.json
 transit_data/yht-geom.json
 transit_data/anahat-geom.json
+transit_data/intl-geom.json
+transit_data/*-probe.json
 transit_data/bus-routes.json
 transit_data/busstop-count.json
 transit_data/coastline.json
@@ -28,3 +30,4 @@ transit_data/*.png
 .DS_Store
 Thumbs.db
 node_modules/
+.claude/
