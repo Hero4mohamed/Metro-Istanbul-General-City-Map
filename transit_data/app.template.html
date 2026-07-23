@@ -2849,8 +2849,17 @@ function svgPill(cx, baseY, text, bg, fg){
 function lineStripSVG(line){
   const sts=line.stations||[]; if(sts.length<2) return '';
   const live=isLive(line), col=line.color||'#888';
-  const GAP=46, PADX=30, TY=64, H=188, W=PADX*2+(sts.length-1)*GAP;
-  const P=[`<line x1="${PADX}" y1="${TY}" x2="${W-PADX}" y2="${TY}" stroke="${col}" stroke-width="6" stroke-linecap="round"/>`];
+  const GAP=46, PADX=30, TY=64;
+  // labels are drawn diagonally (rotate 45°), so each extends ~len·6.3·0.72 px to the lower-right.
+  // Size the canvas to that overflow (esp. the LAST label, which used to be clipped at the edge)
+  // and grow the height for long names, so every station name shows in full.
+  const labelExt = n => (n?[...n].length:0)*6.3*0.72;
+  const lastX = PADX + (sts.length-1)*GAP;
+  const rightPad = Math.max(PADX, Math.ceil(4 + labelExt(sts[sts.length-1].name)) + 12);
+  const W = lastX + rightPad;
+  let maxExt = 0; for(const s of sts) maxExt = Math.max(maxExt, labelExt(s.name));
+  const H = Math.max(188, Math.ceil(TY + 15 + maxExt + 16));
+  const P=[`<line x1="${PADX}" y1="${TY}" x2="${lastX}" y2="${TY}" stroke="${col}" stroke-width="6" stroke-linecap="round"/>`];
   sts.forEach((st,i)=>{
     const x=PADX+i*GAP, term=(i===0||i===sts.length-1);
     let others=[];
