@@ -95,12 +95,30 @@
 
   /* Top bar */
   .topbar{position:fixed;top:14px;left:14px;padding:14px 17px;z-index:1000;max-width:348px;animation:cardIn .5s var(--ease) backwards;}
-  .topbar h1{font-family:var(--display);font-size:15px;letter-spacing:2.1px;font-weight:700;display:flex;align-items:center;gap:10px;cursor:default;}
+  .topbar h1{position:relative;font-family:var(--display);font-size:15px;letter-spacing:2.1px;font-weight:700;display:flex;align-items:center;gap:6px;cursor:default;}
   .topbar .logo{flex:none;filter:drop-shadow(0 4px 12px rgba(52,211,153,.35));transition:transform .35s var(--ease);}
   .topbar h1:hover .logo{transform:rotate(-8deg) scale(1.08);}
   .logo-hub{animation:hubPulse 2.4s ease-in-out infinite;}
   @keyframes hubPulse{0%,100%{opacity:1;}50%{opacity:.4;}}
   @keyframes cardIn{from{opacity:0;transform:translateY(12px);}to{opacity:1;transform:translateY(0);}}
+  /* city switcher: the city name in the title is a dropdown */
+  .city-btn{font:inherit;color:var(--text);background:none;border:none;padding:0 2px 0 0;cursor:pointer;
+    display:inline-flex;align-items:center;gap:4px;letter-spacing:inherit;border-radius:6px;transition:color .18s var(--ease);}
+  .city-btn:hover{color:var(--accent);}
+  .city-caret{font-size:9px;color:var(--muted);transition:transform .2s var(--ease);}
+  .city-btn[aria-expanded="true"] .city-caret{transform:rotate(180deg);color:var(--accent);}
+  .brand-tail{letter-spacing:inherit;}
+  .city-menu{position:absolute;top:calc(100% + 8px);left:0;min-width:186px;z-index:1500;display:none;
+    padding:5px;border-radius:14px;flex-direction:column;gap:2px;}
+  .city-menu.show{display:flex;animation:dd .16s var(--ease);}
+  .city-item{display:flex;align-items:center;gap:9px;width:100%;padding:9px 10px;border:none;border-radius:10px;
+    background:none;color:var(--text);font-family:var(--font);font-size:12px;font-weight:600;cursor:pointer;
+    text-align:start;letter-spacing:.2px;transition:background .13s var(--ease);}
+  .city-item:hover{background:var(--surface-2);}
+  .city-item.on{background:rgba(52,211,153,.14);color:var(--accent);}
+  .city-item .ci-n{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .city-item .ci-c{font-size:8.5px;color:var(--dim);font-weight:700;letter-spacing:.4px;flex:none;}
+  .city-item.on .ci-c{color:var(--accent);}
   .topbar .sub{font-size:9.5px;color:var(--muted);letter-spacing:1.4px;margin-top:6px;text-transform:uppercase;font-weight:600;}
   .stats{display:flex;gap:8px;margin-top:12px;}
   .stats .kv{flex:1;background:var(--surface);border:1px solid var(--stroke);border-radius:11px;padding:7px 4px 6px;text-align:center;}
@@ -750,7 +768,8 @@
       <circle cx="8" cy="11" r="2" fill="#fff"/>
       <circle cx="26" cy="11" r="2" fill="#fff"/>
       <circle class="logo-hub" cx="17" cy="19.5" r="2.3" fill="#E5484D"/>
-    </svg>İSTANBUL · RAY-NET</h1>
+    </svg><button id="cityBtn" class="city-btn" aria-haspopup="listbox" aria-expanded="false"><span id="cityName">İSTANBUL</span><span class="city-caret" aria-hidden="true">▾</span></button><span class="brand-tail">· RAY-NET</span>
+    <div class="city-menu glass" id="cityMenu" role="listbox" aria-label="City"></div></h1>
   <div class="sub"><span data-i18n="liveNet">Live Rail Network</span> · <a href="https://github.com/Hero4mohamed/Metro-Istanbul-General-City-Map" target="_blank" rel="noopener" style="color:var(--accent);text-decoration:none;font-weight:700;" data-i18n="source">source ↗</a></div>
   <div class="stats">
     <div class="kv"><b id="sLines">0</b><span data-i18n="lines">Lines</span></div>
@@ -990,10 +1009,7 @@
       <button class="pchip" id="chipHome" data-place="home" style="display:none">🏠 <span data-i18n="homeP">Home</span></button>
       <button class="pchip" id="chipWork" data-place="work" style="display:none">💼 <span data-i18n="workP">Work</span></button>
     </div>
-    <div class="place-chips" id="airportChips">
-      <button class="pchip" data-ap="IST" data-i18n-title="toAirport" title="Route to this airport">✈ İstanbul (IST)</button>
-      <button class="pchip" data-ap="SAW" data-i18n-title="toAirport" title="Route to this airport">✈ Sabiha Gökçen (SAW)</button>
-    </div>
+    <div class="place-chips" id="airportChips"></div>
     <button class="btn" id="route" data-i18n="findPath">◇ Find Optimal Path</button>
     <button class="btn ghost" id="clear" data-i18n="clear">Clear</button>
     <div class="route-out" id="rout">
@@ -1092,6 +1108,34 @@
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
         integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
 <script>
+/* ---------------------------------------------------------------------------
+   CITY SELECTION. Every city ships its own line set + centre, fare table,
+   districts (weather), landmarks and feature flags. The chosen city is picked
+   BEFORE any derived structure is built, so the station registry, routing
+   graph, carriage sim, legend, stats, weather, fares and search all come from
+   it — switching city reloads the page so nothing can be left half-updated.
+   Intercity (TCDD) rail is national and is appended for every city.
+   --------------------------------------------------------------------------- */
+const CITIES = __CITIES_JSON__;
+const INTERCITY_LINES_JSON = __INTERCITY_JSON__;
+const CITY_IDS = Object.keys(CITIES);
+function pickCityId(){
+  try{
+    const q = new URLSearchParams(location.search).get('city');
+    if(q && CITIES[q]) { localStorage.setItem('irn_city', q); return q; }
+    const s = localStorage.getItem('irn_city');
+    if(s && CITIES[s]) return s;
+  }catch(e){}
+  return 'istanbul';
+}
+const CITY_ID = pickCityId();
+const CITY = CITIES[CITY_ID];
+const HAS = CITY.has || {};                       // per-city feature flags (bus, ferries, live disruptions…)
+function switchCity(id){
+  if(!CITIES[id] || id===CITY_ID) return;
+  try{ localStorage.setItem('irn_city', id); }catch(e){}
+  const u = new URL(location.href); u.searchParams.set('city', id); location.replace(u.toString());
+}
 "use strict";
 /* ===========================================================================
    0. i18n — English / Turkish UI
@@ -1130,6 +1174,9 @@ const I18N = {
     wcLang:"Language, dark mode & more in Settings", wcGo:"Start exploring", helpBtnT:"Guide",
     reportProblem:"Report a problem",
     skipToPlanner:"Skip to trip planner",
+    linesShort:"lines", cityPick:"Change city",
+    fareNoteAnk:"AnkaraKart estimate — EGO tariff 2026: 35₺ per boarding + 17₺ per transfer. Valid on metro, Ankaray, Başkentray and EGO buses.",
+    fareNoteIzm:"İzmirim Kart estimate — tariff of 1 Apr 2026: 35₺ first boarding, then transfers are free within 90 minutes. İZBAN is charged separately (40₺) and grants no transfer right.",
     placesAddr:"Places & addresses", searchingPlace:"Searching places…", noPlaceMatch:"No match — try a landmark, area or address", landmarkWord:"Landmark", placeWord:"Place", placeNotFound:"Couldn’t find that place",
     journeyWord:"Journey",
     tabIntercity:"🚄 Intercity", intercityTitle:"Intercity Rail · TCDD",
@@ -1227,6 +1274,9 @@ const I18N = {
     wcLang:"Dil, karanlık mod ve fazlası Ayarlar'da", wcGo:"Keşfetmeye başla", helpBtnT:"Rehber",
     reportProblem:"Sorun bildir",
     skipToPlanner:"Yolculuk planlayıcıya geç",
+    linesShort:"hat", cityPick:"Şehir değiştir",
+    fareNoteAnk:"AnkaraKart tahmini — 2026 EGO tarifesi: biniş 35₺ + aktarma 17₺. Metro, Ankaray, Başkentray ve EGO otobüslerinde geçerli.",
+    fareNoteIzm:"İzmirim Kart tahmini — 1 Nis 2026 tarifesi: ilk biniş 35₺, 90 dakika içinde aktarmalar ücretsiz. İZBAN ayrı ücretlidir (40₺) ve aktarma hakkı vermez.",
     placesAddr:"Yerler ve adresler", searchingPlace:"Yerler aranıyor…", noPlaceMatch:"Eşleşme yok — bir mekân, semt veya adres deneyin", landmarkWord:"Mekân", placeWord:"Yer", placeNotFound:"Bu yer bulunamadı",
     journeyWord:"Yolculuk",
     tabIntercity:"🚄 Şehirlerarası", intercityTitle:"Şehirlerarası Tren · TCDD",
@@ -1324,6 +1374,9 @@ const I18N = {
     wcLang:"اللغة والوضع الداكن والمزيد في الإعدادات", wcGo:"ابدأ الاستكشاف", helpBtnT:"الدليل",
     reportProblem:"أبلغ عن مشكلة",
     skipToPlanner:"تخطَّ إلى مخطط الرحلة",
+    linesShort:"خط", cityPick:"تغيير المدينة",
+    fareNoteAnk:"تقدير AnkaraKart — تعرفة EGO ٢٠٢٦: ٣٥₺ للركوب + ١٧₺ للتبديل. صالحة في المترو وأنكاراي وباشكنتراي وحافلات EGO.",
+    fareNoteIzm:"تقدير İzmirim Kart — تعرفة ١ أبريل ٢٠٢٦: ٣٥₺ لأول ركوب، ثم التبديلات مجانية خلال ٩٠ دقيقة. إزبان يُحتسب منفصلًا (٤٠₺) دون حق تبديل.",
     placesAddr:"أماكن وعناوين", searchingPlace:"جارٍ البحث…", noPlaceMatch:"لا نتائج — جرّب معلمًا أو حيًا أو عنوانًا", landmarkWord:"معلم", placeWord:"مكان", placeNotFound:"تعذّر العثور على المكان",
     journeyWord:"الرحلة",
     tabIntercity:"🚄 بين المدن", intercityTitle:"قطارات بين المدن · TCDD",
@@ -1419,6 +1472,9 @@ const I18N = {
     wcLang:"Langue, mode sombre et plus dans Réglages", wcGo:"Commencer l'exploration", helpBtnT:"Guide",
     reportProblem:"Signaler un problème",
     skipToPlanner:"Aller au planificateur",
+    linesShort:"lignes", cityPick:"Changer de ville",
+    fareNoteAnk:"Estimation AnkaraKart — tarif EGO 2026 : 35₺ par montée + 17₺ par correspondance. Valable métro, Ankaray, Başkentray et bus EGO.",
+    fareNoteIzm:"Estimation İzmirim Kart — tarif du 1er avr. 2026 : 35₺ à la première montée, correspondances gratuites sous 90 min. L'İZBAN est facturé à part (40₺), sans correspondance.",
     placesAddr:"Lieux et adresses", searchingPlace:"Recherche de lieux…", noPlaceMatch:"Aucun résultat — essayez un lieu, un quartier ou une adresse", landmarkWord:"Lieu", placeWord:"Lieu", placeNotFound:"Lieu introuvable",
     journeyWord:"Trajet",
     tabIntercity:"🚄 Interurbain", intercityTitle:"Trains interurbains · TCDD",
@@ -1609,12 +1665,14 @@ function setStepFree(on, rerun){ stepFreePref=!!on; try{localStorage.setItem('ir
    exact post-hike tiers weren't published at ship time, hence the "≈" and the ⓘ note.
    Intermediate Marmaray/Metrobüs bands are interpolated between the published endpoints.
    Banded modes are charged full band fare even mid-chain (conservative: never under-quotes). */
-const FARE = {
-  base:46.20, xfer:[34.40,26.42,17.18],
-  marmaray:{min:37.40,max:82.17,bands:[3,9,15,25,35,43]},
-  metrobus:{min:33.08,max:68.59,bands:[1,3,9,15,21,33,43]},
-  ferry:65.21, ferryShort:58.52, adalar:171.89
-};
+/* Fares come from the ACTIVE CITY's tariff, and the three cities genuinely price differently:
+     İstanbul (İstanbulkart) — base + decreasing aktarma tiers, distance bands on Marmaray/
+                               Metrobüs, ferries on their own tariff.
+     Ankara   (AnkaraKart)   — flat base + one flat transfer price.
+     İzmir    (İzmirim Kart) — base, then transfers FREE inside the 90-min window (xfer:[0]);
+                               İZBAN is charged separately and grants no transfer right.
+   The generic walker below covers all three: any field a city omits is simply skipped. */
+const FARE = CITY.fare;
 function bandFare(b,n){
   let i=b.bands.findIndex(x=>n<=x); if(i<0) i=b.bands.length-1;
   return b.min + (b.max-b.min)*(i/(b.bands.length-1));
@@ -1622,18 +1680,23 @@ function bandFare(b,n){
 function estimateFare(it){
   const rides=(it.steps||[]).filter(s=>s.type==='ride');
   if(!rides.length) return { taps:0, tl:0 };
-  let tl=0, chain=0;                       // chain = position in the 120-min aktarma sequence
+  let tl=0, chain=0;                       // chain = position in the transfer sequence
   for(const r of rides){
     const line=lineByRef[r.ref];
     const kind=r.bus?'bus':(line?line.kind:'subway');
     const n=Math.max(1,(r.stops||[]).length-1);
-    if(kind==='ferry'){                    // Şehir Hatları: own tariff, outside the aktarma chain
+    if(kind==='ferry' && FARE.ferry){      // Şehir Hatları: own tariff, outside the aktarma chain
       tl += /ada/i.test(r.ref||'') ? FARE.adalar : (n<=1?FARE.ferryShort:FARE.ferry);
       continue;
     }
-    if(r.ref==='Marmaray')       tl += bandFare(FARE.marmaray,n);
-    else if(r.ref==='Metrobüs')  tl += bandFare(FARE.metrobus,n);
-    else tl += chain===0 ? FARE.base : FARE.xfer[Math.min(chain-1,2)];
+    // a suburban line with its own flat tariff and no transfer right (İzmir's İZBAN)
+    if(FARE.suburbanFare && (FARE.suburbanRefs||[]).indexOf(r.ref)>=0){ tl += FARE.suburbanFare; continue; }
+    if(FARE.marmaray && r.ref==='Marmaray')      tl += bandFare(FARE.marmaray,n);
+    else if(FARE.metrobus && r.ref==='Metrobüs') tl += bandFare(FARE.metrobus,n);
+    else {
+      const x = FARE.xfer||[];
+      tl += chain===0 ? FARE.base : (x.length ? x[Math.min(chain-1, x.length-1)] : FARE.base);
+    }
     chain++;
   }
   return { taps:rides.length, tl: Math.round(tl) };
@@ -1783,14 +1846,14 @@ function sevLabel(sev){ return t('sev'+(sev||'').charAt(0).toUpperCase()+(sev||'
    =========================================================================== */
 
 /* --- Network dataset (injected from OpenStreetMap-derived build) --- */
-const NETWORK = __NETWORK_JSON__;
+const NETWORK = CITY.lines.concat(INTERCITY_LINES_JSON);
 /* --- Bus directory: every İETT line {ref,from,to,id,op} (geometry fetched on demand) --- */
-const BUS_DIR = __BUS_JSON__;
+const BUS_DIR = HAS.bus ? __BUS_JSON__ : [];
 /* --- Live disruptions: faults / closures / suspensions (editable transit_data/disruptions.json) --- */
-let DISRUPTIONS = __DISRUPTIONS_JSON__;   // baked-in fallback; overridden by the live fetch below
+let DISRUPTIONS = HAS.disruptions ? __DISRUPTIONS_JSON__ : [];   // baked-in fallback; overridden by the live fetch below
 /* --- Upcoming line openings: curated İBB projected launch dates (subject to change). Shown as
        "coming soon" cards in the announcements panel; auto-hide once the projected date passes. --- */
-const OPENINGS = __OPENINGS_JSON__;
+const OPENINGS = HAS.openings ? __OPENINGS_JSON__ : [];
 /* --- Bus routing graph: per İETT line ordered stops [[lat,lng,name],...] for the trip planner --- */
 /* İETT GTFS bus graph + schedules are ~3.1 MB — 85% of the whole app — so they are NOT baked
    in. They are fetched from transit_data/bus-data.json right after first paint (see
@@ -1811,13 +1874,13 @@ function busHeadway(ref){ const s=BUS_SCHED[ref]; if(!s) return null;
   if(!hs.length) return null; hs.sort((a,b)=>a-b); return hs[Math.floor(hs.length/2)]; }
 /* --- Official Metro İstanbul station registry [[Id,LineName,lat,lng,Name],...] — resolves a
        clicked station to its official ID for EXACT scheduled departures (api.ibb.gov.tr, CORS-open) --- */
-const MI_STATIONS = __MISTATIONS_JSON__;
+const MI_STATIONS = HAS.miStations ? __MISTATIONS_JSON__ : [];
 /* --- Step-free / accessibility per station: İBB open data (elevator + escalator counts)
        merged with OpenStreetMap wheelchair tags. {name,elevators,escalators,size,district,wheelchair,stepFree}. --- */
-const ACCESS_RAW = __ACCESS_JSON__;
+const ACCESS_RAW = HAS.access ? __ACCESS_JSON__ : [];
 /* --- curated İstanbul landmarks for the "Explore" layer (real places; the app computes the
        nearest station + walk). {name,cat,lat,lng} --- */
-const ATTRACTIONS = __ATTRACTIONS_JSON__;
+const ATTRACTIONS = CITY.attractions || __ATTRACTIONS_JSON__;
 const ATTR_CAT = { historic:'🏛️', mosque:'🕌', palace:'👑', museum:'🖼️', market:'🛍️', viewpoint:'🌆', park:'🌳', waterfront:'🌊', landmark:'📍', tower:'🗼' };
 
 /* --- line kind metadata: travel speed (km/h) + render style --- */
@@ -1865,7 +1928,7 @@ const LINE_TIMING = {
 };
 const HW_FALLBACK = { subway:8, marmaray:10, suburban:20, tram:10, funicular:6, cable:8, metrobus:3, ferry:25 };
 function lineTiming(ref){
-  const t = LINE_TIMING[ref], kind = lineByRef[ref] && lineByRef[ref].kind;
+  const t = HAS.lineTiming ? LINE_TIMING[ref] : null, kind = lineByRef[ref] && lineByRef[ref].kind;
   if(t) return { spd:t.spd, hwMin:(t.peak+t.off)/2, hours:t.hours||'06:00 – 00:00', freq:`every ${t.peak}–${t.off} min` };
   const s = SCHEDULE[kind] || SCHEDULE.subway;
   return { spd:(KIND[kind]&&KIND[kind].speed)||40, hwMin:HW_FALLBACK[kind]||10, hours:s.hours, freq:s.freq };
@@ -2251,8 +2314,8 @@ function searchPlaces(q){
    Cached per query, debounced by the caller, aborts after 4.5 s, and fails silently so the
    local stop/landmark search always works offline / on file://. No API key — fits the static site. ---- */
 const GEO_CACHE = new Map();
-const IST_C = { lat:41.02, lng:28.97 };                 // bias centre (Eminönü-ish)
-const IST_BOX = { s:40.75, n:41.65, w:28.00, e:29.95 }; // greater İstanbul clip
+const IST_C = { lat:CITY.center[0], lng:CITY.center[1] };   // geocoder bias = active city centre
+const IST_BOX = CITY.box;                                   // clip results to the active city
 function geoName(p){
   const ctx = p.district || p.city || p.county || p.state;
   return [p.name, (ctx && ctx!==p.name) ? ctx : null].filter(Boolean).join(', ') || p.name || '—';
@@ -2343,7 +2406,7 @@ function siblingBuses(b, a, exclude){
    =========================================================================== */
 // minZoom 6 (not 9) so the Intercity tab can show the whole country — Ankara–Kars is 1,300 km
 const map = L.map('map', { zoomControl:true, preferCanvas:true, minZoom:6, maxZoom:18 })
-             .setView([41.045, 29.00], 11);
+             .setView(CITY.center, CITY.zoom);
 L.control.zoom({ position:'bottomright' });
 
 const BASES = {
@@ -2958,7 +3021,7 @@ function openLine(line){
   const live = isLive(line);
   curLineRef = live ? line.ref : null;   // only live lines can be followed for alerts
   updateFollowBtn();
-  const meta = LINE_META[line.ref] || {};
+  const meta = (HAS.lineMeta ? LINE_META[line.ref] : null) || {};
   const official = line.official || meta.official || line.ref;
   document.getElementById('lpSw').style.background = line.color;
   document.getElementById('lpSw').style.color = line.color;
@@ -3398,7 +3461,7 @@ function showItinerary(res, it){
   document.getElementById('rStops').textContent=it.stops;
   document.getElementById('rTr').textContent=it.transfers;
   { const fe=estimateFare(it), fEl=document.getElementById('rFare');
-    if(fEl) fEl.innerHTML = fe.taps ? `<span class="rf-ico">🎫</span><span class="rf-main">≈ ${fe.tl} ₺</span><span class="rf-sub">${fe.taps} ${t('fareTaps')}</span><span class="rf-i" title="${attrEsc(t('fareNote'))}">ⓘ</span>` : '';
+    if(fEl) fEl.innerHTML = fe.taps ? `<span class="rf-ico">🎫</span><span class="rf-main">≈ ${fe.tl} ₺</span><span class="rf-sub">${fe.taps} ${t('fareTaps')}</span><span class="rf-i" title="${attrEsc(t(FARE.noteKey||'fareNote'))}">ⓘ</span>` : '';
     renderRouteWarnings(it); }
   const allPts=[], legs=[];
   drawItin(res, it, allPts, legs);
@@ -3780,6 +3843,7 @@ function tabLines(){ return currentTab==='active' ? liveLines
 
 // switch between Active Network, Vision & Expansion, and Bus Directory scopes
 let busListBuilt = false;
+if(!HAS.bus){ const bt=document.querySelector('#tabs button[data-tab="bus"]'); if(bt) bt.style.display='none'; }
 function setTab(t){
   currentTab = t;
   document.querySelectorAll('#tabs button').forEach(b=>{
@@ -3971,7 +4035,7 @@ document.getElementById('icModeSeg').addEventListener('click', e=>{
 });
 
 /* ---- Weather & time per belediye (39 ilçe) — Open-Meteo, keyless + CORS-open ---- */
-const DISTRICTS = [
+const DISTRICTS = CITY.districts || [
   ['Adalar',40.8760,29.0891],['Arnavutköy',41.1840,28.7400],['Ataşehir',40.9923,29.1274],
   ['Avcılar',40.9800,28.7170],['Bağcılar',41.0340,28.8560],['Bahçelievler',41.0020,28.8600],
   ['Bakırköy',40.9820,28.8720],['Başakşehir',41.0930,28.8020],['Bayrampaşa',41.0460,28.9020],
@@ -4250,10 +4314,17 @@ document.getElementById('placesGroup').addEventListener('click', e=>{ const b=e.
   if(b.dataset.act==='set') setPlaceFromOrigin(b.dataset.place); else clearPlace(b.dataset.place); });
 document.getElementById('placeChips').addEventListener('click', e=>{ const b=e.target.closest('.pchip'); if(b) useSavedPlace(b.dataset.place); });
 // airport quick actions: the single most common visitor trip, one tap to destination
-const AIRPORTS = {
-  IST:{ name:'İstanbul Havalimanı',      lat:41.25603, lng:28.7426  },   // M11
-  SAW:{ name:'Sabiha Gökçen Havalimanı', lat:40.90644, lng:29.31148 }    // M4
-};
+const AIRPORTS = {};
+(function(){                                   // only the airports this city actually has rail to
+  const wrap = document.getElementById('airportChips');
+  const list = CITY.airports || [];
+  if(!wrap) return;
+  if(!list.length){ wrap.style.display='none'; return; }
+  list.forEach(a=>{ AIRPORTS[a.code]=a;
+    const b=document.createElement('button'); b.className='pchip'; b.dataset.ap=a.code;
+    b.setAttribute('data-i18n-title','toAirport'); b.title='Route to this airport';
+    b.textContent='✈ '+a.label; wrap.appendChild(b); });
+})();
 document.getElementById('airportChips').addEventListener('click', e=>{
   const b=e.target.closest('.pchip'); if(!b) return;
   const a=AIRPORTS[b.dataset.ap]; if(!a) return;
@@ -4651,8 +4722,8 @@ function init(){
   renderAnnouncements();
   renderDisruptionMarkers();
   animRaf=requestAnimationFrame(frame);
-  loadLiveDisruptions();      // refresh from the auto-updated JSON (falls back to baked-in)
-  loadBusData();              // 3.1 MB GTFS bus graph+schedules, fetched after first paint
+  if(HAS.disruptions) loadLiveDisruptions();   // İstanbul-only feed (metro.istanbul scraper)
+  if(HAS.bus) loadBusData();                   // İETT GTFS — İstanbul only
 }
 // ---- lazy bus data: fetched post-paint so the map is interactive immediately. The service
 // worker caches it stale-while-revalidate, so repeat/offline launches get it instantly. ----
@@ -4683,6 +4754,29 @@ async function loadLiveDisruptions(){
     if(Array.isArray(data)){ ensureEnglish(data); DISRUPTIONS = data; renderAnnouncements(); renderDisruptionMarkers(); refreshClosed(); checkDisruptionAlerts(); }
   }catch(e){ /* offline / file:// → keep the baked-in DISRUPTIONS */ }
 }
+// ---- city switcher: the city name in the title opens a picker. Changing city reloads with
+// ?city=… so EVERY derived structure (graph, stations, sim, fares, weather, search) is rebuilt
+// from that city's data — nothing can be left half-switched. ----
+(function(){
+  const btn=document.getElementById('cityBtn'), menu=document.getElementById('cityMenu'),
+        nameEl=document.getElementById('cityName');
+  if(!btn||!menu) return;
+  nameEl.textContent = CITY.name;
+  document.title = CITY.name + ' · RAY-NET — Live Transit Network Map';
+  menu.innerHTML = CITY_IDS.map(id=>{
+    const c=CITIES[id], n=(c.lines||[]).filter(l=>!l.partOf && l.scope!=='planned').length;
+    return `<button class="city-item${id===CITY_ID?' on':''}" role="option" aria-selected="${id===CITY_ID}" data-city="${id}">
+      <span class="ci-n">${svgEsc(c.label)}</span><span class="ci-c">${n} ${t('linesShort')}</span></button>`;
+  }).join('');
+  const close=()=>{ menu.classList.remove('show'); btn.setAttribute('aria-expanded','false'); };
+  btn.addEventListener('click', e=>{ e.stopPropagation();
+    const open=!menu.classList.contains('show');
+    menu.classList.toggle('show', open); btn.setAttribute('aria-expanded', open?'true':'false'); });
+  menu.addEventListener('click', e=>{ const b=e.target.closest('button[data-city]'); if(!b) return;
+    close(); switchCity(b.dataset.city); });
+  document.addEventListener('click', e=>{ if(!menu.contains(e.target) && e.target!==btn) close(); });
+  document.addEventListener('keydown', e=>{ if(e.key==='Escape') close(); });
+})();
 // ---- first-visit welcome / guide (reopenable from the ? header button) ----
 (function(){
   const ov = document.getElementById('wcOverlay');

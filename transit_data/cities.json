@@ -1,0 +1,102 @@
+{
+  "istanbul": {
+    "name": "İSTANBUL",
+    "label": "İstanbul",
+    "center": [41.045, 29.00],
+    "zoom": 11,
+    "box": { "s": 40.75, "n": 41.65, "w": 28.00, "e": 29.95 },
+    "operator": "İBB · Metro İstanbul / İETT",
+    "card": "İstanbulkart",
+    "fare": {
+      "base": 46.20,
+      "xfer": [34.40, 26.42, 17.18],
+      "marmaray": { "min": 37.40, "max": 82.17, "bands": [3, 9, 15, 25, 35, 43] },
+      "metrobus": { "min": 33.08, "max": 68.59, "bands": [1, 3, 9, 15, 21, 33, 43] },
+      "ferry": 65.21, "ferryShort": 58.52, "adalar": 171.89,
+      "noteKey": "fareNote"
+    },
+    "has": { "bus": true, "ferry": true, "disruptions": true, "openings": true, "access": true, "miStations": true, "lineMeta": true, "lineTiming": true },
+    "airports": [
+      { "code": "IST", "label": "İstanbul (IST)", "name": "İstanbul Havalimanı", "lat": 41.25603, "lng": 28.7426 },
+      { "code": "SAW", "label": "Sabiha Gökçen (SAW)", "name": "Sabiha Gökçen Havalimanı", "lat": 40.90644, "lng": 29.31148 }
+    ]
+  },
+
+  "ankara": {
+    "name": "ANKARA",
+    "label": "Ankara",
+    "center": [39.925, 32.855],
+    "zoom": 11,
+    "box": { "s": 39.55, "n": 40.35, "w": 32.30, "e": 33.35 },
+    "operator": "EGO Genel Müdürlüğü · TCDD (Başkentray)",
+    "card": "AnkaraKart",
+    "fare": { "base": 35, "xfer": [17], "noteKey": "fareNoteAnk" },
+    "has": { "bus": false, "ferry": false, "disruptions": false, "openings": false, "access": false, "miStations": false, "lineMeta": false, "lineTiming": false },
+    "airports": [],
+    "districts": [
+      ["Akyurt",40.1350,33.0850],["Altındağ",39.9500,32.8700],["Ayaş",40.0170,32.3330],
+      ["Bala",39.5550,33.1230],["Beypazarı",40.1670,31.9200],["Çamlıdere",40.4870,32.4750],
+      ["Çankaya",39.9000,32.8600],["Çubuk",40.2380,33.0330],["Elmadağ",39.9200,33.2300],
+      ["Etimesgut",39.9450,32.6700],["Evren",39.0250,33.8000],["Gölbaşı",39.7900,32.8100],["Güdül",40.2130,32.2450],
+      ["Haymana",39.4330,32.4970],["Kahramankazan",40.2000,32.6830],["Kalecik",40.0970,33.4080],
+      ["Keçiören",40.0000,32.8700],["Kızılcahamam",40.4700,32.6500],["Mamak",39.9300,32.9200],
+      ["Nallıhan",40.1870,31.3500],["Polatlı",39.5840,32.1470],["Pursaklar",40.0400,32.9000],
+      ["Sincan",39.9600,32.5800],["Şereflikoçhisar",38.9400,33.5400],["Yenimahalle",39.9700,32.7700]
+    ],
+    "attractions": [
+      { "name": "Anıtkabir", "cat": "historic", "lat": 39.9250, "lng": 32.8367 },
+      { "name": "Ankara Castle", "cat": "historic", "lat": 39.9410, "lng": 32.8646 },
+      { "name": "Kocatepe Mosque", "cat": "mosque", "lat": 39.9179, "lng": 32.8547 },
+      { "name": "Museum of Anatolian Civilizations", "cat": "museum", "lat": 39.9391, "lng": 32.8631 },
+      { "name": "Atakule", "cat": "view", "lat": 39.8845, "lng": 32.8547 },
+      { "name": "Gençlik Parkı", "cat": "park", "lat": 39.9394, "lng": 32.8497 },
+      { "name": "Hamamönü", "cat": "historic", "lat": 39.9354, "lng": 32.8563 },
+      { "name": "CerModern", "cat": "museum", "lat": 39.9412, "lng": 32.8397 },
+      { "name": "Kuğulu Park", "cat": "park", "lat": 39.9060, "lng": 32.8626 },
+      { "name": "Rahmi M. Koç Museum Ankara", "cat": "museum", "lat": 39.9401, "lng": 32.8595 },
+      { "name": "Kızılay Square", "cat": "square", "lat": 39.9208, "lng": 32.8541 },
+      { "name": "Ulus Square", "cat": "square", "lat": 39.9414, "lng": 32.8541 }
+    ]
+  },
+
+  "izmir": {
+    "name": "İZMİR",
+    "label": "İzmir",
+    "center": [38.43, 27.15],
+    "zoom": 11,
+    "box": { "s": 37.90, "n": 38.95, "w": 26.55, "e": 27.75 },
+    "operator": "İzmir BB · ESHOT / İzmir Metro / İZBAN",
+    "card": "İzmirim Kart",
+    "fare": { "base": 35, "xfer": [0], "suburbanFare": 40, "suburbanRefs": ["İZBAN"], "noteKey": "fareNoteIzm" },
+    "has": { "bus": false, "ferry": false, "disruptions": false, "openings": false, "access": false, "miStations": false, "lineMeta": false, "lineTiming": false },
+    "airports": [
+      { "code": "ADB", "label": "Adnan Menderes (ADB)", "name": "Havalimanı", "lat": 38.29126, "lng": 27.14772 }
+    ],
+    "districts": [
+      ["Aliağa",38.8000,26.9700],["Balçova",38.3900,27.0500],["Bayındır",38.2200,27.6500],
+      ["Bayraklı",38.4600,27.1700],["Bergama",39.1200,27.1800],["Beydağ",38.0800,28.2100],
+      ["Bornova",38.4700,27.2200],["Buca",38.3900,27.1700],["Çeşme",38.3200,26.3000],
+      ["Çiğli",38.4900,27.0700],["Dikili",39.0700,26.8900],["Foça",38.6700,26.7600],
+      ["Gaziemir",38.3200,27.1200],["Güzelbahçe",38.3700,26.8800],["Karabağlar",38.3800,27.1200],
+      ["Karaburun",38.6400,26.5100],["Karşıyaka",38.4600,27.1100],["Kemalpaşa",38.4300,27.4200],
+      ["Kınık",39.0900,27.3800],["Kiraz",38.2300,28.2000],["Konak",38.4190,27.1290],
+      ["Menderes",38.2500,27.1300],["Menemen",38.6100,27.0700],["Narlıdere",38.3900,27.0000],
+      ["Ödemiş",38.2300,27.9700],["Seferihisar",38.2000,26.8400],["Selçuk",37.9500,27.3700],
+      ["Tire",38.0900,27.7300],["Torbalı",38.1600,27.3600],["Urla",38.3200,26.7700]
+    ],
+    "attractions": [
+      { "name": "Konak Clock Tower", "cat": "historic", "lat": 38.4189, "lng": 27.1287 },
+      { "name": "Kemeraltı Bazaar", "cat": "bazaar", "lat": 38.4180, "lng": 27.1330 },
+      { "name": "Kadifekale", "cat": "historic", "lat": 38.4130, "lng": 27.1450 },
+      { "name": "Agora Open Air Museum", "cat": "historic", "lat": 38.4166, "lng": 27.1382 },
+      { "name": "Historical Elevator (Asansör)", "cat": "view", "lat": 38.4085, "lng": 27.1265 },
+      { "name": "Kordon (Alsancak)", "cat": "park", "lat": 38.4370, "lng": 27.1400 },
+      { "name": "Konak Pier", "cat": "square", "lat": 38.4180, "lng": 27.1270 },
+      { "name": "Kültürpark", "cat": "park", "lat": 38.4290, "lng": 27.1450 },
+      { "name": "Karşıyaka Çarşı", "cat": "bazaar", "lat": 38.4590, "lng": 27.1180 },
+      { "name": "Balçova Teleferik", "cat": "view", "lat": 38.3870, "lng": 27.0530 },
+      { "name": "İnciraltı City Forest", "cat": "park", "lat": 38.3900, "lng": 27.0500 },
+      { "name": "Bornova Aşağı Park", "cat": "park", "lat": 38.4660, "lng": 27.2170 }
+    ]
+  }
+}
