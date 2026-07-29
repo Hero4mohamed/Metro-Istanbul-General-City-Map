@@ -23,12 +23,16 @@ const intercity=JSON.parse(fs.readFileSync(path.join(DIR, 'intercity-lines.json'
 const cities  = JSON.parse(fs.readFileSync(path.join(DIR, 'cities.json'), 'utf8'));           // per-city meta (centre, fares, districts…)
 const ankara  = JSON.parse(fs.readFileSync(path.join(DIR, 'ankara-lines.json'), 'utf8'));     // EGO metro/Ankaray + Başkentray
 const izmir   = JSON.parse(fs.readFileSync(path.join(DIR, 'izmir-lines.json'), 'utf8'));      // İzmir Metro + İZBAN + trams
+const bursa   = JSON.parse(fs.readFileSync(path.join(DIR, 'bursa-lines.json'), 'utf8'));      // BursaRay B1/B2 + trams
+const antalya = JSON.parse(fs.readFileSync(path.join(DIR, 'antalya-lines.json'), 'utf8'));    // AntRay T1A/T1B/T2/T3
 // each city carries its own line set; the app picks one at boot and derives EVERYTHING
 // (station registry, routing graph, sim, legend, stats) from it. Intercity is national, so it
 // is shipped separately and appended to whichever city is active.
 cities.istanbul.lines = active.concat(b2, ferry, cable, planned, manual);
 cities.ankara.lines   = ankara;
 cities.izmir.lines    = izmir;
+cities.bursa.lines    = bursa;
+cities.antalya.lines  = antalya;
 const data = JSON.stringify(cities);
 
 // lift the TR→EN translator out of the scraper so the CLIENT can re-translate any
@@ -49,7 +53,7 @@ const html = template.replace('__CITIES_JSON__', data)
                      .replace('__ACCESS_JSON__', () => JSON.stringify(access))
                      .replace('__ATTRACTIONS_JSON__', () => JSON.stringify(attract))
                      .replace('__TRANSLATOR_JS__', () => translatorJS);
-console.log('İSTANBUL:', cities.istanbul.lines.length, ' ANKARA:', ankara.length, ' İZMİR:', izmir.length,
+console.log('İSTANBUL:', cities.istanbul.lines.length, ' ANKARA:', ankara.length, ' İZMİR:', izmir.length, ' BURSA:', bursa.length, ' ANTALYA:', antalya.length,
             ' INTERCITY:', intercity.length, ' BUSES:', buses.length, ' BUSGRAPH:', busGraph.length,
             ' DISRUPTIONS:', disrupt.length, ' MISTATIONS:', miStns.length, ' ACCESS:', access.length);
 

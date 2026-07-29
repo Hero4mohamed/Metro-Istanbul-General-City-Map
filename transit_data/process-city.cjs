@@ -63,7 +63,8 @@ function orderAlong(stations, path) {
   }).sort((x, y) => x.s - y.s).map(x => x.st);
 }
 function cleanName(raw) {
-  let nm = String(raw || '').trim();
+  // Bursa's tram stops are tagged "T1-Gazcılar" / "T3-Kayhan" — drop the line-ref prefix
+  let nm = String(raw || '').trim().replace(/^[A-ZİĞÜŞÖÇ]{1,2}\d[A-Z]?\s*[-–]\s*/i, '');
   let prev;
   do { prev = nm;
     nm = nm.replace(/[\s,]+(Metro\s+İstasyonu|Metro\s+Istasyonu|İstasyonu|Istasyonu|Metro|Gar[ıi]|Tramvay\s+Dura[ğg][ıi]|Dura[ğg][ıi])$/i, '').trim();
@@ -74,7 +75,25 @@ function cleanName(raw) {
 // colour sources: OSM `colour` where the relation carries a real per-line value (A1/M4/B1/T1/T2),
 // otherwise the published EGO / İzmir Metro map convention. Colours are cosmetic — geometry,
 // stations and fares are the data that must be right.
+const CITY_SRC = { ankara:'city-geom.json', izmir:'city-geom.json',
+                   bursa:'city2-geom.json', antalya:'city2-geom.json' };
 const CITY_LINES = {
+  // Bursa — BursaRay light metro (B1/B2) + city trams. Burulaş's T2 (Kent Meydanı–Terminal)
+  // is omitted: its OSM relation carries no station nodes, and a line you can see but cannot
+  // route on would be worse than leaving it out.
+  bursa: [
+    { rel:7868620,  ref:'B1', kind:'subway', color:'#E30613', official:'BursaRay B1 · Geçit/Balat – Arabayatağı' },
+    { rel:7869620,  ref:'B2', kind:'subway', color:'#8A90A0', official:'BursaRay B2 · Üniversite – Kestel' },
+    { rel:11322581, ref:'T1', kind:'tram',   color:'#A0522D', official:'T1 · Bursa Tramvayı (nostaljik ring)' },
+    { rel:19781239, ref:'T3', kind:'tram',   color:'#0EA5A5', official:'T3 · Bursa Tramvayı' }
+  ],
+  // Antalya — AntRay light rail. T1A is the airport branch, T1B the Expo branch.
+  antalya: [
+    { rel:11813037, ref:'T1A', kind:'tram', color:'#E4032E', official:'AntRay T1A · Fatih – Havalimanı' },
+    { rel:11813036, ref:'T1B', kind:'tram', color:'#F5871F', official:'AntRay T1B · Fatih – Expo' },
+    { rel:11813041, ref:'T2',  kind:'tram', color:'#2E7D32', official:'T2 · Müze – Zerdalilik (nostaljik)' },
+    { rel:10651839, ref:'T3',  kind:'tram', color:'#0072BC', official:'AntRay T3 · Müze – Varsak' }
+  ],
   ankara: [
     { rel:456707,   ref:'M1', kind:'subway',   color:'#BF0E1C', official:'M1 · Kızılay – Batıkent' },
     { rel:3604162,  ref:'M2', kind:'subway',   color:'#0B4EA2', official:'M2 · Kızılay – Koru' },
@@ -92,11 +111,17 @@ const CITY_LINES = {
   ]
 };
 
-const raw = JSON.parse(fs.readFileSync(path.join(DIR, 'city-geom.json'), 'utf8'));
-const relById = {}, nodeById = {};
-for (const e of raw.elements) { if (e.type === 'relation') relById[e.id] = e; else if (e.type === 'node') nodeById[e.id] = e; }
+const SRC_CACHE = {};
+function loadSrc(file){
+  if (SRC_CACHE[file]) return SRC_CACHE[file];
+  const raw = JSON.parse(fs.readFileSync(path.join(DIR, file), 'utf8'));
+  const relById = {}, nodeById = {};
+  for (const e of raw.elements) { if (e.type === 'relation') relById[e.id] = e; else if (e.type === 'node') nodeById[e.id] = e; }
+  return (SRC_CACHE[file] = { relById, nodeById });
+}
 
 for (const city of Object.keys(CITY_LINES)) {
+  const { relById, nodeById } = loadSrc(CITY_SRC[city] || 'city-geom.json');
   const out = [];
   for (const cfg of CITY_LINES[city]) {
     const rel = relById[cfg.rel];

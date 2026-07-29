@@ -59,6 +59,79 @@
     ]
   },
 
+  "bursa": {
+    "name": "BURSA",
+    "label": "Bursa",
+    "center": [40.195, 29.06],
+    "zoom": 12,
+    "box": { "s": 39.95, "n": 40.50, "w": 28.55, "e": 29.65 },
+    "operator": "Burulaş · BursaRay",
+    "card": "Bursakart",
+    "fare": { "base": 40, "xfer": [23], "noteKey": "fareNoteBur" },
+    "has": { "bus": false, "ferry": false, "disruptions": false, "openings": false, "access": false, "miStations": false, "lineMeta": false, "lineTiming": false },
+    "airports": [],
+    "districts": [
+      ["Büyükorhan",39.7800,28.9100],["Gemlik",40.4300,29.1500],["Gürsu",40.2200,29.1900],
+      ["Harmancık",39.6800,29.1600],["İnegöl",40.0800,29.5100],["İznik",40.4300,29.7200],
+      ["Karacabey",40.2100,28.3600],["Keles",39.9200,29.2300],["Kestel",40.2000,29.2100],
+      ["Mudanya",40.3800,28.8800],["Mustafakemalpaşa",40.0300,28.4100],["Nilüfer",40.2100,28.9700],
+      ["Orhaneli",39.9100,28.9900],["Orhangazi",40.4900,29.3100],["Osmangazi",40.1900,29.0600],
+      ["Yenişehir",40.2600,29.6500],["Yıldırım",40.1900,29.1000]
+    ],
+    "attractions": [
+      { "name": "Ulu Camii (Grand Mosque)", "cat": "mosque", "lat": 40.1830, "lng": 29.0610 },
+      { "name": "Koza Han", "cat": "bazaar", "lat": 40.1836, "lng": 29.0625 },
+      { "name": "Green Mosque (Yeşil Camii)", "cat": "mosque", "lat": 40.1820, "lng": 29.0760 },
+      { "name": "Green Tomb (Yeşil Türbe)", "cat": "historic", "lat": 40.1824, "lng": 29.0775 },
+      { "name": "Muradiye Complex", "cat": "historic", "lat": 40.1855, "lng": 29.0450 },
+      { "name": "Tophane Clock Tower", "cat": "view", "lat": 40.1858, "lng": 29.0576 },
+      { "name": "Bursa City Museum", "cat": "museum", "lat": 40.1846, "lng": 29.0596 },
+      { "name": "Karagöz Museum", "cat": "museum", "lat": 40.1889, "lng": 29.0429 },
+      { "name": "Emir Sultan Mosque", "cat": "mosque", "lat": 40.1836, "lng": 29.0910 },
+      { "name": "Uludağ Teleferik (Teferrüç)", "cat": "view", "lat": 40.1798, "lng": 29.1180 },
+      { "name": "Cumalıkızık Village", "cat": "historic", "lat": 40.1910, "lng": 29.1830 },
+      { "name": "Kültürpark", "cat": "park", "lat": 40.1930, "lng": 29.0450 }
+    ]
+  },
+
+  "antalya": {
+    "name": "ANTALYA",
+    "label": "Antalya",
+    "center": [36.888, 30.703],
+    "zoom": 12,
+    "box": { "s": 36.55, "n": 37.25, "w": 30.25, "e": 31.15 },
+    "operator": "Antalya BB · AntRay",
+    "card": "AntalyaKart",
+    "fare": { "base": 35, "xfer": [0, 35], "noteKey": "fareNoteAnt" },
+    "has": { "bus": false, "ferry": false, "disruptions": false, "openings": false, "access": false, "miStations": false, "lineMeta": false, "lineTiming": false },
+    "airports": [
+      { "code": "AYT", "label": "Antalya (AYT)", "name": "Havalimanı (Giden Yolcu)", "lat": 36.90020, "lng": 30.79290 }
+    ],
+    "districts": [
+      ["Akseki",37.0480,31.7900],["Aksu",36.9500,30.8500],["Alanya",36.5440,31.9990],
+      ["Demre",36.2450,29.9850],["Döşemealtı",37.0200,30.6100],["Elmalı",36.7350,29.9200],
+      ["Finike",36.3000,30.1450],["Gazipaşa",36.2690,32.3130],["Gündoğmuş",36.8100,32.0300],
+      ["İbradı",37.0900,31.5900],["Kaş",36.2020,29.6390],["Kemer",36.6020,30.5600],
+      ["Kepez",36.9200,30.6900],["Konyaaltı",36.8700,30.6300],["Korkuteli",37.0650,30.1950],
+      ["Kumluca",36.3700,30.2900],["Manavgat",36.7860,31.4430],["Muratpaşa",36.8850,30.7100],
+      ["Serik",36.9170,31.1000]
+    ],
+    "attractions": [
+      { "name": "Kaleiçi Old Town", "cat": "historic", "lat": 36.8846, "lng": 30.7050 },
+      { "name": "Hadrian's Gate", "cat": "historic", "lat": 36.8869, "lng": 30.7077 },
+      { "name": "Yivli Minare Mosque", "cat": "mosque", "lat": 36.8869, "lng": 30.7029 },
+      { "name": "Antalya Museum", "cat": "museum", "lat": 36.8879, "lng": 30.6790 },
+      { "name": "Old Harbour (Yat Limanı)", "cat": "square", "lat": 36.8843, "lng": 30.7020 },
+      { "name": "Karaalioğlu Park", "cat": "park", "lat": 36.8815, "lng": 30.7085 },
+      { "name": "Konyaaltı Beach", "cat": "park", "lat": 36.8600, "lng": 30.6400 },
+      { "name": "Lara Beach", "cat": "park", "lat": 36.8560, "lng": 30.8000 },
+      { "name": "Lower Düden Waterfalls", "cat": "view", "lat": 36.8490, "lng": 30.7860 },
+      { "name": "Upper Düden Waterfalls", "cat": "view", "lat": 36.9500, "lng": 30.7530 },
+      { "name": "Antalya Aquarium", "cat": "museum", "lat": 36.8624, "lng": 30.6560 },
+      { "name": "Atatürk Park", "cat": "park", "lat": 36.8760, "lng": 30.6900 }
+    ]
+  },
+
   "izmir": {
     "name": "İZMİR",
     "label": "İzmir",

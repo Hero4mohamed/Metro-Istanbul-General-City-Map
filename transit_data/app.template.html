@@ -1175,6 +1175,8 @@ const I18N = {
     reportProblem:"Report a problem",
     skipToPlanner:"Skip to trip planner",
     linesShort:"lines", cityPick:"Change city",
+    fareNoteBur:"Bursakart estimate — Burulaş tariff of 3 Feb 2026: 40₺ per boarding; transfers get 17₺ off (23₺) within 90 minutes. BursaRay also refunds up to 9.50₺ on short trips if you tap out.",
+    fareNoteAnt:"AntalyaKart estimate — Antalya BB tariff: 35₺ per boarding, with ONE free transfer per trip (5 min–1 h on buses, up to 2 h between tram lines). Credit-card and single-use tickets get no transfer right.",
     fareNoteAnk:"AnkaraKart estimate — EGO tariff 2026: 35₺ per boarding + 17₺ per transfer. Valid on metro, Ankaray, Başkentray and EGO buses.",
     fareNoteIzm:"İzmirim Kart estimate — tariff of 1 Apr 2026: 35₺ first boarding, then transfers are free within 90 minutes. İZBAN is charged separately (40₺) and grants no transfer right.",
     placesAddr:"Places & addresses", searchingPlace:"Searching places…", noPlaceMatch:"No match — try a landmark, area or address", landmarkWord:"Landmark", placeWord:"Place", placeNotFound:"Couldn’t find that place",
@@ -1275,6 +1277,8 @@ const I18N = {
     reportProblem:"Sorun bildir",
     skipToPlanner:"Yolculuk planlayıcıya geç",
     linesShort:"hat", cityPick:"Şehir değiştir",
+    fareNoteBur:"Bursakart tahmini — 3 Şub 2026 Burulaş tarifesi: biniş 40₺, 90 dakika içinde aktarmalarda 17₺ indirim (23₺). BursaRay'de kısa yolculuklarda çıkışta kart okutunca 9,50₺'ye kadar iade var.",
+    fareNoteAnt:"AntalyaKart tahmini — Antalya BB tarifesi: biniş 35₺, yolculuk başına BİR ücretsiz aktarma (otobüste 5 dk–1 saat, tramvay hatları arasında 2 saate kadar). Kredi kartı ve kullan-at biletlerde aktarma hakkı yoktur.",
     fareNoteAnk:"AnkaraKart tahmini — 2026 EGO tarifesi: biniş 35₺ + aktarma 17₺. Metro, Ankaray, Başkentray ve EGO otobüslerinde geçerli.",
     fareNoteIzm:"İzmirim Kart tahmini — 1 Nis 2026 tarifesi: ilk biniş 35₺, 90 dakika içinde aktarmalar ücretsiz. İZBAN ayrı ücretlidir (40₺) ve aktarma hakkı vermez.",
     placesAddr:"Yerler ve adresler", searchingPlace:"Yerler aranıyor…", noPlaceMatch:"Eşleşme yok — bir mekân, semt veya adres deneyin", landmarkWord:"Mekân", placeWord:"Yer", placeNotFound:"Bu yer bulunamadı",
@@ -1375,6 +1379,8 @@ const I18N = {
     reportProblem:"أبلغ عن مشكلة",
     skipToPlanner:"تخطَّ إلى مخطط الرحلة",
     linesShort:"خط", cityPick:"تغيير المدينة",
+    fareNoteBur:"تقدير Bursakart — تعرفة ٣ فبراير ٢٠٢٦: ٤٠₺ للركوب، وخصم ١٧₺ على التبديل (٢٣₺) خلال ٩٠ دقيقة.",
+    fareNoteAnt:"تقدير AntalyaKart — ٣٥₺ للركوب، مع تبديل مجاني واحد لكل رحلة (٥ دقائق–ساعة للحافلات، حتى ساعتين بين خطوط الترام).",
     fareNoteAnk:"تقدير AnkaraKart — تعرفة EGO ٢٠٢٦: ٣٥₺ للركوب + ١٧₺ للتبديل. صالحة في المترو وأنكاراي وباشكنتراي وحافلات EGO.",
     fareNoteIzm:"تقدير İzmirim Kart — تعرفة ١ أبريل ٢٠٢٦: ٣٥₺ لأول ركوب، ثم التبديلات مجانية خلال ٩٠ دقيقة. إزبان يُحتسب منفصلًا (٤٠₺) دون حق تبديل.",
     placesAddr:"أماكن وعناوين", searchingPlace:"جارٍ البحث…", noPlaceMatch:"لا نتائج — جرّب معلمًا أو حيًا أو عنوانًا", landmarkWord:"معلم", placeWord:"مكان", placeNotFound:"تعذّر العثور على المكان",
@@ -1473,6 +1479,8 @@ const I18N = {
     reportProblem:"Signaler un problème",
     skipToPlanner:"Aller au planificateur",
     linesShort:"lignes", cityPick:"Changer de ville",
+    fareNoteBur:"Estimation Bursakart — tarif Burulaş du 3 févr. 2026 : 40₺ par montée, correspondance remisée de 17₺ (23₺) sous 90 min.",
+    fareNoteAnt:"Estimation AntalyaKart — 35₺ par montée, avec UNE correspondance gratuite par trajet (5 min–1 h en bus, jusqu'à 2 h entre lignes de tram).",
     fareNoteAnk:"Estimation AnkaraKart — tarif EGO 2026 : 35₺ par montée + 17₺ par correspondance. Valable métro, Ankaray, Başkentray et bus EGO.",
     fareNoteIzm:"Estimation İzmirim Kart — tarif du 1er avr. 2026 : 35₺ à la première montée, correspondances gratuites sous 90 min. L'İZBAN est facturé à part (40₺), sans correspondance.",
     placesAddr:"Lieux et adresses", searchingPlace:"Recherche de lieux…", noPlaceMatch:"Aucun résultat — essayez un lieu, un quartier ou une adresse", landmarkWord:"Lieu", placeWord:"Lieu", placeNotFound:"Lieu introuvable",
@@ -4763,8 +4771,10 @@ async function loadLiveDisruptions(){
   if(!btn||!menu) return;
   nameEl.textContent = CITY.name;
   document.title = CITY.name + ' · RAY-NET — Live Transit Network Map';
-  menu.innerHTML = CITY_IDS.map(id=>{
-    const c=CITIES[id], n=(c.lines||[]).filter(l=>!l.partOf && l.scope!=='planned').length;
+  const lineCount = id => (CITIES[id].lines||[]).filter(l=>!l.partOf && l.scope!=='planned').length;
+  // biggest network first, so the list reads İstanbul → Ankara → İzmir → Bursa → Antalya
+  menu.innerHTML = CITY_IDS.slice().sort((a,b)=> lineCount(b)-lineCount(a) || CITIES[a].label.localeCompare(CITIES[b].label,'tr')).map(id=>{
+    const c=CITIES[id], n=lineCount(id);
     return `<button class="city-item${id===CITY_ID?' on':''}" role="option" aria-selected="${id===CITY_ID}" data-city="${id}">
       <span class="ci-n">${svgEsc(c.label)}</span><span class="ci-c">${n} ${t('linesShort')}</span></button>`;
   }).join('');

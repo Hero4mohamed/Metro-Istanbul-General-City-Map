@@ -32,3 +32,4 @@ Thumbs.db
 node_modules/
 .claude/
 transit_data/city-geom.json
+transit_data/city2-geom.json
