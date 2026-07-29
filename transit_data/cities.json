@@ -141,7 +141,7 @@
     "operator": "İzmir BB · ESHOT / İzmir Metro / İZBAN",
     "card": "İzmirim Kart",
     "fare": { "base": 35, "xfer": [0], "suburbanFare": 40, "suburbanRefs": ["İZBAN"], "noteKey": "fareNoteIzm" },
-    "has": { "bus": false, "ferry": false, "disruptions": false, "openings": false, "access": false, "miStations": false, "lineMeta": false, "lineTiming": false },
+    "has": { "bus": false, "ferry": true, "disruptions": false, "openings": false, "access": false, "miStations": false, "lineMeta": false, "lineTiming": false },
     "airports": [
       { "code": "ADB", "label": "Adnan Menderes (ADB)", "name": "Havalimanı", "lat": 38.29126, "lng": 27.14772 }
     ],
