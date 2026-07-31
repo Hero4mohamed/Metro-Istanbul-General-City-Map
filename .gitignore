@@ -36,3 +36,6 @@ transit_data/city2-geom.json
 transit_data/gaps-probe.json
 transit_data/gaps-geom.json
 transit_data/gaps2-geom.json
+transit_data/planned-cities-probe.json
+transit_data/planned2-probe.json
+transit_data/planned-cities-geom.json

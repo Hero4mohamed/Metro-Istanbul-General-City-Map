@@ -237,6 +237,50 @@ const bursa = JSON.parse(fs.readFileSync(path.join(DIR, 'bursa-lines.json'), 'ut
 }
 fs.writeFileSync(path.join(DIR, 'bursa-lines.json'), JSON.stringify(bursa));
 
+/* ================= UNDER-CONSTRUCTION LINES (Vision tab) =================
+   scope:'planned' + no launch date → isLive() is false → they draw dashed on the Vision tab and
+   stay out of routing/stats, exactly like İstanbul's projects. Both are geometry-only: OSM has
+   the alignment but no station nodes yet, so the strip map hides itself rather than invent stops.
+   Ankara M5 and the İzmir Buca metro are the ONLY construction-stage lines mapped as route
+   relations in these four cities — Bursa and Antalya have none, so their Vision tab is hidden.
+   (İzmir's "Ataşehir → Mavişehir" tram relation was checked and skipped: 37% of its geometry
+   lies within 60 m of the existing T1 Karşıyaka tram, i.e. a near-duplicate, not a new line.) */
+{
+  const P = load('planned-cities-geom.json');
+  const PLANNED = [
+    { city:'ankara', rel:19925415, ref:'M5', color:'#7E57C2',
+      official:'M5 · Kızılay – İlkbahar Mahallesi', status:'Under construction' },
+    { city:'izmir',  rel:20170176, ref:'Buca', color:'#B8860B',
+      official:'Buca Metrosu · Şirinyer – Buca', status:'Under construction' }
+  ];
+  const target = { ankara: JSON.parse(fs.readFileSync(path.join(DIR,'ankara-lines.json'),'utf8')), izmir };
+  let added = 0;
+  for (const cfg of PLANNED) {
+    const r = P.rel[cfg.rel]; if (!r) { console.warn('  ! planned rel missing', cfg.ref); continue; }
+    let paths = relPaths(r, 120, 0.00004);
+    if (!paths.length) { console.warn('  ! planned no geometry', cfg.ref); continue; }
+    // A relation holding BOTH track directions stitches into a there-and-back loop (M5 came out
+    // 37 km with its ends 100 m apart). Detect that and keep one direction: cut at the vertex
+    // farthest from the start, so the line traces the corridor once.
+    paths = paths.map(p => {
+      if (p.length < 8 || meters(p[0], p[p.length-1]) > chainLen(p) * 0.15) return p;
+      let far = 0, fd = -1;
+      p.forEach((c, i) => { const d = meters(p[0], c); if (d > fd) { fd = d; far = i; } });
+      return far > 2 ? p.slice(0, far + 1) : p;
+    });
+    upsert(target[cfg.city], { ref:cfg.ref, kind:'subway', color:cfg.color, paths,
+      stations: relStations(r, P), scope:'planned', city:cfg.city,
+      official:cfg.official, status:cfg.status });
+    console.log('planned ' + cfg.city + '/' + cfg.ref + ': paths=' + paths.length +
+                ', ' + (chainLen(paths[0].map(p=>p))/1000).toFixed(1) + ' km, stations=' + relStations(r,P).length);
+    added++;
+  }
+  if (added) {
+    fs.writeFileSync(path.join(DIR,'ankara-lines.json'), JSON.stringify(target.ankara));
+    fs.writeFileSync(path.join(DIR,'izmir-lines.json'), JSON.stringify(izmir));
+  }
+}
+
 for (const [c, arr] of [['izmir', izmir], ['bursa', bursa]])
   console.log('\n' + c.toUpperCase() + ' now ' + arr.length + ' lines: ' +
               arr.map(l => l.ref + '(' + l.stations.length + ')').join(', '));

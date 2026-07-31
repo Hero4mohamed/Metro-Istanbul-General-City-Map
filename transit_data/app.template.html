@@ -3852,6 +3852,8 @@ function tabLines(){ return currentTab==='active' ? liveLines
 // switch between Active Network, Vision & Expansion, and Bus Directory scopes
 let busListBuilt = false;
 if(!HAS.bus){ const bt=document.querySelector('#tabs button[data-tab="bus"]'); if(bt) bt.style.display='none'; }
+// hide Vision for a city with no projects mapped (Bursa/Antalya) rather than show an empty tab
+if(!visionLines.length){ const vt=document.querySelector('#tabs button[data-tab="vision"]'); if(vt) vt.style.display='none'; }
 function setTab(t){
   currentTab = t;
   document.querySelectorAll('#tabs button').forEach(b=>{
