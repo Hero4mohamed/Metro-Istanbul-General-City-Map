@@ -14,6 +14,8 @@ const manual  = JSON.parse(fs.readFileSync(path.join(DIR, 'planned-manual.json')
 const buses   = JSON.parse(fs.readFileSync(path.join(DIR, 'bus-directory.json'), 'utf8'));
 const busGraph= JSON.parse(fs.readFileSync(path.join(DIR, 'bus-graph.json'), 'utf8'));        // bus stops for routing (both directions, GTFS)
 const busSched= JSON.parse(fs.readFileSync(path.join(DIR, 'bus-schedules.json'), 'utf8'));    // İETT GTFS departure schedules
+const busGeom = fs.existsSync(path.join(DIR,'bus-geom.json'))                                 // real road shape per bus route
+  ? JSON.parse(fs.readFileSync(path.join(DIR, 'bus-geom.json'), 'utf8')) : {};
 const disrupt = JSON.parse(fs.readFileSync(path.join(DIR, 'disruptions.json'), 'utf8'));     // live faults/closures
 const miStns  = JSON.parse(fs.readFileSync(path.join(DIR, 'mi-stations.json'), 'utf8'));     // official station ids (exact timetables)
 const access  = JSON.parse(fs.readFileSync(path.join(DIR, 'accessibility.json'), 'utf8'));   // İBB+OSM step-free/elevator data
@@ -64,8 +66,8 @@ console.log('WROTE', outPath, (fs.statSync(outPath).size/1024).toFixed(1), 'KB')
 // bus graph + schedules are the heaviest datasets (~3.1 MB) and most visitors never plan a
 // bus trip in the first seconds — served as a separate file the app fetches after first paint
 const busDataPath = path.join(DIR, 'bus-data.json');
-fs.writeFileSync(busDataPath, JSON.stringify({ graph: busGraph, sched: busSched }));
-console.log('WROTE', busDataPath, (fs.statSync(busDataPath).size/1024).toFixed(1), 'KB  (lazy-loaded)');
+fs.writeFileSync(busDataPath, JSON.stringify({ graph: busGraph, sched: busSched, geom: busGeom }));
+console.log('WROTE', busDataPath, (fs.statSync(busDataPath).size/1024).toFixed(1), 'KB  (lazy-loaded)  busGeom routes:', Object.keys(busGeom).filter(k=>busGeom[k]).length);
 
 // emit the service worker with a fresh version stamp → installed apps self-update on deploy
 const swTpl = fs.readFileSync(path.join(DIR, 'sw.template.js'), 'utf8');

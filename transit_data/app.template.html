@@ -616,6 +616,36 @@
   .rfare{display:flex;align-items:center;gap:8px;margin:8px 0 2px;padding:8px 11px;border-radius:12px;background:var(--surface);border:1px solid var(--stroke);}
   .rfare:empty{display:none;}
   /* service warnings on a planned route (last departure / line not running) */
+  /* per-leg fare chip on a ride step */
+  .st-fare{margin-left:auto;font-size:9px;font-weight:800;color:#7CF0BE;background:rgba(52,211,153,.12);
+    padding:2px 6px;border-radius:7px;flex:none;letter-spacing:.2px;}
+  .st-fare.free{color:#9AA4B8;background:rgba(255,255,255,.07);}
+  body.light .st-fare{color:#067A54;}
+  /* ---- printable trip sheet: hidden on screen, the only thing printed ---- */
+  .print-sheet{display:none;}
+  @media print{
+    @page{ margin:14mm; }
+    body>*{ display:none !important; }
+    body{ background:#fff !important; overflow:visible !important; height:auto !important; }
+    .print-sheet{ display:block !important; color:#111; font-family:var(--font); }
+    .ps-h1{font-size:19px;font-weight:800;margin:0 0 2px;}
+    .ps-sub{font-size:11px;color:#555;margin-bottom:12px;}
+    .ps-kpis{display:flex;gap:10px;margin-bottom:14px;}
+    .ps-kpi{flex:1;border:1px solid #ccc;border-radius:8px;padding:8px 10px;}
+    .ps-kpi b{display:block;font-size:17px;font-family:var(--mono);}
+    .ps-kpi span{font-size:8.5px;text-transform:uppercase;letter-spacing:1px;color:#666;}
+    .ps-sec{font-size:10px;font-weight:800;letter-spacing:1.4px;text-transform:uppercase;color:#666;
+      border-bottom:1px solid #ddd;padding-bottom:4px;margin:14px 0 8px;}
+    .ps-step{display:flex;gap:9px;padding:7px 0;border-bottom:1px solid #eee;page-break-inside:avoid;}
+    .ps-ic{width:20px;text-align:center;font-size:12px;flex:none;}
+    .ps-b{flex:1;}
+    .ps-t{font-size:12px;font-weight:700;}
+    .ps-m{font-size:10.5px;color:#555;margin-top:1px;}
+    .ps-f{font-size:10.5px;font-weight:700;white-space:nowrap;}
+    .ps-badge{display:inline-block;border:1px solid #333;border-radius:4px;padding:0 5px;font-size:10px;font-weight:800;margin-right:5px;}
+    .ps-tot{display:flex;justify-content:space-between;font-size:13px;font-weight:800;padding:9px 0;border-top:2px solid #333;margin-top:4px;}
+    .ps-note{font-size:9px;color:#666;margin-top:12px;line-height:1.6;border-top:1px solid #ddd;padding-top:8px;}
+  }
   .rwarn{display:flex;flex-direction:column;gap:6px;margin:6px 0 2px;}
   .rwarn:empty{display:none;}
   .rw{display:flex;align-items:flex-start;gap:7px;padding:7px 10px;border-radius:11px;font-size:10.5px;font-weight:600;line-height:1.45;}
@@ -748,6 +778,7 @@
 </head>
 <body>
 <a href="#cardPlanner" class="skip-link" data-i18n="skipToPlanner">Skip to trip planner</a>
+<div class="print-sheet" id="printSheet"></div>
 <div id="map"></div>
 <canvas id="trainCanvas"></canvas>
 <button id="locateFab" class="locate-fab glass" data-i18n-title="locateMe" title="My location" aria-label="My location">
@@ -1027,6 +1058,7 @@
       <div class="route-btns">
         <button class="btn ghost favbtn" id="favBtn">☆ Save to Favourites</button>
         <button class="btn ghost" id="shareBtn">🔗 <span data-i18n="share">Share</span></button>
+        <button class="btn ghost" id="printBtn">🖨 <span data-i18n="printTrip">Print / PDF</span></button>
       </div>
       <div class="leave-remind" id="leaveRemind">
         <span data-i18n="remindLeaveLabel">🔔 Remind me to leave in</span>
@@ -1175,6 +1207,8 @@ const I18N = {
     reportProblem:"Report a problem",
     skipToPlanner:"Skip to trip planner",
     linesShort:"lines", cityPick:"Change city",
+    printTrip:"Print / PDF", freeXfer:"free transfer", totalFare:"Total fare", stepByStep:"Step by step",
+    printSrc:"Fares are estimates from the operator's published tariff. Times are typical; check live departures before travelling.",
     fareNoteBur:"Bursakart estimate — Burulaş tariff of 3 Feb 2026: 40₺ per boarding; transfers get 17₺ off (23₺) within 90 minutes. BursaRay also refunds up to 9.50₺ on short trips if you tap out.",
     fareNoteAnt:"AntalyaKart estimate — Antalya BB tariff: 35₺ per boarding, with ONE free transfer per trip (5 min–1 h on buses, up to 2 h between tram lines). Credit-card and single-use tickets get no transfer right.",
     fareNoteAnk:"AnkaraKart estimate — EGO tariff 2026: 35₺ per boarding + 17₺ per transfer. Valid on metro, Ankaray, Başkentray and EGO buses.",
@@ -1277,6 +1311,8 @@ const I18N = {
     reportProblem:"Sorun bildir",
     skipToPlanner:"Yolculuk planlayıcıya geç",
     linesShort:"hat", cityPick:"Şehir değiştir",
+    printTrip:"Yazdır / PDF", freeXfer:"ücretsiz aktarma", totalFare:"Toplam ücret", stepByStep:"Adım adım",
+    printSrc:"Ücretler işletmecinin yayımlanan tarifesine göre tahminidir. Süreler tipiktir; yola çıkmadan canlı sefer saatlerini kontrol edin.",
     fareNoteBur:"Bursakart tahmini — 3 Şub 2026 Burulaş tarifesi: biniş 40₺, 90 dakika içinde aktarmalarda 17₺ indirim (23₺). BursaRay'de kısa yolculuklarda çıkışta kart okutunca 9,50₺'ye kadar iade var.",
     fareNoteAnt:"AntalyaKart tahmini — Antalya BB tarifesi: biniş 35₺, yolculuk başına BİR ücretsiz aktarma (otobüste 5 dk–1 saat, tramvay hatları arasında 2 saate kadar). Kredi kartı ve kullan-at biletlerde aktarma hakkı yoktur.",
     fareNoteAnk:"AnkaraKart tahmini — 2026 EGO tarifesi: biniş 35₺ + aktarma 17₺. Metro, Ankaray, Başkentray ve EGO otobüslerinde geçerli.",
@@ -1379,6 +1415,8 @@ const I18N = {
     reportProblem:"أبلغ عن مشكلة",
     skipToPlanner:"تخطَّ إلى مخطط الرحلة",
     linesShort:"خط", cityPick:"تغيير المدينة",
+    printTrip:"طباعة / PDF", freeXfer:"تبديل مجاني", totalFare:"إجمالي الأجرة", stepByStep:"خطوة بخطوة",
+    printSrc:"الأسعار تقديرية وفق التعرفة المنشورة للمشغّل. الأوقات تقريبية؛ تحقّق من المواعيد المباشرة قبل السفر.",
     fareNoteBur:"تقدير Bursakart — تعرفة ٣ فبراير ٢٠٢٦: ٤٠₺ للركوب، وخصم ١٧₺ على التبديل (٢٣₺) خلال ٩٠ دقيقة.",
     fareNoteAnt:"تقدير AntalyaKart — ٣٥₺ للركوب، مع تبديل مجاني واحد لكل رحلة (٥ دقائق–ساعة للحافلات، حتى ساعتين بين خطوط الترام).",
     fareNoteAnk:"تقدير AnkaraKart — تعرفة EGO ٢٠٢٦: ٣٥₺ للركوب + ١٧₺ للتبديل. صالحة في المترو وأنكاراي وباشكنتراي وحافلات EGO.",
@@ -1479,6 +1517,8 @@ const I18N = {
     reportProblem:"Signaler un problème",
     skipToPlanner:"Aller au planificateur",
     linesShort:"lignes", cityPick:"Changer de ville",
+    printTrip:"Imprimer / PDF", freeXfer:"correspondance gratuite", totalFare:"Tarif total", stepByStep:"Étape par étape",
+    printSrc:"Tarifs estimés d'après la grille publiée par l'exploitant. Durées typiques ; vérifiez les départs en direct avant de partir.",
     fareNoteBur:"Estimation Bursakart — tarif Burulaş du 3 févr. 2026 : 40₺ par montée, correspondance remisée de 17₺ (23₺) sous 90 min.",
     fareNoteAnt:"Estimation AntalyaKart — 35₺ par montée, avec UNE correspondance gratuite par trajet (5 min–1 h en bus, jusqu'à 2 h entre lignes de tram).",
     fareNoteAnk:"Estimation AnkaraKart — tarif EGO 2026 : 35₺ par montée + 17₺ par correspondance. Valable métro, Ankaray, Başkentray et bus EGO.",
@@ -1687,27 +1727,32 @@ function bandFare(b,n){
 }
 function estimateFare(it){
   const rides=(it.steps||[]).filter(s=>s.type==='ride');
-  if(!rides.length) return { taps:0, tl:0 };
+  if(!rides.length) return { taps:0, tl:0, legs:[] };
+  const legs=[];                           // per-boarding charge, so the UI can show a breakdown
   let tl=0, chain=0;                       // chain = position in the transfer sequence
   for(const r of rides){
+    const before=tl;
     const line=lineByRef[r.ref];
     const kind=r.bus?'bus':(line?line.kind:'subway');
     const n=Math.max(1,(r.stops||[]).length-1);
     if(kind==='ferry' && FARE.ferry){      // Şehir Hatları: own tariff, outside the aktarma chain
       tl += /ada/i.test(r.ref||'') ? FARE.adalar : (n<=1?FARE.ferryShort:FARE.ferry);
+      legs.push({ ref:r.ref, bus:!!r.bus, tl:+(tl-before).toFixed(2), note:'ferry' });
       continue;
     }
     // a suburban line with its own flat tariff and no transfer right (İzmir's İZBAN)
-    if(FARE.suburbanFare && (FARE.suburbanRefs||[]).indexOf(r.ref)>=0){ tl += FARE.suburbanFare; continue; }
+    if(FARE.suburbanFare && (FARE.suburbanRefs||[]).indexOf(r.ref)>=0){ tl += FARE.suburbanFare;
+      legs.push({ ref:r.ref, bus:!!r.bus, tl:+(tl-before).toFixed(2), note:'own' }); continue; }
     if(FARE.marmaray && r.ref==='Marmaray')      tl += bandFare(FARE.marmaray,n);
     else if(FARE.metrobus && r.ref==='Metrobüs') tl += bandFare(FARE.metrobus,n);
     else {
       const x = FARE.xfer||[];
       tl += chain===0 ? FARE.base : (x.length ? x[Math.min(chain-1, x.length-1)] : FARE.base);
     }
+    legs.push({ ref:r.ref, bus:!!r.bus, tl:+(tl-before).toFixed(2), note: chain===0?'first':'xfer' });
     chain++;
   }
-  return { taps:rides.length, tl: Math.round(tl) };
+  return { taps:rides.length, tl: Math.round(tl), legs };
 }
 
 /* ---- service warnings for a planned route: a rail leg's line is suspended / out of
@@ -1870,6 +1915,7 @@ const OPENINGS = HAS.openings ? __OPENINGS_JSON__ : [];
    consumer (busDirs, siblingBuses, busScheduleHTML, planner) degrades gracefully. */
 let BUS_GRAPH = [];   // İETT GTFS: per line per direction {ref,dir,head,stops}
 let BUS_SCHED = {};   // İETT GTFS departure schedules {ref:[{dir,head,wd,sat,sun}]}
+let BUS_GEOM  = {};   // real road shape per bus ref: [[ [lat,lng]… ], …] (baked, no live fetch)
 let busReady = false;
 let busReadyResolve;
 const busDataPromise = new Promise(res => { busReadyResolve = res; });
@@ -2252,7 +2298,21 @@ function nearbyNodes(lat,lng,radius,cap){
     const a=nodeGrid.get((ci+di)+'_'+(cj+dj)); if(!a) continue;
     for(const k of a){ const m=nodeMeta[k]; const d=metersBetween([lat,lng],[m.lat,m.lng]); if(d<=radius) out.push([k,d]); }
   }
-  out.sort((a,b)=>a[1]-b[1]); return out.slice(0, cap||12);
+  out.sort((a,b)=>a[1]-b[1]);
+  // Keep the nearest node PER LINE, not simply the nearest N nodes. A busy stop carries a
+  // separate node for every line serving it, so a plain "12 nearest" was filled entirely with
+  // duplicate bus nodes 50 m away and silently excluded the Metrobüs stop 750 m down the road —
+  // the router could then never even consider the one-vehicle ride. One node per ref keeps every
+  // MODE reachable while staying the same size for the search.
+  const seen=new Set(), rail=[], bus=[];
+  for(const e of out){ const m=nodeMeta[e[0]], r=m.ref;
+    if(seen.has(r)) continue; seen.add(r);
+    (m.kind==='bus' ? bus : rail).push(e);
+  }
+  // Rail/BRT/ferry lines are few, so take ALL of them — a hub like Avcılar has 40+ bus lines
+  // within walking distance, and capping by distance alone pushed the Metrobüs stop 750 m away
+  // out of the candidate set entirely, hiding the obvious one-vehicle ride. Buses stay capped.
+  return rail.concat(bus.slice(0, cap||12));
 }
 // query-side folding: ALSO strips Turkish diacritics, so a visitor without a Turkish
 // keyboard can type "sisli" / "uskudar" / "kadikoy" and still find Şişli / Üsküdar / Kadıköy.
@@ -2356,6 +2416,17 @@ let WALK = 80;        // metres / minute (adjustable via Settings → Walking pa
 const ACCESS = 1100;  // max access-walk to the first/last stop (m)
 // route between two arbitrary points (or selected stops): walk to nearby stops → Dijkstra → walk out.
 // penalty = optional Set of line refs to discourage boarding (used to surface alternative routes).
+// expected wait when boarding a line = half its headway, capped so a rare service doesn't
+// dominate the search. Cached per ref (headways are static); cleared when the lazy bus
+// schedules arrive so bus waits stop using the fallback.
+const HW_CACHE = {};
+function waitFor(ref, isBus){
+  if(ref in HW_CACHE) return HW_CACHE[ref];
+  let hw;
+  if(isBus) hw = (typeof busHeadway==='function' && busHeadway(ref)) || 20;
+  else { const lt = lineTiming(ref); hw = (lt && lt.hwMin) || 10; }
+  return HW_CACHE[ref] = Math.min(12, hw/2);
+}
 function routeXY(o, d, penalty){
   const srcs = nearbyNodes(o.lat,o.lng,ACCESS,12);
   const dArr = nearbyNodes(d.lat,d.lng,ACCESS,12);
@@ -2367,10 +2438,17 @@ function routeXY(o, d, penalty){
   // station we KNOW has no elevator (stepFree===false). A soft penalty, never a block.
   const SF_PEN = 10;
   const sfBad = stepFreePref ? (name=>{ const r=accByStation.get(fold(name)); return !!(r && r.stepFree===false); }) : null;
+  // ---- transfer cost. The graph only charges the WALK across an interchange (TRANSFER_MIN),
+  // which made a change nearly free, so the router happily chained 4 vehicles to save a few
+  // minutes. A real change also costs the WAIT for the next service (~half its headway), and
+  // the "Fewest changes" preference adds a heavy weight on top so the search itself — not just
+  // the final sort — hunts for a one-vehicle ride. Both are synthetic: realTotal below re-sums
+  // the graph weights only, so the quoted ETA stays truthful.
+  const XFER_PREF = routePref==='easy' ? 20 : 0;
   const dsts = new Map(); dArr.forEach(([k,dist])=>{ if(blocked(k)) return; let w=dist/WALK; if(sfBad && sfBad(nodeMeta[k].name)) w+=SF_PEN; dsts.set(k, w); });
   if(!dsts.size) return null;
   const dist={}, prev={}, done={}, h=new MinHeap();
-  srcs.forEach(([k,mm])=>{ if(blocked(k)) return; let w=mm/WALK; if(pen && pen.has(nodeMeta[k].ref)) w+=18;   // discourage starting on a used line
+  srcs.forEach(([k,mm])=>{ if(blocked(k)) return; let w=mm/WALK; if(pen && pen.has(nodeMeta[k].ref)) w+=45;   // discourage starting on a used line
     if(sfBad && sfBad(nodeMeta[k].name)) w+=SF_PEN;
     if(dist[k]===undefined||w<dist[k]){ dist[k]=w; prev[k]=null; h.push(k,w); } });
   let best=Infinity, bestEnd=null;
@@ -2378,8 +2456,12 @@ function routeXY(o, d, penalty){
     if(done[u]) continue; done[u]=true; if(du>best) break;
     if(dsts.has(u)){ const tot=du+dsts.get(u); if(tot<best){ best=tot; bestEnd=u; } }
     const adj=G[u]||[]; for(const e of adj){ if(done[e.to] || blocked(e.to)) continue; let nd=du+e.w;
-      if(pen){ const vr=nodeMeta[e.to].ref; if(vr!==nodeMeta[u].ref && pen.has(vr)) nd+=18; }  // discourage re-boarding a used line
-      if(sfBad && nodeMeta[e.to].ref!==nodeMeta[u].ref && sfBad(nodeMeta[e.to].name)) nd+=SF_PEN;  // penalise transferring at a non-step-free station
+      const vm=nodeMeta[e.to], um=nodeMeta[u];
+      if(vm.ref!==um.ref){                       // this edge is a CHANGE of vehicle
+        nd += XFER_PREF + waitFor(vm.ref, vm.kind==='bus');
+        if(pen && pen.has(vm.ref)) nd+=45;       // discourage re-boarding a line used by a previous option
+      }
+      if(sfBad && vm.ref!==um.ref && sfBad(vm.name)) nd+=SF_PEN;  // penalise transferring at a non-step-free station
       if(dist[e.to]===undefined||nd<dist[e.to]){ dist[e.to]=nd; prev[e.to]=u; h.push(e.to,nd); } }
   }
   if(bestEnd===null) return null;
@@ -3338,13 +3420,27 @@ function _stitchBus(ways){                               // member ways → one 
   return path;
 }
 function _nearestIdx(poly,pt){ let bi=0,bd=Infinity; for(let i=0;i<poly.length;i++){ const dd=metersBetween(poly[i],pt); if(dd<bd){bd=dd;bi=i;} } return bi; }
+function _minDist(poly,pt){ let bd=Infinity; for(let i=0;i<poly.length;i++){ const dd=metersBetween(poly[i],pt); if(dd<bd) bd=dd; } return bd; }
 function _busPortion(full,a,b){                          // slice the road shape to boarding→alighting
-  if(!full||full.length<2) return null;
+  if(!full||!full.length) return null;
+  // baked geometry is an ARRAY OF PATHS (a route split into disconnected chains is kept split so
+  // nothing is bridged by a straight chord) — pick the chain that actually covers this leg
+  if(Array.isArray(full[0]) && Array.isArray(full[0][0])){
+    let best=null, bs=Infinity;
+    for(const p of full){ if(p.length<2) continue; const sc=_minDist(p,a)+_minDist(p,b); if(sc<bs){ bs=sc; best=p; } }
+    if(!best || bs>1200) return null;                    // leg isn't on this route's road shape
+    full = best;
+  }
+  if(full.length<2) return null;
   const i=_nearestIdx(full,a), j=_nearestIdx(full,b); if(i===j) return null;
   let s=full.slice(Math.min(i,j),Math.max(i,j)+1); if(i>j) s=s.reverse(); return s;
 }
 async function fetchBusGeom(ref){
   if(ref in busGeoCache) return busGeoCache[ref];
+  // baked road shape (from bus-data.json) — instant, offline, and immune to Overpass outages.
+  // Previously this always went to Overpass live, so whenever Overpass was busy the leg stayed
+  // a straight placeholder line cutting across the city.
+  if(BUS_GEOM && BUS_GEOM[ref]) return busGeoCache[ref]=BUS_GEOM[ref];
   const id=busIdByRef[ref]; if(!id) return busGeoCache[ref]=null;
   try{
     const q=`[out:json][timeout:60];relation(${id});out geom;`;
@@ -3671,7 +3767,60 @@ function remindLeave(mins){
   leaveTimer=setTimeout(()=>{ notify('🔔 '+t('timeToLeave'), o+' → '+d+(dur?` · ~${dur} ${t('minUnit')}`:'')); }, mins*60000);
   showToast(t('reminderSet').replace('{n}', mins));
 }
+/* ---- printable trip sheet ----------------------------------------------------------------
+   Builds a clean, self-contained itinerary into #printSheet and calls window.print(). The
+   @media print rule hides the whole app and shows only this sheet, so the browser's own
+   "Save as PDF" produces the directory. No library, no popup — works on mobile too. */
+function buildPrintSheet(){
+  const el=document.getElementById('printSheet'); if(!el) return false;
+  const cur=currentOpts[currentOptIdx]; if(!cur) return false;
+  const it=cur.it, res=cur.res;
+  const fare=estimateFare(it);
+  const fmt=v=>(Math.round(v*100)/100).toString().replace(/\.00$/,'')+' ₺';
+  const oName=(res.origin&&res.origin.name)||t('from'), dName=(res.dest&&res.dest.name)||t('to');
+  const when=new Date().toLocaleString(LOCALE[lang]||'en-GB', timeOpts({dateStyle:'medium', timeStyle:'short'}));
+  let fi=0;
+  const rows=it.steps.map(s=>{
+    if(s.type==='walk')
+      return `<div class="ps-step"><div class="ps-ic">🚶</div><div class="ps-b">
+        <div class="ps-t">${t('walk')} ~${Math.max(1,Math.round(s.mins))} ${t('minUnit')}</div>
+        <div class="ps-m">${s.dest?t('toYourDest'):(t('toStop')+' '+svgEsc(s.to||''))}</div></div><div class="ps-f"></div></div>`;
+    if(s.type==='ride'){
+      const fl=fare.legs[fi++];
+      const label=s.bus?t('busLabel'):kindLabel(lineByRef[s.ref].kind);
+      const hw=s.bus?busHeadway(s.ref):null;
+      return `<div class="ps-step"><div class="ps-ic">${s.bus?'🚌':'🚈'}</div><div class="ps-b">
+        <div class="ps-t"><span class="ps-badge">${svgEsc(s.ref)}</span>${label}</div>
+        <div class="ps-m">${svgEsc(s.from)} → ${svgEsc(s.to)} · ${s.stops} ${s.stops===1?t('stop_one'):t('stop_many')}${hw?' · '+t('busEvery')+' ~'+hw+' '+t('minUnit'):''}</div>
+        </div><div class="ps-f">${fl?(fl.tl===0?t('freeXfer'):fmt(fl.tl)):''}</div></div>`;
+    }
+    return `<div class="ps-step"><div class="ps-ic">⇄</div><div class="ps-b">
+      <div class="ps-t">${t('transferAt')} ${svgEsc(s.at||'')}</div>
+      <div class="ps-m">${t('walkToShort')} ${svgEsc(s.ref||'')} · +${TRANSFER_MIN} ${t('minUnit')}</div></div><div class="ps-f"></div></div>`;
+  }).join('');
+  el.innerHTML =
+    `<div class="ps-h1">${svgEsc(oName)} → ${svgEsc(dName)}</div>
+     <div class="ps-sub">${CITY.name} · RAY-NET · ${when}</div>
+     <div class="ps-kpis">
+       <div class="ps-kpi"><b>${(function(){ const e=document.getElementById('rEta'); const v=e&&parseInt(e.textContent,10);
+            return isFinite(v)&&v>0 ? v : Math.round(it.total); })()}</b><span>${t('min')}</span></div>
+       <div class="ps-kpi"><b>${it.stops}</b><span>${t('stops')}</span></div>
+       <div class="ps-kpi"><b>${it.transfers}</b><span>${t('transfers')}</span></div>
+       <div class="ps-kpi"><b>${fare.tl} ₺</b><span>${t('fareApprox')}</span></div>
+     </div>
+     <div class="ps-sec">${t('stepByStep')}</div>${rows}
+     <div class="ps-tot"><span>${t('totalFare')} · ${fare.taps} ${t('fareTaps')}</span><span>${fare.tl} ₺</span></div>
+     <div class="ps-note">${t(FARE.noteKey||'fareNote')}<br>${t('printSrc')}</div>`;
+  return true;
+}
+function printTrip(){
+  if(!buildPrintSheet()){ showToast(t('pickOD'),'err'); return; }
+  setTimeout(()=>window.print(), 60);      // let layout settle before the print dialog opens
+}
 function stepsHTML(it){
+  // per-boarding fares, matched to ride steps in order, so each leg shows what it costs
+  const _fare = estimateFare(it); let _fi = 0;
+  const fmtTL = v => (Math.round(v*100)/100).toString().replace(/\.00$/,'') + ' ₺';
   return it.steps.map(s=>{
     if(s.type==="walk"){
       return `<div class="step"><div class="rail"><span class="nd" style="border-color:#9fb0c0"></span><span class="pipe" style="background:#9fb0c0"></span></div>
@@ -3687,8 +3836,10 @@ function stepsHTML(it){
       }
       const hw = s.bus ? busHeadway(s.ref) : null;                      // İETT GTFS frequency
       const freq = hw ? ` · ${t('busEvery')} ~${hw} ${t('minUnit')}` : '';
+      const fl = _fare.legs[_fi++];                                     // this boarding's charge
+      const fare = fl ? `<span class="st-fare${fl.tl===0?' free':''}">🎫 ${fl.tl===0?t('freeXfer'):fmtTL(fl.tl)}</span>` : '';
       return `<div class="step"><div class="rail"><span class="nd" style="border-color:${c}"></span><span class="pipe" style="background:${c}"></span></div>
-        <div class="tx"><div class="nm"><span class="badge" style="background:${c}">${s.bus?'🚌 '+s.ref:s.ref}</span>${label}</div>
+        <div class="tx"><div class="nm"><span class="badge" style="background:${c}">${s.bus?'🚌 '+s.ref:s.ref}</span>${label}${fare}</div>
         <div class="mt">${s.from} → ${s.to} · ${s.stops} ${s.stops===1?t('stop_one'):t('stop_many')}${freq}</div>${alt}</div></div>`;
     } else {
       const c = s.bus ? BUS_COLOR : colorForLine(s.ref);
@@ -4157,6 +4308,7 @@ let busSelToken = 0;
 const busShapeCache = {};
 async function busOsmShapes(ref){
   if(ref in busShapeCache) return busShapeCache[ref];
+  if(BUS_GEOM && BUS_GEOM[ref]) return busShapeCache[ref]=[BUS_GEOM[ref]];   // baked road shape
   try{
     const q = `[out:json][timeout:60];relation[route="bus"]["ref"="${(ref||'').replace(/["\\]/g,'')}"];out geom;`;
     const resp = await fetch('https://overpass-api.de/api/interpreter', { method:'POST', body:q });
@@ -4351,6 +4503,7 @@ document.getElementById('goPrev').addEventListener('click', ()=>goStep(-1));
 document.getElementById('goNext').addEventListener('click', ()=>goStep(1));
 document.getElementById('tglExplore').addEventListener('change', e=>toggleAttractions(e.target.checked));
 document.getElementById('shareBtn').addEventListener('click', shareTrip);
+document.getElementById('printBtn').addEventListener('click', printTrip);
 document.getElementById('openPassport').addEventListener('click', ()=>{ closeSettings(); openPassport(); });
 document.getElementById('passX').addEventListener('click', closePassport);
 document.getElementById('passOverlay').addEventListener('click', closePassport);
@@ -4743,9 +4896,9 @@ async function loadBusData(){
     const r = await fetch('transit_data/bus-data.json');
     if(!r.ok) throw new Error('HTTP '+r.status);
     const d = await r.json();
-    BUS_GRAPH = d.graph || [];  BUS_SCHED = d.sched || {};
+    BUS_GRAPH = d.graph || [];  BUS_SCHED = d.sched || {};  BUS_GEOM = d.geom || {};
     // graph integration builds ~70k nodes — run it off the critical path
-    const go = ()=>{ integrateBuses(); busReady = true; busReadyResolve(); };
+    const go = ()=>{ integrateBuses(); for(const k in HW_CACHE) delete HW_CACHE[k]; busReady = true; busReadyResolve(); };
     if('requestIdleCallback' in window) requestIdleCallback(go, { timeout: 4000 });
     else setTimeout(go, 200);
   }catch(e){
