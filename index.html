@@ -621,30 +621,68 @@
     padding:2px 6px;border-radius:7px;flex:none;letter-spacing:.2px;}
   .st-fare.free{color:#9AA4B8;background:rgba(255,255,255,.07);}
   body.light .st-fare{color:#067A54;}
-  /* ---- printable trip sheet: hidden on screen, the only thing printed ---- */
+  /* ---- printable trip BROCHURE: hidden on screen, the only thing printed ---- */
   .print-sheet{display:none;}
   @media print{
-    @page{ margin:14mm; }
+    @page{ margin:0; }
+    html,body{ background:#fff !important; height:auto !important; overflow:visible !important; }
     body>*{ display:none !important; }
-    body{ background:#fff !important; overflow:visible !important; height:auto !important; }
-    .print-sheet{ display:block !important; color:#111; font-family:var(--font); }
-    .ps-h1{font-size:19px;font-weight:800;margin:0 0 2px;}
-    .ps-sub{font-size:11px;color:#555;margin-bottom:12px;}
-    .ps-kpis{display:flex;gap:10px;margin-bottom:14px;}
-    .ps-kpi{flex:1;border:1px solid #ccc;border-radius:8px;padding:8px 10px;}
-    .ps-kpi b{display:block;font-size:17px;font-family:var(--mono);}
-    .ps-kpi span{font-size:8.5px;text-transform:uppercase;letter-spacing:1px;color:#666;}
-    .ps-sec{font-size:10px;font-weight:800;letter-spacing:1.4px;text-transform:uppercase;color:#666;
-      border-bottom:1px solid #ddd;padding-bottom:4px;margin:14px 0 8px;}
-    .ps-step{display:flex;gap:9px;padding:7px 0;border-bottom:1px solid #eee;page-break-inside:avoid;}
-    .ps-ic{width:20px;text-align:center;font-size:12px;flex:none;}
-    .ps-b{flex:1;}
-    .ps-t{font-size:12px;font-weight:700;}
-    .ps-m{font-size:10.5px;color:#555;margin-top:1px;}
-    .ps-f{font-size:10.5px;font-weight:700;white-space:nowrap;}
-    .ps-badge{display:inline-block;border:1px solid #333;border-radius:4px;padding:0 5px;font-size:10px;font-weight:800;margin-right:5px;}
-    .ps-tot{display:flex;justify-content:space-between;font-size:13px;font-weight:800;padding:9px 0;border-top:2px solid #333;margin-top:4px;}
-    .ps-note{font-size:9px;color:#666;margin-top:12px;line-height:1.6;border-top:1px solid #ddd;padding-top:8px;}
+    .print-sheet{ display:block !important; }
+    *{ -webkit-print-color-adjust:exact !important; print-color-adjust:exact !important; }
+
+    .ps-card{ position:relative; overflow:hidden; color:#111; font-family:var(--font);
+      background:#fff; min-height:100vh; }
+    /* the active city’s own network, traced faintly behind the page */
+    .ps-water{ position:absolute; left:-6%; top:14%; width:112%; height:auto; color:#0E7C86;
+      opacity:.08; z-index:0; pointer-events:none; }
+
+    .ps-hero{ position:relative; z-index:1; padding:26px 30px 20px;
+      background:linear-gradient(135deg,#0B3B45 0%,#12707E 55%,#1AA39B 100%); color:#fff; }
+    .ps-brand{ font-size:9.5px; font-weight:800; letter-spacing:3px; text-transform:uppercase; opacity:.82; }
+    .ps-h1{ font-family:var(--display); font-size:27px; font-weight:800; line-height:1.16; margin:7px 0 5px; letter-spacing:.3px; }
+    .ps-sub{ font-size:10.5px; opacity:.88; letter-spacing:.4px; }
+    .ps-ribbon{ margin-top:14px; display:flex; flex-wrap:wrap; align-items:center; gap:5px; }
+    .ps-rb{ font-size:10px; font-weight:800; padding:3px 9px; border-radius:99px; letter-spacing:.3px; }
+    .ps-arw{ opacity:.6; font-size:12px; }
+
+    .ps-body{ position:relative; z-index:1; padding:20px 30px 26px; }
+    .ps-kpis{ display:flex; gap:9px; margin:-38px 0 20px; }
+    .ps-kpi{ flex:1; background:#fff; border:1px solid #e3e8ee; border-radius:13px; padding:11px 12px;
+      box-shadow:0 6px 18px -12px rgba(11,59,69,.5); text-align:center; }
+    .ps-kpi b{ display:block; font-family:var(--mono); font-size:20px; font-weight:700; color:#0B3B45; line-height:1.1; }
+    .ps-kpi span{ font-size:7.6px; text-transform:uppercase; letter-spacing:1.3px; color:#7b8794; font-weight:700; }
+
+    .ps-sec{ font-size:9px; font-weight:800; letter-spacing:2px; text-transform:uppercase; color:#0E7C86;
+      display:flex; align-items:center; gap:9px; margin:0 0 10px; }
+    .ps-sec::after{ content:""; flex:1; height:1px; background:linear-gradient(90deg,#c9d6dd,transparent); }
+
+    .ps-leg{ display:flex; align-items:center; gap:8px; font-size:11.5px; font-weight:700; color:#0B3B45;
+      background:#f2f7f8; border-radius:9px; padding:7px 11px; margin:14px 0 9px; page-break-after:avoid; }
+    .ps-leg b{ margin-left:auto; font-family:var(--mono); }
+    .ps-legn{ width:17px; height:17px; border-radius:50%; background:#0E7C86; color:#fff; font-size:9.5px;
+      display:inline-flex; align-items:center; justify-content:center; font-weight:800; }
+
+    .ps-step{ display:flex; gap:11px; padding:8px 0 8px 2px; page-break-inside:avoid; position:relative; }
+    .ps-step::before{ content:""; position:absolute; left:6px; top:0; bottom:0; width:1.5px; background:#e3e8ee; }
+    .ps-step:first-of-type::before{ top:14px; }
+    .ps-step:last-of-type::before{ bottom:calc(100% - 14px); }
+    .ps-dot{ position:relative; z-index:1; width:11px; height:11px; border-radius:50%; flex:none; margin-top:3px;
+      background:#0E7C86; box-shadow:0 0 0 2.5px #fff; }
+    .ps-dot.walk{ background:#fff; border:2px dotted #9aa7b2; }
+    .ps-dot.xfer{ background:#fff; border:2px solid #0E7C86; }
+    .ps-b{ flex:1; min-width:0; }
+    .ps-t{ font-size:12px; font-weight:700; color:#16212b; display:flex; align-items:center; gap:6px; flex-wrap:wrap; }
+    .ps-m{ font-size:10.5px; color:#657582; margin-top:2px; line-height:1.45; }
+    .ps-f{ font-size:11px; font-weight:800; color:#0B3B45; white-space:nowrap; font-family:var(--mono); }
+    .ps-f .free{ color:#8a97a3; font-weight:700; font-family:var(--font); font-size:9.5px; }
+    .ps-badge{ display:inline-block; border-radius:5px; padding:1px 7px; font-size:10px; font-weight:800; }
+
+    .ps-tot{ display:flex; justify-content:space-between; align-items:center; font-size:13.5px; font-weight:800;
+      color:#fff; background:linear-gradient(135deg,#0B3B45,#12707E); border-radius:12px;
+      padding:12px 15px; margin:16px 0 0; page-break-inside:avoid; }
+    .ps-tot span:last-child{ font-family:var(--mono); font-size:16px; }
+    .ps-note{ font-size:8.4px; color:#8a97a3; margin-top:12px; line-height:1.65;
+      border-top:1px solid #e8edf1; padding-top:9px; }
   }
   .rwarn{display:flex;flex-direction:column;gap:6px;margin:6px 0 2px;}
   .rwarn:empty{display:none;}
@@ -1086,7 +1124,19 @@
           <div class="c"><b id="aStops">–</b><span data-i18n="stops">Stops</span></div>
           <div class="c"><b id="aTr">–</b><span data-i18n="transfers">Transfers</span></div>
         </div>
+        <div class="rfare" id="aFare"></div>
+        <div class="rwarn" id="aWarn"></div>
         <div id="aSteps"></div>
+        <div class="route-btns">
+          <button class="btn ghost favbtn" id="advFavBtn">☆ <span data-i18n="saveAdv">Save adventure</span></button>
+          <button class="btn ghost" id="advShareBtn">🔗 <span data-i18n="share">Share</span></button>
+          <button class="btn ghost" id="advPrintBtn">🖨 <span data-i18n="printTrip">Print / PDF</span></button>
+        </div>
+        <div class="plan-sec" id="advFavSec" style="display:none">
+          <div class="plan-h"><span data-i18n="savedAdv">Saved adventures</span>
+            <button class="plan-clear" id="advFavClear" data-i18n="clearAll">clear all</button></div>
+          <div class="plan-list" id="advFavList"></div>
+        </div>
       </div>
     </div>
   </div>
@@ -1208,6 +1258,7 @@ const I18N = {
     skipToPlanner:"Skip to trip planner",
     linesShort:"lines", cityPick:"Change city",
     printTrip:"Print / PDF", freeXfer:"free transfer", totalFare:"Total fare", stepByStep:"Step by step",
+    saveAdv:"Save adventure", savedWord:"Saved", savedAdv:"Saved adventures", stopsWord:"stops",
     printSrc:"Fares are estimates from the operator's published tariff. Times are typical; check live departures before travelling.",
     fareNoteBur:"Bursakart estimate — Burulaş tariff of 3 Feb 2026: 40₺ per boarding; transfers get 17₺ off (23₺) within 90 minutes. BursaRay also refunds up to 9.50₺ on short trips if you tap out.",
     fareNoteAnt:"AntalyaKart estimate — Antalya BB tariff: 35₺ per boarding, with ONE free transfer per trip (5 min–1 h on buses, up to 2 h between tram lines). Credit-card and single-use tickets get no transfer right.",
@@ -1312,6 +1363,7 @@ const I18N = {
     skipToPlanner:"Yolculuk planlayıcıya geç",
     linesShort:"hat", cityPick:"Şehir değiştir",
     printTrip:"Yazdır / PDF", freeXfer:"ücretsiz aktarma", totalFare:"Toplam ücret", stepByStep:"Adım adım",
+    saveAdv:"Rotayı kaydet", savedWord:"Kaydedildi", savedAdv:"Kayıtlı rotalar", stopsWord:"durak",
     printSrc:"Ücretler işletmecinin yayımlanan tarifesine göre tahminidir. Süreler tipiktir; yola çıkmadan canlı sefer saatlerini kontrol edin.",
     fareNoteBur:"Bursakart tahmini — 3 Şub 2026 Burulaş tarifesi: biniş 40₺, 90 dakika içinde aktarmalarda 17₺ indirim (23₺). BursaRay'de kısa yolculuklarda çıkışta kart okutunca 9,50₺'ye kadar iade var.",
     fareNoteAnt:"AntalyaKart tahmini — Antalya BB tarifesi: biniş 35₺, yolculuk başına BİR ücretsiz aktarma (otobüste 5 dk–1 saat, tramvay hatları arasında 2 saate kadar). Kredi kartı ve kullan-at biletlerde aktarma hakkı yoktur.",
@@ -1416,6 +1468,7 @@ const I18N = {
     skipToPlanner:"تخطَّ إلى مخطط الرحلة",
     linesShort:"خط", cityPick:"تغيير المدينة",
     printTrip:"طباعة / PDF", freeXfer:"تبديل مجاني", totalFare:"إجمالي الأجرة", stepByStep:"خطوة بخطوة",
+    saveAdv:"احفظ الجولة", savedWord:"محفوظة", savedAdv:"الجولات المحفوظة", stopsWord:"محطات",
     printSrc:"الأسعار تقديرية وفق التعرفة المنشورة للمشغّل. الأوقات تقريبية؛ تحقّق من المواعيد المباشرة قبل السفر.",
     fareNoteBur:"تقدير Bursakart — تعرفة ٣ فبراير ٢٠٢٦: ٤٠₺ للركوب، وخصم ١٧₺ على التبديل (٢٣₺) خلال ٩٠ دقيقة.",
     fareNoteAnt:"تقدير AntalyaKart — ٣٥₺ للركوب، مع تبديل مجاني واحد لكل رحلة (٥ دقائق–ساعة للحافلات، حتى ساعتين بين خطوط الترام).",
@@ -1518,6 +1571,7 @@ const I18N = {
     skipToPlanner:"Aller au planificateur",
     linesShort:"lignes", cityPick:"Changer de ville",
     printTrip:"Imprimer / PDF", freeXfer:"correspondance gratuite", totalFare:"Tarif total", stepByStep:"Étape par étape",
+    saveAdv:"Enregistrer", savedWord:"Enregistré", savedAdv:"Parcours enregistrés", stopsWord:"arrêts",
     printSrc:"Tarifs estimés d'après la grille publiée par l'exploitant. Durées typiques ; vérifiez les départs en direct avant de partir.",
     fareNoteBur:"Estimation Bursakart — tarif Burulaş du 3 févr. 2026 : 40₺ par montée, correspondance remisée de 17₺ (23₺) sous 90 min.",
     fareNoteAnt:"Estimation AntalyaKart — 35₺ par montée, avec UNE correspondance gratuite par trajet (5 min–1 h en bus, jusqu'à 2 h entre lignes de tram).",
@@ -3865,51 +3919,114 @@ function remindLeave(mins){
    Builds a clean, self-contained itinerary into #printSheet and calls window.print(). The
    @media print rule hides the whole app and shows only this sheet, so the browser's own
    "Save as PDF" produces the directory. No library, no popup — works on mobile too. */
-function buildPrintSheet(){
-  const el=document.getElementById('printSheet'); if(!el) return false;
-  const cur=currentOpts[currentOptIdx]; if(!cur) return false;
-  const it=cur.it, res=cur.res;
-  const fare=estimateFare(it);
-  const fmt=v=>(Math.round(v*100)/100).toString().replace(/\.00$/,'')+' ₺';
-  const oName=(res.origin&&res.origin.name)||t('from'), dName=(res.dest&&res.dest.name)||t('to');
-  const when=new Date().toLocaleString(LOCALE[lang]||'en-GB', timeOpts({dateStyle:'medium', timeStyle:'short'}));
+/* ---- printable trip brochure ---------------------------------------------------------------
+   Builds a keepsake-style directory into #printSheet: a coloured hero band, the ACTIVE CITY's
+   own rail network drawn faintly behind the page as a watermark (generated from the same
+   geometry the map uses — not clip art), a route ribbon, KPI pills, a colour-railed timeline
+   with per-leg fares, and a fare table. @media print hides the app and prints only this, so
+   the browser's Save-as-PDF produces the brochure. Works for a Trip and for an Adventure. */
+function citySilhouette(){
+  // trace the live network into a viewBox — a real, city-specific silhouette
+  let la0=90, la1=-90, ln0=180, ln1=-180;
+  const paths=[];
+  liveLines.forEach(l=>{ if(!l.paths) return;
+    l.paths.forEach(p=>{ if(!p || p.length<2) return;
+      const step = Math.max(1, Math.floor(p.length/90));      // sample: keeps the SVG small
+      const pts=[]; for(let i=0;i<p.length;i+=step) pts.push(p[i]);
+      pts.push(p[p.length-1]);
+      pts.forEach(c=>{ if(c[0]<la0)la0=c[0]; if(c[0]>la1)la1=c[0]; if(c[1]<ln0)ln0=c[1]; if(c[1]>ln1)ln1=c[1]; });
+      paths.push(pts);
+    });
+  });
+  if(!paths.length || la1<=la0 || ln1<=ln0) return '';
+  const W=1000, H=Math.round(W*(la1-la0)/((ln1-ln0)*Math.cos((la0+la1)/2*Math.PI/180))) || 600;
+  const X = lng => ((lng-ln0)/(ln1-ln0)*W).toFixed(1);
+  const Y = lat => ((la1-lat)/(la1-la0)*H).toFixed(1);
+  const d = paths.map(p=>'M'+p.map(c=>X(c[1])+' '+Y(c[0])).join('L')).join('');
+  return '<svg class="ps-water" viewBox="0 0 '+W+' '+H+'" preserveAspectRatio="xMidYMid meet" aria-hidden="true">'+
+         '<path d="'+d+'" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+}
+function _psFmtTL(v){ return (Math.round(v*100)/100).toString().replace(/\.00$/,'')+' ₺'; }
+// one itinerary → timeline rows; "fare" supplies the per-boarding charges in order
+function _psRows(it, fare){
   let fi=0;
-  const rows=it.steps.map(s=>{
+  return (it.steps||[]).map(s=>{
     if(s.type==='walk')
-      return `<div class="ps-step"><div class="ps-ic">🚶</div><div class="ps-b">
-        <div class="ps-t">${t('walk')} ~${Math.max(1,Math.round(s.mins))} ${t('minUnit')}</div>
-        <div class="ps-m">${s.dest?t('toYourDest'):(t('toStop')+' '+svgEsc(s.to||''))}</div></div><div class="ps-f"></div></div>`;
+      return '<div class="ps-step"><span class="ps-dot walk"></span><div class="ps-b">'+
+        '<div class="ps-t">'+t('walk')+' ~'+Math.max(1,Math.round(s.mins))+' '+t('minUnit')+'</div>'+
+        '<div class="ps-m">'+(s.dest?t('toYourDest'):(t('toStop')+' '+svgEsc(s.to||'')))+'</div></div><div class="ps-f"></div></div>';
     if(s.type==='ride'){
       const fl=fare.legs[fi++];
+      const col=s.bus?BUS_COLOR:colorForLine(s.ref);
       const label=s.bus?t('busLabel'):kindLabel(lineByRef[s.ref].kind);
       const hw=s.bus?busHeadway(s.ref):null;
-      return `<div class="ps-step"><div class="ps-ic">${s.bus?'🚌':'🚈'}</div><div class="ps-b">
-        <div class="ps-t"><span class="ps-badge">${svgEsc(s.ref)}</span>${label}</div>
-        <div class="ps-m">${svgEsc(s.from)} → ${svgEsc(s.to)} · ${s.stops} ${s.stops===1?t('stop_one'):t('stop_many')}${hw?' · '+t('busEvery')+' ~'+hw+' '+t('minUnit'):''}</div>
-        </div><div class="ps-f">${fl?(fl.tl===0?t('freeXfer'):fmt(fl.tl)):''}</div></div>`;
+      return '<div class="ps-step"><span class="ps-dot" style="background:'+col+'"></span><div class="ps-b">'+
+        '<div class="ps-t"><span class="ps-badge" style="background:'+col+';color:'+inkOn(col)+'">'+svgEsc(s.ref)+'</span>'+label+'</div>'+
+        '<div class="ps-m">'+svgEsc(s.from)+' → '+svgEsc(s.to)+' · '+s.stops+' '+(s.stops===1?t('stop_one'):t('stop_many'))+
+        (hw?' · '+t('busEvery')+' ~'+hw+' '+t('minUnit'):'')+'</div></div>'+
+        '<div class="ps-f">'+(fl?(fl.tl===0?'<span class="free">'+t('freeXfer')+'</span>':_psFmtTL(fl.tl)):'')+'</div></div>';
     }
-    return `<div class="ps-step"><div class="ps-ic">⇄</div><div class="ps-b">
-      <div class="ps-t">${t('transferAt')} ${svgEsc(s.at||'')}</div>
-      <div class="ps-m">${t('walkToShort')} ${svgEsc(s.ref||'')} · +${TRANSFER_MIN} ${t('minUnit')}</div></div><div class="ps-f"></div></div>`;
+    return '<div class="ps-step"><span class="ps-dot xfer"></span><div class="ps-b">'+
+      '<div class="ps-t">'+t('transferAt')+' '+svgEsc(s.at||'')+'</div>'+
+      '<div class="ps-m">'+t('walkToShort')+' '+svgEsc(s.ref||'')+' · +'+TRANSFER_MIN+' '+t('minUnit')+'</div></div><div class="ps-f"></div></div>';
   }).join('');
+}
+function _psRibbon(itins){
+  const seen=[], out=[];
+  itins.forEach(it=>(it.steps||[]).forEach(s=>{ if(s.type!=='ride') return;
+    const key=(s.bus?'b':'')+s.ref; if(seen.indexOf(key)>=0) return; seen.push(key);
+    const col=s.bus?BUS_COLOR:colorForLine(s.ref);
+    out.push('<span class="ps-rb" style="background:'+col+';color:'+inkOn(col)+'">'+(s.bus?'🚌 ':'')+svgEsc(s.ref)+'</span>');
+  }));
+  return out.join('<span class="ps-arw">›</span>');
+}
+function buildPrintSheet(mode){
+  const el=document.getElementById('printSheet'); if(!el) return false;
+  const isAdv = mode==='adv';
+  let title, sub, kpis, body, fare, itins;
+  const when=new Date().toLocaleString(LOCALE[lang]||'en-GB', timeOpts({dateStyle:'medium', timeStyle:'short'}));
+
+  if(isAdv){
+    if(!lastAdv || !lastAdv.legs.length) return false;
+    fare = advFareTotal();
+    itins = lastAdv.legs.map(L=>L.it);
+    title = svgEsc(lastAdv.pts[0].name)+' → '+svgEsc(lastAdv.pts[lastAdv.pts.length-1].name);
+    sub   = '✦ '+t('advTab')+' · '+lastAdv.pts.length+' '+t('stopsWord');
+    kpis  = [[Math.round(lastAdv.totMin), t('min')], [lastAdv.totStops, t('stops')],
+             [lastAdv.totTr, t('transfers')], [fare.tl+' ₺', t('fareApprox')]];
+    body  = lastAdv.legs.map((L,i)=>
+      '<div class="ps-leg"><span class="ps-legn">'+(i+1)+'</span>'+svgEsc(L.from.name)+' → '+svgEsc(L.to.name)+
+      '<b>'+Math.round(L.it.total)+' '+t('minUnit')+'</b></div>'+_psRows(L.it, fare.legs[i])).join('');
+  } else {
+    const cur=currentOpts[currentOptIdx]; if(!cur) return false;
+    const it=cur.it, res=cur.res;
+    fare=estimateFare(it); itins=[it];
+    title=svgEsc((res.origin&&res.origin.name)||t('from'))+' → '+svgEsc((res.dest&&res.dest.name)||t('to'));
+    sub=t('tripTab');
+    const shown=(function(){ const e=document.getElementById('rEta'); const v=e&&parseInt(e.textContent,10);
+      return isFinite(v)&&v>0 ? v : Math.round(it.total); })();
+    kpis=[[shown,t('min')],[it.stops,t('stops')],[it.transfers,t('transfers')],[fare.tl+' ₺',t('fareApprox')]];
+    body=_psRows(it, fare);
+  }
+
   el.innerHTML =
-    `<div class="ps-h1">${svgEsc(oName)} → ${svgEsc(dName)}</div>
-     <div class="ps-sub">${CITY.name} · RAY-NET · ${when}</div>
-     <div class="ps-kpis">
-       <div class="ps-kpi"><b>${(function(){ const e=document.getElementById('rEta'); const v=e&&parseInt(e.textContent,10);
-            return isFinite(v)&&v>0 ? v : Math.round(it.total); })()}</b><span>${t('min')}</span></div>
-       <div class="ps-kpi"><b>${it.stops}</b><span>${t('stops')}</span></div>
-       <div class="ps-kpi"><b>${it.transfers}</b><span>${t('transfers')}</span></div>
-       <div class="ps-kpi"><b>${fare.tl} ₺</b><span>${t('fareApprox')}</span></div>
-     </div>
-     <div class="ps-sec">${t('stepByStep')}</div>${rows}
-     <div class="ps-tot"><span>${t('totalFare')} · ${fare.taps} ${t('fareTaps')}</span><span>${fare.tl} ₺</span></div>
-     <div class="ps-note">${t(FARE.noteKey||'fareNote')}<br>${t('printSrc')}</div>`;
+    '<div class="ps-card">'+citySilhouette()+
+      '<div class="ps-hero"><div class="ps-brand">'+svgEsc(CITY.name)+' · RAY-NET</div>'+
+        '<div class="ps-h1">'+title+'</div>'+
+        '<div class="ps-sub">'+sub+' · '+when+'</div>'+
+        '<div class="ps-ribbon">'+_psRibbon(itins)+'</div></div>'+
+      '<div class="ps-body">'+
+        '<div class="ps-kpis">'+kpis.map(k=>'<div class="ps-kpi"><b>'+k[0]+'</b><span>'+k[1]+'</span></div>').join('')+'</div>'+
+        '<div class="ps-sec">'+t('stepByStep')+'</div>'+body+
+        '<div class="ps-tot"><span>'+t('totalFare')+' · '+fare.taps+' '+t('fareTaps')+'</span><span>'+fare.tl+' ₺</span></div>'+
+        '<div class="ps-note">'+t(FARE.noteKey||'fareNote')+'<br>'+t('printSrc')+'</div>'+
+      '</div>'+
+    '</div>';
   return true;
 }
-function printTrip(){
-  if(!buildPrintSheet()){ showToast(t('pickOD'),'err'); return; }
-  setTimeout(()=>window.print(), 60);      // let layout settle before the print dialog opens
+function printTrip(mode){
+  if(!buildPrintSheet(mode)){ showToast(mode==='adv'?t('advEmpty'):t('pickOD'),'err'); return; }
+  setTimeout(function(){ window.print(); }, 60);   // let layout settle before the dialog opens
 }
 function stepsHTML(it){
   // per-boarding fares, matched to ride steps in order, so each leg shows what it costs
@@ -3998,6 +4115,96 @@ function resolveAdv(i){
   if(m){ const pt={name:m.name,lat:m.lat,lng:m.lng}; advStops[i]=pt; if(inp) inp.value=m.name; return pt; }
   return null;
 }
+/* ---- Adventure planner: the same conveniences the Trip planner has (fares, service
+   warnings, favourites, share links, printable directory). Each LEG is charged as its own
+   fare chain — you stop to visit a place, so the operator's transfer window has lapsed. ---- */
+let lastAdv = null;
+let advFavs = (function(){ try{ return JSON.parse(localStorage.getItem('irn_advfavs')||'[]'); }catch(e){ return []; } })();
+function advFareTotal(){
+  if(!lastAdv) return { taps:0, tl:0, legs:[] };
+  let taps=0, tl=0; const legs=[];
+  lastAdv.legs.forEach(L=>{ const f=estimateFare(L.it); taps+=f.taps; tl+=f.tl; legs.push(f); });
+  return { taps, tl, legs };
+}
+function renderAdvFare(){
+  const el=document.getElementById('aFare'); if(!el) return;
+  const f=advFareTotal();
+  el.innerHTML = f.taps ? `<span class="rf-ico">🎫</span><span class="rf-main">≈ ${f.tl} ₺</span>
+    <span class="rf-sub">${f.taps} ${t('fareTaps')}</span>
+    <span class="rf-i" title="${attrEsc(t(FARE.noteKey||'fareNote'))}">ⓘ</span>` : '';
+}
+function renderAdvWarnings(){
+  const el=document.getElementById('aWarn'); if(!el) return;
+  el.innerHTML='';
+  if(!lastAdv) return;
+  const seen=new Set(), merged={ steps:[] };
+  lastAdv.legs.forEach(L=> (L.it.steps||[]).forEach(s=>{
+    if(s.type==='ride' && !s.bus && !seen.has(s.ref)){ seen.add(s.ref); merged.steps.push(s); } }));
+  const tmp=document.createElement('div'); tmp.id='__advw';
+  const keep=document.getElementById('rWarn');
+  // reuse the trip renderer by pointing it at this container
+  const orig=document.getElementById('rWarn');
+  if(orig){ orig.id='__rwarn_tmp'; el.id='rWarn'; renderRouteWarnings(merged); el.id='aWarn'; orig.id='rWarn'; }
+}
+function advSig(pts){ return (pts||[]).map(p=>p.name).join(' → '); }
+function isAdvFav(sig){ return advFavs.some(a=>a.sig===sig); }
+function updateAdvFavBtn(){
+  const b=document.getElementById('advFavBtn'); if(!b) return;
+  const on = lastAdv && isAdvFav(advSig(lastAdv.pts));
+  b.classList.toggle('on', !!on);
+  b.innerHTML = (on?'★ ':'☆ ')+`<span>${on?t('savedWord'):t('saveAdv')}</span>`;
+}
+function toggleAdvFav(){
+  if(!lastAdv){ showToast(t('advEmpty'),'err'); return; }
+  const sig=advSig(lastAdv.pts);
+  if(isAdvFav(sig)) advFavs=advFavs.filter(a=>a.sig!==sig);
+  else advFavs.unshift({ sig, stops:lastAdv.pts.map(p=>({name:p.name,lat:p.lat,lng:p.lng})),
+                         eta:Math.round(lastAdv.totMin), tl:advFareTotal().tl });
+  if(advFavs.length>12) advFavs.length=12;
+  try{ localStorage.setItem('irn_advfavs', JSON.stringify(advFavs)); }catch(e){}
+  renderAdvFavs(); updateAdvFavBtn();
+}
+function renderAdvFavs(){
+  const sec=document.getElementById('advFavSec'), list=document.getElementById('advFavList');
+  if(!sec||!list) return;
+  sec.style.display = advFavs.length ? '' : 'none';
+  list.innerHTML = advFavs.map((a,i)=>`<div class="plan-item" data-i="${i}">
+      <div class="pi-tx"><div class="pi-nm">${svgEsc(a.sig)}</div>
+        <div class="pi-mt">${a.stops.length} ${t('stopsWord')}${a.eta?' · '+a.eta+' '+t('minUnit'):''}${a.tl?' · '+a.tl+' ₺':''}</div></div>
+      <button class="pi-x" data-x="${i}" title="✕">✕</button></div>`).join('');
+  list.querySelectorAll('.plan-item').forEach(el=>el.addEventListener('click', ev=>{
+    if(ev.target.dataset.x!==undefined) return;
+    const a=advFavs[+el.dataset.i]; if(!a) return;
+    advStops=a.stops.map(s=>({name:s.name,lat:s.lat,lng:s.lng}));
+    rebuildAdvRows(); drawAdvMarkers(); planAdventure();
+  }));
+  list.querySelectorAll('.pi-x').forEach(el=>el.addEventListener('click', ev=>{
+    ev.stopPropagation(); advFavs.splice(+el.dataset.x,1);
+    try{ localStorage.setItem('irn_advfavs', JSON.stringify(advFavs)); }catch(e){}
+    renderAdvFavs(); updateAdvFavBtn();
+  }));
+}
+function advDeepLink(){
+  if(!lastAdv) return location.href.split('#')[0];
+  const q=lastAdv.pts.map(p=>`${p.lat.toFixed(5)},${p.lng.toFixed(5)},${encodeURIComponent(p.name)}`).join('|');
+  return location.href.split('#')[0]+'#adv='+q;
+}
+async function shareAdventure(){
+  if(!lastAdv){ showToast(t('advEmpty'),'err'); return; }
+  const text=advSig(lastAdv.pts)+` · ${Math.round(lastAdv.totMin)} ${t('minUnit')} · ${advFareTotal().tl} ₺`;
+  const url=advDeepLink();
+  try{ if(navigator.share){ await navigator.share({title:CITY.name+' · RAY-NET', text, url}); return; } }catch(e){ if(e&&e.name==='AbortError') return; }
+  try{ await navigator.clipboard.writeText(text+'\n'+url); showToast(t('linkCopied')); }catch(e){ showToast(url); }
+}
+function applyAdvHash(){
+  const m=(location.hash||'').match(/adv=(.+)$/); if(!m) return false;
+  const stops=m[1].split('|').map(part=>{ const c=part.split(','); const lat=+c[0], lng=+c[1];
+    if(!isFinite(lat)||!isFinite(lng)) return null;
+    return { name: c[2]?decodeURIComponent(c[2]):(lat.toFixed(4)+', '+lng.toFixed(4)), lat, lng }; }).filter(Boolean);
+  if(stops.length<2) return false;
+  advStops=stops; setPlannerTab('adv'); rebuildAdvRows(); drawAdvMarkers(); planAdventure();
+  return true;
+}
 function planAdventure(){
   const out=document.getElementById('advOut'), stepsEl=document.getElementById('aSteps');
   routeLayer.clearLayers();
@@ -4010,12 +4217,13 @@ function planAdventure(){
     stepsEl.innerHTML=`<div class="none">${t('advEmpty')}</div>`; return;
   }
   let totMin=0, totStops=0, totTr=0, failed=false;
-  const allPts=[], legsUp=[], parts=[];
+  const allPts=[], legsUp=[], parts=[], advLegs=[];
   for(let i=0;i<pts.length-1;i++){
     const res=routeXY(pts[i], pts[i+1]);
     if(!res){ parts.push(`<div class="leg-h fail">${t('leg')} ${i+1} · ${pts[i].name} → ${pts[i+1].name} · ${t('noRoute')}</div>`); failed=true; continue; }
     const it=buildItinerary(res);
     totMin+=it.total; totStops+=it.stops; totTr+=it.transfers;
+    advLegs.push({res,it,from:pts[i],to:pts[i+1]});
     drawItin(res, it, allPts, legsUp);
     parts.push(`<div class="leg-h"><span class="leg-n">${i+1}</span>${pts[i].name} → ${pts[i+1].name} · <b>${Math.round(it.total)} ${t('minUnit')}</b></div>`+journeyHTML(it,res)+stepsHTML(it));
   }
@@ -4023,6 +4231,9 @@ function planAdventure(){
   document.getElementById('aStops').textContent = totStops;
   document.getElementById('aTr').textContent = totTr;
   stepsEl.innerHTML = parts.join('');
+  // remember the whole adventure so share / save / print can rebuild it
+  lastAdv = { pts: pts.slice(), legs: advLegs, totMin, totStops, totTr, failed };
+  renderAdvFare(); renderAdvWarnings(); updateAdvFavBtn();
   if(allPts.length) map.fitBounds(L.latLngBounds(allPts).pad(0.2));
   if(legsUp.length){
     const note=document.createElement('div'); note.className='none'; note.id='refineNote';
@@ -4597,7 +4808,12 @@ document.getElementById('goPrev').addEventListener('click', ()=>goStep(-1));
 document.getElementById('goNext').addEventListener('click', ()=>goStep(1));
 document.getElementById('tglExplore').addEventListener('change', e=>toggleAttractions(e.target.checked));
 document.getElementById('shareBtn').addEventListener('click', shareTrip);
-document.getElementById('printBtn').addEventListener('click', printTrip);
+document.getElementById('printBtn').addEventListener('click', function(){ printTrip('trip'); });
+document.getElementById('advPrintBtn').addEventListener('click', function(){ printTrip('adv'); });
+document.getElementById('advShareBtn').addEventListener('click', shareAdventure);
+document.getElementById('advFavBtn').addEventListener('click', toggleAdvFav);
+document.getElementById('advFavClear').addEventListener('click', function(){ advFavs=[];
+  try{ localStorage.setItem('irn_advfavs','[]'); }catch(e){} renderAdvFavs(); updateAdvFavBtn(); });
 document.getElementById('openPassport').addEventListener('click', ()=>{ closeSettings(); openPassport(); });
 document.getElementById('passX').addEventListener('click', closePassport);
 document.getElementById('passOverlay').addEventListener('click', closePassport);
@@ -4960,7 +5176,9 @@ function init(){
   setRoutePref(routePref, false);   // restore saved route preference
   initSettingsUI();                 // sync text size, pace, units, clock, switches, saved places
   try{ const pm=lsStr('irn_planmode'); if(pm==='adv') setPlannerTab('adv'); }catch(e){}
+  try{ renderAdvFavs(); }catch(e){}         // restore saved adventures
   try{ applyTripHash(); }catch(e){} // open a shared trip link (#go=…)
+  try{ applyAdvHash(); }catch(e){}  // open a shared adventure link (#adv=…)
   document.querySelectorAll('#langSeg button').forEach(b=> b.classList.toggle('active', b.dataset.lang===lang));
   applyI18n();
   ensureEnglish(DISRUPTIONS); // safety net: translate any Turkish left in the baked-in feed
