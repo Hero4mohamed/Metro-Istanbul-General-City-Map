@@ -127,6 +127,47 @@
   @keyframes pulse{0%,100%{opacity:1;transform:scale(1);}50%{opacity:.45;transform:scale(.82);}}
   @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important;}}
 
+  /* ================= "Calm" UI style (Settings → Icon & colour style) =================
+     An alternative to the neon default, tuned like a system map app: a blue accent instead of
+     the green neon, flatter surfaces, softer borders, and the glow removed from panels, chips
+     and buttons. It only re-declares design tokens plus a few shadow/radius rules, so every
+     component inherits the new look without being restyled one by one. */
+  body.calm{
+    --accent:#3B82F6; --accent-2:#0EA5E9; --gold:#F59E0B;
+    --grad-accent:linear-gradient(135deg,#60A5FA,#3B82F6);
+    --ring:rgba(59,130,246,.30);
+    --panel:rgba(18,22,31,0.80); --stroke:rgba(255,255,255,0.07); --stroke-2:rgba(255,255,255,0.13);
+    --surface:rgba(255,255,255,.05); --surface-2:rgba(255,255,255,.085);
+    --track:rgba(8,11,18,.5);
+  }
+  body.calm.light{
+    --accent:#1A73E8; --accent-2:#0B7DDA; --grad-accent:linear-gradient(135deg,#4C9AFF,#1A73E8);
+    --ring:rgba(26,115,232,.22);
+    --panel:rgba(255,255,255,0.92); --stroke:rgba(15,23,42,0.09); --stroke-2:rgba(15,23,42,0.14);
+  }
+  /* flatter chrome: drop the neon bloom, keep a soft depth shadow */
+  body.calm .glass,body.calm .card,body.calm .topbar,body.calm .announce,body.calm .station,
+  body.calm .linep,body.calm .go-panel,body.calm .settings-panel{
+    box-shadow:0 10px 30px -14px rgba(0,0,0,.55),0 1px 3px rgba(0,0,0,.18);
+    border-radius:16px;}
+  body.calm.light .glass,body.calm.light .card,body.calm.light .topbar{
+    box-shadow:0 8px 26px -14px rgba(20,30,55,.28),0 1px 2px rgba(20,30,55,.10);}
+  body.calm .logo{filter:none;}
+  body.calm .logo-hub{animation:none;}
+  /* !important: the base .btn ink is a dark green tuned for the neon gradient — on the calm
+     blue it must be white, and the base rule otherwise wins the cascade here */
+  body.calm .btn,body.calm .go-start,body.calm .wc-go{box-shadow:none;color:#fff !important;}
+  body.calm .wc-go{color:#fff;}
+  body.calm .tabs button.active,body.calm .seg button.active{box-shadow:inset 0 0 0 1px var(--ring);}
+  body.calm .tabs button[data-tab="active"].active{background:rgba(59,130,246,.16);color:#BBD8FF;}
+  body.calm .badge,body.calm .ac-item .ac-dot{box-shadow:none;}
+  body.calm .kv{border-radius:13px;}
+  body.calm .sec::before{box-shadow:none;}
+  body.calm .ac-input:focus{box-shadow:0 0 0 3px var(--ring);}
+  /* softer, rounder controls throughout */
+  body.calm .seg,body.calm .tabs{border-radius:14px;}
+  body.calm .seg button,body.calm .tabs button{border-radius:11px;}
+
   /* ---- accessibility: visible keyboard focus everywhere. Mouse clicks stay clean because
      :focus-visible only matches keyboard/AT focus, so this costs the design nothing. ---- */
   :focus{outline:none;}
@@ -743,7 +784,7 @@
   .bd-r>span{color:var(--muted);font-size:11px;} .bd-r>b{color:var(--text);font-family:var(--mono);font-weight:600;font-size:10.5px;}
   .bd-src{font-size:9.5px;color:var(--dim);margin-top:6px;}
   /* live "Go" journey mode */
-  .go-start{margin:4px 0 2px;background:linear-gradient(135deg,#4ADE80,#14B8A6);}
+  .go-start{margin:4px 0 2px;background:var(--grad-accent);}
   .go-overlay{position:fixed;inset:0;pointer-events:none;background:linear-gradient(to top,rgba(3,6,10,.35),transparent 32%);opacity:0;transition:opacity .25s;z-index:1660;}
   .go-overlay.on{opacity:1;}
   .go-panel{position:fixed;left:50%;bottom:16px;transform:translate(-50%,120%);width:min(440px,94vw);z-index:1670;
@@ -896,6 +937,12 @@
         <button data-theme="auto" data-i18n="themeAuto">Auto</button>
       </div>
     </div>
+    <div class="sp-row"><span data-i18n="uiStyle">Icon &amp; colour style</span>
+      <div class="seg" id="styleSeg">
+        <button data-uis="neon" class="active" data-i18n="uiNeon">Neon</button>
+        <button data-uis="calm" data-i18n="uiCalm">Calm</button>
+      </div>
+    </div>
     <div class="sp-row"><span data-i18n="textSize">Text size</span>
       <div class="seg" id="textSeg">
         <button data-ts="normal" class="active" data-i18n="textNormal">Normal</button>
@@ -957,7 +1004,7 @@
   </div>
   <div class="sp-group">
     <div class="sp-label" data-i18n="funStats">You</div>
-    <button class="btn" id="openPassport" style="background:linear-gradient(135deg,#4ADE80,#14B8A6);">🎫 <span data-i18n="passport">Your travel passport</span></button>
+    <button class="btn" id="openPassport">🎫 <span data-i18n="passport">Your travel passport</span></button>
   </div>
   <div class="sp-group">
     <div class="sp-label" data-i18n="dataPrivacy">Data</div>
@@ -1276,6 +1323,7 @@ const I18N = {
     saveAdv:"Save adventure", savedWord:"Saved", savedAdv:"Saved adventures", stopsWord:"stops",
     goRerouting:"Off route — replanning…", goRerouted:"New route", goOffRoute:"Cannot replan from here", followMe:"Follow me",
     busOutbound:"Outbound", busReturn:"Return",
+    uiStyle:"Icon & colour style", uiNeon:"Neon", uiCalm:"Calm",
     printSrc:"Fares are estimates from the operator's published tariff. Times are typical; check live departures before travelling.",
     fareNoteBur:"Bursakart estimate — Burulaş tariff of 3 Feb 2026: 40₺ per boarding; transfers get 17₺ off (23₺) within 90 minutes. BursaRay also refunds up to 9.50₺ on short trips if you tap out.",
     fareNoteAnt:"AntalyaKart estimate — Antalya BB tariff: 35₺ per boarding, with ONE free transfer per trip (5 min–1 h on buses, up to 2 h between tram lines). Credit-card and single-use tickets get no transfer right.",
@@ -1383,6 +1431,7 @@ const I18N = {
     saveAdv:"Rotayı kaydet", savedWord:"Kaydedildi", savedAdv:"Kayıtlı rotalar", stopsWord:"durak",
     goRerouting:"Rota dışı — yeniden planlanıyor…", goRerouted:"Yeni rota", goOffRoute:"Buradan yeniden planlanamıyor", followMe:"Beni takip et",
     busOutbound:"Gidiş", busReturn:"Dönüş",
+    uiStyle:"Simge ve renk stili", uiNeon:"Neon", uiCalm:"Sakin",
     printSrc:"Ücretler işletmecinin yayımlanan tarifesine göre tahminidir. Süreler tipiktir; yola çıkmadan canlı sefer saatlerini kontrol edin.",
     fareNoteBur:"Bursakart tahmini — 3 Şub 2026 Burulaş tarifesi: biniş 40₺, 90 dakika içinde aktarmalarda 17₺ indirim (23₺). BursaRay'de kısa yolculuklarda çıkışta kart okutunca 9,50₺'ye kadar iade var.",
     fareNoteAnt:"AntalyaKart tahmini — Antalya BB tarifesi: biniş 35₺, yolculuk başına BİR ücretsiz aktarma (otobüste 5 dk–1 saat, tramvay hatları arasında 2 saate kadar). Kredi kartı ve kullan-at biletlerde aktarma hakkı yoktur.",
@@ -1490,6 +1539,7 @@ const I18N = {
     saveAdv:"احفظ الجولة", savedWord:"محفوظة", savedAdv:"الجولات المحفوظة", stopsWord:"محطات",
     goRerouting:"خارج المسار — إعادة التخطيط…", goRerouted:"مسار جديد", goOffRoute:"تعذّرت إعادة التخطيط", followMe:"تتبّعني",
     busOutbound:"ذهاب", busReturn:"عودة",
+    uiStyle:"نمط الأيقونات والألوان", uiNeon:"نيون", uiCalm:"هادئ",
     printSrc:"الأسعار تقديرية وفق التعرفة المنشورة للمشغّل. الأوقات تقريبية؛ تحقّق من المواعيد المباشرة قبل السفر.",
     fareNoteBur:"تقدير Bursakart — تعرفة ٣ فبراير ٢٠٢٦: ٤٠₺ للركوب، وخصم ١٧₺ على التبديل (٢٣₺) خلال ٩٠ دقيقة.",
     fareNoteAnt:"تقدير AntalyaKart — ٣٥₺ للركوب، مع تبديل مجاني واحد لكل رحلة (٥ دقائق–ساعة للحافلات، حتى ساعتين بين خطوط الترام).",
@@ -1595,6 +1645,7 @@ const I18N = {
     saveAdv:"Enregistrer", savedWord:"Enregistré", savedAdv:"Parcours enregistrés", stopsWord:"arrêts",
     goRerouting:"Hors itinéraire — recalcul…", goRerouted:"Nouvel itinéraire", goOffRoute:"Recalcul impossible", followMe:"Me suivre",
     busOutbound:"Aller", busReturn:"Retour",
+    uiStyle:"Style d’icônes et couleurs", uiNeon:"Néon", uiCalm:"Sobre",
     printSrc:"Tarifs estimés d'après la grille publiée par l'exploitant. Durées typiques ; vérifiez les départs en direct avant de partir.",
     fareNoteBur:"Estimation Bursakart — tarif Burulaş du 3 févr. 2026 : 40₺ par montée, correspondance remisée de 17₺ (23₺) sous 90 min.",
     fareNoteAnt:"Estimation AntalyaKart — 35₺ par montée, avec UNE correspondance gratuite par trajet (5 min–1 h en bus, jusqu'à 2 h entre lignes de tram).",
@@ -1748,6 +1799,17 @@ function applyDisplayPrefs(){
   document.body.classList.toggle('large-text', textSize==='large');
   document.body.classList.toggle('reduce-motion', reduceMotionPref);
   document.body.classList.toggle('high-contrast', highContrastPref);
+}
+let uiStyle = (function(){ try{ const v=localStorage.getItem('irn_uistyle'); return v==='calm'?'calm':'neon'; }catch(e){ return 'neon'; } })();
+function setUiStyle(v, save){
+  uiStyle = v==='calm' ? 'calm' : 'neon';
+  document.body.classList.toggle('calm', uiStyle==='calm');
+  if(save){ try{ localStorage.setItem('irn_uistyle', uiStyle); }catch(e){} }
+  document.querySelectorAll('#styleSeg button').forEach(b=> b.classList.toggle('active', b.dataset.uis===uiStyle));
+  // the map's line glow is drawn, not styled — thin it out so the map matches the calmer chrome
+  if(typeof linePolys!=='undefined'){
+    linePolys.forEach(o=>{ if(o.glow) o.pl.setStyle({ opacity: uiStyle==='calm' ? 0.07 : o.baseOp }); });
+  }
 }
 function setTextSize(s){ textSize=s==='large'?'large':'normal'; try{localStorage.setItem('irn_textsize',textSize);}catch(e){}
   document.querySelectorAll('#textSeg button').forEach(b=>b.classList.toggle('active', b.dataset.ts===textSize)); applyDisplayPrefs(); }
@@ -2722,7 +2784,7 @@ NETWORK.forEach(line => {
       pl.on('click', e => { openLine(line); L.DomEvent.stop(e); });
       pl.addTo(grp);
     });
-    linePolys.push({ pl:glow, base:gw }, { pl:core, base:wt });
+    linePolys.push({ pl:glow, base:gw, glow:true, baseOp:(live?0.16:0.10) }, { pl:core, base:wt });
   });
   lineLayers[line.ref] = { group:grp, on:true, live };
 });
@@ -4891,6 +4953,7 @@ document.getElementById('settingsOverlay').addEventListener('click', closeSettin
 document.getElementById('themeSeg').addEventListener('click', e=>{ const b=e.target.closest('button'); if(b&&b.dataset.theme) applyTheme(b.dataset.theme, true); });
 document.getElementById('prefSeg').addEventListener('click', e=>{ const b=e.target.closest('button'); if(b&&b.dataset.pref) setRoutePref(b.dataset.pref, true); });
 document.getElementById('textSeg').addEventListener('click', e=>{ const b=e.target.closest('button'); if(b&&b.dataset.ts) setTextSize(b.dataset.ts); });
+document.getElementById('styleSeg').addEventListener('click', e=>{ const b=e.target.closest('button'); if(b&&b.dataset.uis) setUiStyle(b.dataset.uis, true); });
 document.getElementById('paceSeg').addEventListener('click', e=>{ const b=e.target.closest('button'); if(b&&b.dataset.pace) setWalkPace(b.dataset.pace, true); });
 document.getElementById('unitSeg').addEventListener('click', e=>{ const b=e.target.closest('button'); if(b&&b.dataset.u) setUnits(b.dataset.u); });
 document.getElementById('clockSeg').addEventListener('click', e=>{ const b=e.target.closest('button'); if(b&&b.dataset.ck) setClock(b.dataset.ck); });
@@ -5300,6 +5363,7 @@ function init(){
     if(lf){ if(geoSupported()) lf.addEventListener('click', toggleLocate); else lf.style.display='none'; } }
   applyTheme(themePref, true);      // restore saved dark/light/auto theme (+ matching basemap)
   setRoutePref(routePref, false);   // restore saved route preference
+  setUiStyle(uiStyle, false);       // restore the saved icon & colour style
   initSettingsUI();                 // sync text size, pace, units, clock, switches, saved places
   try{ const pm=lsStr('irn_planmode'); if(pm==='adv') setPlannerTab('adv'); }catch(e){}
   try{ renderAdvFavs(); }catch(e){}         // restore saved adventures
