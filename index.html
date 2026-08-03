@@ -740,6 +740,24 @@
   .bd-ol{margin:0;padding:2px 12px 10px 30px;max-height:190px;overflow-y:auto;}
   .bd-ol li{font-size:10px;color:var(--muted);line-height:1.75;}
   .bd-ol li::marker{color:var(--dim);font-size:8.5px;}
+  .mode-chips{display:flex;flex-wrap:wrap;gap:5px;margin:8px 0 2px;}
+  .mchip{display:inline-flex;align-items:center;gap:5px;padding:5px 9px;border-radius:99px;cursor:pointer;
+    border:1px solid var(--stroke);background:var(--surface);color:var(--muted);
+    font-family:var(--font);font-size:10px;font-weight:700;transition:all .15s var(--ease);}
+  .mchip.on{background:rgba(52,211,153,.14);border-color:var(--ring);color:var(--accent);}
+  body.calm .mchip.on{background:rgba(59,130,246,.15);}
+  .mchip.off{opacity:.45;text-decoration:line-through;}
+  .avoid-row{display:flex;flex-wrap:wrap;gap:5px;margin:6px 0 0;}
+  .avoid-row:empty{display:none;}
+  .achip{display:inline-flex;align-items:center;gap:5px;padding:4px 8px;border-radius:8px;cursor:pointer;
+    background:rgba(229,72,77,.12);border:1px solid rgba(229,72,77,.4);color:#F08287;font-size:9.5px;font-weight:700;}
+  .achip .x{opacity:.75;}
+  .ropts-sort{display:flex;gap:4px;margin:2px 0 6px;}
+  .ropts-sort button{flex:1;padding:5px 0;border-radius:8px;border:1px solid var(--stroke);background:var(--surface);
+    color:var(--muted);font-family:var(--font);font-size:9px;font-weight:700;cursor:pointer;letter-spacing:.2px;}
+  .ropts-sort button.on{background:var(--surface-2);color:var(--accent);border-color:var(--ring);}
+  .st-avoid{margin-left:auto;background:none;border:none;color:var(--dim);cursor:pointer;font-size:9.5px;padding:2px 4px;border-radius:6px;}
+  .st-avoid:hover{color:#F08287;background:rgba(229,72,77,.1);}
   .rwarn{display:flex;flex-direction:column;gap:6px;margin:6px 0 2px;}
   .rwarn:empty{display:none;}
   .rw{display:flex;align-items:flex-start;gap:7px;padding:7px 10px;border-radius:11px;font-size:10.5px;font-weight:600;line-height:1.45;}
@@ -1141,6 +1159,8 @@
       <button class="pchip" id="chipWork" data-place="work" style="display:none">💼 <span data-i18n="workP">Work</span></button>
     </div>
     <div class="place-chips" id="airportChips"></div>
+    <div class="mode-chips" id="modeChips" data-i18n-title="modesTitle" title="Modes for this trip"></div>
+    <div class="avoid-row" id="avoidRow"></div>
     <button class="btn" id="route" data-i18n="findPath">◇ Find Optimal Path</button>
     <button class="btn ghost" id="clear" data-i18n="clear">Clear</button>
     <div class="route-out" id="rout">
@@ -1324,6 +1344,7 @@ const I18N = {
     goRerouting:"Off route — replanning…", goRerouted:"New route", goOffRoute:"Cannot replan from here", followMe:"Follow me",
     busOutbound:"Outbound", busReturn:"Return",
     uiStyle:"Icon & colour style", uiNeon:"Neon", uiCalm:"Calm",
+    modesTitle:"Modes for this trip", avoiding:"avoided", avoidThis:"Avoid this line", sortBest:"Best", sortTime:"Fastest", sortChanges:"Changes", sortWalk:"Walk", sortFare:"Cheapest",
     printSrc:"Fares are estimates from the operator's published tariff. Times are typical; check live departures before travelling.",
     fareNoteBur:"Bursakart estimate — Burulaş tariff of 3 Feb 2026: 40₺ per boarding; transfers get 17₺ off (23₺) within 90 minutes. BursaRay also refunds up to 9.50₺ on short trips if you tap out.",
     fareNoteAnt:"AntalyaKart estimate — Antalya BB tariff: 35₺ per boarding, with ONE free transfer per trip (5 min–1 h on buses, up to 2 h between tram lines). Credit-card and single-use tickets get no transfer right.",
@@ -1432,6 +1453,7 @@ const I18N = {
     goRerouting:"Rota dışı — yeniden planlanıyor…", goRerouted:"Yeni rota", goOffRoute:"Buradan yeniden planlanamıyor", followMe:"Beni takip et",
     busOutbound:"Gidiş", busReturn:"Dönüş",
     uiStyle:"Simge ve renk stili", uiNeon:"Neon", uiCalm:"Sakin",
+    modesTitle:"Bu yolculuk için modlar", avoiding:"hariç", avoidThis:"Bu hattı kullanma", sortBest:"En iyi", sortTime:"En hızlı", sortChanges:"Aktarma", sortWalk:"Yürüme", sortFare:"En ucuz",
     printSrc:"Ücretler işletmecinin yayımlanan tarifesine göre tahminidir. Süreler tipiktir; yola çıkmadan canlı sefer saatlerini kontrol edin.",
     fareNoteBur:"Bursakart tahmini — 3 Şub 2026 Burulaş tarifesi: biniş 40₺, 90 dakika içinde aktarmalarda 17₺ indirim (23₺). BursaRay'de kısa yolculuklarda çıkışta kart okutunca 9,50₺'ye kadar iade var.",
     fareNoteAnt:"AntalyaKart tahmini — Antalya BB tarifesi: biniş 35₺, yolculuk başına BİR ücretsiz aktarma (otobüste 5 dk–1 saat, tramvay hatları arasında 2 saate kadar). Kredi kartı ve kullan-at biletlerde aktarma hakkı yoktur.",
@@ -1540,6 +1562,7 @@ const I18N = {
     goRerouting:"خارج المسار — إعادة التخطيط…", goRerouted:"مسار جديد", goOffRoute:"تعذّرت إعادة التخطيط", followMe:"تتبّعني",
     busOutbound:"ذهاب", busReturn:"عودة",
     uiStyle:"نمط الأيقونات والألوان", uiNeon:"نيون", uiCalm:"هادئ",
+    modesTitle:"وسائل هذه الرحلة", avoiding:"مستبعد", avoidThis:"تجنّب هذا الخط", sortBest:"الأفضل", sortTime:"الأسرع", sortChanges:"التبديلات", sortWalk:"المشي", sortFare:"الأرخص",
     printSrc:"الأسعار تقديرية وفق التعرفة المنشورة للمشغّل. الأوقات تقريبية؛ تحقّق من المواعيد المباشرة قبل السفر.",
     fareNoteBur:"تقدير Bursakart — تعرفة ٣ فبراير ٢٠٢٦: ٤٠₺ للركوب، وخصم ١٧₺ على التبديل (٢٣₺) خلال ٩٠ دقيقة.",
     fareNoteAnt:"تقدير AntalyaKart — ٣٥₺ للركوب، مع تبديل مجاني واحد لكل رحلة (٥ دقائق–ساعة للحافلات، حتى ساعتين بين خطوط الترام).",
@@ -1646,6 +1669,7 @@ const I18N = {
     goRerouting:"Hors itinéraire — recalcul…", goRerouted:"Nouvel itinéraire", goOffRoute:"Recalcul impossible", followMe:"Me suivre",
     busOutbound:"Aller", busReturn:"Retour",
     uiStyle:"Style d’icônes et couleurs", uiNeon:"Néon", uiCalm:"Sobre",
+    modesTitle:"Modes pour ce trajet", avoiding:"exclu", avoidThis:"Éviter cette ligne", sortBest:"Meilleur", sortTime:"Rapide", sortChanges:"Corresp.", sortWalk:"Marche", sortFare:"Moins cher",
     printSrc:"Tarifs estimés d'après la grille publiée par l'exploitant. Durées typiques ; vérifiez les départs en direct avant de partir.",
     fareNoteBur:"Estimation Bursakart — tarif Burulaş du 3 févr. 2026 : 40₺ par montée, correspondance remisée de 17₺ (23₺) sous 90 min.",
     fareNoteAnt:"Estimation AntalyaKart — 35₺ par montée, avec UNE correspondance gratuite par trajet (5 min–1 h en bus, jusqu'à 2 h entre lignes de tram).",
@@ -1773,10 +1797,54 @@ function setRoutePref(p, rerun){
   if(rerun && originPt && destPt && currentOpts && currentOpts.length) runRoute();
 }
 // re-rank the found itineraries per the user's preference before display
+/* ---- per-trip customisation: which modes to use, which lines to avoid, how to rank the
+   alternatives. All of it is scoped to the CURRENT trip (Settings keeps the global
+   defaults), so experimenting here never changes the traveller's saved preferences. ---- */
+let tripAvoidLines = new Set();
+let optSort = 'pref';        // pref | time | changes | walk | fare
+const TRIP_MODES = [['subway','🚇'],['tram','🚊'],['marmaray','🚆'],['suburban','🚆'],
+                    ['ferry','⛴'],['bus','🚌'],['funicular','🚡'],['cable','🚡'],['metrobus','🚌']];
+function tripModeList(){                     // only modes this city actually has
+  const seen=[];
+  liveLines.forEach(l=>{ if(seen.indexOf(l.kind)<0) seen.push(l.kind); });
+  if(HAS.bus && seen.indexOf('bus')<0) seen.push('bus');
+  return TRIP_MODES.filter(m=>seen.indexOf(m[0])>=0);
+}
+function renderModeChips(){
+  const el=document.getElementById('modeChips'); if(!el) return;
+  el.innerHTML = tripModeList().map(m=>{
+    const off = avoidModes.has(m[0]);
+    return `<button class="mchip ${off?'off':'on'}" data-mode="${m[0]}">${m[1]} ${svgEsc(kindLabel(m[0])||m[0])}</button>`;
+  }).join('');
+}
+function renderAvoidRow(){
+  const el=document.getElementById('avoidRow'); if(!el) return;
+  el.innerHTML = [...tripAvoidLines].map(r=>{
+    const c=colorForLine(r);
+    return `<button class="achip" data-unavoid="${svgEsc(r)}"><span class="badge" style="background:${c};color:${inkOn(c)}">${svgEsc(r)}</span>${t('avoiding')}<span class="x">✕</span></button>`;
+  }).join('');
+}
+function toggleTripMode(mode){
+  // per-trip only: mirrors into avoidModes for the search, but does NOT persist to Settings
+  if(avoidModes.has(mode)) avoidModes.delete(mode); else avoidModes.add(mode);
+  renderModeChips();
+  if(plannerMode==='adv') planAdventure(); else runRoute();
+}
+function avoidLine(ref){ if(!ref) return; tripAvoidLines.add(ref); renderAvoidRow();
+  if(plannerMode==='adv') planAdventure(); else runRoute(); }
+function unavoidLine(ref){ tripAvoidLines.delete(ref); renderAvoidRow();
+  if(plannerMode==='adv') planAdventure(); else runRoute(); }
+function optWalkMin(o){ return (o.it.steps||[]).filter(s=>s.type==='walk').reduce((a,s)=>a+(s.mins||0),0); }
+function optFare(o){ try{ return estimateFare(o.it).tl; }catch(e){ return 0; } }
+function setOptSort(v){ optSort=v; sortOptsByPref(); renderOptChips(); selectOption(0); }
 function sortOptsByPref(){
   if(!currentOpts || !currentOpts.length) return;
-  if(routePref==='easy') currentOpts.sort((a,b)=> (a.it.transfers-b.it.transfers) || (a.it.total-b.it.total));
-  else                   currentOpts.sort((a,b)=> (a.it.total-b.it.total) || (a.it.transfers-b.it.transfers));
+  if(optSort==='time')         currentOpts.sort((a,b)=> a.it.total-b.it.total);
+  else if(optSort==='changes') currentOpts.sort((a,b)=> (a.it.transfers-b.it.transfers) || (a.it.total-b.it.total));
+  else if(optSort==='walk')    currentOpts.sort((a,b)=> (optWalkMin(a)-optWalkMin(b)) || (a.it.total-b.it.total));
+  else if(optSort==='fare')    currentOpts.sort((a,b)=> (optFare(a)-optFare(b)) || (a.it.total-b.it.total));
+  else if(routePref==='easy')  currentOpts.sort((a,b)=> (a.it.transfers-b.it.transfers) || (a.it.total-b.it.total));
+  else                         currentOpts.sort((a,b)=> (a.it.total-b.it.total) || (a.it.transfers-b.it.transfers));
   currentOptIdx=0;
 }
 function openSettings(){ document.getElementById('settingsPanel').classList.add('open'); document.getElementById('settingsOverlay').classList.add('on'); }
@@ -2666,7 +2734,13 @@ function routeXY(o, d, penalty){
   if(!srcs.length || !dArr.length) return null;
   const pen = penalty && penalty.size ? penalty : null;
   const avoid = avoidModes.size ? avoidModes : null;             // Settings → Avoid ferries/buses
-  const blocked = avoid ? (k=>avoid.has(nodeMode(k))) : (()=>false);
+  // a mode switched off for this trip, or a specific line the traveller chose to avoid
+  const noLine = tripAvoidLines.size ? tripAvoidLines : null;
+  const blocked = (avoid || noLine)
+    ? (k=>{ const m=nodeMeta[k]; if(!m) return false;
+            if(avoid && avoid.has(nodeMode(k))) return true;
+            return !!(noLine && noLine.has(m.ref)); })
+    : (()=>false);
   // Settings → Prefer step-free: bias away from boarding/alighting/transferring at a
   // station we KNOW has no elevator (stepFree===false). A soft penalty, never a block.
   const SF_PEN = 10;
@@ -3751,7 +3825,10 @@ const optLines = it => it.steps.filter(s=>s.type==='ride').map(s=> s.bus?('🚌'
 function renderOptChips(){
   const el=document.getElementById('rOpts');
   if(currentOpts.length<2){ el.innerHTML=''; return; }
-  el.innerHTML=`<div class="ropts-h">${t('alternatives')}</div>`+currentOpts.map((o,i)=>`<div class="ropt${i===currentOptIdx?' sel':''}" data-i="${i}">
+  const sorts=[['pref',t('sortBest')],['time',t('sortTime')],['changes',t('sortChanges')],['walk',t('sortWalk')],['fare',t('sortFare')]];
+  el.innerHTML=`<div class="ropts-h">${t('alternatives')}</div>`
+    +`<div class="ropts-sort">${sorts.map(sv=>`<button data-sort="${sv[0]}" class="${optSort===sv[0]?'on':''}">${sv[1]}</button>`).join('')}</div>`
+    +currentOpts.map((o,i)=>`<div class="ropt${i===currentOptIdx?' sel':''}" data-i="${i}">
       <div class="ro-t">${i===0?(routePref==='easy'?t('easiest'):t('fastest')):t('option')+' '+(i+1)}</div>
       <div class="ro-m">${Math.round(o.it.total)}<small> ${t('minUnit')}</small></div>
       <div class="ro-s">${optLines(o.it)}</div></div>`).join('');
@@ -4193,7 +4270,7 @@ function stepsHTML(it){
       const fl = _fare.legs[_fi++];                                     // this boarding's charge
       const fare = fl ? `<span class="st-fare${fl.tl===0?' free':''}">🎫 ${fl.tl===0?t('freeXfer'):fmtTL(fl.tl)}</span>` : '';
       return `<div class="step"><div class="rail"><span class="nd" style="border-color:${c}"></span><span class="pipe" style="background:${c}"></span></div>
-        <div class="tx"><div class="nm"><span class="badge" style="background:${c}">${s.bus?'🚌 '+s.ref:s.ref}</span>${label}${fare}</div>
+        <div class="tx"><div class="nm"><span class="badge" style="background:${c}">${s.bus?'🚌 '+s.ref:s.ref}</span>${label}${fare}<button class="st-avoid" data-ref="${attrEsc(s.ref)}" title="${attrEsc(t('avoidThis'))}">⊘</button></div>
         <div class="mt">${s.from} → ${s.to} · ${s.stops} ${s.stops===1?t('stop_one'):t('stop_many')}${freq}</div>${alt}</div></div>`;
     } else {
       const c = s.bus ? BUS_COLOR : colorForLine(s.ref);
@@ -4965,6 +5042,11 @@ document.getElementById('swStepFree').addEventListener('click', ()=> setStepFree
 document.getElementById('placesGroup').addEventListener('click', e=>{ const b=e.target.closest('button[data-place]'); if(!b) return;
   if(b.dataset.act==='set') setPlaceFromOrigin(b.dataset.place); else clearPlace(b.dataset.place); });
 document.getElementById('placeChips').addEventListener('click', e=>{ const b=e.target.closest('.pchip'); if(b) useSavedPlace(b.dataset.place); });
+document.getElementById('modeChips').addEventListener('click', e=>{ const b=e.target.closest('.mchip'); if(b) toggleTripMode(b.dataset.mode); });
+document.getElementById('avoidRow').addEventListener('click', e=>{ const b=e.target.closest('.achip'); if(b) unavoidLine(b.dataset.unavoid); });
+document.getElementById('rOpts').addEventListener('click', e=>{ const b=e.target.closest('button[data-sort]'); if(b){ e.stopPropagation(); setOptSort(b.dataset.sort); } });
+// "avoid this line" from a step in the results → replan without it
+document.getElementById('rSteps').addEventListener('click', e=>{ const b=e.target.closest('.st-avoid'); if(b){ e.stopPropagation(); avoidLine(b.dataset.ref); } });
 // airport quick actions: the single most common visitor trip, one tap to destination
 const AIRPORTS = {};
 (function(){                                   // only the airports this city actually has rail to
@@ -5374,6 +5456,7 @@ function init(){
   ensureEnglish(DISRUPTIONS); // safety net: translate any Turkish left in the baked-in feed
   refreshClosed();            // suspended / out-of-hours lines (sim + arrivals board honesty)
   populateSelects();
+  renderModeChips(); renderAvoidRow();   // per-trip mode + avoided-line controls
   rebuildAdvRows();           // adventure planner stop rows
   sizeCanvas();
   spawnTrains();
