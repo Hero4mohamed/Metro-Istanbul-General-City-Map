@@ -2170,7 +2170,7 @@ const SCHEDULE = {
 };
 // Per-line accurate timings: commercial speed (km/h) drives realistic live ETAs;
 // peak–offpeak headway (min) drives how often trains arrive + the panel frequency.
-const LINE_TIMING = {
+const LINE_TIMING_IST = {
   'M1A':{spd:34,peak:5,off:10}, 'M1B':{spd:34,peak:6,off:10},
   'M2':{spd:38,peak:4,off:9},  'M2S':{spd:30,peak:6,off:12},
   'M3':{spd:35,peak:5,off:10}, 'M4':{spd:38,peak:4,off:8}, 'M5':{spd:38,peak:4,off:8},
@@ -2185,6 +2185,7 @@ const LINE_TIMING = {
   'TF1':{spd:12,peak:8,off:10,hours:'08:00 – 20:00'}, 'TF2':{spd:12,peak:8,off:10,hours:'08:00 – 23:00'},
   'Metrobüs':{spd:40,peak:1,off:4,hours:'24 hours'}
 };
+const LINE_TIMING = CITY.timing || LINE_TIMING_IST;   // each city ships its own published timings
 const HW_FALLBACK = { subway:8, marmaray:10, suburban:20, tram:10, funicular:6, cable:8, metrobus:3, ferry:25 };
 function lineTiming(ref){
   const t = HAS.lineTiming ? LINE_TIMING[ref] : null, kind = lineByRef[ref] && lineByRef[ref].kind;
