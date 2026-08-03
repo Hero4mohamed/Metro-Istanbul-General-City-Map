@@ -684,6 +684,9 @@
     .ps-note{ font-size:8.4px; color:#8a97a3; margin-top:12px; line-height:1.65;
       border-top:1px solid #e8edf1; padding-top:9px; }
   }
+  .go-follow{margin-left:auto;margin-right:6px;width:26px;height:26px;border-radius:9px;border:1px solid var(--stroke-2);
+    background:var(--surface);color:var(--muted);cursor:pointer;font-size:13px;line-height:1;transition:all .18s var(--ease);}
+  .go-follow.on{color:var(--accent);border-color:var(--ring);background:rgba(52,211,153,.14);}
   .rwarn{display:flex;flex-direction:column;gap:6px;margin:6px 0 2px;}
   .rwarn:empty{display:none;}
   .rw{display:flex;align-items:flex-start;gap:7px;padding:7px 10px;border-radius:11px;font-size:10.5px;font-weight:600;line-height:1.45;}
@@ -958,7 +961,7 @@
 
 <div class="go-overlay" id="goOverlay"></div>
 <div class="go-panel glass" id="goPanel" role="dialog" aria-label="Live journey">
-  <div class="go-head"><span class="go-title">▶ <span data-i18n="liveJourney">Live journey</span></span><button class="x" id="goExit" aria-label="Close">✕</button></div>
+  <div class="go-head"><span class="go-title">▶ <span data-i18n="liveJourney">Live journey</span></span><button class="go-follow on" id="goFollowBtn" data-i18n-title="followMe" title="Follow me">◎</button><button class="x" id="goExit" aria-label="Close">✕</button></div>
   <div class="go-now" id="goNow"></div>
   <div class="go-progress" id="goProgress"></div>
   <div class="go-controls">
@@ -1259,6 +1262,7 @@ const I18N = {
     linesShort:"lines", cityPick:"Change city",
     printTrip:"Print / PDF", freeXfer:"free transfer", totalFare:"Total fare", stepByStep:"Step by step",
     saveAdv:"Save adventure", savedWord:"Saved", savedAdv:"Saved adventures", stopsWord:"stops",
+    goRerouting:"Off route — replanning…", goRerouted:"New route", goOffRoute:"Cannot replan from here", followMe:"Follow me",
     printSrc:"Fares are estimates from the operator's published tariff. Times are typical; check live departures before travelling.",
     fareNoteBur:"Bursakart estimate — Burulaş tariff of 3 Feb 2026: 40₺ per boarding; transfers get 17₺ off (23₺) within 90 minutes. BursaRay also refunds up to 9.50₺ on short trips if you tap out.",
     fareNoteAnt:"AntalyaKart estimate — Antalya BB tariff: 35₺ per boarding, with ONE free transfer per trip (5 min–1 h on buses, up to 2 h between tram lines). Credit-card and single-use tickets get no transfer right.",
@@ -1364,6 +1368,7 @@ const I18N = {
     linesShort:"hat", cityPick:"Şehir değiştir",
     printTrip:"Yazdır / PDF", freeXfer:"ücretsiz aktarma", totalFare:"Toplam ücret", stepByStep:"Adım adım",
     saveAdv:"Rotayı kaydet", savedWord:"Kaydedildi", savedAdv:"Kayıtlı rotalar", stopsWord:"durak",
+    goRerouting:"Rota dışı — yeniden planlanıyor…", goRerouted:"Yeni rota", goOffRoute:"Buradan yeniden planlanamıyor", followMe:"Beni takip et",
     printSrc:"Ücretler işletmecinin yayımlanan tarifesine göre tahminidir. Süreler tipiktir; yola çıkmadan canlı sefer saatlerini kontrol edin.",
     fareNoteBur:"Bursakart tahmini — 3 Şub 2026 Burulaş tarifesi: biniş 40₺, 90 dakika içinde aktarmalarda 17₺ indirim (23₺). BursaRay'de kısa yolculuklarda çıkışta kart okutunca 9,50₺'ye kadar iade var.",
     fareNoteAnt:"AntalyaKart tahmini — Antalya BB tarifesi: biniş 35₺, yolculuk başına BİR ücretsiz aktarma (otobüste 5 dk–1 saat, tramvay hatları arasında 2 saate kadar). Kredi kartı ve kullan-at biletlerde aktarma hakkı yoktur.",
@@ -1469,6 +1474,7 @@ const I18N = {
     linesShort:"خط", cityPick:"تغيير المدينة",
     printTrip:"طباعة / PDF", freeXfer:"تبديل مجاني", totalFare:"إجمالي الأجرة", stepByStep:"خطوة بخطوة",
     saveAdv:"احفظ الجولة", savedWord:"محفوظة", savedAdv:"الجولات المحفوظة", stopsWord:"محطات",
+    goRerouting:"خارج المسار — إعادة التخطيط…", goRerouted:"مسار جديد", goOffRoute:"تعذّرت إعادة التخطيط", followMe:"تتبّعني",
     printSrc:"الأسعار تقديرية وفق التعرفة المنشورة للمشغّل. الأوقات تقريبية؛ تحقّق من المواعيد المباشرة قبل السفر.",
     fareNoteBur:"تقدير Bursakart — تعرفة ٣ فبراير ٢٠٢٦: ٤٠₺ للركوب، وخصم ١٧₺ على التبديل (٢٣₺) خلال ٩٠ دقيقة.",
     fareNoteAnt:"تقدير AntalyaKart — ٣٥₺ للركوب، مع تبديل مجاني واحد لكل رحلة (٥ دقائق–ساعة للحافلات، حتى ساعتين بين خطوط الترام).",
@@ -1572,6 +1578,7 @@ const I18N = {
     linesShort:"lignes", cityPick:"Changer de ville",
     printTrip:"Imprimer / PDF", freeXfer:"correspondance gratuite", totalFare:"Tarif total", stepByStep:"Étape par étape",
     saveAdv:"Enregistrer", savedWord:"Enregistré", savedAdv:"Parcours enregistrés", stopsWord:"arrêts",
+    goRerouting:"Hors itinéraire — recalcul…", goRerouted:"Nouvel itinéraire", goOffRoute:"Recalcul impossible", followMe:"Me suivre",
     printSrc:"Tarifs estimés d'après la grille publiée par l'exploitant. Durées typiques ; vérifiez les départs en direct avant de partir.",
     fareNoteBur:"Estimation Bursakart — tarif Burulaş du 3 févr. 2026 : 40₺ par montée, correspondance remisée de 17₺ (23₺) sous 90 min.",
     fareNoteAnt:"Estimation AntalyaKart — 35₺ par montée, avec UNE correspondance gratuite par trajet (5 min–1 h en bus, jusqu'à 2 h entre lignes de tram).",
@@ -3758,15 +3765,26 @@ function buildGoPlan(res, it){
 function startGo(){
   if(!goCurrent) return;
   const plan=buildGoPlan(goCurrent.res, goCurrent.it); if(!plan.steps.length) return;
-  goState={ plan, si:0, stopIdx:0, watchId:null, lastBuzz:-1 };
+  goState={ plan, si:0, stopIdx:0, watchId:null, lastBuzz:-1,
+            dest:{ name:plan.dName, lat:goCurrent.res.dest.lat, lng:goCurrent.res.dest.lng },
+            off:0, reroutes:0, rerouting:false, follow:true };
+  goTrail = L.polyline([], { color:'#7CF0BE', weight:5, opacity:.9, lineCap:'round',
+            dashArray:'1,9', renderer:lineRenderer }).addTo(routeLayer);   // breadcrumb of where you have been
   document.getElementById('goPanel').classList.add('open');
   document.getElementById('goOverlay').classList.add('on');
   document.body.classList.add('go-active');
   if(geoSupported()){ try{ goState.watchId=navigator.geolocation.watchPosition(goTick, ()=>{}, {enableHighAccuracy:true,maximumAge:5000,timeout:15000}); }catch(e){} }
   renderGo();
 }
+function goRecentre(){
+  if(!goState) return;
+  goState.follow=true; goState.off=0;
+  if(geoPos){ goFollowing=true; map.setView([geoPos.lat,geoPos.lng], Math.max(map.getZoom(),15), {animate:true}); goFollowing=false; }
+  const b=document.getElementById('goFollowBtn'); if(b) b.classList.add('on');
+}
 function exitGo(){
   if(goState && goState.watchId!=null){ try{ navigator.geolocation.clearWatch(goState.watchId); }catch(e){} }
+  if(goTrail){ try{ routeLayer.removeLayer(goTrail); }catch(e){} goTrail=null; }
   goState=null;
   document.getElementById('goPanel').classList.remove('open');
   document.getElementById('goOverlay').classList.remove('on');
@@ -3776,9 +3794,18 @@ function goStep(delta){ if(!goState) return; goState.si=Math.max(0,Math.min(goSt
   if(goState.si===goState.plan.steps.length-1 && !goState.recorded){ goState.recorded=true; recordJourney(goState.plan); }  // completed → passport
   renderGo(); }
 function goTick(p){
-  if(!goState) return;
+  if(!goState || goState.rerouting) return;
   const here=[p.coords.latitude, p.coords.longitude];
   geoPos={lat:here[0], lng:here[1], acc:p.coords.accuracy}; renderGeo();
+  // keep the map on the traveller (unless they panned away themselves)
+  if(goState.follow){ goFollowing=true; map.panTo(here, { animate:true, duration:.7 }); goFollowing=false; }
+  if(goTrail) goTrail.addLatLng(here);
+  // OFF-ROUTE WATCH: if the fix is far from the planned corridor for several updates in a row
+  // (missed the stop, took the wrong line, walked the wrong way) → replan from where you are.
+  { const d=goDistToPlan(here);
+    if(d!=null && d>ROUTE_OFF_M && (p.coords.accuracy||0)<120){
+      if(++goState.off>=3){ goReroute(here); return; }
+    } else if(d!=null && d<ROUTE_OFF_M*0.6) goState.off=0; }
   const st=goState.plan.steps[goState.si];
   if(st){
     if(st.type==='ride'){
@@ -3791,6 +3818,44 @@ function goTick(p){
     } else if(st.toLat!=null && metersBetween(here,[st.toLat,st.toLng])<45 && goState.si<goState.plan.steps.length-1){ goStep(1); return; }
   }
   renderGo();
+}
+const ROUTE_OFF_M = 450;      // metres off the planned corridor before we consider you off-route
+let goTrail=null, goFollowing=false;
+// shortest distance from a position to the REMAINING part of the plan (current step onward), so
+// walking away from an already-completed leg never counts as off-route
+function goDistToPlan(here){
+  if(!goState) return null;
+  let best=Infinity;
+  for(let i=goState.si;i<goState.plan.steps.length;i++){
+    const st=goState.plan.steps[i];
+    if(st.type==='ride' && st.stops) st.stops.forEach(sp=>{ const d=metersBetween(here,[sp.lat,sp.lng]); if(d<best) best=d; });
+    else if(st.toLat!=null){ const d=metersBetween(here,[st.toLat,st.toLng]); if(d<best) best=d; }
+  }
+  return best===Infinity ? null : best;
+}
+// replan from the traveller's real position to the same destination, then resume guidance
+function goReroute(here){
+  if(!goState || goState.rerouting) return;
+  if(goState.reroutes>=6){ showToast(t('goOffRoute'),'err'); goState.off=0; return; }
+  goState.rerouting=true; goState.reroutes++;
+  showToast(t('goRerouting'));
+  const from={ name:t('myLocation'), lat:here[0], lng:here[1] }, to=goState.dest;
+  setTimeout(function(){
+    let res=null; try{ res=routeXY(from,to); }catch(e){}
+    if(!res){ goState.rerouting=false; goState.off=0; showToast(t('goOffRoute'),'err'); return; }
+    const it=buildItinerary(res);
+    goCurrent={res,it};
+    routeLayer.clearLayers();
+    const allPts=[], legs=[]; drawItin(res,it,allPts,legs);
+    goTrail = L.polyline([here], { color:'#7CF0BE', weight:5, opacity:.9, lineCap:'round',
+              dashArray:'1,9', renderer:lineRenderer }).addTo(routeLayer);
+    const plan=buildGoPlan(res,it);
+    goState.plan=plan; goState.si=0; goState.stopIdx=0; goState.lastBuzz=-1;
+    goState.off=0; goState.rerouting=false;
+    if(legs.length) upgradeRoute(legs, ++routeToken, 0);
+    renderGo();
+    showToast(t('goRerouted')+' · '+Math.round(it.total)+' '+t('minUnit'));
+  }, 30);
 }
 function renderGo(){
   if(!goState) return;
@@ -4804,6 +4869,10 @@ document.getElementById('nearBtn').addEventListener('click', showNearby);
 document.getElementById('nearX').addEventListener('click', closeNearby);
 document.getElementById('goStart').addEventListener('click', startGo);
 document.getElementById('goExit').addEventListener('click', exitGo);
+document.getElementById('goFollowBtn').addEventListener('click', goRecentre);
+// dragging the map yourself turns following off, so the view stops fighting you
+map.on('dragstart', function(){ if(goState && !goFollowing){ goState.follow=false;
+  const b=document.getElementById('goFollowBtn'); if(b) b.classList.remove('on'); } });
 document.getElementById('goPrev').addEventListener('click', ()=>goStep(-1));
 document.getElementById('goNext').addEventListener('click', ()=>goStep(1));
 document.getElementById('tglExplore').addEventListener('change', e=>toggleAttractions(e.target.checked));
