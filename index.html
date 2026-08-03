@@ -34,7 +34,7 @@
   :root{
     --obsidian:#070A12; --panel:rgba(13,17,27,0.74); --stroke:rgba(255,255,255,0.08);
     --stroke-2:rgba(255,255,255,0.15); --text:#EEF2F8; --muted:#9AA4B8; --dim:#78849C;
-    --accent:#34D399; --accent-2:#2DD4BF; --gold:#FBBF24;
+    --accent:#34D399; --accent-2:#2DD4BF; --gold:#FBBF24; --btn-ink:#03130A;
     --grad-accent:linear-gradient(135deg,#4ADE80,#14B8A6);
     --surface:rgba(255,255,255,.045); --surface-2:rgba(255,255,255,.08);
     --track:rgba(4,7,13,.55); --ring:rgba(52,211,153,.28);
@@ -134,14 +134,14 @@
      component inherits the new look without being restyled one by one. */
   body.calm{
     --accent:#3B82F6; --accent-2:#0EA5E9; --gold:#F59E0B;
-    --grad-accent:linear-gradient(135deg,#60A5FA,#3B82F6);
+    --grad-accent:linear-gradient(135deg,#2563EB,#1D4ED8);   /* deep enough for white ink (AA) */
     --ring:rgba(59,130,246,.30);
     --panel:rgba(18,22,31,0.80); --stroke:rgba(255,255,255,0.07); --stroke-2:rgba(255,255,255,0.13);
     --surface:rgba(255,255,255,.05); --surface-2:rgba(255,255,255,.085);
-    --track:rgba(8,11,18,.5);
+    --track:rgba(8,11,18,.5); --btn-ink:#fff;
   }
   body.calm.light{
-    --accent:#1A73E8; --accent-2:#0B7DDA; --grad-accent:linear-gradient(135deg,#4C9AFF,#1A73E8);
+    --accent:#1A73E8; --accent-2:#0B7DDA; --grad-accent:linear-gradient(135deg,#1A73E8,#1557B0);
     --ring:rgba(26,115,232,.22);
     --panel:rgba(255,255,255,0.92); --stroke:rgba(15,23,42,0.09); --stroke-2:rgba(15,23,42,0.14);
   }
@@ -154,9 +154,7 @@
     box-shadow:0 8px 26px -14px rgba(20,30,55,.28),0 1px 2px rgba(20,30,55,.10);}
   body.calm .logo{filter:none;}
   body.calm .logo-hub{animation:none;}
-  /* !important: the base .btn ink is a dark green tuned for the neon gradient — on the calm
-     blue it must be white, and the base rule otherwise wins the cascade here */
-  body.calm .btn,body.calm .go-start,body.calm .wc-go{box-shadow:none;color:#fff !important;}
+  body.calm .btn,body.calm .go-start,body.calm .wc-go{box-shadow:none;}
   body.calm .wc-go{color:#fff;}
   body.calm .tabs button.active,body.calm .seg button.active{box-shadow:inset 0 0 0 1px var(--ring);}
   body.calm .tabs button[data-tab="active"].active{background:rgba(59,130,246,.16);color:#BBD8FF;}
@@ -178,7 +176,7 @@
   .tabs button:focus-visible,.seg button:focus-visible{outline-offset:-1px;}
   /* skip-link: first tab stop, jumps keyboard users straight to the trip planner */
   .skip-link{position:fixed;top:-60px;left:14px;z-index:2000;padding:9px 14px;border-radius:0 0 12px 12px;
-    background:var(--accent);color:#03130A;font-size:12px;font-weight:800;text-decoration:none;transition:top .18s var(--ease);}
+    background:var(--accent);color:var(--btn-ink);font-size:12px;font-weight:800;text-decoration:none;transition:top .18s var(--ease);}
   .skip-link:focus{top:0;}
 
   /* Right control stack */
@@ -341,7 +339,7 @@
     border-top-color:var(--accent);animation:spin .7s linear infinite;flex:none;}
   @keyframes spin{to{transform:rotate(360deg);}}
   .btn{width:100%;padding:11px;border:none;border-radius:12px;cursor:pointer;font-family:var(--font);font-size:12px;
-    font-weight:700;letter-spacing:.4px;color:#03130A;background:var(--grad-accent);position:relative;overflow:hidden;
+    font-weight:700;letter-spacing:.4px;color:var(--btn-ink);background:var(--grad-accent);position:relative;overflow:hidden;
     box-shadow:0 8px 22px -8px rgba(52,211,153,.75),inset 0 1px 0 rgba(255,255,255,.25);transition:all .18s var(--ease);}
   .btn::after{content:"";position:absolute;top:0;left:-70%;width:45%;height:100%;
     background:linear-gradient(105deg,transparent,rgba(255,255,255,.4),transparent);transform:skewX(-20deg);transition:left .55s var(--ease);}
@@ -579,7 +577,7 @@
     bottom:calc(86px + env(safe-area-inset-bottom));max-height:56vh;border-radius:20px;}
   .mtoast{position:fixed;top:20px;left:50%;transform:translate(-50%,-14px);z-index:1700;
     padding:9px 16px;border-radius:99px;font-size:11.5px;font-weight:700;max-width:88vw;text-align:center;
-    color:#03130A;background:var(--grad-accent);box-shadow:0 10px 28px -8px rgba(52,211,153,.8);
+    color:var(--btn-ink);background:var(--grad-accent);box-shadow:0 10px 28px -8px rgba(52,211,153,.8);
     opacity:0;pointer-events:none;transition:all .3s var(--ease);}
   .mtoast.on{opacity:1;transform:translate(-50%,0);}
   .mtoast.err{background:linear-gradient(135deg,#ff7a7a,#e5484d);color:#fff;box-shadow:0 10px 28px -8px rgba(229,72,77,.7);}
@@ -611,7 +609,7 @@
   .wc-row:first-of-type{border-top:none;}
   .wc-ic{flex:none;font-size:15px;}
   .wc-go{width:100%;margin-top:14px;padding:11px;border:none;border-radius:12px;cursor:pointer;
-    font-weight:800;font-size:13px;color:#03130A;background:var(--grad-accent);letter-spacing:.3px;}
+    font-weight:800;font-size:13px;color:var(--btn-ink);background:var(--grad-accent);letter-spacing:.3px;}
   .wc-go:active{transform:scale(.98);}
   .settings-overlay{position:fixed;inset:0;background:rgba(3,6,10,.55);backdrop-filter:blur(2px);opacity:0;pointer-events:none;z-index:1650;transition:opacity .25s;}
   .settings-overlay.on{opacity:1;pointer-events:auto;}
@@ -849,7 +847,7 @@
   .attr-pop .leaflet-popup-content{margin:11px 13px;}
   .ap-nm{font-size:12.5px;font-weight:700;color:var(--text);margin-bottom:5px;}
   .ap-st{font-size:11px;color:var(--muted);margin-bottom:9px;display:flex;align-items:center;gap:5px;flex-wrap:wrap;}
-  .ap-go{width:100%;padding:7px;border:none;border-radius:9px;background:var(--grad-accent);color:#03130A;font:700 11px var(--font);cursor:pointer;}
+  .ap-go{width:100%;padding:7px;border:none;border-radius:9px;background:var(--grad-accent);color:var(--btn-ink);font:700 11px var(--font);cursor:pointer;}
   .ap-go:hover{filter:brightness(1.06);}
   .st-attr .bt{margin-top:8px;}
   .sa-list{display:flex;flex-wrap:wrap;gap:6px;margin:2px 0;}
