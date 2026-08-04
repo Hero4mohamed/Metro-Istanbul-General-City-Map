@@ -62,7 +62,20 @@ function orderAlong(stations, path) {
     return { st, s };
   }).sort((x, y) => x.s - y.s).map(x => x.st);
 }
+/* Two Akçaray stops whose raw OSM name does not survive cleaning. Keyed on the exact raw
+   string, so if OSM is corrected upstream the entry simply stops matching rather than
+   silently re-imposing a stale name.
+     "Tren Garı"            → stripping the "Garı" suffix leaves a bare "Tren" ("train").
+                              UlaşımPark's own station list calls the stop "Gar".
+     "Seka Devlet Hatanesi" → typo for "Hastanesi"; the M2 relation spells the same
+                              station correctly, so this is an upstream slip, not a variant. */
+const NAME_FIX = {
+  'Tren Garı': 'Gar',
+  'Seka Devlet Hatanesi': 'Seka Devlet Hastanesi'
+};
 function cleanName(raw) {
+  const fixed = NAME_FIX[String(raw || '').trim()];
+  if (fixed) return fixed;
   // Bursa's tram stops are tagged "T1-Gazcılar" / "T3-Kayhan" — drop the line-ref prefix
   let nm = String(raw || '').trim().replace(/^[A-ZİĞÜŞÖÇ]{1,2}\d[A-Z]?\s*[-–]\s*/i, '');
   let prev;
@@ -75,8 +88,18 @@ function cleanName(raw) {
 // colour sources: OSM `colour` where the relation carries a real per-line value (A1/M4/B1/T1/T2),
 // otherwise the published EGO / İzmir Metro map convention. Colours are cosmetic — geometry,
 // stations and fares are the data that must be right.
+/* Each *-geom.json is raw Overpass `out geom` output. kocaeli-geom.json came from:
+     [out:json][timeout:240];
+     ( relation(13772560); relation(19531211); relation(19531294); relation(19531295);
+       relation(19531296); relation(19697950); relation(19675921); relation(19664874);
+       relation(19675941); relation(19676169); )->.r;
+     .r out geom; node(r.r); out;
+   Fetch it to a FILE, not through a shell string. Overpass sends no charset, so Windows
+   PowerShell decodes the body as Latin-1 and every Turkish name silently becomes mojibake
+   ("Kuruçeşme" → "KuruÃ§eÅme"). Invoke-WebRequest -OutFile writes the raw bytes. */
 const CITY_SRC = { ankara:'city-geom.json', izmir:'city-geom.json',
-                   bursa:'city2-geom.json', antalya:'city2-geom.json' };
+                   bursa:'city2-geom.json', antalya:'city2-geom.json',
+                   kocaeli:'kocaeli-geom.json' };
 const CITY_LINES = {
   // Bursa — BursaRay light metro (B1/B2) + city trams. Burulaş's T2 (Kent Meydanı–Terminal)
   // is omitted: its OSM relation carries no station nodes, and a line you can see but cannot
@@ -93,6 +116,26 @@ const CITY_LINES = {
     { rel:11813036, ref:'T1B', kind:'tram', color:'#F5871F', official:'AntRay T1B · Fatih – Expo' },
     { rel:11813041, ref:'T2',  kind:'tram', color:'#2E7D32', official:'T2 · Müze – Zerdalilik (nostaljik)' },
     { rel:10651839, ref:'T3',  kind:'tram', color:'#0072BC', official:'AntRay T3 · Müze – Varsak' }
+  ],
+  // Kocaeli — Akçaray tram (UlaşımPark) plus the metro projects. Station counts cross-check
+  // exactly against UlaşımPark's published lines: T1=16, T2=18, T3=7.
+  kocaeli: [
+    { rel:13772560, ref:'T1', kind:'tram', color:'#1E9E48', official:'Akçaray T1 · Otogar – Kuruçeşme', order:'members' },
+    { rel:19531294, ref:'T2', kind:'tram', color:'#00A0C6', official:'Akçaray T2 · Kuruçeşme – Şehir Hastanesi', order:'members' },
+    // OSM tags this relation ref=T1, but it ends at Kocaelispor (the stadium) over 7 stations,
+    // which is UlaşımPark's T3 exactly. Labelled by what it actually serves, not by the tag.
+    { rel:19531296, ref:'T3', kind:'tram', color:'#E8A33D', official:'Akçaray T3 · Otogar – Kocaeli Stadyumu', order:'members' },
+    // Kocaeli's first metro: 11 stations over 15.4 km, ~87% built, council target 29 Oct 2026.
+    // Ships as planned and flips live by itself on that date via isLive()'s launch hook.
+    { rel:19675921, ref:'M1', kind:'subway', color:'#C2185B', official:'M1 · Darıca Sahil – Gebze OSB',
+      scope:'planned', status:'Under construction', launch:'2026-10-29', order:'members' },
+    // Körfezray has no published opening date, and its OSM geometry is one schematic way rather
+    // than surveyed track — flagged as an approximate alignment so the map does not overstate it.
+    { rel:19664874, ref:'M2', kind:'subway', color:'#7E57C2', official:'M2 Körfezray · Derince – İzmit Doğu',
+      scope:'planned', status:'Approximate alignment' }
+    // Omitted deliberately: M3 Gebze–Sabiha Gökçen (rel 19675941), M4 İzmit–Gölcük (rel 19676169)
+    // and the T3 Kartepe extension (rel 19697950). All three carry ZERO station nodes in OSM, so
+    // they would draw as a line you can see but cannot route on — worse than leaving them out.
   ],
   ankara: [
     { rel:456707,   ref:'M1', kind:'subway',   color:'#BF0E1C', official:'M1 · Kızılay – Batıkent' },
@@ -146,7 +189,9 @@ for (const city of Object.keys(CITY_LINES)) {
     // A fragmented relation (İZBAN stitches into 41 chains) means chains[0] covers only part of
     // the corridor, so projecting onto it mis-sorts the rest. For those, order along the axis
     // between the two farthest-apart stations — correct for a linear commuter corridor.
-    if (paths.length > 3 && stations.length > 2) {
+    if (cfg.order === 'members') {
+      /* keep OSM member order verbatim */
+    } else if (paths.length > 3 && stations.length > 2) {
       let a = 0, b = 1, far = -1;
       for (let i = 0; i < stations.length; i++) for (let j = i + 1; j < stations.length; j++) {
         const d = (stations[i].lat - stations[j].lat) ** 2 + (stations[i].lng - stations[j].lng) ** 2;
@@ -159,7 +204,8 @@ for (const city of Object.keys(CITY_LINES)) {
       stations = orderAlong(stations, chains[0]);
     }
     out.push({ ref: cfg.ref, kind: cfg.kind, color: cfg.color, paths, stations,
-               scope: 'active', official: cfg.official, city });
+               scope: cfg.scope || 'active', official: cfg.official, city,
+               status: cfg.status || undefined, launch: cfg.launch || undefined });
   }
   const file = path.join(DIR, city + '-lines.json');
   fs.writeFileSync(file, JSON.stringify(out));
@@ -168,6 +214,6 @@ for (const city of Object.keys(CITY_LINES)) {
               out.reduce((s, l) => s + l.stations.length, 0), 'stations,',
               km.toFixed(1), 'km,', (fs.statSync(file).size / 1024).toFixed(1), 'KB');
   for (const l of out)
-    console.log('   ', l.ref.padEnd(6), String(l.stations.length).padStart(2), 'stops  ',
+    console.log('   ', l.ref.padEnd(6), (l.scope==='active'?'    ':'plan'), String(l.stations.length).padStart(2), 'stops  ',
                 (l.stations[0] ? l.stations[0].name : '?'), '→', (l.stations.length ? l.stations[l.stations.length - 1].name : '?'));
 }

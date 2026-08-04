@@ -28,6 +28,7 @@ const ankara  = JSON.parse(fs.readFileSync(path.join(DIR, 'ankara-lines.json'), 
 const izmir   = JSON.parse(fs.readFileSync(path.join(DIR, 'izmir-lines.json'), 'utf8'));      // İzmir Metro + İZBAN + trams
 const bursa   = JSON.parse(fs.readFileSync(path.join(DIR, 'bursa-lines.json'), 'utf8'));      // BursaRay B1/B2 + trams
 const antalya = JSON.parse(fs.readFileSync(path.join(DIR, 'antalya-lines.json'), 'utf8'));    // AntRay T1A/T1B/T2/T3
+const kocaeli = JSON.parse(fs.readFileSync(path.join(DIR, 'kocaeli-lines.json'), 'utf8'));    // Akçaray T1/T2/T3 + M1/M2 projects
 // each city carries its own line set; the app picks one at boot and derives EVERYTHING
 // (station registry, routing graph, sim, legend, stats) from it. Intercity is national, so it
 // is shipped separately and appended to whichever city is active.
@@ -36,6 +37,7 @@ cities.ankara.lines   = ankara;
 cities.izmir.lines    = izmir;
 cities.bursa.lines    = bursa;
 cities.antalya.lines  = antalya;
+cities.kocaeli.lines  = kocaeli;
 const data = JSON.stringify(cities);
 
 // lift the TR→EN translator out of the scraper so the CLIENT can re-translate any
@@ -57,7 +59,7 @@ const html = template.replace('__CITIES_JSON__', data)
                      .replace('__ATTRACTIONS_JSON__', () => JSON.stringify(attract))
                      .replace('__CARDIMG_JSON__', () => JSON.stringify(cardImg))
                      .replace('__TRANSLATOR_JS__', () => translatorJS);
-console.log('İSTANBUL:', cities.istanbul.lines.length, ' ANKARA:', ankara.length, ' İZMİR:', izmir.length, ' BURSA:', bursa.length, ' ANTALYA:', antalya.length,
+console.log('İSTANBUL:', cities.istanbul.lines.length, ' ANKARA:', ankara.length, ' İZMİR:', izmir.length, ' BURSA:', bursa.length, ' ANTALYA:', antalya.length, ' KOCAELİ:', kocaeli.length,
             ' INTERCITY:', intercity.length, ' BUSES:', buses.length, ' BUSGRAPH:', busGraph.length,
             ' DISRUPTIONS:', disrupt.length, ' MISTATIONS:', miStns.length, ' ACCESS:', access.length);
 

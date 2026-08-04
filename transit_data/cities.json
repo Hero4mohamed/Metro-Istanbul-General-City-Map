@@ -1252,5 +1252,162 @@
         "hours": "05:20 – 01:23"
       }
     }
+  },
+  "kocaeli": {
+    "name": "KOCAELİ",
+    "label": "Kocaeli",
+    "center": [
+      40.78,
+      29.78
+    ],
+    "zoom": 11,
+    "box": {
+      "s": 40.5,
+      "n": 41.25,
+      "w": 29.1,
+      "e": 30.6
+    },
+    "operator": "Kocaeli BB · UlaşımPark",
+    "card": "Kocaelikart",
+    "fare": {
+      "base": 36,
+      "xfer": [
+        36
+      ],
+      "noteKey": "fareNoteKoc",
+      "cards": {
+        "tam": {
+          "label": "Kocaelikart · Tam",
+          "base": 36,
+          "xfer": [
+            36
+          ],
+          "noXfer": true
+        },
+        "indirimli": {
+          "label": "Kocaelikart · İndirimli",
+          "base": 20.5,
+          "xfer": [
+            20.5
+          ],
+          "noXfer": true
+        },
+        "abonman": {
+          "label": "Öğrenci Abonman",
+          "base": 14.4,
+          "xfer": [
+            14.4
+          ],
+          "noXfer": true
+        },
+        "kagit": {
+          "label": "Tek kullanımlık kağıt bilet",
+          "base": 42,
+          "xfer": null,
+          "noXfer": true
+        }
+      }
+    },
+    "has": {
+      "bus": false,
+      "ferry": false,
+      "disruptions": false,
+      "openings": false,
+      "access": false,
+      "miStations": false,
+      "lineMeta": false,
+      "lineTiming": true
+    },
+    "airports": [
+      {
+        "code": "KCO",
+        "label": "Cengiz Topel (KCO)",
+        "name": "Cengiz Topel Havalimanı",
+        "lat": 40.735,
+        "lng": 30.083
+      }
+    ],
+    "districts": [
+      [
+        "Başiskele",
+        40.647,
+        29.947
+      ],
+      [
+        "Çayırova",
+        40.826,
+        29.372
+      ],
+      [
+        "Darıca",
+        40.759,
+        29.383
+      ],
+      [
+        "Derince",
+        40.756,
+        29.819
+      ],
+      [
+        "Dilovası",
+        40.782,
+        29.534
+      ],
+      [
+        "Gebze",
+        40.803,
+        29.431
+      ],
+      [
+        "Gölcük",
+        40.717,
+        29.817
+      ],
+      [
+        "İzmit",
+        40.765,
+        29.941
+      ],
+      [
+        "Kandıra",
+        41.069,
+        30.152
+      ],
+      [
+        "Karamürsel",
+        40.69,
+        29.614
+      ],
+      [
+        "Kartepe",
+        40.754,
+        30.022
+      ],
+      [
+        "Körfez",
+        40.774,
+        29.746
+      ]
+    ],
+    "timing": {
+      "T1": {
+        "spd": 22,
+        "peak": 6,
+        "off": 10,
+        "hours": "05:50 – 00:35"
+      },
+      "T2": {
+        "spd": 22,
+        "peak": 6,
+        "off": 10,
+        "hours": "05:50 – 00:35"
+      },
+      "T3": {
+        "spd": 22,
+        "peak": 6,
+        "off": 10,
+        "hours": "05:50 – 00:35"
+      }
+    }
   }
 }
