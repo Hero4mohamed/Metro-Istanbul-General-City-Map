@@ -2,7 +2,7 @@
    so every deploy activates immediately and the installed app self-updates.
    Strategy: NETWORK-FIRST for the page (updates always win; cached copy only when offline),
    stale-while-revalidate for static assets/CDNs, and NO caching for live data APIs. */
-const VERSION = '20260804172937';
+const VERSION = '20260804175233';
 const SHELL  = 'raynet-shell-' + VERSION;
 const STATIC = 'raynet-static-v1';
 const STATIC_HOSTS = ['unpkg.com', 'fonts.googleapis.com', 'fonts.gstatic.com'];
@@ -25,7 +25,7 @@ self.addEventListener('fetch', e => {
 
   // the big lazy-loaded bus dataset: stale-while-revalidate → instant on repeat visits, works
   // offline after the first load, silently refreshed in the background when it changes
-  if (url.pathname.endsWith('/transit_data/bus-data.json')) {
+  if (/\/transit_data\/bus-data-[a-z]+\.json$/.test(url.pathname)) {
     e.respondWith((async () => {
       const cached = await caches.match(e.request);
       const fresh = fetch(e.request).then(r => {

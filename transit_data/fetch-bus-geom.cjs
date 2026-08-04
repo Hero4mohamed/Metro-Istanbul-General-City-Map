@@ -1,7 +1,7 @@
 // Fetch REAL road geometry for every İETT bus route and bake it, so drawn bus legs never
 // depend on a live Overpass call at trip-planning time (Overpass is frequently congested, and
 // when it fails the app was left showing a straight chord between stops).
-// Output: bus-geom.json  { ref: [[lat,lng],…] }  — merged into bus-data.json by build.cjs.
+// Output: bus-geom.json  { ref: [[lat,lng],…] }  — merged into bus-data-istanbul.json by build.cjs.
 // Resumable: re-running keeps what it already has and only fetches the missing refs.
 const fs = require('fs'); const path = require('path'); const { execFileSync } = require('child_process');
 const DIR = __dirname;

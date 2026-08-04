@@ -25,7 +25,7 @@ self.addEventListener('fetch', e => {
 
   // the big lazy-loaded bus dataset: stale-while-revalidate → instant on repeat visits, works
   // offline after the first load, silently refreshed in the background when it changes
-  if (url.pathname.endsWith('/transit_data/bus-data.json')) {
+  if (/\/transit_data\/bus-data-[a-z]+\.json$/.test(url.pathname)) {
     e.respondWith((async () => {
       const cached = await caches.match(e.request);
       const fresh = fetch(e.request).then(r => {

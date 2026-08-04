@@ -121,7 +121,8 @@
         "lat": 40.90644,
         "lng": 29.31148
       }
-    ]
+    ],
+    "busOperator": "İETT"
   },
   "ankara": {
     "name": "ANKARA",
@@ -1309,7 +1310,7 @@
       }
     },
     "has": {
-      "bus": false,
+      "bus": true,
       "ferry": false,
       "disruptions": false,
       "openings": false,
@@ -1408,6 +1409,7 @@
         "off": 10,
         "hours": "05:50 – 00:35"
       }
-    }
+    },
+    "busOperator": "UlaşımPark"
   }
 }

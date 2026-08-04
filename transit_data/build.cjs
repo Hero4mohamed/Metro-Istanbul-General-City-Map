@@ -11,11 +11,19 @@ const ferry   = JSON.parse(fs.readFileSync(path.join(DIR, 'ferry-lines.json'), '
 const cable   = JSON.parse(fs.readFileSync(path.join(DIR, 'cable-lines.json'), 'utf8'));        // TF1/TF2 aerial cable cars
 const planned = JSON.parse(fs.readFileSync(path.join(DIR, 'planned-lines.json'), 'utf8'));
 const manual  = JSON.parse(fs.readFileSync(path.join(DIR, 'planned-manual.json'), 'utf8'));  // hand-placed approx lines
-const buses   = JSON.parse(fs.readFileSync(path.join(DIR, 'bus-directory.json'), 'utf8'));
-const busGraph= JSON.parse(fs.readFileSync(path.join(DIR, 'bus-graph.json'), 'utf8'));        // bus stops for routing (both directions, GTFS)
-const busSched= JSON.parse(fs.readFileSync(path.join(DIR, 'bus-schedules.json'), 'utf8'));    // İETT GTFS departure schedules
-const busGeom = fs.existsSync(path.join(DIR,'bus-geom.json'))                                 // real road shape per bus route
-  ? JSON.parse(fs.readFileSync(path.join(DIR, 'bus-geom.json'), 'utf8')) : {};
+// Bus networks, per city. İstanbul comes from the İETT GTFS pipeline (with real road shape
+// per route); Kocaeli is scraped from Kocaeli BB's own route pages by fetch-kocaeli-bus.cjs
+// and has no road geometry, so the app falls back to the stop polyline for it.
+const BUS_CITIES = {
+  istanbul: { dir:'bus-directory.json', graph:'bus-graph.json', sched:'bus-schedules.json', geom:'bus-geom.json' },
+  kocaeli:  { dir:'kocaeli-bus-directory.json', graph:'kocaeli-bus-graph.json', sched:'kocaeli-bus-schedules.json' }
+};
+const rd = f => JSON.parse(fs.readFileSync(path.join(DIR, f), 'utf8'));
+const opt = f => (f && fs.existsSync(path.join(DIR, f))) ? rd(f) : {};
+const busSets = {};
+for (const [city, f] of Object.entries(BUS_CITIES))
+  busSets[city] = { dir: rd(f.dir), graph: rd(f.graph), sched: rd(f.sched), geom: opt(f.geom) };
+const busDirs = Object.fromEntries(Object.entries(busSets).map(([c, s]) => [c, s.dir]));
 const disrupt = JSON.parse(fs.readFileSync(path.join(DIR, 'disruptions.json'), 'utf8'));     // live faults/closures
 const miStns  = JSON.parse(fs.readFileSync(path.join(DIR, 'mi-stations.json'), 'utf8'));     // official station ids (exact timetables)
 const access  = JSON.parse(fs.readFileSync(path.join(DIR, 'accessibility.json'), 'utf8'));   // İBB+OSM step-free/elevator data
@@ -51,7 +59,7 @@ for (const t of ['__CITIES_JSON__','__INTERCITY_JSON__','__BUS_JSON__','__DISRUP
   if (!template.includes(t)) { console.error('token missing:', t); process.exit(1); }
 const html = template.replace('__CITIES_JSON__', data)
                      .replace('__INTERCITY_JSON__', () => JSON.stringify(intercity))
-                     .replace('__BUS_JSON__', JSON.stringify(buses))
+                     .replace('__BUS_JSON__', () => JSON.stringify(busDirs))
                      .replace('__DISRUPTIONS_JSON__', JSON.stringify(disrupt))
                      .replace('__OPENINGS_JSON__', () => JSON.stringify(openings))
                      .replace('__MISTATIONS_JSON__', JSON.stringify(miStns))
@@ -60,7 +68,8 @@ const html = template.replace('__CITIES_JSON__', data)
                      .replace('__CARDIMG_JSON__', () => JSON.stringify(cardImg))
                      .replace('__TRANSLATOR_JS__', () => translatorJS);
 console.log('İSTANBUL:', cities.istanbul.lines.length, ' ANKARA:', ankara.length, ' İZMİR:', izmir.length, ' BURSA:', bursa.length, ' ANTALYA:', antalya.length, ' KOCAELİ:', kocaeli.length,
-            ' INTERCITY:', intercity.length, ' BUSES:', buses.length, ' BUSGRAPH:', busGraph.length,
+            ' INTERCITY:', intercity.length,
+            ' BUSES:', Object.entries(busSets).map(([c, s]) => c + ':' + s.dir.length).join(' '),
             ' DISRUPTIONS:', disrupt.length, ' MISTATIONS:', miStns.length, ' ACCESS:', access.length);
 
 const outPath = path.join(ROOT, 'index.html');   // GitHub Pages serves the repo-root index.html
@@ -68,11 +77,14 @@ fs.writeFileSync(outPath, html);
 console.log('WROTE', outPath, (fs.statSync(outPath).size/1024).toFixed(1), 'KB',
             ' cardArt:', Object.keys(cardImg.cities).map(c=>c+'×'+Object.keys(cardImg.cities[c]).length).join(' '));
 
-// bus graph + schedules are the heaviest datasets (~3.1 MB) and most visitors never plan a
-// bus trip in the first seconds — served as a separate file the app fetches after first paint
-const busDataPath = path.join(DIR, 'bus-data.json');
-fs.writeFileSync(busDataPath, JSON.stringify({ graph: busGraph, sched: busSched, geom: busGeom }));
-console.log('WROTE', busDataPath, (fs.statSync(busDataPath).size/1024).toFixed(1), 'KB  (lazy-loaded)  busGeom routes:', Object.keys(busGeom).filter(k=>busGeom[k]).length);
+// bus graph + schedules are the heaviest datasets and most visitors never plan a bus trip in
+// the first seconds — each city gets its own file, fetched after first paint for that city
+for (const [city, s] of Object.entries(busSets)) {
+  const p = path.join(DIR, 'bus-data-' + city + '.json');
+  fs.writeFileSync(p, JSON.stringify({ graph: s.graph, sched: s.sched, geom: s.geom }));
+  console.log('WROTE', p, (fs.statSync(p).size/1024).toFixed(1), 'KB  (lazy)  dirs:', s.graph.length,
+              ' geom routes:', Object.keys(s.geom).filter(k => s.geom[k]).length);
+}
 
 // emit the service worker with a fresh version stamp → installed apps self-update on deploy
 const swTpl = fs.readFileSync(path.join(DIR, 'sw.template.js'), 'utf8');
