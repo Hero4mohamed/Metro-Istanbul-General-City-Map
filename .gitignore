@@ -39,3 +39,6 @@ transit_data/gaps2-geom.json
 transit_data/planned-cities-probe.json
 transit_data/planned2-probe.json
 transit_data/planned-cities-geom.json
+
+# scrape cache for fetch-kocaeli-bus.cjs — raw HTML, regenerable, never commit
+transit_data/.cache-*/
