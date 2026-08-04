@@ -144,7 +144,40 @@
       "xfer": [
         17
       ],
-      "noteKey": "fareNoteAnk"
+      "noteKey": "fareNoteAnk",
+      "cards": {
+        "tam": {
+          "label": "AnkaraKart · Tam",
+          "base": 35,
+          "xfer": [
+            17
+          ]
+        },
+        "ogrenci": {
+          "label": "AnkaraKart · Öğrenci",
+          "base": 17,
+          "xfer": [
+            10
+          ]
+        },
+        "indirimli": {
+          "label": "AnkaraKart · İndirimli",
+          "base": 25,
+          "xfer": [
+            17
+          ],
+          "derived": "xfer"
+        },
+        "abonman": {
+          "label": "Öğrenci Abonman",
+          "base": 0,
+          "xfer": [
+            0
+          ],
+          "unlimited": true,
+          "monthly": 450
+        }
+      }
     },
     "has": {
       "bus": false,
@@ -412,7 +445,31 @@
       "xfer": [
         23
       ],
-      "noteKey": "fareNoteBur"
+      "noteKey": "fareNoteBur",
+      "cards": {
+        "tam": {
+          "label": "Bursakart · Tam",
+          "base": 40,
+          "xfer": [
+            23
+          ]
+        },
+        "ogrenci": {
+          "label": "Bursakart · Öğrenci",
+          "base": 12,
+          "xfer": [
+            12
+          ],
+          "derived": "xfer"
+        },
+        "indirimli": {
+          "label": "Bursakart · İndirimli",
+          "base": 35.6,
+          "xfer": [
+            22.6
+          ]
+        }
+      }
     },
     "has": {
       "bus": false,
@@ -635,7 +692,39 @@
         0,
         35
       ],
-      "noteKey": "fareNoteAnt"
+      "noteKey": "fareNoteAnt",
+      "cards": {
+        "tam": {
+          "label": "AntalyaKart · Tam",
+          "base": 35,
+          "xfer": [
+            0,
+            35
+          ]
+        },
+        "ogrenci": {
+          "label": "AntalyaKart · Öğrenci",
+          "base": 15,
+          "xfer": [
+            0,
+            15
+          ]
+        },
+        "indirimli": {
+          "label": "AntalyaKart · İndirimli",
+          "base": 33,
+          "xfer": [
+            0,
+            33
+          ]
+        },
+        "bank": {
+          "label": "Banka / kredi kartı",
+          "base": 41,
+          "xfer": null,
+          "noXfer": true
+        }
+      }
     },
     "has": {
       "bus": false,
@@ -867,7 +956,42 @@
       "suburbanRefs": [
         "İZBAN"
       ],
-      "noteKey": "fareNoteIzm"
+      "noteKey": "fareNoteIzm",
+      "cards": {
+        "tam": {
+          "label": "İzmirim Kart · Tam",
+          "base": 35,
+          "xfer": [
+            0
+          ],
+          "suburbanFare": 40
+        },
+        "genc": {
+          "label": "Genç Kart · Öğrenci",
+          "base": 17.5,
+          "xfer": [
+            0
+          ],
+          "suburbanFare": 16.5
+        },
+        "ogretmen": {
+          "label": "Öğretmen",
+          "base": 23.5,
+          "xfer": [
+            0
+          ],
+          "suburbanFare": 40,
+          "derived": "suburban"
+        },
+        "bank": {
+          "label": "Banka / kredi kartı",
+          "base": 39,
+          "xfer": null,
+          "noXfer": true,
+          "suburbanFare": 40,
+          "derived": "suburban"
+        }
+      }
     },
     "has": {
       "bus": false,

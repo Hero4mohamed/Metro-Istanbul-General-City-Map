@@ -1998,7 +1998,9 @@ function estimateFare(it){
     }
     // a suburban line with its own flat tariff and no transfer right (İzmir's İZBAN)
     if(FARE.suburbanFare && (FARE.suburbanRefs||[]).indexOf(r.ref)>=0){
-      const f=FARE.suburbanFare*scale; push(f,f,0,'own'); continue; }
+      // prefer the card's own published suburban fare over a scaled one
+      const f = (card.suburbanFare!=null) ? card.suburbanFare : FARE.suburbanFare*scale;
+      push(f,f,0,'own'); continue; }
     // DISTANCE-BANDED modes: the turnstile takes the MAXIMUM band up front; the difference is
     // only recovered by tapping the "ücret iade" device on the way out (2-hour window).
     let band=null, bandKey=null;
