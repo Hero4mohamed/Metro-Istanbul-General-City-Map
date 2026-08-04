@@ -121,7 +121,7 @@ const CITY_LINES = {
   // exactly against UlaşımPark's published lines: T1=16, T2=18, T3=7.
   kocaeli: [
     { rel:13772560, ref:'T1', kind:'tram', color:'#1E9E48', official:'Akçaray T1 · Otogar – Kuruçeşme', order:'members' },
-    { rel:19531294, ref:'T2', kind:'tram', color:'#00A0C6', official:'Akçaray T2 · Kuruçeşme – Şehir Hastanesi', order:'members' },
+    { rel:19531294, ref:'T2', kind:'tram', color:'#00A0C6', official:'Akçaray T2 · Mehmet Ali Paşa – Şehir Hastanesi (via Kuruçeşme)', order:'members' },
     // OSM tags this relation ref=T1, but it ends at Kocaelispor (the stadium) over 7 stations,
     // which is UlaşımPark's T3 exactly. Labelled by what it actually serves, not by the tag.
     { rel:19531296, ref:'T3', kind:'tram', color:'#E8A33D', official:'Akçaray T3 · Otogar – Kocaeli Stadyumu', order:'members' },

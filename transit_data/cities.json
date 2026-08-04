@@ -1293,16 +1293,16 @@
           "noXfer": true
         },
         "abonman": {
-          "label": "Öğrenci Abonman",
-          "base": 14.4,
+          "label": "Kocaelikart · Abonman İndirimli",
+          "base": 14.5,
           "xfer": [
-            14.4
+            14.5
           ],
           "noXfer": true
         },
         "kagit": {
-          "label": "Tek kullanımlık kağıt bilet",
-          "base": 42,
+          "label": "7/24 Akıllı Kağıt Bilet",
+          "base": 45,
           "xfer": null,
           "noXfer": true
         }
