@@ -21,6 +21,7 @@ const miStns  = JSON.parse(fs.readFileSync(path.join(DIR, 'mi-stations.json'), '
 const access  = JSON.parse(fs.readFileSync(path.join(DIR, 'accessibility.json'), 'utf8'));   // İBB+OSM step-free/elevator data
 const attract = JSON.parse(fs.readFileSync(path.join(DIR, 'attractions.json'), 'utf8'));     // curated İstanbul landmarks for Explore
 const openings= JSON.parse(fs.readFileSync(path.join(DIR, 'openings.json'), 'utf8'));        // curated projected new-line opening dates (İBB targets)
+const cardImg = JSON.parse(fs.readFileSync(path.join(DIR, 'card-images.json'), 'utf8'));     // official card artwork as data URIs (PD, Belbim via Commons)
 const intercity=JSON.parse(fs.readFileSync(path.join(DIR, 'intercity-lines.json'), 'utf8')); // TCDD national rail (YHT + ana hat), scope:'intercity'
 const cities  = JSON.parse(fs.readFileSync(path.join(DIR, 'cities.json'), 'utf8'));           // per-city meta (centre, fares, districts…)
 const ankara  = JSON.parse(fs.readFileSync(path.join(DIR, 'ankara-lines.json'), 'utf8'));     // EGO metro/Ankaray + Başkentray
@@ -44,7 +45,7 @@ const tStart = scraper.indexOf('// ==TRANSLATOR-START=='), tEnd = scraper.indexO
 if (tStart < 0 || tEnd < 0) { console.error('translator markers missing in scrape-disruptions.cjs'); process.exit(1); }
 const translatorJS = scraper.slice(tStart, tEnd);
 
-for (const t of ['__CITIES_JSON__','__INTERCITY_JSON__','__BUS_JSON__','__DISRUPTIONS_JSON__','__OPENINGS_JSON__','__MISTATIONS_JSON__','__ACCESS_JSON__','__ATTRACTIONS_JSON__','__TRANSLATOR_JS__'])
+for (const t of ['__CITIES_JSON__','__INTERCITY_JSON__','__BUS_JSON__','__DISRUPTIONS_JSON__','__OPENINGS_JSON__','__MISTATIONS_JSON__','__ACCESS_JSON__','__ATTRACTIONS_JSON__','__CARDIMG_JSON__','__TRANSLATOR_JS__'])
   if (!template.includes(t)) { console.error('token missing:', t); process.exit(1); }
 const html = template.replace('__CITIES_JSON__', data)
                      .replace('__INTERCITY_JSON__', () => JSON.stringify(intercity))
@@ -54,6 +55,7 @@ const html = template.replace('__CITIES_JSON__', data)
                      .replace('__MISTATIONS_JSON__', JSON.stringify(miStns))
                      .replace('__ACCESS_JSON__', () => JSON.stringify(access))
                      .replace('__ATTRACTIONS_JSON__', () => JSON.stringify(attract))
+                     .replace('__CARDIMG_JSON__', () => JSON.stringify(cardImg))
                      .replace('__TRANSLATOR_JS__', () => translatorJS);
 console.log('İSTANBUL:', cities.istanbul.lines.length, ' ANKARA:', ankara.length, ' İZMİR:', izmir.length, ' BURSA:', bursa.length, ' ANTALYA:', antalya.length,
             ' INTERCITY:', intercity.length, ' BUSES:', buses.length, ' BUSGRAPH:', busGraph.length,
@@ -61,7 +63,8 @@ console.log('İSTANBUL:', cities.istanbul.lines.length, ' ANKARA:', ankara.lengt
 
 const outPath = path.join(ROOT, 'index.html');   // GitHub Pages serves the repo-root index.html
 fs.writeFileSync(outPath, html);
-console.log('WROTE', outPath, (fs.statSync(outPath).size/1024).toFixed(1), 'KB');
+console.log('WROTE', outPath, (fs.statSync(outPath).size/1024).toFixed(1), 'KB',
+            ' cardArt:', Object.keys(cardImg.cities).map(c=>c+'×'+Object.keys(cardImg.cities[c]).length).join(' '));
 
 // bus graph + schedules are the heaviest datasets (~3.1 MB) and most visitors never plan a
 // bus trip in the first seconds — served as a separate file the app fetches after first paint
