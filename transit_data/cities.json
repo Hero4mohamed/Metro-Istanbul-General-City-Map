@@ -50,7 +50,51 @@
       "ferry": 65.21,
       "ferryShort": 58.52,
       "adalar": 171.89,
-      "noteKey": "fareNote"
+      "noteKey": "fareNote",
+      "cards": {
+        "tam": {
+          "label": "İstanbulkart · Tam",
+          "base": 46.2,
+          "xfer": [
+            34.4,
+            26.42,
+            17.18
+          ]
+        },
+        "ogrenci": {
+          "label": "İstanbulkart · Öğrenci",
+          "base": 22.55,
+          "xfer": [
+            16.79,
+            12.89,
+            8.38
+          ],
+          "derived": "xfer"
+        },
+        "abonman": {
+          "label": "Mavi Kart · Abonman",
+          "base": 0,
+          "xfer": [
+            0
+          ],
+          "unlimited": true,
+          "monthly": 3628
+        },
+        "bank": {
+          "label": "Banka / kredi kartı",
+          "base": 66,
+          "xfer": null,
+          "noXfer": true,
+          "derived": "base"
+        }
+      },
+      "refund": {
+        "modes": [
+          "marmaray",
+          "metrobus"
+        ],
+        "windowMin": 120
+      }
     },
     "has": {
       "bus": true,

@@ -756,6 +756,15 @@
   .ropts-sort button.on{background:var(--surface-2);color:var(--accent);border-color:var(--ring);}
   .st-avoid{margin-left:auto;background:none;border:none;color:var(--dim);cursor:pointer;font-size:9.5px;padding:2px 4px;border-radius:6px;}
   .st-avoid:hover{color:#F08287;background:rgba(229,72,77,.1);}
+  .sp-row.sp-col{flex-direction:column;align-items:stretch;gap:7px;}
+  .seg-wrap{flex-wrap:wrap;}
+  .seg-wrap button{flex:1 1 46%;padding:8px 6px;font-size:10px;}
+  .sp-note{font-size:9px;color:var(--dim);line-height:1.55;}
+  .rf-refund{display:flex;align-items:center;gap:7px;margin-top:6px;padding:7px 10px;border-radius:11px;
+    background:rgba(52,211,153,.10);border:1px solid rgba(52,211,153,.32);font-size:10px;font-weight:600;color:var(--accent);}
+  body.calm .rf-refund{background:rgba(59,130,246,.10);border-color:rgba(59,130,246,.32);}
+  .rf-refund b{font-family:var(--mono);}
+  .rf-net{margin-left:auto;font-family:var(--mono);font-weight:800;}
   .rwarn{display:flex;flex-direction:column;gap:6px;margin:6px 0 2px;}
   .rwarn:empty{display:none;}
   .rw{display:flex;align-items:flex-start;gap:7px;padding:7px 10px;border-radius:11px;font-size:10.5px;font-weight:600;line-height:1.45;}
@@ -952,6 +961,10 @@
         <button data-theme="light" data-i18n="light">Light</button>
         <button data-theme="auto" data-i18n="themeAuto">Auto</button>
       </div>
+    </div>
+    <div class="sp-row sp-col" id="cardRow"><span data-i18n="fareCard">Fare card</span>
+      <div class="seg seg-wrap" id="cardSeg"></div>
+      <div class="sp-note" id="cardNote"></div>
     </div>
     <div class="sp-row"><span data-i18n="uiStyle">Icon &amp; colour style</span>
       <div class="seg" id="styleSeg">
@@ -1343,6 +1356,8 @@ const I18N = {
     busOutbound:"Outbound", busReturn:"Return",
     uiStyle:"Icon & colour style", uiNeon:"Neon", uiCalm:"Calm",
     modesTitle:"Modes for this trip", avoiding:"avoided", avoidThis:"Avoid this line", sortBest:"Best", sortTime:"Fastest", sortChanges:"Changes", sortWalk:"Walk", sortFare:"Cheapest",
+    fareCard:"Fare card", cardPerRide:"{n}₺ per boarding", cardUnlimited:"Unlimited rides · {n}₺/month", cardNoXfer:"no transfer discount", cardDerived:"some rates estimated", cardIncluded:"Included",
+    refundHint:"{c}₺ taken at the turnstile — tap the refund machine on exit to get {r}₺ back",
     printSrc:"Fares are estimates from the operator's published tariff. Times are typical; check live departures before travelling.",
     fareNoteBur:"Bursakart estimate — Burulaş tariff of 3 Feb 2026: 40₺ per boarding; transfers get 17₺ off (23₺) within 90 minutes. BursaRay also refunds up to 9.50₺ on short trips if you tap out.",
     fareNoteAnt:"AntalyaKart estimate — Antalya BB tariff: 35₺ per boarding, with ONE free transfer per trip (5 min–1 h on buses, up to 2 h between tram lines). Credit-card and single-use tickets get no transfer right.",
@@ -1452,6 +1467,8 @@ const I18N = {
     busOutbound:"Gidiş", busReturn:"Dönüş",
     uiStyle:"Simge ve renk stili", uiNeon:"Neon", uiCalm:"Sakin",
     modesTitle:"Bu yolculuk için modlar", avoiding:"hariç", avoidThis:"Bu hattı kullanma", sortBest:"En iyi", sortTime:"En hızlı", sortChanges:"Aktarma", sortWalk:"Yürüme", sortFare:"En ucuz",
+    fareCard:"Ulaşım kartı", cardPerRide:"biniş başına {n}₺", cardUnlimited:"Sınırsız · aylık {n}₺", cardNoXfer:"aktarma indirimi yok", cardDerived:"bazı ücretler tahmini", cardIncluded:"Dahil",
+    refundHint:"Turnikede {c}₺ alınır — çıkışta iade cihazına okutup {r}₺ geri alın",
     printSrc:"Ücretler işletmecinin yayımlanan tarifesine göre tahminidir. Süreler tipiktir; yola çıkmadan canlı sefer saatlerini kontrol edin.",
     fareNoteBur:"Bursakart tahmini — 3 Şub 2026 Burulaş tarifesi: biniş 40₺, 90 dakika içinde aktarmalarda 17₺ indirim (23₺). BursaRay'de kısa yolculuklarda çıkışta kart okutunca 9,50₺'ye kadar iade var.",
     fareNoteAnt:"AntalyaKart tahmini — Antalya BB tarifesi: biniş 35₺, yolculuk başına BİR ücretsiz aktarma (otobüste 5 dk–1 saat, tramvay hatları arasında 2 saate kadar). Kredi kartı ve kullan-at biletlerde aktarma hakkı yoktur.",
@@ -1561,6 +1578,8 @@ const I18N = {
     busOutbound:"ذهاب", busReturn:"عودة",
     uiStyle:"نمط الأيقونات والألوان", uiNeon:"نيون", uiCalm:"هادئ",
     modesTitle:"وسائل هذه الرحلة", avoiding:"مستبعد", avoidThis:"تجنّب هذا الخط", sortBest:"الأفضل", sortTime:"الأسرع", sortChanges:"التبديلات", sortWalk:"المشي", sortFare:"الأرخص",
+    fareCard:"بطاقة الأجرة", cardPerRide:"{n}₺ لكل ركوب", cardUnlimited:"غير محدود · {n}₺ شهريًا", cardNoXfer:"بدون خصم تبديل", cardDerived:"بعض الأسعار تقديرية", cardIncluded:"مشمول",
+    refundHint:"يُخصم {c}₺ عند البوابة — امسح البطاقة على جهاز الاسترداد عند الخروج لتسترد {r}₺",
     printSrc:"الأسعار تقديرية وفق التعرفة المنشورة للمشغّل. الأوقات تقريبية؛ تحقّق من المواعيد المباشرة قبل السفر.",
     fareNoteBur:"تقدير Bursakart — تعرفة ٣ فبراير ٢٠٢٦: ٤٠₺ للركوب، وخصم ١٧₺ على التبديل (٢٣₺) خلال ٩٠ دقيقة.",
     fareNoteAnt:"تقدير AntalyaKart — ٣٥₺ للركوب، مع تبديل مجاني واحد لكل رحلة (٥ دقائق–ساعة للحافلات، حتى ساعتين بين خطوط الترام).",
@@ -1668,6 +1687,8 @@ const I18N = {
     busOutbound:"Aller", busReturn:"Retour",
     uiStyle:"Style d’icônes et couleurs", uiNeon:"Néon", uiCalm:"Sobre",
     modesTitle:"Modes pour ce trajet", avoiding:"exclu", avoidThis:"Éviter cette ligne", sortBest:"Meilleur", sortTime:"Rapide", sortChanges:"Corresp.", sortWalk:"Marche", sortFare:"Moins cher",
+    fareCard:"Carte de transport", cardPerRide:"{n}₺ par montée", cardUnlimited:"Illimité · {n}₺/mois", cardNoXfer:"sans correspondance remisée", cardDerived:"certains tarifs estimés", cardIncluded:"Inclus",
+    refundHint:"{c}₺ prélevés au tourniquet — passez la carte à la borne de remboursement pour récupérer {r}₺",
     printSrc:"Tarifs estimés d'après la grille publiée par l'exploitant. Durées typiques ; vérifiez les départs en direct avant de partir.",
     fareNoteBur:"Estimation Bursakart — tarif Burulaş du 3 févr. 2026 : 40₺ par montée, correspondance remisée de 17₺ (23₺) sous 90 min.",
     fareNoteAnt:"Estimation AntalyaKart — 35₺ par montée, avec UNE correspondance gratuite par trajet (5 min–1 h en bus, jusqu'à 2 h entre lignes de tram).",
@@ -1808,6 +1829,24 @@ function tripModeList(){                     // only modes this city actually ha
   if(HAS.bus && seen.indexOf('bus')<0) seen.push('bus');
   return TRIP_MODES.filter(m=>seen.indexOf(m[0])>=0);
 }
+// the fare products this city publishes; hidden entirely for cities with a single tariff
+function renderCardSeg(){
+  const seg=document.getElementById('cardSeg'), row=document.getElementById('cardRow'),
+        note=document.getElementById('cardNote');
+  if(!seg||!row) return;
+  const cards=FARE.cards;
+  if(!cards){ row.style.display='none'; return; }
+  row.style.display='';
+  seg.innerHTML=Object.keys(cards).map(k=>
+    `<button data-card="${k}" class="${k===fareCard?'active':''}">${svgEsc(cards[k].label)}</button>`).join('');
+  const c=cardDef();
+  const bits=[];
+  if(c.unlimited) bits.push(t('cardUnlimited').replace('{n}', c.monthly));
+  else bits.push(t('cardPerRide').replace('{n}', c.base));
+  if(c.noXfer) bits.push(t('cardNoXfer'));
+  if(c.derived) bits.push(t('cardDerived'));
+  note.textContent=bits.join(' · ');
+}
 function renderModeChips(){
   const el=document.getElementById('modeChips'); if(!el) return;
   el.innerHTML = tripModeList().map(m=>{
@@ -1930,39 +1969,80 @@ function bandFare(b,n){
   let i=b.bands.findIndex(x=>n<=x); if(i<0) i=b.bands.length-1;
   return b.min + (b.max-b.min)*(i/(b.bands.length-1));
 }
+let fareCard = (function(){ try{ return localStorage.getItem("irn_farecard")||"tam"; }catch(e){ return "tam"; } })();
+function cardDef(){ const c=FARE.cards; if(!c) return { base:FARE.base, xfer:FARE.xfer };
+  return c[fareCard] || c.tam || c[Object.keys(c)[0]]; }
+// distance bands are published at full fare, so scale them to the selected product
+function cardScale(){ const c=cardDef(); if(c.unlimited) return 0;
+  if(!FARE.cards || !FARE.cards.tam) return 1; return c.base / FARE.cards.tam.base; }
+function setFareCard(v, rerun){ fareCard=v;
+  try{ localStorage.setItem("irn_farecard", v); }catch(e){}
+  document.querySelectorAll("#cardSeg button").forEach(b=> b.classList.toggle("active", b.dataset.card===v));
+  if(rerun){ if(plannerMode==="adv") planAdventure(); else if(currentOpts.length) runRoute(); } }
 function estimateFare(it){
   const rides=(it.steps||[]).filter(s=>s.type==='ride');
-  if(!rides.length) return { taps:0, tl:0, legs:[] };
-  const legs=[];                           // per-boarding charge, so the UI can show a breakdown
-  let tl=0, chain=0;                       // chain = position in the transfer sequence
+  if(!rides.length) return { taps:0, tl:0, charged:0, refund:0, legs:[] };
+  const card=cardDef(), scale=cardScale();
+  const refundModes=(FARE.refund&&FARE.refund.modes)||[];
+  const legs=[];                           // per-boarding: what is taken, and what comes back
+  let chain=0;
   for(const r of rides){
-    const before=tl;
     const line=lineByRef[r.ref];
     const kind=r.bus?'bus':(line?line.kind:'subway');
     const n=Math.max(1,(r.stops||[]).length-1);
-    if(kind==='ferry' && FARE.ferry){      // Şehir Hatları: own tariff, outside the aktarma chain
-      tl += /ada/i.test(r.ref||'') ? FARE.adalar : (n<=1?FARE.ferryShort:FARE.ferry);
-      legs.push({ ref:r.ref, bus:!!r.bus, tl:+(tl-before).toFixed(2), note:'ferry' });
-      continue;
+    const push=(tl,charged,refund,note)=>{ legs.push({ ref:r.ref, bus:!!r.bus,
+      tl:+tl.toFixed(2), charged:+charged.toFixed(2), refund:+refund.toFixed(2), note }); };
+    if(kind==='ferry' && FARE.ferry){     // Şehir Hatları: own tariff, outside the aktarma chain
+      const f=(/ada/i.test(r.ref||'') ? FARE.adalar : (n<=1?FARE.ferryShort:FARE.ferry))*scale;
+      push(f,f,0,'ferry'); continue;
     }
     // a suburban line with its own flat tariff and no transfer right (İzmir's İZBAN)
-    if(FARE.suburbanFare && (FARE.suburbanRefs||[]).indexOf(r.ref)>=0){ tl += FARE.suburbanFare;
-      legs.push({ ref:r.ref, bus:!!r.bus, tl:+(tl-before).toFixed(2), note:'own' }); continue; }
-    if(FARE.marmaray && r.ref==='Marmaray')      tl += bandFare(FARE.marmaray,n);
-    else if(FARE.metrobus && r.ref==='Metrobüs') tl += bandFare(FARE.metrobus,n);
-    else {
-      const x = FARE.xfer||[];
-      tl += chain===0 ? FARE.base : (x.length ? x[Math.min(chain-1, x.length-1)] : FARE.base);
+    if(FARE.suburbanFare && (FARE.suburbanRefs||[]).indexOf(r.ref)>=0){
+      const f=FARE.suburbanFare*scale; push(f,f,0,'own'); continue; }
+    // DISTANCE-BANDED modes: the turnstile takes the MAXIMUM band up front; the difference is
+    // only recovered by tapping the "ücret iade" device on the way out (2-hour window).
+    let band=null, bandKey=null;
+    if(FARE.marmaray && r.ref==='Marmaray'){ band=FARE.marmaray; bandKey='marmaray'; }
+    else if(FARE.metrobus && r.ref==='Metrobüs'){ band=FARE.metrobus; bandKey='metrobus'; }
+    if(band){
+      // Distance bands are the LINE's own published tariff. Scale them DOWN for discounted
+      // products, but never up: a bank card is charged the single-ride price, and inflating
+      // the band past its published maximum would be an unsupported extrapolation.
+      const bScale=Math.min(scale,1);
+      const actual=bandFare(band,n)*bScale, upfront=band.max*bScale;
+      const refundable = refundModes.indexOf(bandKey)>=0 ? Math.max(0, upfront-actual) : 0;
+      push(actual, actual+refundable, refundable, 'band');
+      chain++; continue;
     }
-    legs.push({ ref:r.ref, bus:!!r.bus, tl:+(tl-before).toFixed(2), note: chain===0?'first':'xfer' });
+    { const x=card.xfer, noX=card.noXfer||!x||!x.length;
+      const amt=(chain===0||noX) ? card.base : x[Math.min(chain-1, x.length-1)];
+      push(amt, amt, 0, chain===0?'first':'xfer'); }
     chain++;
   }
-  return { taps:rides.length, tl: Math.round(tl), legs };
+  const tl=legs.reduce((s2,l)=>s2+l.tl,0);
+  const charged=legs.reduce((s2,l)=>s2+l.charged,0);
+  const refund=legs.reduce((s2,l)=>s2+l.refund,0);
+  return { taps:rides.length, tl:Math.round(tl), charged:Math.round(charged),
+           refund:Math.round(refund), legs, card:card.label||'', unlimited:!!card.unlimited };
 }
 
 /* ---- service warnings for a planned route: a rail leg's line is suspended / out of
    hours (lineClosedNow), or its service window ends within 45 min → "last train" nudge.
    İETT buses are skipped (per-line hours vary too much to promise anything honest). ---- */
+// the whole cost picture: what the turnstiles take, what the refund device gives back, net
+function fareRowHTML(fe){
+  const main = fe.unlimited
+    ? `<span class="rf-main">${t('cardIncluded')}</span>`
+    : `<span class="rf-main">≈ ${fe.tl} ₺</span>`;
+  let html = `<span class="rf-ico">🎫</span>${main}`
+    + `<span class="rf-sub">${fe.taps} ${t('fareTaps')}${fe.card?' · '+svgEsc(fe.card):''}</span>`
+    + `<span class="rf-i" title="${attrEsc(t(FARE.noteKey||'fareNote'))}">ⓘ</span>`;
+  if(fe.refund>0){
+    html += `<div class="rf-refund">↩ ${t('refundHint').replace('{c}', fe.charged).replace('{r}', fe.refund)}`
+          + `<span class="rf-net">${fe.tl} ₺</span></div>`;
+  }
+  return html;
+}
 function renderRouteWarnings(it){
   const el=document.getElementById('rWarn'); if(!el) return;
   el.innerHTML='';
@@ -3780,7 +3860,7 @@ function showItinerary(res, it){
   document.getElementById('rStops').textContent=it.stops;
   document.getElementById('rTr').textContent=it.transfers;
   { const fe=estimateFare(it), fEl=document.getElementById('rFare');
-    if(fEl) fEl.innerHTML = fe.taps ? `<span class="rf-ico">🎫</span><span class="rf-main">≈ ${fe.tl} ₺</span><span class="rf-sub">${fe.taps} ${t('fareTaps')}</span><span class="rf-i" title="${attrEsc(t(FARE.noteKey||'fareNote'))}">ⓘ</span>` : '';
+    if(fEl) fEl.innerHTML = fe.taps ? fareRowHTML(fe) : '';
     renderRouteWarnings(it); }
   const allPts=[], legs=[];
   drawItin(res, it, allPts, legs);
@@ -4254,9 +4334,7 @@ function advFareTotal(){
 function renderAdvFare(){
   const el=document.getElementById('aFare'); if(!el) return;
   const f=advFareTotal();
-  el.innerHTML = f.taps ? `<span class="rf-ico">🎫</span><span class="rf-main">≈ ${f.tl} ₺</span>
-    <span class="rf-sub">${f.taps} ${t('fareTaps')}</span>
-    <span class="rf-i" title="${attrEsc(t(FARE.noteKey||'fareNote'))}">ⓘ</span>` : '';
+  el.innerHTML = f.taps ? fareRowHTML(f) : '';
 }
 function renderAdvWarnings(){
   const el=document.getElementById('aWarn'); if(!el) return;
@@ -4936,6 +5014,8 @@ document.getElementById('themeSeg').addEventListener('click', e=>{ const b=e.tar
 document.getElementById('prefSeg').addEventListener('click', e=>{ const b=e.target.closest('button'); if(b&&b.dataset.pref) setRoutePref(b.dataset.pref, true); });
 document.getElementById('textSeg').addEventListener('click', e=>{ const b=e.target.closest('button'); if(b&&b.dataset.ts) setTextSize(b.dataset.ts); });
 document.getElementById('styleSeg').addEventListener('click', e=>{ const b=e.target.closest('button'); if(b&&b.dataset.uis) setUiStyle(b.dataset.uis, true); });
+document.getElementById('cardSeg').addEventListener('click', e=>{ const b=e.target.closest('button[data-card]');
+  if(b){ setFareCard(b.dataset.card, true); renderCardSeg(); } });
 document.getElementById('paceSeg').addEventListener('click', e=>{ const b=e.target.closest('button'); if(b&&b.dataset.pace) setWalkPace(b.dataset.pace, true); });
 document.getElementById('unitSeg').addEventListener('click', e=>{ const b=e.target.closest('button'); if(b&&b.dataset.u) setUnits(b.dataset.u); });
 document.getElementById('clockSeg').addEventListener('click', e=>{ const b=e.target.closest('button'); if(b&&b.dataset.ck) setClock(b.dataset.ck); });
@@ -5362,6 +5442,7 @@ function init(){
   refreshClosed();            // suspended / out-of-hours lines (sim + arrivals board honesty)
   populateSelects();
   renderModeChips(); renderAvoidRow();   // per-trip mode + avoided-line controls
+  renderCardSeg();                       // fare products for this city
   rebuildAdvRows();           // adventure planner stop rows
   sizeCanvas();
   spawnTrains();
