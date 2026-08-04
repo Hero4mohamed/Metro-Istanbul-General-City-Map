@@ -757,9 +757,17 @@
   .st-avoid{margin-left:auto;background:none;border:none;color:var(--dim);cursor:pointer;font-size:9.5px;padding:2px 4px;border-radius:6px;}
   .st-avoid:hover{color:#F08287;background:rgba(229,72,77,.1);}
   .sp-row.sp-col{flex-direction:column;align-items:stretch;gap:7px;}
-  .seg-wrap{flex-wrap:wrap;}
-  .seg-wrap button{flex:1 1 46%;padding:8px 6px;font-size:10px;}
   .sp-note{font-size:9px;color:var(--dim);line-height:1.55;}
+  .card-pick{display:flex;align-items:flex-start;gap:10px;}
+  .card-art{flex:0 0 auto;width:104px;line-height:0;perspective:400px;
+    filter:drop-shadow(0 3px 9px rgba(0,0,0,.42));}
+  body.light .card-art{filter:drop-shadow(0 3px 9px rgba(0,0,0,.20));}
+  .card-art svg{width:104px;height:66px;display:block;font-family:var(--font);
+    animation:cardFlip .3s var(--ease) both;}
+  @keyframes cardFlip{from{opacity:0;transform:rotateY(-18deg) translateY(-3px);}to{opacity:1;transform:none;}}
+  .card-pick-main{flex:1;min-width:0;display:flex;flex-direction:column;gap:6px;}
+  .card-pick-main select{font-size:11.5px;padding:9px 10px;}
+  @media (max-width:420px){ .card-art,.card-art svg{width:88px;} .card-art svg{height:56px;} }
   .fare-cmp{margin-top:7px;border:1px solid var(--stroke);border-radius:11px;background:var(--surface);overflow:hidden;}
   .fare-cmp summary{display:flex;align-items:center;gap:7px;padding:7px 10px;cursor:pointer;font-size:10px;
     font-weight:700;color:var(--muted);list-style:none;}
@@ -982,8 +990,13 @@
       </div>
     </div>
     <div class="sp-row sp-col" id="cardRow"><span data-i18n="fareCard">Fare card</span>
-      <div class="seg seg-wrap" id="cardSeg"></div>
-      <div class="sp-note" id="cardNote"></div>
+      <div class="card-pick">
+        <div class="card-art" id="cardArt"></div>
+        <div class="card-pick-main">
+          <select id="cardSel"></select>
+          <div class="sp-note" id="cardNote"></div>
+        </div>
+      </div>
     </div>
     <div class="sp-row"><span data-i18n="uiStyle">Icon &amp; colour style</span>
       <div class="seg" id="styleSeg">
@@ -1805,6 +1818,7 @@ function setLang(l){
   try{ if(currentTab==='bus' && document.getElementById('busSearch')) renderBusList(document.getElementById('busSearch').value); }catch(e){}
   try{ if(currentOpts && currentOpts.length){ renderOptChips(); selectOption(currentOptIdx); } }catch(e){}
   try{ rebuildAdvRows(); }catch(e){}
+  try{ renderCardSeg(); }catch(e){}
   try{ if(wxData) renderWeather(); }catch(e){}
   try{ if(selected) openStation(selected); }catch(e){}
 }
@@ -1852,17 +1866,57 @@ function tripModeList(){                     // only modes this city actually ha
   if(HAS.bus && seen.indexOf('bus')<0) seen.push('bus');
   return TRIP_MODES.filter(m=>seen.indexOf(m[0])>=0);
 }
+/* A face for the selected product: the operator name, the tier and the published boarding
+   fare, coloured by card family. It is an illustration of the product, not a photograph of
+   the plastic — enough to confirm at a glance which card the trip is being priced on. */
+const CARD_ART = {
+  tam:      ['#0E7C9E','#0A5A7F'], ogrenci:  ['#1E9E63','#116B45'],
+  genc:     ['#1E9E63','#116B45'], ogretmen: ['#7A5AC9','#553C9A'],
+  indirimli:['#C98A2E','#96601A'], abonman:  ['#2563EB','#1D4ED8'],
+  bank:     ['#39414F','#222831']
+};
+function cardArtSVG(key, c){
+  const g=CARD_ART[key]||CARD_ART.tam;
+  const parts=String(c.label||'').split('·');
+  const brand=(parts[0]||'').trim(), tier=(parts[1]||'').trim();
+  const big=tier||brand;
+  // the fare shares the bottom line only when a brand line exists above the name
+  const wide=!tier;
+  const fs=big.length>(wide?16:11) ? 7.6 : big.length>(wide?12:8) ? 8.5 : 9.5;
+  const fare=c.unlimited ? '∞' : c.base+'₺';
+  // a transit card carries a contact chip; a bank card is recognised by its contactless mark
+  const mark = key==='bank'
+    ? `<g fill="none" stroke="#fff" stroke-opacity=".85" stroke-width="1.7" stroke-linecap="round">
+         <path d="M14 24a6.5 6.5 0 0 1 0 9"/><path d="M18.6 20a12 12 0 0 1 0 17"/>
+         <path d="M23.2 16a17.5 17.5 0 0 1 0 25"/></g>`
+    : `<g><rect x="12" y="21" width="16" height="12" rx="2.6" fill="#E9C877"/>
+         <path d="M20 21v12M12 27h16" stroke="#B9954A" stroke-width=".9"/></g>`;
+  return `<svg viewBox="0 0 104 66" role="img" aria-label="${svgEsc(c.label||'')}">
+    <defs><linearGradient id="cgArt" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="${g[0]}"/><stop offset="1" stop-color="${g[1]}"/></linearGradient></defs>
+    <rect x=".6" y=".6" width="102.8" height="64.8" rx="8" fill="url(#cgArt)"/>
+    <path d="M0 50 L104 20 L104 66 L0 66 Z" fill="#fff" fill-opacity=".07"/>
+    <rect x=".6" y=".6" width="102.8" height="64.8" rx="8" fill="none" stroke="#fff" stroke-opacity=".26"/>
+    ${mark}
+    ${tier ? `<text x="12" y="13.6" fill="#fff" fill-opacity=".82" font-size="6" font-weight="700" letter-spacing=".4">${svgEsc(brand)}</text>` : ''}
+    <text class="ca-name" x="12" y="52" fill="#fff" font-size="${fs}" font-weight="800">${svgEsc(big)}</text>
+    <text class="ca-fare" x="92" y="${wide?15:52}" fill="#fff" fill-opacity=".92" font-size="${wide?8:9}" font-weight="800" text-anchor="end">${fare}</text>
+  </svg>`;
+}
 // the fare products this city publishes; hidden entirely for cities with a single tariff
 function renderCardSeg(){
-  const seg=document.getElementById('cardSeg'), row=document.getElementById('cardRow'),
-        note=document.getElementById('cardNote');
-  if(!seg||!row) return;
+  const sel=document.getElementById('cardSel'), row=document.getElementById('cardRow'),
+        note=document.getElementById('cardNote'), art=document.getElementById('cardArt');
+  if(!sel||!row) return;
   const cards=FARE.cards;
   if(!cards){ row.style.display='none'; return; }
   row.style.display='';
-  seg.innerHTML=Object.keys(cards).map(k=>
-    `<button data-card="${k}" class="${k===fareCard?'active':''}">${svgEsc(cards[k].label)}</button>`).join('');
+  sel.innerHTML=Object.keys(cards).map(k=>
+    `<option value="${k}">${svgEsc(cards[k].label)}</option>`).join('');
+  sel.value=fareCard;
+  sel.setAttribute('aria-label', t('fareCard'));
   const c=cardDef();
+  if(art) art.innerHTML=cardArtSVG(fareCard, c);
   const bits=[];
   if(c.unlimited) bits.push(t('cardUnlimited').replace('{n}', c.monthly));
   else bits.push(t('cardPerRide').replace('{n}', c.base));
@@ -2000,7 +2054,7 @@ function cardScale(){ const c=cardDef(); if(c.unlimited) return 0;
   if(!FARE.cards || !FARE.cards.tam) return 1; return c.base / FARE.cards.tam.base; }
 function setFareCard(v, rerun){ fareCard=v;
   try{ localStorage.setItem("irn_farecard", v); }catch(e){}
-  document.querySelectorAll("#cardSeg button").forEach(b=> b.classList.toggle("active", b.dataset.card===v));
+  try{ renderCardSeg(); }catch(e){}
   if(rerun){ if(plannerMode==="adv") planAdventure(); else if(currentOpts.length) runRoute(); } }
 function estimateFare(it){
   const rides=(it.steps||[]).filter(s=>s.type==='ride');
@@ -5172,12 +5226,11 @@ document.getElementById('themeSeg').addEventListener('click', e=>{ const b=e.tar
 document.getElementById('prefSeg').addEventListener('click', e=>{ const b=e.target.closest('button'); if(b&&b.dataset.pref) setRoutePref(b.dataset.pref, true); });
 document.getElementById('textSeg').addEventListener('click', e=>{ const b=e.target.closest('button'); if(b&&b.dataset.ts) setTextSize(b.dataset.ts); });
 document.getElementById('styleSeg').addEventListener('click', e=>{ const b=e.target.closest('button'); if(b&&b.dataset.uis) setUiStyle(b.dataset.uis, true); });
-document.getElementById('cardSeg').addEventListener('click', e=>{ const b=e.target.closest('button[data-card]');
-  if(b){ setFareCard(b.dataset.card, true); renderCardSeg(); } });
+document.getElementById('cardSel').addEventListener('change', e=> setFareCard(e.target.value, true));
 // switch card straight from the comparison in the results
 ['rFare','aFare'].forEach(id=>{ const el=document.getElementById(id); if(!el) return;
   el.addEventListener('click', e=>{ const b=e.target.closest('.fc-row[data-card]');
-    if(b){ e.preventDefault(); setFareCard(b.dataset.card, true); renderCardSeg(); } }); });
+    if(b){ e.preventDefault(); setFareCard(b.dataset.card, true); } }); });
 document.getElementById('paceSeg').addEventListener('click', e=>{ const b=e.target.closest('button'); if(b&&b.dataset.pace) setWalkPace(b.dataset.pace, true); });
 document.getElementById('unitSeg').addEventListener('click', e=>{ const b=e.target.closest('button'); if(b&&b.dataset.u) setUnits(b.dataset.u); });
 document.getElementById('clockSeg').addEventListener('click', e=>{ const b=e.target.closest('button'); if(b&&b.dataset.ck) setClock(b.dataset.ck); });
