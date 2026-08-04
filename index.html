@@ -760,6 +760,25 @@
   .seg-wrap{flex-wrap:wrap;}
   .seg-wrap button{flex:1 1 46%;padding:8px 6px;font-size:10px;}
   .sp-note{font-size:9px;color:var(--dim);line-height:1.55;}
+  .fare-cmp{margin-top:7px;border:1px solid var(--stroke);border-radius:11px;background:var(--surface);overflow:hidden;}
+  .fare-cmp summary{display:flex;align-items:center;gap:7px;padding:7px 10px;cursor:pointer;font-size:10px;
+    font-weight:700;color:var(--muted);list-style:none;}
+  .fare-cmp summary::-webkit-details-marker{display:none;}
+  .fare-cmp summary b{margin-left:auto;font-family:var(--mono);color:var(--text);}
+  .fare-cmp summary::after{content:"▾";margin-left:7px;font-size:9px;color:var(--dim);transition:transform .18s var(--ease);}
+  .fare-cmp[open] summary::after{transform:rotate(180deg);}
+  .fc-row{display:flex;align-items:center;gap:7px;width:100%;padding:7px 10px;border:none;cursor:pointer;
+    background:none;border-top:1px solid var(--stroke);font-family:var(--font);font-size:10.5px;color:var(--text);text-align:start;}
+  .fc-row:hover{background:var(--surface-2);}
+  .fc-row.on{background:rgba(52,211,153,.10);}
+  body.calm .fc-row.on{background:rgba(59,130,246,.10);}
+  .fc-nm{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:600;}
+  .fc-tl{font-family:var(--mono);font-weight:800;}
+  .fc-you{font-size:8px;font-weight:800;letter-spacing:.5px;text-transform:uppercase;color:var(--accent);}
+  .fc-save{font-size:9px;font-weight:800;color:#7CF0BE;}
+  .fc-more{font-size:9px;font-weight:700;color:var(--dim);}
+  body.light .fc-save{color:#067A54;}
+  .fc-note{font-size:8.5px;color:var(--dim);padding:6px 10px 8px;line-height:1.5;border-top:1px solid var(--stroke);}
   .rf-refund{display:flex;align-items:center;gap:7px;margin-top:6px;padding:7px 10px;border-radius:11px;
     background:rgba(52,211,153,.10);border:1px solid rgba(52,211,153,.32);font-size:10px;font-weight:600;color:var(--accent);}
   body.calm .rf-refund{background:rgba(59,130,246,.10);border-color:rgba(59,130,246,.32);}
@@ -1357,6 +1376,7 @@ const I18N = {
     uiStyle:"Icon & colour style", uiNeon:"Neon", uiCalm:"Calm",
     modesTitle:"Modes for this trip", avoiding:"avoided", avoidThis:"Avoid this line", sortBest:"Best", sortTime:"Fastest", sortChanges:"Changes", sortWalk:"Walk", sortFare:"Cheapest",
     fareCard:"Fare card", cardPerRide:"{n}₺ per boarding", cardUnlimited:"Unlimited rides · {n}₺/month", cardNoXfer:"no transfer discount", cardDerived:"some rates estimated", cardIncluded:"Included",
+    compareCards:"Compare cards", cardYours:"yours", compareNote:"Tap a card to switch. Prices are for this trip only; passes show as included.",
     refundHint:"{c}₺ taken at the turnstile — tap the refund machine on exit to get {r}₺ back",
     printSrc:"Fares are estimates from the operator's published tariff. Times are typical; check live departures before travelling.",
     fareNoteBur:"Bursakart estimate — Burulaş tariff of 3 Feb 2026: 40₺ per boarding; transfers get 17₺ off (23₺) within 90 minutes. BursaRay also refunds up to 9.50₺ on short trips if you tap out.",
@@ -1468,6 +1488,7 @@ const I18N = {
     uiStyle:"Simge ve renk stili", uiNeon:"Neon", uiCalm:"Sakin",
     modesTitle:"Bu yolculuk için modlar", avoiding:"hariç", avoidThis:"Bu hattı kullanma", sortBest:"En iyi", sortTime:"En hızlı", sortChanges:"Aktarma", sortWalk:"Yürüme", sortFare:"En ucuz",
     fareCard:"Ulaşım kartı", cardPerRide:"biniş başına {n}₺", cardUnlimited:"Sınırsız · aylık {n}₺", cardNoXfer:"aktarma indirimi yok", cardDerived:"bazı ücretler tahmini", cardIncluded:"Dahil",
+    compareCards:"Kartları karşılaştır", cardYours:"sizin", compareNote:"Değiştirmek için dokunun. Fiyatlar yalnızca bu yolculuk içindir; abonmanlar dahil görünür.",
     refundHint:"Turnikede {c}₺ alınır — çıkışta iade cihazına okutup {r}₺ geri alın",
     printSrc:"Ücretler işletmecinin yayımlanan tarifesine göre tahminidir. Süreler tipiktir; yola çıkmadan canlı sefer saatlerini kontrol edin.",
     fareNoteBur:"Bursakart tahmini — 3 Şub 2026 Burulaş tarifesi: biniş 40₺, 90 dakika içinde aktarmalarda 17₺ indirim (23₺). BursaRay'de kısa yolculuklarda çıkışta kart okutunca 9,50₺'ye kadar iade var.",
@@ -1579,6 +1600,7 @@ const I18N = {
     uiStyle:"نمط الأيقونات والألوان", uiNeon:"نيون", uiCalm:"هادئ",
     modesTitle:"وسائل هذه الرحلة", avoiding:"مستبعد", avoidThis:"تجنّب هذا الخط", sortBest:"الأفضل", sortTime:"الأسرع", sortChanges:"التبديلات", sortWalk:"المشي", sortFare:"الأرخص",
     fareCard:"بطاقة الأجرة", cardPerRide:"{n}₺ لكل ركوب", cardUnlimited:"غير محدود · {n}₺ شهريًا", cardNoXfer:"بدون خصم تبديل", cardDerived:"بعض الأسعار تقديرية", cardIncluded:"مشمول",
+    compareCards:"قارن البطاقات", cardYours:"بطاقتك", compareNote:"انقر للتبديل. الأسعار لهذه الرحلة فقط؛ الاشتراكات تظهر مشمولة.",
     refundHint:"يُخصم {c}₺ عند البوابة — امسح البطاقة على جهاز الاسترداد عند الخروج لتسترد {r}₺",
     printSrc:"الأسعار تقديرية وفق التعرفة المنشورة للمشغّل. الأوقات تقريبية؛ تحقّق من المواعيد المباشرة قبل السفر.",
     fareNoteBur:"تقدير Bursakart — تعرفة ٣ فبراير ٢٠٢٦: ٤٠₺ للركوب، وخصم ١٧₺ على التبديل (٢٣₺) خلال ٩٠ دقيقة.",
@@ -1688,6 +1710,7 @@ const I18N = {
     uiStyle:"Style d’icônes et couleurs", uiNeon:"Néon", uiCalm:"Sobre",
     modesTitle:"Modes pour ce trajet", avoiding:"exclu", avoidThis:"Éviter cette ligne", sortBest:"Meilleur", sortTime:"Rapide", sortChanges:"Corresp.", sortWalk:"Marche", sortFare:"Moins cher",
     fareCard:"Carte de transport", cardPerRide:"{n}₺ par montée", cardUnlimited:"Illimité · {n}₺/mois", cardNoXfer:"sans correspondance remisée", cardDerived:"certains tarifs estimés", cardIncluded:"Inclus",
+    compareCards:"Comparer les cartes", cardYours:"la vôtre", compareNote:"Touchez pour changer. Prix pour ce trajet uniquement ; les abonnements sont inclus.",
     refundHint:"{c}₺ prélevés au tourniquet — passez la carte à la borne de remboursement pour récupérer {r}₺",
     printSrc:"Tarifs estimés d'après la grille publiée par l'exploitant. Durées typiques ; vérifiez les départs en direct avant de partir.",
     fareNoteBur:"Estimation Bursakart — tarif Burulaş du 3 févr. 2026 : 40₺ par montée, correspondance remisée de 17₺ (23₺) sous 90 min.",
@@ -2031,8 +2054,46 @@ function estimateFare(it){
 /* ---- service warnings for a planned route: a rail leg's line is suspended / out of
    hours (lineClosedNow), or its service window ends within 45 min → "last train" nudge.
    İETT buses are skipped (per-line hours vary too much to promise anything honest). ---- */
+// run a costing function as if a different card were selected, then put the setting back
+function withCard(key, fn){
+  const prev=fareCard; fareCard=key;
+  try{ return fn(); } finally { fareCard=prev; }
+}
+// price this trip on every product the city sells, cheapest first
+function compareCards(compute){
+  const cards=FARE.cards; if(!cards) return null;
+  const rows=Object.keys(cards).map(k=>{
+    const f=withCard(k, compute);
+    return { key:k, label:cards[k].label, tl:f.tl, refund:f.refund||0,
+             unlimited:!!cards[k].unlimited, monthly:cards[k].monthly||0 };
+  });
+  rows.sort((a,b)=> a.tl-b.tl || a.label.localeCompare(b.label,'tr'));
+  return rows;
+}
+function fareCompareHTML(rows){
+  if(!rows || rows.length<2) return '';
+  // a monthly pass costs nothing extra, so it must not become the floor of the price range
+  const pay=rows.filter(r=>!r.unlimited);
+  const cheapest=(pay[0]||rows[0]).tl, dearest=(pay[pay.length-1]||rows[rows.length-1]).tl;
+  const body=rows.map(r=>{
+    const on = r.key===fareCard;
+    const price = r.unlimited ? t('cardIncluded') : r.tl+' ₺';
+    // what you'd save by switching to this card from the one you hold
+    const cur = rows.find(x=>x.key===fareCard);
+    const diff = cur && !r.unlimited && !cur.unlimited ? r.tl-cur.tl : 0;
+    const tag = on ? `<span class="fc-you">${t('cardYours')}</span>`
+              : (diff<0 ? `<span class="fc-save">−${Math.abs(diff)} ₺</span>`
+              : (diff>0 ? `<span class="fc-more">+${diff} ₺</span>` : ''));
+    return `<button class="fc-row${on?' on':''}" data-card="${r.key}">
+      <span class="fc-nm">${svgEsc(r.label)}</span>${tag}
+      <span class="fc-tl">${price}</span></button>`;
+  }).join('');
+  return `<details class="fare-cmp"><summary>💳 ${t('compareCards')}
+      <b>${cheapest} – ${dearest} ₺</b></summary>${body}
+      <div class="fc-note">${t('compareNote')}</div></details>`;
+}
 // the whole cost picture: what the turnstiles take, what the refund device gives back, net
-function fareRowHTML(fe){
+function fareRowHTML(fe, cmpRows){
   const main = fe.unlimited
     ? `<span class="rf-main">${t('cardIncluded')}</span>`
     : `<span class="rf-main">≈ ${fe.tl} ₺</span>`;
@@ -2043,6 +2104,7 @@ function fareRowHTML(fe){
     html += `<div class="rf-refund">↩ ${t('refundHint').replace('{c}', fe.charged).replace('{r}', fe.refund)}`
           + `<span class="rf-net">${fe.tl} ₺</span></div>`;
   }
+  html += fareCompareHTML(cmpRows);
   return html;
 }
 function renderRouteWarnings(it){
@@ -3956,7 +4018,7 @@ function showItinerary(res, it){
   document.getElementById('rStops').textContent=it.stops;
   document.getElementById('rTr').textContent=it.transfers;
   { const fe=estimateFare(it), fEl=document.getElementById('rFare');
-    if(fEl) fEl.innerHTML = fe.taps ? fareRowHTML(fe) : '';
+    if(fEl) fEl.innerHTML = fe.taps ? fareRowHTML(fe, compareCards(()=>estimateFare(it))) : '';
     renderRouteWarnings(it); }
   const allPts=[], legs=[];
   drawItin(res, it, allPts, legs);
@@ -4430,7 +4492,7 @@ function advFareTotal(){
 function renderAdvFare(){
   const el=document.getElementById('aFare'); if(!el) return;
   const f=advFareTotal();
-  el.innerHTML = f.taps ? fareRowHTML(f) : '';
+  el.innerHTML = f.taps ? fareRowHTML(f, compareCards(()=>advFareTotal())) : '';
 }
 function renderAdvWarnings(){
   const el=document.getElementById('aWarn'); if(!el) return;
@@ -5112,6 +5174,10 @@ document.getElementById('textSeg').addEventListener('click', e=>{ const b=e.targ
 document.getElementById('styleSeg').addEventListener('click', e=>{ const b=e.target.closest('button'); if(b&&b.dataset.uis) setUiStyle(b.dataset.uis, true); });
 document.getElementById('cardSeg').addEventListener('click', e=>{ const b=e.target.closest('button[data-card]');
   if(b){ setFareCard(b.dataset.card, true); renderCardSeg(); } });
+// switch card straight from the comparison in the results
+['rFare','aFare'].forEach(id=>{ const el=document.getElementById(id); if(!el) return;
+  el.addEventListener('click', e=>{ const b=e.target.closest('.fc-row[data-card]');
+    if(b){ e.preventDefault(); setFareCard(b.dataset.card, true); renderCardSeg(); } }); });
 document.getElementById('paceSeg').addEventListener('click', e=>{ const b=e.target.closest('button'); if(b&&b.dataset.pace) setWalkPace(b.dataset.pace, true); });
 document.getElementById('unitSeg').addEventListener('click', e=>{ const b=e.target.closest('button'); if(b&&b.dataset.u) setUnits(b.dataset.u); });
 document.getElementById('clockSeg').addEventListener('click', e=>{ const b=e.target.closest('button'); if(b&&b.dataset.ck) setClock(b.dataset.ck); });
