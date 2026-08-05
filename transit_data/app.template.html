@@ -108,7 +108,7 @@
   .city-caret{font-size:9px;color:var(--muted);transition:transform .2s var(--ease);}
   .city-btn[aria-expanded="true"] .city-caret{transform:rotate(180deg);color:var(--accent);}
   .brand-tail{letter-spacing:inherit;}
-  .city-menu{position:absolute;top:calc(100% + 8px);left:0;min-width:186px;z-index:1500;display:none;
+  .city-menu{position:absolute;top:calc(100% + 8px);left:0;min-width:232px;z-index:1500;display:none;
     padding:5px;border-radius:14px;flex-direction:column;gap:2px;}
   .city-menu.show{display:flex;animation:dd .16s var(--ease);}
   .city-item{display:flex;align-items:center;gap:9px;width:100%;padding:9px 10px;border:none;border-radius:10px;
@@ -117,6 +117,8 @@
   .city-item:hover{background:var(--surface-2);}
   .city-item.on{background:rgba(52,211,153,.14);color:var(--accent);}
   .city-item .ci-n{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .city-item .ci-m{flex:none;font-size:9.5px;letter-spacing:-1px;opacity:.75;filter:grayscale(.35);}
+  .city-item.on .ci-m{opacity:1;filter:none;}
   .city-item .ci-c{font-size:8.5px;color:var(--dim);font-weight:700;letter-spacing:.4px;flex:none;}
   .city-item.on .ci-c{color:var(--accent);}
   .topbar .sub{font-size:9.5px;color:var(--muted);letter-spacing:1.4px;margin-top:6px;text-transform:uppercase;font-weight:600;}
@@ -2172,7 +2174,7 @@ function compareCards(compute){
     return { key:k, label:cards[k].label, tl:f.tl, refund:f.refund||0,
              unlimited:!!cards[k].unlimited, monthly:cards[k].monthly||0 };
   });
-  rows.sort((a,b)=> a.tl-b.tl || a.label.localeCompare(b.label,'tr'));
+  rows.sort((a,b)=> a.tl-b.tl || trCmp(a.label,b.label));
   return rows;
 }
 function fareCompareHTML(rows){
@@ -2552,17 +2554,36 @@ const visionLines = NETWORK.filter(l => !isLive(l) && l.scope!=='intercity');
 /* ===========================================================================
    2. STATION REGISTRY (merge same-named stops → interchanges)
    =========================================================================== */
-const fold = s => (s||"").toLocaleLowerCase("tr").replace(/\s+/g," ").trim();
+const _foldMemo = new Map();
+const fold = s => {
+  if(!s) return "";
+  let v = _foldMemo.get(s);
+  if(v === undefined){
+    v = s.toLocaleLowerCase("tr").replace(/\s+/g," ").trim();
+    if(_foldMemo.size > 40000) _foldMemo.clear();     // queries are unbounded; names are not
+    _foldMemo.set(s, v);
+  }
+  return v;
+};
+// one collator, reused. String.localeCompare(x,"tr") builds a fresh ICU collator per call,
+// which dominates any sort of more than a handful of names.
+const TR_COLLATOR = new Intl.Collator("tr");
+const trCmp = (a,b) => TR_COLLATOR.compare(a,b);
 const TRANSFER_M = 400;     // max walking-interchange distance (m)
 // Cluster stops into interchanges by name AND proximity — same name far apart
 // (e.g. the three different "Göztepe" stations ~20 km apart) stays separate.
 const stationList = [];
+const _clusterByName = new Map();          // folded name -> clusters carrying it
 liveLines.forEach(line => {
   line.stations.forEach((st, idx) => {
-    if(!fold(st.name)) return;
-    let cl = stationList.find(r => fold(r.name)===fold(st.name)
-                  && metersBetween([r.lat,r.lng],[st.lat,st.lng]) < TRANSFER_M);
-    if(!cl){ cl = { name:st.name, lat:st.lat, lng:st.lng, lines:new Set(), nodes:[] }; stationList.push(cl); }
+    const f = fold(st.name);
+    if(!f) return;
+    let bucket = _clusterByName.get(f);
+    if(!bucket){ bucket = []; _clusterByName.set(f, bucket); }
+    // same folded name is guaranteed by the bucket, so only proximity is left to test
+    let cl = bucket.find(r => metersBetween([r.lat,r.lng],[st.lat,st.lng]) < TRANSFER_M);
+    if(!cl){ cl = { name:st.name, lat:st.lat, lng:st.lng, lines:new Set(), nodes:[] };
+             stationList.push(cl); bucket.push(cl); }
     cl.lines.add(line.ref);
     cl.nodes.push({ ref:line.ref, idx, s:st._s });
   });
@@ -2577,8 +2598,9 @@ const accNorm = s => fold(s).replace(/[^\p{L}\p{N} ]+/gu,' ').replace(/\s+/g,' '
 const ACC_GENERIC = new Set(['mahallesi','mah','istasyon','durağı','durağ','havalimanı','merkez','cami','camii','meydanı','yolu','caddesi','konutları']);
 // a is a *token-contiguous* substring of b ("emniyet" ⊂ "emniyet fatih", but "atatürk oto sanayi" ⊄ "atatürk havalimanı")
 const accContig = (a,b)=> a===b || b.startsWith(a+' ') || b.endsWith(' '+a) || b.includes(' '+a+' ');
-let accByStation = new Map();          // folded network station name -> accessibility record
-(function buildAccessIndex(){
+let accByStation = null;               // folded network station name -> accessibility record
+function buildAccessIndex(){
+  accByStation = new Map();
   const byFold=new Map(), byNorm=new Map();
   for(const r of ACCESS_RAW){ const f=fold(r.name); if(!byFold.has(f)) byFold.set(f,r);
     const n=accNorm(r.name); if(!byNorm.has(n)) byNorm.set(n,r); }
@@ -2594,8 +2616,12 @@ let accByStation = new Map();          // folded network station name -> accessi
       if(accContig(n,nn) || accContig(nn,n)) cands.add(r); }
     if(cands.size===1) accByStation.set(f, [...cands][0]);
   }
-})();
-function accFor(name){ return name ? accByStation.get(fold(name)) : undefined; }
+}
+function accFor(name){
+  if(!name) return undefined;
+  if(!accByStation) buildAccessIndex();      // first station panel pays for it, not every visit
+  return accByStation.get(fold(name));
+}
 
 /* ===========================================================================
    EXPLORE — İstanbul landmarks as a toggleable map layer. Each shows its nearest
@@ -2776,7 +2802,17 @@ function nearbyNodes(lat,lng,radius,cap){
 // query-side folding: ALSO strips Turkish diacritics, so a visitor without a Turkish
 // keyboard can type "sisli" / "uskudar" / "kadikoy" and still find Şişli / Üsküdar / Kadıköy.
 // (fold() itself must stay diacritic-preserving — station clustering & routing key on it.)
-const foldQ = s => fold(s).normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/\u0131/g,'i');
+const _foldQMemo = new Map();
+const foldQ = s => {
+  if(!s) return "";
+  let v = _foldQMemo.get(s);
+  if(v === undefined){
+    v = fold(s).normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/\u0131/g,'i');
+    if(_foldQMemo.size > 40000) _foldQMemo.clear();
+    _foldQMemo.set(s, v);
+  }
+  return v;
+};
 // searchable places: unique named stops across rail + ferry + bus (rail wins name clashes)
 const PLACES = (()=>{ const seen=new Set(), arr=[];
   for(const k in nodeMeta){ const m=nodeMeta[k]; if(!m.name) continue;
@@ -2786,7 +2822,7 @@ const PLACES = (()=>{ const seen=new Set(), arr=[];
   // curated landmarks so "Hagia Sophia", "Galata Tower", "Grand Bazaar" resolve instantly & offline
   ATTRACTIONS.forEach(a=>{ const f=fold(a.name); if(seen.has(f)) return; seen.add(f);
     arr.push({ name:a.name, lat:a.lat, lng:a.lng, poi:true, cat:a.cat, _f:f, _q:foldQ(a.name) }); });
-  arr.sort((a,b)=>a.name.localeCompare(b.name,'tr')); return arr; })();
+  arr.sort((a,b)=>trCmp(a.name,b.name)); return arr; })();
 // bus stops arrive AFTER first paint (lazy bus-data-<city>.json) → register them into the search
 // list + the door-to-door spatial grid once integrateBuses has built their nodes
 function registerBusPlaces(){
@@ -2800,7 +2836,7 @@ function registerBusPlaces(){
     const f=fold(m.name); if(seen.has(f)) continue; seen.add(f);
     PLACES.push({ name:m.name, lat:m.lat, lng:m.lng, ref:m.ref, bus:true, _f:f, _q:foldQ(m.name) });
   }
-  PLACES.sort((a,b)=>a.name.localeCompare(b.name,'tr'));
+  PLACES.sort((a,b)=>trCmp(a.name,b.name));
 }
 // banded Levenshtein, early-exit past 2 — cheap enough for a no-match fallback sweep
 function editDist2(a,b){
@@ -2953,7 +2989,7 @@ function siblingBuses(b, a, exclude){
       if(bi>=0 && ai>=0) break; }
     if(bi>=0 && ai>=0 && bi!==ai) out.add(line.ref);
   }
-  return [...out].sort((x,y)=>(parseInt(x)||1e9)-(parseInt(y)||1e9)||x.localeCompare(y,'tr'));
+  return [...out].sort((x,y)=>(parseInt(x)||1e9)-(parseInt(y)||1e9)||trCmp(x,y));
 }
 
 /* ===========================================================================
@@ -4968,12 +5004,16 @@ setInterval(()=>{
 
 /* ---- Bus directory (855 İETT lines; geometry fetched from OSM on click) ---- */
 function renderBusList(q){
-  q = (q||'').trim().toLocaleLowerCase('tr');
+  q = fold(q||'');
   let res = BUS_DIR;
-  if(q) res = BUS_DIR.filter(d =>
-      d.ref.toLocaleLowerCase('tr').includes(q) ||
-      (d.from && d.from.toLocaleLowerCase('tr').includes(q)) ||
-      (d.to && d.to.toLocaleLowerCase('tr').includes(q)));
+  if(q){
+    // build the searchable text once per route, not once per route per keystroke
+    if(!BUS_DIR._indexed){
+      BUS_DIR.forEach(d => { d._s = fold((d.ref||'')+' '+(d.from||'')+' '+(d.to||'')); });
+      Object.defineProperty(BUS_DIR, "_indexed", { value:true });
+    }
+    res = BUS_DIR.filter(d => d._s.includes(q));
+  }
   const shown = res.slice(0, 150);
   document.getElementById('busCount').textContent =
     res.length + ' ' + (res.length!==1?t('busLinesMany'):t('busLines')) + (res.length>shown.length ? ' · '+t('showingFirst')+' '+shown.length : '');
@@ -5680,10 +5720,21 @@ async function loadLiveDisruptions(){
   document.title = CITY.name + ' · RAY-NET — Live Transit Network Map';
   const lineCount = id => (CITIES[id].lines||[]).filter(l=>!l.partOf && l.scope!=='planned').length;
   // biggest network first, so the list reads İstanbul → Ankara → İzmir → Bursa → Antalya
-  menu.innerHTML = CITY_IDS.slice().sort((a,b)=> lineCount(b)-lineCount(a) || CITIES[a].label.localeCompare(CITIES[b].label,'tr')).map(id=>{
-    const c=CITIES[id], n=lineCount(id);
+  // which modes a city runs — same glyphs the trip planner uses, deduped in TRIP_MODES order
+  const cityModes = id => {
+    const c=CITIES[id], seen=new Set();
+    (c.lines||[]).forEach(l=>{ if(l.scope==='active' || !l.scope) seen.add(l.kind); });
+    if(c.has && c.has.bus) seen.add("bus");
+    // dedupe on the GLYPH: marmaray/suburban share 🚆, funicular/cable 🚡, bus/metrobüs 🚌,
+    // so filtering on the mode key alone would print the same icon twice for İstanbul
+    return [...new Set(TRIP_MODES.filter(m=>seen.has(m[0])).map(m=>m[1]))];
+  };
+  menu.innerHTML = CITY_IDS.slice().sort((a,b)=> lineCount(b)-lineCount(a) || trCmp(CITIES[a].label,CITIES[b].label)).map(id=>{
+    const c=CITIES[id], n=lineCount(id), icons=cityModes(id);
     return `<button class="city-item${id===CITY_ID?' on':''}" role="option" aria-selected="${id===CITY_ID}" data-city="${id}">
-      <span class="ci-n">${svgEsc(c.label)}</span><span class="ci-c">${n} ${t('linesShort')}</span></button>`;
+      <span class="ci-n">${svgEsc(c.label)}</span>
+      <span class="ci-m" aria-hidden="true">${icons.join('')}</span>
+      <span class="ci-c">${n} ${t('linesShort')}</span></button>`;
   }).join('');
   const close=()=>{ menu.classList.remove('show'); btn.setAttribute('aria-expanded','false'); };
   btn.addEventListener('click', e=>{ e.stopPropagation();
