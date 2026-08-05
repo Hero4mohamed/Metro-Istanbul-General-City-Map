@@ -470,6 +470,13 @@
             22.6
           ]
         }
+      },
+      "lineFares": {
+        "TF": {
+          "tam": 500,
+          "ogrenci": 250,
+          "indirimli": 250
+        }
       }
     },
     "has": {
@@ -668,6 +675,12 @@
         "peak": 12,
         "off": 20,
         "hours": "06:30 – 23:00"
+      },
+      "TF": {
+        "spd": 18,
+        "peak": 15,
+        "off": 20,
+        "hours": "10:00 – 20:00"
       }
     }
   },
@@ -1321,7 +1334,15 @@
         "HAT-4",
         "HAT-5",
         "HAT-6"
-      ]
+      ],
+      "lineFares": {
+        "TF": {
+          "tam": 250,
+          "indirimli": 100,
+          "abonman": 100,
+          "kagit": 250
+        }
+      }
     },
     "has": {
       "bus": true,
@@ -1458,6 +1479,12 @@
         "peak": 40,
         "off": 40,
         "hours": "07:30 – 18:15"
+      },
+      "TF": {
+        "spd": 20,
+        "peak": 1,
+        "off": 1,
+        "hours": "10:00 – 19:00"
       }
     },
     "busOperator": "UlaşımPark"

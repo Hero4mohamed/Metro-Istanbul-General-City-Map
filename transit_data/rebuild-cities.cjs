@@ -16,6 +16,7 @@ const STEPS = [
   ['process-city-extra.cjs',   'completeness pass: İZBAN extension, İzmir ferries, Bursa T2 + teleferik, planned lines'],
   ['fix-fragments.cjs',        'repair fragmented geometry (İZBAN\'s 42 chains → 5)'],
   ['process-kocaeli-ferry.cjs','Kocaeli ferry lines from the scraped timetable'],
+  ['process-kocaeli-cable.cjs','Kartepe Teleferik from the open-data station points'],
   ['build.cjs',                'inject everything into index.html + sw.js']
 ];
 
