@@ -1283,7 +1283,8 @@
           "xfer": [
             36
           ],
-          "noXfer": true
+          "noXfer": true,
+          "suburbanFare": 25.25
         },
         "indirimli": {
           "label": "Kocaelikart · İndirimli",
@@ -1291,7 +1292,8 @@
           "xfer": [
             20.5
           ],
-          "noXfer": true
+          "noXfer": true,
+          "suburbanFare": 19.25
         },
         "abonman": {
           "label": "Kocaelikart · Abonman İndirimli",
@@ -1299,19 +1301,31 @@
           "xfer": [
             14.5
           ],
-          "noXfer": true
+          "noXfer": true,
+          "suburbanFare": 12
         },
         "kagit": {
           "label": "7/24 Akıllı Kağıt Bilet",
           "base": 45,
           "xfer": null,
-          "noXfer": true
+          "noXfer": true,
+          "suburbanFare": 30
         }
-      }
+      },
+      "suburbanFare": 25.25,
+      "suburbanRefs": [
+        "HAT-1",
+        "HAT-1B",
+        "HAT-2",
+        "HAT-3",
+        "HAT-4",
+        "HAT-5",
+        "HAT-6"
+      ]
     },
     "has": {
       "bus": true,
-      "ferry": false,
+      "ferry": true,
       "disruptions": false,
       "openings": false,
       "access": false,
@@ -1408,6 +1422,42 @@
         "peak": 6,
         "off": 10,
         "hours": "05:50 – 00:35"
+      },
+      "HAT-1": {
+        "spd": 22,
+        "peak": 21,
+        "off": 21,
+        "hours": "07:15 – 18:40"
+      },
+      "HAT-1B": {
+        "spd": 22,
+        "peak": 33,
+        "off": 33,
+        "hours": "10:15 – 19:00"
+      },
+      "HAT-3": {
+        "spd": 22,
+        "peak": 11,
+        "off": 11,
+        "hours": "06:55 – 21:00"
+      },
+      "HAT-4": {
+        "spd": 22,
+        "peak": 14,
+        "off": 14,
+        "hours": "07:15 – 21:00"
+      },
+      "HAT-5": {
+        "spd": 22,
+        "peak": 81,
+        "off": 81,
+        "hours": "06:55 – 19:00"
+      },
+      "HAT-6": {
+        "spd": 22,
+        "peak": 40,
+        "off": 40,
+        "hours": "07:30 – 18:15"
       }
     },
     "busOperator": "UlaşımPark"
