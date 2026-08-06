@@ -1407,6 +1407,7 @@ const I18N = {
     goRerouting:"Off route — replanning…", goRerouted:"New route", goOffRoute:"Cannot replan from here", followMe:"Follow me",
     busOutbound:"Outbound", busReturn:"Return",
     offlineMap:"Offline map", offSave:"Save this area", offClear:"Clear", offStored:"{n} tiles saved · ~{mb} MB. Areas you pan over are kept automatically; trips, fares and timetables already work offline.", offSaving:"Saving {n}/{t}…", offUnavailable:"Available once the app is installed / the service worker is active.",
+    offKept:"Protected — kept even when storage runs low.", offEvictable:"Best-effort: install the app (Add to Home Screen) so the phone does not clear it.",
     uiStyle:"Icon & colour style", uiNeon:"Neon", uiCalm:"Calm",
     modesTitle:"Modes for this trip", avoiding:"avoided", avoidThis:"Avoid this line", sortBest:"Best", sortTime:"Fastest", sortChanges:"Changes", sortWalk:"Walk", sortFare:"Cheapest",
     cardImgCredit:"Card image: {who} — the operator's own artwork. This app is not affiliated with them.",
@@ -1522,6 +1523,7 @@ const I18N = {
     goRerouting:"Rota dışı — yeniden planlanıyor…", goRerouted:"Yeni rota", goOffRoute:"Buradan yeniden planlanamıyor", followMe:"Beni takip et",
     busOutbound:"Gidiş", busReturn:"Dönüş",
     offlineMap:"Çevrimdışı harita", offSave:"Bu alanı kaydet", offClear:"Temizle", offStored:"{n} karo kayıtlı · ~{mb} MB. Gezdiğiniz alanlar otomatik saklanır; sefer, ücret ve saatler zaten çevrimdışı çalışır.", offSaving:"Kaydediliyor {n}/{t}…", offUnavailable:"Uygulama yüklendiğinde / servis çalışanı etkin olduğunda kullanılabilir.",
+    offKept:"Korumalı — depolama azalsa bile saklanır.", offEvictable:"Garanti değil: telefonun silmemesi için uygulamayı yükleyin (Ana Ekrana Ekle).",
     uiStyle:"Simge ve renk stili", uiNeon:"Neon", uiCalm:"Sakin",
     modesTitle:"Bu yolculuk için modlar", avoiding:"hariç", avoidThis:"Bu hattı kullanma", sortBest:"En iyi", sortTime:"En hızlı", sortChanges:"Aktarma", sortWalk:"Yürüme", sortFare:"En ucuz",
     cardImgCredit:"Kart görseli: {who} — işletmecinin kendi görseli. Bu uygulama onlarla bağlantılı değildir.",
@@ -1637,6 +1639,7 @@ const I18N = {
     goRerouting:"خارج المسار — إعادة التخطيط…", goRerouted:"مسار جديد", goOffRoute:"تعذّرت إعادة التخطيط", followMe:"تتبّعني",
     busOutbound:"ذهاب", busReturn:"عودة",
     offlineMap:"خريطة دون اتصال", offSave:"احفظ هذه المنطقة", offClear:"مسح", offStored:"{n} مربّع محفوظ · ~{mb} ميجابايت. المناطق التي تتصفّحها تُحفظ تلقائيًا؛ الرحلات والأسعار والمواعيد تعمل بالفعل دون اتصال.", offSaving:"جارٍ الحفظ {n}/{t}…", offUnavailable:"يتوفّر بعد تثبيت التطبيق.",
+    offKept:"محمي — يبقى حتى عند امتلاء التخزين.", offEvictable:"غير مضمون: ثبّت التطبيق (إضافة إلى الشاشة الرئيسية) كي لا يمسحه الهاتف.",
     uiStyle:"نمط الأيقونات والألوان", uiNeon:"نيون", uiCalm:"هادئ",
     modesTitle:"وسائل هذه الرحلة", avoiding:"مستبعد", avoidThis:"تجنّب هذا الخط", sortBest:"الأفضل", sortTime:"الأسرع", sortChanges:"التبديلات", sortWalk:"المشي", sortFare:"الأرخص",
     cardImgCredit:"صورة البطاقة: {who} — من تصميم المشغّل نفسه. هذا التطبيق غير تابع له.",
@@ -1750,6 +1753,7 @@ const I18N = {
     goRerouting:"Hors itinéraire — recalcul…", goRerouted:"Nouvel itinéraire", goOffRoute:"Recalcul impossible", followMe:"Me suivre",
     busOutbound:"Aller", busReturn:"Retour",
     offlineMap:"Carte hors ligne", offSave:"Enregistrer cette zone", offClear:"Effacer", offStored:"{n} tuiles · ~{mb} Mo. Les zones parcourues sont conservées automatiquement ; trajets, tarifs et horaires fonctionnent déjà hors ligne.", offSaving:"Enregistrement {n}/{t}…", offUnavailable:"Disponible une fois l’application installée.",
+    offKept:"Protégé — conservé même si le stockage est faible.", offEvictable:"Non garanti : installez l’app (Sur l’écran d’accueil) pour éviter l’effacement.",
     uiStyle:"Style d’icônes et couleurs", uiNeon:"Néon", uiCalm:"Sobre",
     modesTitle:"Modes pour ce trajet", avoiding:"exclu", avoidThis:"Éviter cette ligne", sortBest:"Meilleur", sortTime:"Rapide", sortChanges:"Corresp.", sortWalk:"Marche", sortFare:"Moins cher",
     cardImgCredit:"Image de la carte : {who} — visuel de l'exploitant. Application non affiliée à celui-ci.",
@@ -1976,16 +1980,35 @@ function offTilesFor(bounds, z){
   return out;
 }
 function offTileURL(z,x,y){
-  // Ask the ACTIVE layer to build it. Hand-rolling the URL saved tiles Leaflet would never ask
-  // for: it appends a {r} "@2x" suffix on retina screens and rotates subdomains its own way,
-  // and the cache is keyed on the exact URL, so a near-miss caches nothing useful.
-  try{ return curBase.getTileUrl({ x:x, y:y, z:z }); }catch(e){ return null; }
+  /* Fill the ACTIVE layer's own template, so a saved tile is byte-identical to what Leaflet
+     will later request — including the {r} "@2x" suffix on retina screens and the layer's
+     own subdomain rotation. The cache is keyed on the exact URL, so a near-miss saves nothing.
+
+     NOT layer.getTileUrl(coords): that substitutes _getZoomForUrl(), the layer's CURRENT
+     zoom, and ignores coords.z — so prefetching several zoom levels wrote every one of them
+     under the on-screen zoom with mismatched x/y, collapsing ~340 tiles to 24 useless ones. */
+  try{
+    const lyr = curBase;
+    return L.Util.template(lyr._url, L.extend({
+      r: L.Browser.retina ? '@2x' : '',
+      s: lyr._getSubdomain({ x:x, y:y, z:z }),
+      x: x, y: y, z: z
+    }, lyr.options));
+  }catch(e){ return null; }
+}
+async function offPersist(){
+  try{
+    if(!navigator.storage || !navigator.storage.persist) return null;
+    if(await navigator.storage.persisted()) return true;
+    return await navigator.storage.persist();
+  }catch(e){ return null; }
 }
 let offBusy=false;
 async function offSaveArea(){
   if(offBusy || !navigator.serviceWorker || !navigator.serviceWorker.controller) return;
   const btn=document.getElementById("offSave"), note=document.getElementById("offNote");
   offBusy=true; btn.disabled=true;
+  await offPersist();                 // ask before filling the cache, not after
   const b=map.getBounds(), z0=Math.round(map.getZoom());
   let list=[];
   for(let z=Math.max(6,z0-1); z<=Math.min(17,z0+2) && list.length<OFF_TILE_BUDGET; z++){
@@ -1998,9 +2021,9 @@ async function offSaveArea(){
     while(queue.length){
       const [z,x,y]=queue.shift();
       const u=offTileURL(z,x,y); if(!u){ failed++; done++; continue; }
-      // no-cors: the tile is only ever drawn into an <img>, and an opaque response caches
-      // and replays exactly the same as a CORS one without depending on the provider's headers
-      try{ await fetch(u, {mode:"no-cors"}); }catch(e){ failed++; }
+      // CORS, matching the tile layer's own crossOrigin requests — so the saved entry is the
+      // same non-opaque response Leaflet will later pull from the cache, and is not padded
+      try{ await fetch(u, {mode:"cors"}); }catch(e){ failed++; }
       done++;
       if(done%25===0) note.textContent=t("offSaving").replace("{n}",done).replace("{t}",list.length);
     }
@@ -2014,11 +2037,24 @@ function offRefreshNote(){
   navigator.serviceWorker.controller.postMessage("tileStats");
 }
 if(navigator.serviceWorker){
-  navigator.serviceWorker.addEventListener("message", ev=>{
+  navigator.serviceWorker.addEventListener("message", async ev=>{
     if(!ev.data || ev.data.type!=="tileStats") return;
     const note=document.getElementById("offNote"); if(!note) return;
-    const mb=(ev.data.count*0.03).toFixed(1);        // ~30 KB per 256px tile, measured average
-    note.textContent = t("offStored").replace("{n}", ev.data.count).replace("{mb}", mb);
+    // measured from the Storage API where available, rather than a per-tile guess
+    let mb=(ev.data.count*0.03).toFixed(1);
+    try{
+      if(navigator.storage && navigator.storage.estimate){
+        const est=await navigator.storage.estimate();
+        if(est && est.usage) mb=(est.usage/1048576).toFixed(1);
+      }
+    }catch(e){}
+    let txt = t("offStored").replace("{n}", ev.data.count).replace("{mb}", mb);
+    try{
+      if(navigator.storage && navigator.storage.persisted){
+        txt += " " + (await navigator.storage.persisted() ? t("offKept") : t("offEvictable"));
+      }
+    }catch(e){}
+    note.textContent = txt;
   });
 }
 function renderCardSeg(){
@@ -3174,13 +3210,18 @@ const map = L.map('map', { zoomControl:true, preferCanvas:true, minZoom:6, maxZo
              .setView(CITY.center, CITY.zoom);
 L.control.zoom({ position:'bottomright' });
 
+/* crossOrigin makes Leaflet request tiles with CORS, so Cache Storage holds REAL responses
+   rather than opaque ones. Opaque entries are padded by the browser to stop size-probing:
+   342 cached tiles were being reported as 4.8 GB against a 4.8 GB quota, which both
+   mis-reports usage and would exhaust a phone's storage quota within a few hundred tiles.
+   CARTO and Esri both send Access-Control-Allow-Origin, so this costs nothing. */
 const BASES = {
   dark:    L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',
-            { subdomains:'abcd', maxZoom:20, attribution:'&copy; OpenStreetMap &copy; CARTO' }),
+            { subdomains:'abcd', maxZoom:20, crossOrigin:'anonymous', attribution:'&copy; OpenStreetMap &copy; CARTO' }),
   voyager: L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png',
-            { subdomains:'abcd', maxZoom:20, attribution:'&copy; OpenStreetMap &copy; CARTO' }),
+            { subdomains:'abcd', maxZoom:20, crossOrigin:'anonymous', attribution:'&copy; OpenStreetMap &copy; CARTO' }),
   sat:     L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
-            { maxZoom:19, attribution:'&copy; Esri, Maxar, Earthstar Geographics' })
+            { maxZoom:19, crossOrigin:'anonymous', attribution:'&copy; Esri, Maxar, Earthstar Geographics' })
 };
 let curBase = BASES.dark.addTo(map);
 let curBaseKey = 'dark';
