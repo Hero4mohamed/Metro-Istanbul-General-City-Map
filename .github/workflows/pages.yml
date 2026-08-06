@@ -1,0 +1,41 @@
+# Publish the site through the GitHub Pages *Actions* deployer.
+#
+# The legacy branch builder kept failing on this repo: "Page build failed" with duration 0
+# after about ten minutes, twice in three deploys, with no log to look at. The repo is only
+# ~18 MB across ~100 files, so size is not the cause — the legacy Jekyll pipeline is simply
+# not reliable here, and it offers nothing this site needs (there is no _config.yml, no
+# layouts, no Gemfile; .nojekyll is committed).
+#
+# This uploads the repo as a Pages artifact and deploys it verbatim. It is faster, it cannot
+# be tripped up by Jekyll, and when it does fail there is a real log.
+name: Deploy to GitHub Pages
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# never let two deploys race; queue instead of cancelling so a push is not silently dropped
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: .
+      - id: deployment
+        uses: actions/deploy-pages@v4
