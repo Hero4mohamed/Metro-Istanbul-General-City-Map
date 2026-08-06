@@ -773,6 +773,11 @@
   .card-pick-main{flex:1;min-width:0;display:flex;flex-direction:column;gap:6px;}
   .card-pick-main select{font-size:11.5px;padding:9px 10px;}
   .card-credit{font-size:8px;opacity:.72;}
+  .off-wrap{display:flex;gap:7px;}
+  .off-btn{flex:1;padding:8px 10px;border-radius:10px;border:1px solid var(--stroke-2);cursor:pointer;
+    background:var(--grad-accent);color:var(--btn-ink);font-family:var(--font);font-size:10.5px;font-weight:800;}
+  .off-btn.ghost{flex:0 0 auto;background:var(--track);color:var(--text);font-weight:700;}
+  .off-btn:disabled{opacity:.55;cursor:default;}
   .card-credit:empty{display:none;}
   @media (max-width:420px){ .card-art{width:88px;height:88px;} .card-art svg{height:88px;} }
   .fare-cmp{margin-top:7px;border:1px solid var(--stroke);border-radius:11px;background:var(--surface);overflow:hidden;}
@@ -1005,6 +1010,13 @@
           <div class="sp-note card-credit" id="cardCredit"></div>
         </div>
       </div>
+    </div>
+    <div class="sp-row sp-col" id="offlineRow"><span data-i18n="offlineMap">Offline map</span>
+      <div class="off-wrap">
+        <button class="off-btn" id="offSave" data-i18n="offSave">Save this area</button>
+        <button class="off-btn ghost" id="offClear" data-i18n="offClear">Clear</button>
+      </div>
+      <div class="sp-note" id="offNote"></div>
     </div>
     <div class="sp-row"><span data-i18n="uiStyle">Icon &amp; colour style</span>
       <div class="seg" id="styleSeg">
@@ -1394,6 +1406,7 @@ const I18N = {
     saveAdv:"Save adventure", savedWord:"Saved", savedAdv:"Saved adventures", stopsWord:"stops",
     goRerouting:"Off route — replanning…", goRerouted:"New route", goOffRoute:"Cannot replan from here", followMe:"Follow me",
     busOutbound:"Outbound", busReturn:"Return",
+    offlineMap:"Offline map", offSave:"Save this area", offClear:"Clear", offStored:"{n} tiles saved · ~{mb} MB. Areas you pan over are kept automatically; trips, fares and timetables already work offline.", offSaving:"Saving {n}/{t}…", offUnavailable:"Available once the app is installed / the service worker is active.",
     uiStyle:"Icon & colour style", uiNeon:"Neon", uiCalm:"Calm",
     modesTitle:"Modes for this trip", avoiding:"avoided", avoidThis:"Avoid this line", sortBest:"Best", sortTime:"Fastest", sortChanges:"Changes", sortWalk:"Walk", sortFare:"Cheapest",
     cardImgCredit:"Card image: {who} — the operator's own artwork. This app is not affiliated with them.",
@@ -1508,6 +1521,7 @@ const I18N = {
     saveAdv:"Rotayı kaydet", savedWord:"Kaydedildi", savedAdv:"Kayıtlı rotalar", stopsWord:"durak",
     goRerouting:"Rota dışı — yeniden planlanıyor…", goRerouted:"Yeni rota", goOffRoute:"Buradan yeniden planlanamıyor", followMe:"Beni takip et",
     busOutbound:"Gidiş", busReturn:"Dönüş",
+    offlineMap:"Çevrimdışı harita", offSave:"Bu alanı kaydet", offClear:"Temizle", offStored:"{n} karo kayıtlı · ~{mb} MB. Gezdiğiniz alanlar otomatik saklanır; sefer, ücret ve saatler zaten çevrimdışı çalışır.", offSaving:"Kaydediliyor {n}/{t}…", offUnavailable:"Uygulama yüklendiğinde / servis çalışanı etkin olduğunda kullanılabilir.",
     uiStyle:"Simge ve renk stili", uiNeon:"Neon", uiCalm:"Sakin",
     modesTitle:"Bu yolculuk için modlar", avoiding:"hariç", avoidThis:"Bu hattı kullanma", sortBest:"En iyi", sortTime:"En hızlı", sortChanges:"Aktarma", sortWalk:"Yürüme", sortFare:"En ucuz",
     cardImgCredit:"Kart görseli: {who} — işletmecinin kendi görseli. Bu uygulama onlarla bağlantılı değildir.",
@@ -1622,6 +1636,7 @@ const I18N = {
     saveAdv:"احفظ الجولة", savedWord:"محفوظة", savedAdv:"الجولات المحفوظة", stopsWord:"محطات",
     goRerouting:"خارج المسار — إعادة التخطيط…", goRerouted:"مسار جديد", goOffRoute:"تعذّرت إعادة التخطيط", followMe:"تتبّعني",
     busOutbound:"ذهاب", busReturn:"عودة",
+    offlineMap:"خريطة دون اتصال", offSave:"احفظ هذه المنطقة", offClear:"مسح", offStored:"{n} مربّع محفوظ · ~{mb} ميجابايت. المناطق التي تتصفّحها تُحفظ تلقائيًا؛ الرحلات والأسعار والمواعيد تعمل بالفعل دون اتصال.", offSaving:"جارٍ الحفظ {n}/{t}…", offUnavailable:"يتوفّر بعد تثبيت التطبيق.",
     uiStyle:"نمط الأيقونات والألوان", uiNeon:"نيون", uiCalm:"هادئ",
     modesTitle:"وسائل هذه الرحلة", avoiding:"مستبعد", avoidThis:"تجنّب هذا الخط", sortBest:"الأفضل", sortTime:"الأسرع", sortChanges:"التبديلات", sortWalk:"المشي", sortFare:"الأرخص",
     cardImgCredit:"صورة البطاقة: {who} — من تصميم المشغّل نفسه. هذا التطبيق غير تابع له.",
@@ -1734,6 +1749,7 @@ const I18N = {
     saveAdv:"Enregistrer", savedWord:"Enregistré", savedAdv:"Parcours enregistrés", stopsWord:"arrêts",
     goRerouting:"Hors itinéraire — recalcul…", goRerouted:"Nouvel itinéraire", goOffRoute:"Recalcul impossible", followMe:"Me suivre",
     busOutbound:"Aller", busReturn:"Retour",
+    offlineMap:"Carte hors ligne", offSave:"Enregistrer cette zone", offClear:"Effacer", offStored:"{n} tuiles · ~{mb} Mo. Les zones parcourues sont conservées automatiquement ; trajets, tarifs et horaires fonctionnent déjà hors ligne.", offSaving:"Enregistrement {n}/{t}…", offUnavailable:"Disponible une fois l’application installée.",
     uiStyle:"Style d’icônes et couleurs", uiNeon:"Néon", uiCalm:"Sobre",
     modesTitle:"Modes pour ce trajet", avoiding:"exclu", avoidThis:"Éviter cette ligne", sortBest:"Meilleur", sortTime:"Rapide", sortChanges:"Corresp.", sortWalk:"Marche", sortFare:"Moins cher",
     cardImgCredit:"Image de la carte : {who} — visuel de l'exploitant. Application non affiliée à celui-ci.",
@@ -1941,6 +1957,70 @@ function cardFaceHTML(key, c){
   return cardArtSVG(key, c);
 }
 // the fare products this city publishes; hidden entirely for cities with a single tariff
+/* Offline basemap. Tiles are cached as you pan, so anywhere you have looked at already works
+   offline; this button additionally walks the CURRENT view over a few zoom levels so you can
+   prepare an area on purpose before losing signal. It is deliberately bounded and
+   user-initiated — bulk-harvesting a provider's tile pyramid is against CARTO's and OSM's
+   usage policies, and is not what this does. Everything else needed to plan a trip (network,
+   stations, fares, timetables, the routing graph) is already local. */
+const OFF_TILE_BUDGET = 700;        // hard ceiling per press
+function offTilesFor(bounds, z){
+  const lon2x = (lon,z)=>Math.floor((lon+180)/360*Math.pow(2,z));
+  const lat2y = (lat,z)=>{ const r=lat*Math.PI/180;
+    return Math.floor((1-Math.log(Math.tan(r)+1/Math.cos(r))/Math.PI)/2*Math.pow(2,z)); };
+  const x0=lon2x(bounds.getWest(),z), x1=lon2x(bounds.getEast(),z);
+  const y0=lat2y(bounds.getNorth(),z), y1=lat2y(bounds.getSouth(),z);
+  const out=[];
+  for(let x=Math.min(x0,x1);x<=Math.max(x0,x1);x++)
+    for(let y=Math.min(y0,y1);y<=Math.max(y0,y1);y++) out.push([z,x,y]);
+  return out;
+}
+function offTileURL(z,x,y){
+  // Ask the ACTIVE layer to build it. Hand-rolling the URL saved tiles Leaflet would never ask
+  // for: it appends a {r} "@2x" suffix on retina screens and rotates subdomains its own way,
+  // and the cache is keyed on the exact URL, so a near-miss caches nothing useful.
+  try{ return curBase.getTileUrl({ x:x, y:y, z:z }); }catch(e){ return null; }
+}
+let offBusy=false;
+async function offSaveArea(){
+  if(offBusy || !navigator.serviceWorker || !navigator.serviceWorker.controller) return;
+  const btn=document.getElementById("offSave"), note=document.getElementById("offNote");
+  offBusy=true; btn.disabled=true;
+  const b=map.getBounds(), z0=Math.round(map.getZoom());
+  let list=[];
+  for(let z=Math.max(6,z0-1); z<=Math.min(17,z0+2) && list.length<OFF_TILE_BUDGET; z++){
+    for(const t of offTilesFor(b,z)){ if(list.length>=OFF_TILE_BUDGET) break; list.push(t); }
+  }
+  let done=0, failed=0;
+  const CONC=6;
+  const queue=list.slice();
+  await Promise.all(Array.from({length:CONC}, async ()=>{
+    while(queue.length){
+      const [z,x,y]=queue.shift();
+      const u=offTileURL(z,x,y); if(!u){ failed++; done++; continue; }
+      // no-cors: the tile is only ever drawn into an <img>, and an opaque response caches
+      // and replays exactly the same as a CORS one without depending on the provider's headers
+      try{ await fetch(u, {mode:"no-cors"}); }catch(e){ failed++; }
+      done++;
+      if(done%25===0) note.textContent=t("offSaving").replace("{n}",done).replace("{t}",list.length);
+    }
+  }));
+  offBusy=false; btn.disabled=false;
+  offRefreshNote();
+}
+function offRefreshNote(){
+  const note=document.getElementById("offNote"); if(!note) return;
+  if(!navigator.serviceWorker || !navigator.serviceWorker.controller){ note.textContent=t("offUnavailable"); return; }
+  navigator.serviceWorker.controller.postMessage("tileStats");
+}
+if(navigator.serviceWorker){
+  navigator.serviceWorker.addEventListener("message", ev=>{
+    if(!ev.data || ev.data.type!=="tileStats") return;
+    const note=document.getElementById("offNote"); if(!note) return;
+    const mb=(ev.data.count*0.03).toFixed(1);        // ~30 KB per 256px tile, measured average
+    note.textContent = t("offStored").replace("{n}", ev.data.count).replace("{mb}", mb);
+  });
+}
 function renderCardSeg(){
   const sel=document.getElementById('cardSel'), row=document.getElementById('cardRow'),
         note=document.getElementById('cardNote'), art=document.getElementById('cardArt');
@@ -5748,6 +5828,11 @@ function init(){
   animRaf=requestAnimationFrame(frame);
   if(HAS.disruptions) loadLiveDisruptions();   // İstanbul-only feed (metro.istanbul scraper)
   if(HAS.bus) loadBusData();                   // this city's bus network, lazily
+  { const sv=document.getElementById("offSave"), cl=document.getElementById("offClear");
+    if(sv) sv.addEventListener("click", offSaveArea);
+    if(cl) cl.addEventListener("click", ()=>{ if(navigator.serviceWorker && navigator.serviceWorker.controller)
+      navigator.serviceWorker.controller.postMessage("clearTiles"); });
+    offRefreshNote(); }
   { const bo=document.getElementById('busOpLabel');
     if(bo) bo.textContent = BUS_OPERATOR ? ' · ' + BUS_OPERATOR : ''; }
 }
