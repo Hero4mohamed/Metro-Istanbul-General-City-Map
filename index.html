@@ -1408,6 +1408,7 @@ const I18N = {
     busOutbound:"Outbound", busReturn:"Return",
     offlineMap:"Offline map", offSave:"Save this area", offClear:"Clear", offStored:"{n} tiles saved · ~{mb} MB. Areas you pan over are kept automatically; trips, fares and timetables already work offline.", offSaving:"Saving {n}/{t}…", offUnavailable:"Available once the app is installed / the service worker is active.",
     offKept:"Protected — kept even when storage runs low.", offEvictable:"Best-effort: install the app (Add to Home Screen) so the phone does not clear it.",
+    offNoView:"Open the map first, then save — the view had no size to capture.",
     uiStyle:"Icon & colour style", uiNeon:"Neon", uiCalm:"Calm",
     modesTitle:"Modes for this trip", avoiding:"avoided", avoidThis:"Avoid this line", sortBest:"Best", sortTime:"Fastest", sortChanges:"Changes", sortWalk:"Walk", sortFare:"Cheapest",
     cardImgCredit:"Card image: {who} — the operator's own artwork. This app is not affiliated with them.",
@@ -1524,6 +1525,7 @@ const I18N = {
     busOutbound:"Gidiş", busReturn:"Dönüş",
     offlineMap:"Çevrimdışı harita", offSave:"Bu alanı kaydet", offClear:"Temizle", offStored:"{n} karo kayıtlı · ~{mb} MB. Gezdiğiniz alanlar otomatik saklanır; sefer, ücret ve saatler zaten çevrimdışı çalışır.", offSaving:"Kaydediliyor {n}/{t}…", offUnavailable:"Uygulama yüklendiğinde / servis çalışanı etkin olduğunda kullanılabilir.",
     offKept:"Korumalı — depolama azalsa bile saklanır.", offEvictable:"Garanti değil: telefonun silmemesi için uygulamayı yükleyin (Ana Ekrana Ekle).",
+    offNoView:"Önce haritayı açın, sonra kaydedin — görünüm ölçülemedi.",
     uiStyle:"Simge ve renk stili", uiNeon:"Neon", uiCalm:"Sakin",
     modesTitle:"Bu yolculuk için modlar", avoiding:"hariç", avoidThis:"Bu hattı kullanma", sortBest:"En iyi", sortTime:"En hızlı", sortChanges:"Aktarma", sortWalk:"Yürüme", sortFare:"En ucuz",
     cardImgCredit:"Kart görseli: {who} — işletmecinin kendi görseli. Bu uygulama onlarla bağlantılı değildir.",
@@ -1640,6 +1642,7 @@ const I18N = {
     busOutbound:"ذهاب", busReturn:"عودة",
     offlineMap:"خريطة دون اتصال", offSave:"احفظ هذه المنطقة", offClear:"مسح", offStored:"{n} مربّع محفوظ · ~{mb} ميجابايت. المناطق التي تتصفّحها تُحفظ تلقائيًا؛ الرحلات والأسعار والمواعيد تعمل بالفعل دون اتصال.", offSaving:"جارٍ الحفظ {n}/{t}…", offUnavailable:"يتوفّر بعد تثبيت التطبيق.",
     offKept:"محمي — يبقى حتى عند امتلاء التخزين.", offEvictable:"غير مضمون: ثبّت التطبيق (إضافة إلى الشاشة الرئيسية) كي لا يمسحه الهاتف.",
+    offNoView:"افتح الخريطة أولًا ثم احفظ — لم يكن للعرض حجم قابل للحفظ.",
     uiStyle:"نمط الأيقونات والألوان", uiNeon:"نيون", uiCalm:"هادئ",
     modesTitle:"وسائل هذه الرحلة", avoiding:"مستبعد", avoidThis:"تجنّب هذا الخط", sortBest:"الأفضل", sortTime:"الأسرع", sortChanges:"التبديلات", sortWalk:"المشي", sortFare:"الأرخص",
     cardImgCredit:"صورة البطاقة: {who} — من تصميم المشغّل نفسه. هذا التطبيق غير تابع له.",
@@ -1754,6 +1757,7 @@ const I18N = {
     busOutbound:"Aller", busReturn:"Retour",
     offlineMap:"Carte hors ligne", offSave:"Enregistrer cette zone", offClear:"Effacer", offStored:"{n} tuiles · ~{mb} Mo. Les zones parcourues sont conservées automatiquement ; trajets, tarifs et horaires fonctionnent déjà hors ligne.", offSaving:"Enregistrement {n}/{t}…", offUnavailable:"Disponible une fois l’application installée.",
     offKept:"Protégé — conservé même si le stockage est faible.", offEvictable:"Non garanti : installez l’app (Sur l’écran d’accueil) pour éviter l’effacement.",
+    offNoView:"Ouvrez d’abord la carte, puis enregistrez — la vue n’avait pas de taille.",
     uiStyle:"Style d’icônes et couleurs", uiNeon:"Néon", uiCalm:"Sobre",
     modesTitle:"Modes pour ce trajet", avoiding:"exclu", avoidThis:"Éviter cette ligne", sortBest:"Meilleur", sortTime:"Rapide", sortChanges:"Corresp.", sortWalk:"Marche", sortFare:"Moins cher",
     cardImgCredit:"Image de la carte : {who} — visuel de l'exploitant. Application non affiliée à celui-ci.",
@@ -2009,7 +2013,16 @@ async function offSaveArea(){
   const btn=document.getElementById("offSave"), note=document.getElementById("offNote");
   offBusy=true; btn.disabled=true;
   await offPersist();                 // ask before filling the cache, not after
+  /* The button lives in a settings sheet that covers the map on a phone. If the map has not
+     been laid out (or was measured while hidden) getSize() is 0x0, getBounds() collapses to a
+     point, and this would cheerfully "save" one tile per zoom and report success. Force a
+     measure first, and refuse rather than pretend if the viewport still has no extent. */
+  map.invalidateSize();
   const b=map.getBounds(), z0=Math.round(map.getZoom());
+  if(!(b.getEast()-b.getWest()) || !(b.getNorth()-b.getSouth())){
+    document.getElementById("offNote").textContent = t("offNoView");
+    offBusy=false; btn.disabled=false; return;
+  }
   let list=[];
   for(let z=Math.max(6,z0-1); z<=Math.min(17,z0+2) && list.length<OFF_TILE_BUDGET; z++){
     for(const t of offTilesFor(b,z)){ if(list.length>=OFF_TILE_BUDGET) break; list.push(t); }
