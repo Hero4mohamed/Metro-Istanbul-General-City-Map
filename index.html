@@ -773,6 +773,27 @@
   .card-pick-main{flex:1;min-width:0;display:flex;flex-direction:column;gap:6px;}
   .card-pick-main select{font-size:11.5px;padding:9px 10px;}
   .card-credit{font-size:8px;opacity:.72;}
+  /* collapsible sections inside the Layers card */
+  .lyr{border-top:1px solid var(--stroke);}
+  .lyr:first-child{border-top:none;}
+  .lyr>summary{display:flex;align-items:center;gap:7px;cursor:pointer;list-style:none;
+    padding:9px 2px;font-size:9.5px;font-weight:800;letter-spacing:1.1px;text-transform:uppercase;
+    color:var(--muted);user-select:none;}
+  .lyr>summary::-webkit-details-marker{display:none;}
+  .lyr>summary::after{content:"▾";margin-left:auto;font-size:10px;color:var(--dim);
+    transition:transform .18s var(--ease);}
+  .lyr[open]>summary::after{transform:rotate(180deg);}
+  .lyr>summary:hover{color:var(--text);}
+  .lyr>*:not(summary){margin-bottom:9px;}
+  /* the floating control that shows/hides the whole stack */
+  .layers-fab{position:absolute;top:18px;right:18px;z-index:1200;display:flex;align-items:center;gap:8px;
+    padding:9px 13px;border-radius:12px;border:1px solid var(--stroke-2);cursor:pointer;
+    color:var(--text);font-family:var(--font);font-size:11px;font-weight:800;letter-spacing:.3px;
+    transition:all .16s var(--ease);}
+  .layers-fab:hover{border-color:var(--accent);color:var(--accent);}
+  .layers-fab.on{color:var(--accent);border-color:var(--accent);}
+  .controls.hidden{display:none;}
+  @media (max-width:900px){ .layers-fab{display:none;} }   /* phones use the bottom nav sheet */
   .off-wrap{display:flex;gap:7px;}
   .off-btn{flex:1;padding:8px 10px;border-radius:10px;border:1px solid var(--stroke-2);cursor:pointer;
     background:var(--grad-accent);color:var(--btn-ink);font-family:var(--font);font-size:10.5px;font-weight:800;}
@@ -1117,7 +1138,13 @@
   <div id="passBody"></div>
 </div>
 
-<div class="controls">
+<button class="layers-fab glass" id="layersFab" aria-expanded="true" aria-controls="controls" title="Layers">
+  <svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true">
+    <path d="M12 3 2.5 8 12 13l9.5-5L12 3Z" fill="currentColor" opacity=".95"/>
+    <path d="M2.5 12 12 17l9.5-5" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round" opacity=".65"/>
+    <path d="M2.5 16 12 21l9.5-5" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round" opacity=".4"/>
+  </svg><span data-i18n="layers">Layers</span></button>
+<div class="controls" id="controls">
   <div class="card glass" style="padding:7px;">
     <div class="tabs" id="tabs" role="tablist" aria-label="Map view">
       <button data-tab="active" class="active" role="tab" aria-selected="true" data-i18n="tabActive">● Active</button>
@@ -1127,37 +1154,46 @@
       <button data-tab="weather" role="tab" aria-selected="false" data-i18n="tabWeather">☀ Weather</button>
     </div>
   </div>
-  <div class="card glass">
-    <div class="sec" data-i18n="baseMap">Base Map</div>
-    <div class="seg" id="baseSeg">
-      <button data-b="dark" class="active" data-i18n="dark">Dark</button>
-      <button data-b="voyager" data-i18n="streets">Streets</button>
-      <button data-b="sat" data-i18n="satellite">Satellite</button>
-    </div>
-    <div class="row" style="margin-top:10px"><span data-i18n="liveCarr">Live carriages</span>
-      <label class="switch"><input type="checkbox" id="tglTrains" checked><span class="sl"></span></label>
-    </div>
-    <div class="row"><span data-i18n="stationMarkers">Station markers</span>
-      <label class="switch"><input type="checkbox" id="tglStations" checked><span class="sl"></span></label>
-    </div>
-    <div class="row"><span data-i18n="exploreAttr">✨ Explore attractions</span>
-      <label class="switch"><input type="checkbox" id="tglExplore"><span class="sl"></span></label>
-    </div>
-    <div class="sec" style="margin-top:14px" data-i18n="simSpeed">Simulation Speed</div>
-    <div class="seg" id="speedSeg">
-      <button data-s="1">1×</button>
-      <button data-s="3" class="active">3×</button>
-      <button data-s="8">8×</button>
-    </div>
+  <div class="card glass" id="cardLayers">
+    <details class="lyr" open>
+      <summary><span data-i18n="baseMap">Base Map</span></summary>
+      <div class="seg" id="baseSeg">
+        <button data-b="dark" class="active" data-i18n="dark">Dark</button>
+        <button data-b="voyager" data-i18n="streets">Streets</button>
+        <button data-b="sat" data-i18n="satellite">Satellite</button>
+      </div>
+    </details>
+    <details class="lyr" open>
+      <summary><span data-i18n="showOnMap">Show on map</span></summary>
+      <div class="row"><span data-i18n="liveCarr">Live carriages</span>
+        <label class="switch"><input type="checkbox" id="tglTrains" checked><span class="sl"></span></label>
+      </div>
+      <div class="row"><span data-i18n="stationMarkers">Station markers</span>
+        <label class="switch"><input type="checkbox" id="tglStations" checked><span class="sl"></span></label>
+      </div>
+      <div class="row"><span data-i18n="exploreAttr">✨ Explore attractions</span>
+        <label class="switch"><input type="checkbox" id="tglExplore"><span class="sl"></span></label>
+      </div>
+    </details>
+    <details class="lyr">
+      <summary><span data-i18n="simSpeed">Simulation Speed</span></summary>
+      <div class="seg" id="speedSeg">
+        <button data-s="1">1×</button>
+        <button data-s="3" class="active">3×</button>
+        <button data-s="8">8×</button>
+      </div>
+    </details>
   </div>
 
   <div class="card glass" id="cardLines">
-    <div class="sec" data-i18n="networkLines">Network Lines</div>
+    <details class="lyr" id="lyrLines">
+      <summary><span data-i18n="networkLines">Network Lines</span></summary>
     <div id="legend"></div>
-    <div style="display:flex;gap:6px;margin-top:8px">
-      <button class="btn ghost" id="allOn" style="margin:0" data-i18n="all">All</button>
-      <button class="btn ghost" id="allOff" style="margin:0" data-i18n="none">None</button>
-    </div>
+      <div style="display:flex;gap:6px;margin-top:8px">
+        <button class="btn ghost" id="allOn" style="margin:0" data-i18n="all">All</button>
+        <button class="btn ghost" id="allOff" style="margin:0" data-i18n="none">None</button>
+      </div>
+    </details>
   </div>
 
   <div class="card glass" id="cardWeather" style="display:none;">
@@ -1409,6 +1445,7 @@ const I18N = {
     offlineMap:"Offline map", offSave:"Save this area", offClear:"Clear", offStored:"{n} tiles saved · ~{mb} MB. Areas you pan over are kept automatically; trips, fares and timetables already work offline.", offSaving:"Saving {n}/{t}…", offUnavailable:"Available once the app is installed / the service worker is active.",
     offKept:"Protected — kept even when storage runs low.", offEvictable:"Best-effort: install the app (Add to Home Screen) so the phone does not clear it.",
     offNoView:"Open the map first, then save — the view had no size to capture.",
+    layers:"Layers", showOnMap:"Show on map",
     uiStyle:"Icon & colour style", uiNeon:"Neon", uiCalm:"Calm",
     modesTitle:"Modes for this trip", avoiding:"avoided", avoidThis:"Avoid this line", sortBest:"Best", sortTime:"Fastest", sortChanges:"Changes", sortWalk:"Walk", sortFare:"Cheapest",
     cardImgCredit:"Card image: {who} — the operator's own artwork. This app is not affiliated with them.",
@@ -1526,6 +1563,7 @@ const I18N = {
     offlineMap:"Çevrimdışı harita", offSave:"Bu alanı kaydet", offClear:"Temizle", offStored:"{n} karo kayıtlı · ~{mb} MB. Gezdiğiniz alanlar otomatik saklanır; sefer, ücret ve saatler zaten çevrimdışı çalışır.", offSaving:"Kaydediliyor {n}/{t}…", offUnavailable:"Uygulama yüklendiğinde / servis çalışanı etkin olduğunda kullanılabilir.",
     offKept:"Korumalı — depolama azalsa bile saklanır.", offEvictable:"Garanti değil: telefonun silmemesi için uygulamayı yükleyin (Ana Ekrana Ekle).",
     offNoView:"Önce haritayı açın, sonra kaydedin — görünüm ölçülemedi.",
+    layers:"Katmanlar", showOnMap:"Haritada göster",
     uiStyle:"Simge ve renk stili", uiNeon:"Neon", uiCalm:"Sakin",
     modesTitle:"Bu yolculuk için modlar", avoiding:"hariç", avoidThis:"Bu hattı kullanma", sortBest:"En iyi", sortTime:"En hızlı", sortChanges:"Aktarma", sortWalk:"Yürüme", sortFare:"En ucuz",
     cardImgCredit:"Kart görseli: {who} — işletmecinin kendi görseli. Bu uygulama onlarla bağlantılı değildir.",
@@ -1643,6 +1681,7 @@ const I18N = {
     offlineMap:"خريطة دون اتصال", offSave:"احفظ هذه المنطقة", offClear:"مسح", offStored:"{n} مربّع محفوظ · ~{mb} ميجابايت. المناطق التي تتصفّحها تُحفظ تلقائيًا؛ الرحلات والأسعار والمواعيد تعمل بالفعل دون اتصال.", offSaving:"جارٍ الحفظ {n}/{t}…", offUnavailable:"يتوفّر بعد تثبيت التطبيق.",
     offKept:"محمي — يبقى حتى عند امتلاء التخزين.", offEvictable:"غير مضمون: ثبّت التطبيق (إضافة إلى الشاشة الرئيسية) كي لا يمسحه الهاتف.",
     offNoView:"افتح الخريطة أولًا ثم احفظ — لم يكن للعرض حجم قابل للحفظ.",
+    layers:"الطبقات", showOnMap:"إظهار على الخريطة",
     uiStyle:"نمط الأيقونات والألوان", uiNeon:"نيون", uiCalm:"هادئ",
     modesTitle:"وسائل هذه الرحلة", avoiding:"مستبعد", avoidThis:"تجنّب هذا الخط", sortBest:"الأفضل", sortTime:"الأسرع", sortChanges:"التبديلات", sortWalk:"المشي", sortFare:"الأرخص",
     cardImgCredit:"صورة البطاقة: {who} — من تصميم المشغّل نفسه. هذا التطبيق غير تابع له.",
@@ -1758,6 +1797,7 @@ const I18N = {
     offlineMap:"Carte hors ligne", offSave:"Enregistrer cette zone", offClear:"Effacer", offStored:"{n} tuiles · ~{mb} Mo. Les zones parcourues sont conservées automatiquement ; trajets, tarifs et horaires fonctionnent déjà hors ligne.", offSaving:"Enregistrement {n}/{t}…", offUnavailable:"Disponible une fois l’application installée.",
     offKept:"Protégé — conservé même si le stockage est faible.", offEvictable:"Non garanti : installez l’app (Sur l’écran d’accueil) pour éviter l’effacement.",
     offNoView:"Ouvrez d’abord la carte, puis enregistrez — la vue n’avait pas de taille.",
+    layers:"Calques", showOnMap:"Afficher sur la carte",
     uiStyle:"Style d’icônes et couleurs", uiNeon:"Néon", uiCalm:"Sobre",
     modesTitle:"Modes pour ce trajet", avoiding:"exclu", avoidThis:"Éviter cette ligne", sortBest:"Meilleur", sortTime:"Rapide", sortChanges:"Corresp.", sortWalk:"Marche", sortFare:"Moins cher",
     cardImgCredit:"Image de la carte : {who} — visuel de l'exploitant. Application non affiliée à celui-ci.",
@@ -3393,6 +3433,32 @@ function sizeCanvas(){
   tcv.style.width = s.x+'px'; tcv.style.height = s.y+'px';
   tctx.setTransform(DPR,0,0,DPR,0,0);
 }
+/* Keep the map and the carriage overlay matched to the window.
+
+   Both were sized once at load and never again — there was no resize listener in the app at
+   all. Resize the window, rotate a phone, or let a mobile browser's toolbar collapse, and the
+   map kept its old dimensions: tiles covered only the original area and the rest of the
+   viewport stayed empty, which reads as "the map stopped loading". The overlay canvas drifted
+   the same way, so carriages and labels landed in the wrong place.
+
+   Debounced, because resizing fires continuously while dragging. visualViewport is watched
+   too — on mobile that is what actually changes when the URL bar shows or hides. */
+let _relayoutT = 0;
+function relayoutMap(){
+  map.invalidateSize();          // re-measure the container and request any newly exposed tiles
+  sizeCanvas();                  // overlay must match the new pixel size, DPR included
+  try{ applyZoomStyling(); }catch(e){}
+}
+function scheduleRelayout(delay){
+  clearTimeout(_relayoutT);
+  _relayoutT = setTimeout(relayoutMap, delay || 150);
+}
+window.addEventListener('resize', () => scheduleRelayout(150));
+window.addEventListener('orientationchange', () => scheduleRelayout(350));   // after the rotation settles
+if(window.visualViewport) window.visualViewport.addEventListener('resize', () => scheduleRelayout(200));
+// coming back to a backgrounded tab can also mean the viewport moved underneath us
+document.addEventListener('visibilitychange', () => { if(document.visibilityState === 'visible') scheduleRelayout(120); });
+
 // single overlay pass: clear → station labels (zoom-faded) → sleek carriages
 function renderOverlay(now){
   const s = map.getSize();
@@ -5981,6 +6047,26 @@ function init(){
     if(cl) cl.addEventListener("click", ()=>{ if(navigator.serviceWorker && navigator.serviceWorker.controller)
       navigator.serviceWorker.controller.postMessage("clearTiles"); });
     offRefreshNote(); }
+  /* Layers button: hide/show the control stack, remembering the choice. Sections keep their
+     own open/closed state too, so the panel reopens exactly as it was left. */
+  { const fab=document.getElementById("layersFab"), stack=document.getElementById("controls");
+    if(fab && stack){
+      const setOpen=(open,save)=>{
+        stack.classList.toggle("hidden", !open);
+        fab.classList.toggle("on", open);
+        fab.setAttribute("aria-expanded", open?"true":"false");
+        if(save){ try{ localStorage.setItem("irn_layers", open?"1":"0"); }catch(e){} }
+      };
+      setOpen(lsStr("irn_layers","1")!=="0", false);
+      fab.addEventListener("click", ()=> setOpen(stack.classList.contains("hidden"), true));
+    }
+    document.querySelectorAll("#cardLayers .lyr, #cardLines .lyr").forEach(d=>{
+      const key="irn_lyr_"+(d.querySelector("summary span")?.getAttribute("data-i18n")||"x");
+      const saved=lsStr(key,null);
+      if(saved!==null) d.open = saved==="1";
+      d.addEventListener("toggle", ()=>{ try{ localStorage.setItem(key, d.open?"1":"0"); }catch(e){} });
+    });
+  }
   { const bo=document.getElementById('busOpLabel');
     if(bo) bo.textContent = BUS_OPERATOR ? ' · ' + BUS_OPERATOR : ''; }
 }
