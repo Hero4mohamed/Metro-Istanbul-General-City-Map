@@ -785,20 +785,26 @@
   .lyr[open]>summary::after{transform:rotate(180deg);}
   .lyr>summary:hover{color:var(--text);}
   .lyr>*:not(summary){margin-bottom:9px;}
-  /* the floating control that shows/hides the whole stack */
-  /* while a route is focused, make the fact visible so a faded map never looks like a fault */
+  /* Layers card header — folds the whole card. It lives inside the card rather than floating
+     over the map, where it used to sit on top of the Buses tab and hide it completely. */
+  .lyr-head{display:flex;align-items:center;gap:8px;width:100%;padding:2px 2px 9px;border:none;
+    background:none;cursor:pointer;color:var(--accent);font-family:var(--font);font-size:10px;
+    font-weight:800;letter-spacing:1.2px;text-transform:uppercase;}
+  .lyr-head::after{content:"▾";margin-left:auto;font-size:11px;color:var(--dim);
+    transition:transform .18s var(--ease);}
+  .lyr-head[aria-expanded="false"]::after{transform:rotate(-90deg);}
+  .lyr-head[aria-expanded="false"]{padding-bottom:2px;}
+  .lyr-body{display:flex;flex-direction:column;}
+  .lyr-body.folded{display:none;}
+  /* 39 line chips made this section taller than the whole viewport — cap it and scroll inside */
+  #legend{max-height:34vh;overflow-y:auto;overscroll-behavior:contain;padding-right:2px;}
+  #legend::-webkit-scrollbar{width:6px;}
+  #legend::-webkit-scrollbar-thumb{background:var(--stroke-2);border-radius:99px;}
+  /* while a route is focused, make the fact visible so a bare map never looks like a fault */
   body.focus-route .leaflet-container::after{content:attr(data-focus-note);position:absolute;left:50%;
     transform:translateX(-50%);bottom:14px;z-index:900;pointer-events:none;
     padding:6px 12px;border-radius:999px;font-family:var(--font);font-size:10px;font-weight:700;
     letter-spacing:.3px;color:var(--accent);background:rgba(7,10,18,.82);border:1px solid var(--stroke-2);}
-  .layers-fab{position:absolute;top:18px;right:18px;z-index:1200;display:flex;align-items:center;gap:8px;
-    padding:9px 13px;border-radius:12px;border:1px solid var(--stroke-2);cursor:pointer;
-    color:var(--text);font-family:var(--font);font-size:11px;font-weight:800;letter-spacing:.3px;
-    transition:all .16s var(--ease);}
-  .layers-fab:hover{border-color:var(--accent);color:var(--accent);}
-  .layers-fab.on{color:var(--accent);border-color:var(--accent);}
-  .controls.hidden{display:none;}
-  @media (max-width:900px){ .layers-fab{display:none;} }   /* phones use the bottom nav sheet */
   .off-wrap{display:flex;gap:7px;}
   .off-btn{flex:1;padding:8px 10px;border-radius:10px;border:1px solid var(--stroke-2);cursor:pointer;
     background:var(--grad-accent);color:var(--btn-ink);font-family:var(--font);font-size:10.5px;font-weight:800;}
@@ -1147,12 +1153,6 @@
   <div id="passBody"></div>
 </div>
 
-<button class="layers-fab glass" id="layersFab" aria-expanded="true" aria-controls="controls" title="Layers">
-  <svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true">
-    <path d="M12 3 2.5 8 12 13l9.5-5L12 3Z" fill="currentColor" opacity=".95"/>
-    <path d="M2.5 12 12 17l9.5-5" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round" opacity=".65"/>
-    <path d="M2.5 16 12 21l9.5-5" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round" opacity=".4"/>
-  </svg><span data-i18n="layers">Layers</span></button>
 <div class="controls" id="controls">
   <div class="card glass" style="padding:7px;">
     <div class="tabs" id="tabs" role="tablist" aria-label="Map view">
@@ -1164,6 +1164,12 @@
     </div>
   </div>
   <div class="card glass" id="cardLayers">
+    <button class="lyr-head" id="layersHead" aria-expanded="true" aria-controls="layersBody">
+      <svg viewBox="0 0 24 24" width="15" height="15" aria-hidden="true">
+        <path d="M12 3 2.5 8 12 13l9.5-5L12 3Z" fill="currentColor" opacity=".95"/>
+        <path d="M2.5 12 12 17l9.5-5" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" opacity=".6"/>
+      </svg><span data-i18n="layers">Layers</span></button>
+    <div class="lyr-body" id="layersBody">
     <details class="lyr" open>
       <summary><span data-i18n="baseMap">Base Map</span></summary>
       <div class="seg" id="baseSeg">
@@ -1192,17 +1198,19 @@
         <button data-s="8">8×</button>
       </div>
     </details>
-  </div>
-
-  <div class="card glass" id="cardLines">
-    <details class="lyr" id="lyrLines">
-      <summary><span data-i18n="networkLines">Network Lines</span></summary>
-    <div id="legend"></div>
-      <div style="display:flex;gap:6px;margin-top:8px">
-        <button class="btn ghost" id="allOn" style="margin:0" data-i18n="all">All</button>
-        <button class="btn ghost" id="allOff" style="margin:0" data-i18n="none">None</button>
-      </div>
-    </details>
+    <!-- Network Lines is a section of Layers, not a card of its own. #cardLines stays as the
+         wrapper id because setTab() hides it on the Bus / Weather / Intercity scopes. -->
+    <div id="cardLines">
+      <details class="lyr" id="lyrLines">
+        <summary><span data-i18n="networkLines">Network Lines</span></summary>
+        <div id="legend"></div>
+        <div style="display:flex;gap:6px;margin-top:8px">
+          <button class="btn ghost" id="allOn" style="margin:0" data-i18n="all">All</button>
+          <button class="btn ghost" id="allOff" style="margin:0" data-i18n="none">None</button>
+        </div>
+      </details>
+    </div>
+    </div><!-- /layersBody -->
   </div>
 
   <div class="card glass" id="cardWeather" style="display:none;">
@@ -6140,18 +6148,18 @@ function init(){
       navigator.serviceWorker.controller.postMessage("clearTiles"); });
     offRefreshNote(); }
   try{ refreshInstallRow(); }catch(e){}
-  /* Layers button: hide/show the control stack, remembering the choice. Sections keep their
-     own open/closed state too, so the panel reopens exactly as it was left. */
-  { const fab=document.getElementById("layersFab"), stack=document.getElementById("controls");
-    if(fab && stack){
+  /* The Layers header folds its own card — it must not hide the planner or the tabs, which is
+     what the old floating button did when it toggled the whole column. Each section keeps its
+     own open/closed state, so the panel comes back exactly as it was left. */
+  { const head=document.getElementById("layersHead"), body=document.getElementById("layersBody");
+    if(head && body){
       const setOpen=(open,save)=>{
-        stack.classList.toggle("hidden", !open);
-        fab.classList.toggle("on", open);
-        fab.setAttribute("aria-expanded", open?"true":"false");
+        body.classList.toggle("folded", !open);
+        head.setAttribute("aria-expanded", open?"true":"false");
         if(save){ try{ localStorage.setItem("irn_layers", open?"1":"0"); }catch(e){} }
       };
       setOpen(lsStr("irn_layers","1")!=="0", false);
-      fab.addEventListener("click", ()=> setOpen(stack.classList.contains("hidden"), true));
+      head.addEventListener("click", ()=> setOpen(body.classList.contains("folded"), true));
     }
     document.querySelectorAll("#cardLayers .lyr, #cardLines .lyr").forEach(d=>{
       const key="irn_lyr_"+(d.querySelector("summary span")?.getAttribute("data-i18n")||"x");
