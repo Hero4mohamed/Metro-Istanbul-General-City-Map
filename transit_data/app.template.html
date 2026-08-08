@@ -786,6 +786,11 @@
   .lyr>summary:hover{color:var(--text);}
   .lyr>*:not(summary){margin-bottom:9px;}
   /* the floating control that shows/hides the whole stack */
+  /* while a route is focused, make the fact visible so a faded map never looks like a fault */
+  body.focus-route .leaflet-container::after{content:attr(data-focus-note);position:absolute;left:50%;
+    transform:translateX(-50%);bottom:14px;z-index:900;pointer-events:none;
+    padding:6px 12px;border-radius:999px;font-family:var(--font);font-size:10px;font-weight:700;
+    letter-spacing:.3px;color:var(--accent);background:rgba(7,10,18,.82);border:1px solid var(--stroke-2);}
   .layers-fab{position:absolute;top:18px;right:18px;z-index:1200;display:flex;align-items:center;gap:8px;
     padding:9px 13px;border-radius:12px;border:1px solid var(--stroke-2);cursor:pointer;
     color:var(--text);font-family:var(--font);font-size:11px;font-weight:800;letter-spacing:.3px;
@@ -1279,6 +1284,7 @@
       <button class="btn go-start" id="goStart" style="display:none">▶ <span data-i18n="startJourney">Start journey</span></button>
       <div id="rSteps"></div>
       <div class="route-btns">
+        <button class="btn ghost" id="clearRouteBtn">✕ <span data-i18n="clearRoute">Clear route</span></button>
         <button class="btn ghost favbtn" id="favBtn">☆ Save to Favourites</button>
         <button class="btn ghost" id="shareBtn">🔗 <span data-i18n="share">Share</span></button>
         <button class="btn ghost" id="printBtn">🖨 <span data-i18n="printTrip">Print / PDF</span></button>
@@ -1450,6 +1456,7 @@ const I18N = {
     offKept:"Protected — kept even when storage runs low.", offEvictable:"Best-effort: install the app (Add to Home Screen) so the phone does not clear it.",
     offNoView:"Open the map first, then save — the view had no size to capture.",
     installTitle:"App", installWhy:"Install it to launch from your home screen, run full-screen, and stop the phone clearing your saved offline map.", installDone:"Installed — you are running the app version.", installIOS:"iPhone / iPad: tap Share, then \u201cAdd to Home Screen\u201d. Safari has no one-tap install.", installManual:"Use your browser\u2019s menu → Install app (or Add to Home Screen).",
+    clearRoute:"Clear route", focusNote:"Showing your route · Esc or Clear route to see the whole network",
     layers:"Layers", showOnMap:"Show on map",
     uiStyle:"Icon & colour style", uiNeon:"Neon", uiCalm:"Calm",
     modesTitle:"Modes for this trip", avoiding:"avoided", avoidThis:"Avoid this line", sortBest:"Best", sortTime:"Fastest", sortChanges:"Changes", sortWalk:"Walk", sortFare:"Cheapest",
@@ -1569,6 +1576,7 @@ const I18N = {
     offKept:"Korumalı — depolama azalsa bile saklanır.", offEvictable:"Garanti değil: telefonun silmemesi için uygulamayı yükleyin (Ana Ekrana Ekle).",
     offNoView:"Önce haritayı açın, sonra kaydedin — görünüm ölçülemedi.",
     installTitle:"Uygulama", installWhy:"Yükleyin: ana ekrandan açılır, tam ekran çalışır ve telefon kaydettiğiniz çevrimdışı haritayı silmez.", installDone:"Yüklü — uygulama sürümünü kullanıyorsunuz.", installIOS:"iPhone / iPad: Paylaş → \u201cAna Ekrana Ekle\u201d. Safari\u2019de tek dokunuşla kurulum yoktur.", installManual:"Tarayıcı menüsü → Uygulamayı yükle (veya Ana Ekrana Ekle).",
+    clearRoute:"Rotayı temizle", focusNote:"Rotanız gösteriliyor · Tüm ağ için Esc veya Rotayı temizle",
     layers:"Katmanlar", showOnMap:"Haritada göster",
     uiStyle:"Simge ve renk stili", uiNeon:"Neon", uiCalm:"Sakin",
     modesTitle:"Bu yolculuk için modlar", avoiding:"hariç", avoidThis:"Bu hattı kullanma", sortBest:"En iyi", sortTime:"En hızlı", sortChanges:"Aktarma", sortWalk:"Yürüme", sortFare:"En ucuz",
@@ -1688,6 +1696,7 @@ const I18N = {
     offKept:"محمي — يبقى حتى عند امتلاء التخزين.", offEvictable:"غير مضمون: ثبّت التطبيق (إضافة إلى الشاشة الرئيسية) كي لا يمسحه الهاتف.",
     offNoView:"افتح الخريطة أولًا ثم احفظ — لم يكن للعرض حجم قابل للحفظ.",
     installTitle:"التطبيق", installWhy:"ثبّته لتشغيله من الشاشة الرئيسية بملء الشاشة، ولمنع الهاتف من مسح الخريطة المحفوظة.", installDone:"مثبّت — أنت تستخدم نسخة التطبيق.", installIOS:"آيفون / آيباد: مشاركة ← \u201cإضافة إلى الشاشة الرئيسية\u201d.", installManual:"من قائمة المتصفّح ← تثبيت التطبيق (أو إضافة إلى الشاشة الرئيسية).",
+    clearRoute:"مسح المسار", focusNote:"يتم عرض مسارك · اضغط Esc أو مسح المسار لعرض الشبكة كاملة",
     layers:"الطبقات", showOnMap:"إظهار على الخريطة",
     uiStyle:"نمط الأيقونات والألوان", uiNeon:"نيون", uiCalm:"هادئ",
     modesTitle:"وسائل هذه الرحلة", avoiding:"مستبعد", avoidThis:"تجنّب هذا الخط", sortBest:"الأفضل", sortTime:"الأسرع", sortChanges:"التبديلات", sortWalk:"المشي", sortFare:"الأرخص",
@@ -1805,6 +1814,7 @@ const I18N = {
     offKept:"Protégé — conservé même si le stockage est faible.", offEvictable:"Non garanti : installez l’app (Sur l’écran d’accueil) pour éviter l’effacement.",
     offNoView:"Ouvrez d’abord la carte, puis enregistrez — la vue n’avait pas de taille.",
     installTitle:"Application", installWhy:"Installez-la pour la lancer depuis l\u2019écran d\u2019accueil, en plein écran, et empêcher le téléphone d\u2019effacer votre carte hors ligne.", installDone:"Installée — vous utilisez la version application.", installIOS:"iPhone / iPad : Partager → \u201cSur l\u2019écran d\u2019accueil\u201d.", installManual:"Menu du navigateur → Installer l\u2019application (ou Sur l\u2019écran d\u2019accueil).",
+    clearRoute:"Effacer l’itinéraire", focusNote:"Votre itinéraire · Échap ou Effacer pour revoir tout le réseau",
     layers:"Calques", showOnMap:"Afficher sur la carte",
     uiStyle:"Style d’icônes et couleurs", uiNeon:"Néon", uiCalm:"Sobre",
     modesTitle:"Modes pour ce trajet", avoiding:"exclu", avoidThis:"Éviter cette ligne", sortBest:"Meilleur", sortTime:"Rapide", sortChanges:"Corresp.", sortWalk:"Marche", sortFare:"Moins cher",
@@ -3250,7 +3260,7 @@ NETWORK.forEach(line => {
       const core = L.polyline(path, { renderer:lineRenderer, color:line.color, weight:wt,
                               opacity:0.62, lineCap:'round', lineJoin:'round', dashArray:dash });
       [hit,core].forEach(pl => { pl.bindTooltip(tip,{sticky:true,className:'lt'}); pl.on('click', e=>{ openLine(line); L.DomEvent.stop(e); }); pl.addTo(grp); });
-      linePolys.push({ pl:core, base:wt });
+      linePolys.push({ pl:core, base:wt, baseOp:0.62, ref:line.ref });
       return;
     }
     const gw = wt + (live?7:4);
@@ -3263,7 +3273,8 @@ NETWORK.forEach(line => {
       pl.on('click', e => { openLine(line); L.DomEvent.stop(e); });
       pl.addTo(grp);
     });
-    linePolys.push({ pl:glow, base:gw, glow:true, baseOp:(live?0.16:0.10) }, { pl:core, base:wt });
+    linePolys.push({ pl:glow, base:gw, glow:true, baseOp:(live?0.16:0.10), ref:line.ref },
+                   { pl:core, base:wt, baseOp:(live?0.95:0.9), ref:line.ref });
   });
   lineLayers[line.ref] = { group:grp, on:true, live };
 });
@@ -3288,7 +3299,7 @@ stationList.forEach(r => {
   m.on('click', (e) => { openStation(r); L.DomEvent.stop(e); });
   m.addTo(stationGroup);
   stationMarkers[fold(r.name)] = m;
-  stationMarkersArr.push({ m, base });
+  stationMarkersArr.push({ m, base, refs:r.lines });
 });
 
 // hollow markers for planned-line stops (Vision tab only)
@@ -3299,17 +3310,43 @@ plannedStationList.forEach(r => {
   });
   m.on('click', (e) => { openLine(lineByRef[r.ref]); L.DomEvent.stop(e); });
   m.addTo(plannedStationGroup);
-  stationMarkersArr.push({ m, base:3.6 });
+  stationMarkersArr.push({ m, base:3.6, refs:new Set([r.ref]) });
 });
 
 // zoom-responsive sizing: thin lines & small dots when zoomed out (de-clutter)
 const busLayer = L.layerGroup().addTo(map);   // holds the selected bus route
 function lineScale(z){ return z>=14 ? 1 : z<=9 ? 0.34 : 0.34 + (z-9)*0.132; }
 function markerScale(z){ return z>=14 ? 1 : z<=10 ? 0.42 : 0.42 + (z-10)*0.145; }
+/* Route focus: while a planned route is selected, everything that is not part of it fades
+   back so the chosen path reads on its own. Nothing is removed from the map — dimmed lines
+   stay clickable and the network stays legible as context — and it is reverted the moment
+   the route is cleared, the planner is switched, or a new plan is started. */
+let focusRefs = null;                 // null = normal; otherwise the refs the route uses
+const FOCUS_LINE = 0.13, FOCUS_DOT = 0.16;
+function setRouteFocus(refs){
+  focusRefs = (refs && refs.size) ? refs : null;
+  applyZoomStyling();
+  document.body.classList.toggle("focus-route", !!focusRefs);
+  const mc=document.querySelector(".leaflet-container");
+  if(mc) mc.setAttribute("data-focus-note", focusRefs ? t("focusNote") : "");
+}
+function clearRouteFocus(){ if(focusRefs){ focusRefs = null; applyZoomStyling();
+  document.body.classList.remove("focus-route"); } }
 function applyZoomStyling(){
   const z = map.getZoom(), ls = lineScale(z), ms = markerScale(z);
-  linePolys.forEach(o => o.pl.setStyle({ weight: Math.max(0.5, o.base*ls) }));
-  stationMarkersArr.forEach(o => o.m.setRadius(Math.max(1, o.base*ms)));
+  linePolys.forEach(o => {
+    const dim = focusRefs && !focusRefs.has(o.ref);
+    const st = { weight: Math.max(0.5, o.base*ls) };
+    if(o.baseOp != null) st.opacity = dim ? o.baseOp*FOCUS_LINE : o.baseOp;
+    o.pl.setStyle(st);
+  });
+  stationMarkersArr.forEach(o => {
+    o.m.setRadius(Math.max(1, o.base*ms));
+    if(!focusRefs){ o.m.setStyle({ opacity:1, fillOpacity:1 }); return; }
+    let on = false;
+    if(o.refs) for(const r of o.refs) if(focusRefs.has(r)) { on = true; break; }
+    o.m.setStyle(on ? { opacity:1, fillOpacity:1 } : { opacity:FOCUS_DOT, fillOpacity:FOCUS_DOT });
+  });
 }
 map.on('zoomend', applyZoomStyling);
 
@@ -4265,9 +4302,16 @@ function renderOptChips(){
       <div class="ro-s">${optLines(o.it)}</div></div>`).join('');
   el.querySelectorAll('.ropt').forEach(c=> c.addEventListener('click', ()=> selectOption(+c.dataset.i)));
 }
+// the rail/bus refs an itinerary actually rides (walking legs contribute nothing)
+function itinRefs(it){
+  const s=new Set();
+  ((it&&it.steps)||[]).forEach(st=>{ if(st.type==='ride' && st.ref) s.add(st.ref); });
+  return s;
+}
 function selectOption(idx){
   if(!currentOpts[idx]) return;
   currentOptIdx=idx;
+  setRouteFocus(itinRefs(currentOpts[idx].it));
   document.querySelectorAll('#rOpts .ropt').forEach(c=> c.classList.toggle('sel', +c.dataset.i===idx));
   showItinerary(currentOpts[idx].res, currentOpts[idx].it);
 }
@@ -4856,7 +4900,7 @@ function applyAdvHash(){
 }
 function planAdventure(){
   const out=document.getElementById('advOut'), stepsEl=document.getElementById('aSteps');
-  routeLayer.clearLayers();
+  routeLayer.clearLayers(); clearRouteFocus();
   const token=++routeToken;
   const pts=advStops.map((_,i)=>resolveAdv(i));
   drawAdvMarkers();
@@ -4882,6 +4926,8 @@ function planAdventure(){
   stepsEl.innerHTML = parts.join('');
   // remember the whole adventure so share / save / print can rebuild it
   lastAdv = { pts: pts.slice(), legs: advLegs, totMin, totStops, totTr, failed };
+  { const all=new Set(); advLegs.forEach(l=>itinRefs(l.it).forEach(r=>all.add(r)));
+    setRouteFocus(all); }
   renderAdvFare(); renderAdvWarnings(); updateAdvFavBtn();
   if(allPts.length) map.fitBounds(L.latLngBounds(allPts).pad(0.2));
   if(legsUp.length){
@@ -4897,7 +4943,7 @@ function setPlannerTab(m){
   document.querySelectorAll('#plannerTabs button').forEach(b=>b.classList.toggle('active', b.dataset.pt===m));
   document.getElementById('plannerTrip').style.display = m==='trip' ? '' : 'none';
   document.getElementById('plannerAdv').style.display  = m==='adv'  ? '' : 'none';
-  routeLayer.clearLayers(); endpointLayer.clearLayers();
+  routeLayer.clearLayers(); endpointLayer.clearLayers(); clearRouteFocus();
   if(pickMode) armPick(pickMode);        // disarm any pending pick
   ++routeToken;
   if(m==='trip') renderEndpoints(); else { rebuildAdvRows(); drawAdvMarkers(); }
@@ -4925,7 +4971,7 @@ function runRoute(){
   }
   renderEndpoints();
   const out=document.getElementById('rout'), stepsEl=document.getElementById('rSteps');
-  routeLayer.clearLayers(); ++routeToken;
+  routeLayer.clearLayers(); ++routeToken; clearRouteFocus();
   if(goState) exitGo();                                   // a fresh plan ends any active live journey
   document.getElementById('rOpts').innerHTML=''; currentOpts=[]; currentOptIdx=0;
   { const jm=document.getElementById('rJourney'); if(jm) jm.innerHTML=''; const fEl=document.getElementById('rFare'); if(fEl) fEl.innerHTML='';
@@ -5557,6 +5603,14 @@ document.getElementById('placeChips').addEventListener('click', e=>{ const b=e.t
 document.getElementById('modeChips').addEventListener('click', e=>{ const b=e.target.closest('.mchip'); if(b) toggleTripMode(b.dataset.mode); });
 document.getElementById('avoidRow').addEventListener('click', e=>{ const b=e.target.closest('.achip'); if(b) unavoidLine(b.dataset.unavoid); });
 document.getElementById('rOpts').addEventListener('click', e=>{ const b=e.target.closest('button[data-sort]'); if(b){ e.stopPropagation(); setOptSort(b.dataset.sort); } });
+{ const cb=document.getElementById('clearRouteBtn');
+  if(cb) cb.addEventListener('click', ()=>{
+    clearRouteFocus();
+    routeLayer.clearLayers(); ++routeToken;
+    if(goState) exitGo();
+    document.getElementById('rout').classList.remove('show');
+    document.getElementById('rOpts').innerHTML=''; currentOpts=[]; currentOptIdx=0;
+  }); }
 // "avoid this line" from a step in the results → replan without it
 document.getElementById('rSteps').addEventListener('click', e=>{ const b=e.target.closest('.st-avoid'); if(b){ e.stopPropagation(); avoidLine(b.dataset.ref); } });
 // airport quick actions: the single most common visitor trip, one tap to destination
@@ -6069,6 +6123,7 @@ async function loadLiveDisruptions(){
     close(); switchCity(b.dataset.city); });
   document.addEventListener('click', e=>{ if(!menu.contains(e.target) && e.target!==btn) close(); });
   document.addEventListener('keydown', e=>{ if(e.key==='Escape') close(); });
+document.addEventListener('keydown', e=>{ if(e.key==='Escape' && focusRefs) clearRouteFocus(); });
 })();
 // ---- first-visit welcome / guide (reopenable from the ? header button) ----
 (function(){
