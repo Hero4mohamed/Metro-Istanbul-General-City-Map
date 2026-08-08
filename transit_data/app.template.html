@@ -1032,6 +1032,10 @@
         </div>
       </div>
     </div>
+    <div class="sp-row sp-col" id="installRow"><span data-i18n="installTitle">App</span>
+      <button class="off-btn" id="instBtn" data-i18n="installApp">Install app</button>
+      <div class="sp-note" id="instNote"></div>
+    </div>
     <div class="sp-row sp-col" id="offlineRow"><span data-i18n="offlineMap">Offline map</span>
       <div class="off-wrap">
         <button class="off-btn" id="offSave" data-i18n="offSave">Save this area</button>
@@ -1445,6 +1449,7 @@ const I18N = {
     offlineMap:"Offline map", offSave:"Save this area", offClear:"Clear", offStored:"{n} tiles saved · ~{mb} MB. Areas you pan over are kept automatically; trips, fares and timetables already work offline.", offSaving:"Saving {n}/{t}…", offUnavailable:"Available once the app is installed / the service worker is active.",
     offKept:"Protected — kept even when storage runs low.", offEvictable:"Best-effort: install the app (Add to Home Screen) so the phone does not clear it.",
     offNoView:"Open the map first, then save — the view had no size to capture.",
+    installTitle:"App", installWhy:"Install it to launch from your home screen, run full-screen, and stop the phone clearing your saved offline map.", installDone:"Installed — you are running the app version.", installIOS:"iPhone / iPad: tap Share, then \u201cAdd to Home Screen\u201d. Safari has no one-tap install.", installManual:"Use your browser\u2019s menu → Install app (or Add to Home Screen).",
     layers:"Layers", showOnMap:"Show on map",
     uiStyle:"Icon & colour style", uiNeon:"Neon", uiCalm:"Calm",
     modesTitle:"Modes for this trip", avoiding:"avoided", avoidThis:"Avoid this line", sortBest:"Best", sortTime:"Fastest", sortChanges:"Changes", sortWalk:"Walk", sortFare:"Cheapest",
@@ -1563,6 +1568,7 @@ const I18N = {
     offlineMap:"Çevrimdışı harita", offSave:"Bu alanı kaydet", offClear:"Temizle", offStored:"{n} karo kayıtlı · ~{mb} MB. Gezdiğiniz alanlar otomatik saklanır; sefer, ücret ve saatler zaten çevrimdışı çalışır.", offSaving:"Kaydediliyor {n}/{t}…", offUnavailable:"Uygulama yüklendiğinde / servis çalışanı etkin olduğunda kullanılabilir.",
     offKept:"Korumalı — depolama azalsa bile saklanır.", offEvictable:"Garanti değil: telefonun silmemesi için uygulamayı yükleyin (Ana Ekrana Ekle).",
     offNoView:"Önce haritayı açın, sonra kaydedin — görünüm ölçülemedi.",
+    installTitle:"Uygulama", installWhy:"Yükleyin: ana ekrandan açılır, tam ekran çalışır ve telefon kaydettiğiniz çevrimdışı haritayı silmez.", installDone:"Yüklü — uygulama sürümünü kullanıyorsunuz.", installIOS:"iPhone / iPad: Paylaş → \u201cAna Ekrana Ekle\u201d. Safari\u2019de tek dokunuşla kurulum yoktur.", installManual:"Tarayıcı menüsü → Uygulamayı yükle (veya Ana Ekrana Ekle).",
     layers:"Katmanlar", showOnMap:"Haritada göster",
     uiStyle:"Simge ve renk stili", uiNeon:"Neon", uiCalm:"Sakin",
     modesTitle:"Bu yolculuk için modlar", avoiding:"hariç", avoidThis:"Bu hattı kullanma", sortBest:"En iyi", sortTime:"En hızlı", sortChanges:"Aktarma", sortWalk:"Yürüme", sortFare:"En ucuz",
@@ -1681,6 +1687,7 @@ const I18N = {
     offlineMap:"خريطة دون اتصال", offSave:"احفظ هذه المنطقة", offClear:"مسح", offStored:"{n} مربّع محفوظ · ~{mb} ميجابايت. المناطق التي تتصفّحها تُحفظ تلقائيًا؛ الرحلات والأسعار والمواعيد تعمل بالفعل دون اتصال.", offSaving:"جارٍ الحفظ {n}/{t}…", offUnavailable:"يتوفّر بعد تثبيت التطبيق.",
     offKept:"محمي — يبقى حتى عند امتلاء التخزين.", offEvictable:"غير مضمون: ثبّت التطبيق (إضافة إلى الشاشة الرئيسية) كي لا يمسحه الهاتف.",
     offNoView:"افتح الخريطة أولًا ثم احفظ — لم يكن للعرض حجم قابل للحفظ.",
+    installTitle:"التطبيق", installWhy:"ثبّته لتشغيله من الشاشة الرئيسية بملء الشاشة، ولمنع الهاتف من مسح الخريطة المحفوظة.", installDone:"مثبّت — أنت تستخدم نسخة التطبيق.", installIOS:"آيفون / آيباد: مشاركة ← \u201cإضافة إلى الشاشة الرئيسية\u201d.", installManual:"من قائمة المتصفّح ← تثبيت التطبيق (أو إضافة إلى الشاشة الرئيسية).",
     layers:"الطبقات", showOnMap:"إظهار على الخريطة",
     uiStyle:"نمط الأيقونات والألوان", uiNeon:"نيون", uiCalm:"هادئ",
     modesTitle:"وسائل هذه الرحلة", avoiding:"مستبعد", avoidThis:"تجنّب هذا الخط", sortBest:"الأفضل", sortTime:"الأسرع", sortChanges:"التبديلات", sortWalk:"المشي", sortFare:"الأرخص",
@@ -1797,6 +1804,7 @@ const I18N = {
     offlineMap:"Carte hors ligne", offSave:"Enregistrer cette zone", offClear:"Effacer", offStored:"{n} tuiles · ~{mb} Mo. Les zones parcourues sont conservées automatiquement ; trajets, tarifs et horaires fonctionnent déjà hors ligne.", offSaving:"Enregistrement {n}/{t}…", offUnavailable:"Disponible une fois l’application installée.",
     offKept:"Protégé — conservé même si le stockage est faible.", offEvictable:"Non garanti : installez l’app (Sur l’écran d’accueil) pour éviter l’effacement.",
     offNoView:"Ouvrez d’abord la carte, puis enregistrez — la vue n’avait pas de taille.",
+    installTitle:"Application", installWhy:"Installez-la pour la lancer depuis l\u2019écran d\u2019accueil, en plein écran, et empêcher le téléphone d\u2019effacer votre carte hors ligne.", installDone:"Installée — vous utilisez la version application.", installIOS:"iPhone / iPad : Partager → \u201cSur l\u2019écran d\u2019accueil\u201d.", installManual:"Menu du navigateur → Installer l\u2019application (ou Sur l\u2019écran d\u2019accueil).",
     layers:"Calques", showOnMap:"Afficher sur la carte",
     uiStyle:"Style d’icônes et couleurs", uiNeon:"Néon", uiCalm:"Sobre",
     modesTitle:"Modes pour ce trajet", avoiding:"exclu", avoidThis:"Éviter cette ligne", sortBest:"Meilleur", sortTime:"Rapide", sortChanges:"Corresp.", sortWalk:"Marche", sortFare:"Moins cher",
@@ -2040,6 +2048,35 @@ function offTileURL(z,x,y){
     }, lyr.options));
   }catch(e){ return null; }
 }
+let deferredInstall=null;                 // set by beforeinstallprompt, consumed by the Settings row
+const isIOS = () => /iphone|ipad|ipod/i.test(navigator.userAgent) ||
+  (/Macintosh/.test(navigator.userAgent) && navigator.maxTouchPoints > 1);   // iPadOS reports as Mac
+const isStandalone = () => matchMedia("(display-mode: standalone)").matches || navigator.standalone === true;
+function refreshInstallRow(){
+  const btn=document.getElementById("instBtn"), note=document.getElementById("instNote");
+  if(!btn||!note) return;
+  if(isStandalone()){
+    btn.style.display="none"; note.textContent=t("installDone"); return;
+  }
+  if(deferredInstall){
+    btn.style.display=""; btn.disabled=false; note.textContent=t("installWhy");
+    btn.onclick = async ()=>{
+      btn.disabled=true;
+      try{
+        deferredInstall.prompt();
+        const res=await deferredInstall.userChoice;
+        deferredInstall=null;
+        note.textContent = (res && res.outcome==="accepted") ? t("installDone") : t("installWhy");
+        if(res && res.outcome==="accepted") btn.style.display="none"; else btn.disabled=false;
+      }catch(e){ btn.disabled=false; }
+    };
+    return;
+  }
+  // no programmatic prompt available on this browser
+  btn.style.display="none";
+  note.textContent = isIOS() ? t("installIOS") : t("installManual");
+}
+window.addEventListener("appinstalled", ()=>{ deferredInstall=null; refreshInstallRow(); });
 async function offPersist(){
   try{
     if(!navigator.storage || !navigator.storage.persist) return null;
@@ -5844,13 +5881,7 @@ function setupMobile(){
   bd.addEventListener('click',()=>openSheet(null)); document.body.appendChild(bd);
   // sheets
   mSheets={ planner:mkSheet('planner'), layers:mkSheet('layers'), weather:mkSheet('weather'), alerts:mkSheet('alerts') };
-  // install button + iOS hint live at the top of the Layers sheet
-  const inst=document.createElement('button'); inst.className='btn'; inst.id='installBtn';
-  inst.style.display='none'; inst.setAttribute('data-i18n','installApp'); inst.textContent=t('installApp');
-  mSheets.layers.appendChild(inst);
-  const hint=document.createElement('div'); hint.className='mhint'; hint.id='iosHint'; hint.style.display='none';
-  hint.setAttribute('data-i18n','iosHint'); hint.textContent=t('iosHint');
-  mSheets.layers.appendChild(hint);
+  // installing is offered in Settings → App, for phones and desktop alike
   // reparent the desktop cards into their sheets (order preserved)
   const controls=document.querySelector('.controls');
   [...controls.children].forEach(el=>{
@@ -5878,9 +5909,7 @@ function setupMobile(){
   });
   document.body.appendChild(nav);
   mNavBtns.map.classList.add('on');
-  // iOS install hint (no beforeinstallprompt on iOS)
-  const standalone = matchMedia('(display-mode: standalone)').matches || navigator.standalone;
-  if(/iphone|ipad|ipod/i.test(navigator.userAgent) && !standalone) hint.style.display='';
+
 }
 // toast (used for PWA update notifications)
 function showToast(msg, kind){
@@ -5890,11 +5919,10 @@ function showToast(msg, kind){
   clearTimeout(tEl._t); tEl._t=setTimeout(()=>tEl.classList.remove('on'), 4200);
 }
 // PWA: register the service worker (auto-updates on every deploy) + install prompt
-let deferredInstall=null;
+// (deferredInstall is declared near the Settings install row, which reads it)
 window.addEventListener('beforeinstallprompt', e=>{
   e.preventDefault(); deferredInstall=e;
-  const b=document.getElementById('installBtn');
-  if(b){ b.style.display=''; b.onclick=async ()=>{ b.style.display='none'; deferredInstall.prompt(); await deferredInstall.userChoice; deferredInstall=null; }; }
+  try{ refreshInstallRow(); }catch(_){}          // Settings row is the install affordance now
 });
 if('serviceWorker' in navigator && (location.protocol==='https:' || location.hostname==='localhost')){
   navigator.serviceWorker.register('sw.js', { updateViaCache:'none' }).then(reg=>{
@@ -5953,6 +5981,7 @@ function init(){
     if(cl) cl.addEventListener("click", ()=>{ if(navigator.serviceWorker && navigator.serviceWorker.controller)
       navigator.serviceWorker.controller.postMessage("clearTiles"); });
     offRefreshNote(); }
+  try{ refreshInstallRow(); }catch(e){}
   /* Layers button: hide/show the control stack, remembering the choice. Sections keep their
      own open/closed state too, so the panel reopens exactly as it was left. */
   { const fab=document.getElementById("layersFab"), stack=document.getElementById("controls");
