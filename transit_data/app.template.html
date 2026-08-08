@@ -39,6 +39,10 @@
     --surface:rgba(255,255,255,.045); --surface-2:rgba(255,255,255,.08);
     --track:rgba(4,7,13,.55); --ring:rgba(52,211,153,.28);
     --ease:cubic-bezier(.22,.7,.3,1);
+    /* one inset from the screen edge and one gap between stacked panels, so every floating
+       surface lines up instead of each carrying its own hand-picked number. --rail-l/--rail-r
+       are the two fixed columns' widths; the hint measures its free band from them. */
+    --gutter:14px; --panel-gap:12px; --rail-l:300px; --rail-r:286px;
     --font:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;
     --display:'Space Grotesk',var(--font);
     --mono:'JetBrains Mono',ui-monospace,'Cascadia Code',Consolas,monospace;
@@ -182,7 +186,7 @@
   .skip-link:focus{top:0;}
 
   /* Right control stack */
-  .controls{position:fixed;top:14px;right:14px;width:286px;z-index:1000;display:flex;flex-direction:column;gap:12px;
+  .controls{position:fixed;top:var(--gutter);right:var(--gutter);width:var(--rail-r);z-index:1000;display:flex;flex-direction:column;gap:var(--panel-gap);
     max-height:calc(100vh - 64px);overflow-y:auto;overflow-x:hidden;padding:0 5px 18px 0;scrollbar-gutter:stable;}
   .card{padding:15px;animation:cardIn .45s var(--ease) backwards;}
   .controls .card:nth-child(1){animation-delay:.06s;} .controls .card:nth-child(2){animation-delay:.12s;}
@@ -478,12 +482,26 @@
   .exp-s.wip{background:rgba(251,191,36,.18);color:#FCD97C;}
   .exp-s.plan{background:rgba(147,157,178,.18);color:var(--muted);}
   .lp-src{font-size:9px;color:var(--dim);margin-top:10px;border-top:1px solid var(--stroke);padding-top:8px;line-height:1.55;}
-  .hint{position:fixed;bottom:12px;right:14px;z-index:900;font-size:9.5px;color:var(--dim);padding:8px 14px;pointer-events:none;max-width:300px;border-radius:99px;}
-  /* clear of the controls column, which is fixed to the same corner */
-  @media (min-width:901px){ .hint{right:314px;} }
+  /* Centred along the bottom, in the band the side panels leave free. Pinning it to a corner
+     put it under one panel or the other; offsetting it from the right just looked arbitrary. */
+  /* Sits along the bottom in the band the two fixed columns leave free. Its left/right insets
+     are the columns themselves plus a --panel-gap, and `margin:0 auto` then centres it inside
+     that band — so it stays clear of both without any hand-picked offset, and follows the
+     columns if their widths ever change. Pinning it to a corner put it under a panel. */
+  .hint{position:fixed;bottom:var(--gutter);
+    left:calc(var(--gutter) + var(--rail-l) + var(--panel-gap));
+    right:calc(var(--gutter) + var(--rail-r) + var(--panel-gap));
+    margin:0 auto;width:max-content;
+    /* the band, spelled out: a percentage here would resolve against the viewport, not the insets */
+    max-width:min(340px,calc(100vw - var(--rail-l) - var(--rail-r) - 2*var(--gutter) - 2*var(--panel-gap)));
+    z-index:900;font-size:9.5px;color:var(--dim);padding:8px 14px;pointer-events:none;
+    text-align:center;border-radius:99px;}
+  /* Below this the band is too cramped to read a tip pill, so it steps aside — this is
+     guidance, not data the map depends on. Phones already drop it via body.mobile. */
+  @media (max-width:880px){ .hint{display:none;} }
 
   /* Announcements panel (bottom-left) */
-  .announce{position:fixed;left:14px;bottom:14px;width:300px;z-index:980;padding:0;overflow:hidden;}
+  .announce{position:fixed;left:var(--gutter);bottom:var(--gutter);width:var(--rail-l);z-index:980;padding:0;overflow:hidden;}
   .ann-h{display:flex;align-items:center;justify-content:space-between;padding:12px 15px;cursor:pointer;font-size:11px;letter-spacing:.5px;font-weight:750;color:var(--text);transition:background .15s;}
   .ann-h:hover{background:var(--surface);}
   .ann-h .ann-count{font-size:9px;color:#191204;background:linear-gradient(135deg,#FCD34D,#F59E0B);border-radius:99px;padding:1.5px 8px;margin-left:4px;font-weight:800;box-shadow:0 2px 8px -2px rgba(251,191,36,.6);}
@@ -556,7 +574,8 @@
   .ropt:active,.plan-item:active,.wx-row:active,.bus-row:active,.ann-item:active{transform:scale(.985);}
   .wx-clock{animation:clockGlow 3.4s ease-in-out infinite;}
   @keyframes clockGlow{0%,100%{text-shadow:0 0 22px rgba(56,189,248,.45);}50%{text-shadow:0 0 34px rgba(56,189,248,.85);}}
-  @media (max-width:760px){.controls{width:228px;}.station{width:228px;}.topbar{max-width:200px;}}
+  /* narrower right column — set the token, so anything measuring off it follows automatically */
+  @media (max-width:760px){:root{--rail-r:228px;}.station{width:228px;}.topbar{max-width:200px;}}
 
   /* ============ MOBILE APP SHELL (PWA) ============ */
   .mnav,.msheet,.mbackdrop{display:none;}
