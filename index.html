@@ -46,6 +46,9 @@
     /* height of the one-line hint pill — the control column reserves this much, plus a
        --panel-gap, so the hint always has a clear lane directly beneath it */
     --hint-h:28px;
+    /* measured from the real .topbar at runtime — the left rail hangs off it, so the
+       rail cannot ride up into the card when the header grows (long city name, i18n) */
+    --topbar-h:164px;
     --font:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;
     --display:'Space Grotesk',var(--font);
     --mono:'JetBrains Mono',ui-monospace,'Cascadia Code',Consolas,monospace;
@@ -551,7 +554,8 @@
   .jmap-h{font-size:10px;letter-spacing:.7px;text-transform:uppercase;color:var(--dim);font-weight:700;margin:2px 0 5px;}
 
   /* GPS: floating locate button + live position dot */
-  .locate-fab{position:fixed;left:18px;top:172px;z-index:1200;width:44px;height:44px;border-radius:14px;
+  .locate-fab{position:fixed;left:var(--gutter);top:calc(var(--gutter) + var(--topbar-h) + var(--panel-gap));
+    z-index:1200;width:44px;height:44px;border-radius:14px;
     display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--text);
     border:1px solid var(--stroke-2);background:var(--panel);box-shadow:0 8px 22px -10px rgba(0,0,0,.7);
     transition:all .18s var(--ease);}
@@ -560,6 +564,9 @@
   .locate-fab.on{color:#2f8fff;border-color:rgba(47,143,255,.5);box-shadow:0 0 0 1px rgba(47,143,255,.4),0 8px 22px -10px rgba(0,0,0,.7);}
   .locate-fab.busy svg{animation:spin 1s linear infinite;}
   body.mobile .locate-fab{left:auto;top:auto;right:14px;bottom:calc(92px + env(safe-area-inset-bottom));}
+  body.mobile .ai-orb{left:auto;top:auto;right:14px;bottom:calc(148px + env(safe-area-inset-bottom));}
+  body.mobile .ai-panel{left:10px;right:10px;width:auto;top:auto;
+    bottom:calc(84px + env(safe-area-inset-bottom));max-height:64vh;}
   .geo-ic{background:none!important;border:none!important;}
   .geo-dot{width:16px;height:16px;border-radius:50%;background:#2f8fff;border:3px solid #fff;
     box-shadow:0 0 0 0 rgba(47,143,255,.5);animation:geopulse 2s infinite;}
@@ -575,6 +582,105 @@
   @keyframes clockGlow{0%,100%{text-shadow:0 0 22px rgba(56,189,248,.45);}50%{text-shadow:0 0 34px rgba(56,189,248,.85);}}
   /* narrower right column — set the token, so anything measuring off it follows automatically */
   @media (max-width:760px){:root{--rail-r:228px;}.station{width:228px;}.topbar{max-width:200px;}}
+
+  /* ---------- omni search: any place, not just stops ---------- */
+  .omni{position:relative;margin-top:11px;}
+  .omni-bar{display:flex;align-items:center;gap:7px;padding:8px 10px;border-radius:11px;
+    border:1px solid var(--stroke-2);background:var(--surface);transition:border-color .16s var(--ease);}
+  .omni-bar:focus-within{border-color:var(--accent);}
+  .omni-ic{flex:none;color:var(--dim);}
+  .omni-bar:focus-within .omni-ic{color:var(--accent);}
+  .omni-in{flex:1;min-width:0;border:none;background:none;outline:none;color:var(--text);
+    font-family:var(--font);font-size:11.5px;}
+  .omni-in::placeholder{color:var(--dim);}
+  .omni-x{flex:none;border:none;background:none;color:var(--dim);cursor:pointer;font-size:12px;
+    line-height:1;padding:2px 3px;display:none;}
+  .omni-x:hover{color:var(--text);}
+  .omni.has-q .omni-x{display:block;}
+  .omni-res{position:absolute;top:calc(100% + 7px);left:0;right:0;z-index:1100;display:none;
+    max-height:min(52vh,430px);overflow-y:auto;overscroll-behavior:contain;border-radius:13px;
+    padding:6px;flex-direction:column;gap:2px;}
+  .omni.open .omni-res{display:flex;}
+  .omni-res::-webkit-scrollbar{width:6px;}
+  .omni-res::-webkit-scrollbar-thumb{background:var(--stroke-2);border-radius:99px;}
+  .omni-row{display:flex;align-items:center;gap:9px;padding:8px 9px;border-radius:9px;cursor:pointer;
+    border:1px solid transparent;transition:background .13s var(--ease);}
+  .omni-row:hover,.omni-row.sel{background:rgba(52,211,153,.10);border-color:rgba(52,211,153,.4);}
+  .omni-ico{flex:none;width:22px;height:22px;border-radius:7px;display:flex;align-items:center;
+    justify-content:center;font-size:11px;background:var(--surface);border:1px solid var(--stroke);}
+  .omni-tx{flex:1;min-width:0;display:flex;flex-direction:column;gap:1px;}
+  .omni-nm{font-size:11px;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .omni-sb{font-size:9px;color:var(--dim);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .omni-d{flex:none;font-family:var(--mono);font-size:9.5px;color:var(--muted);}
+  .omni-h{font-size:8.5px;letter-spacing:1.1px;text-transform:uppercase;color:var(--dim);
+    font-weight:800;padding:8px 9px 4px;}
+  .omni-chips{display:flex;flex-wrap:wrap;gap:5px;padding:6px 5px 4px;}
+  .omni-chip{border:1px solid var(--stroke-2);background:var(--surface);color:var(--muted);
+    border-radius:99px;padding:5px 9px;font-size:9.5px;font-family:var(--font);cursor:pointer;
+    transition:all .14s var(--ease);}
+  .omni-chip:hover{border-color:var(--accent);color:var(--accent);}
+  .omni-note{font-size:9.5px;color:var(--dim);padding:9px 10px;line-height:1.5;}
+  /* .topbar owns a stacking context at z-index 1000, so the list inside it would otherwise
+     sit under the z-1200 left rail no matter what z-index the list itself carries */
+  body.omni-open .topbar{z-index:1300;}
+  body.omni-open .locate-fab,body.omni-open .ai-orb{opacity:0;pointer-events:none;}
+
+  /* ---------- assistant orb + panel ---------- */
+  .ai-orb{position:fixed;left:var(--gutter);
+    top:calc(var(--gutter) + var(--topbar-h) + var(--panel-gap) + 44px + var(--panel-gap));
+    z-index:1200;width:44px;height:44px;border-radius:50%;border:1px solid var(--stroke-2);
+    background:var(--panel);cursor:pointer;display:flex;align-items:center;justify-content:center;
+    box-shadow:0 8px 22px -10px rgba(0,0,0,.7);transition:all .18s var(--ease);padding:0;}
+  .ai-orb:hover{transform:translateY(-1px);border-color:var(--ring);}
+  .ai-orb .orb{width:22px;height:22px;border-radius:50%;
+    background:conic-gradient(from 0deg,#34D399,#38BDF8,#A78BFA,#F472B6,#34D399);
+    filter:blur(.2px);animation:orbSpin 6s linear infinite;}
+  .ai-orb.on{border-color:var(--accent);}
+  .ai-orb.busy .orb{animation:orbSpin 1.1s linear infinite;}
+  @keyframes orbSpin{to{transform:rotate(360deg);}}
+  .ai-panel{position:fixed;left:var(--gutter);
+    top:calc(var(--gutter) + var(--topbar-h) + var(--panel-gap) + 44px + var(--panel-gap));
+    bottom:var(--gutter);width:var(--rail-l);z-index:1250;display:none;flex-direction:column;
+    padding:0;overflow:hidden;}
+  body.ai-open .ai-panel{display:flex;}
+  /* the assistant owns the bottom-left while it is open, so nothing stacks on top of it */
+  body.ai-open .announce{display:none;}
+  .ai-h{display:flex;align-items:center;gap:8px;padding:11px 13px;border-bottom:1px solid var(--stroke);}
+  .ai-h b{font-size:10.5px;letter-spacing:1px;text-transform:uppercase;color:var(--accent);font-weight:800;}
+  .ai-x{margin-left:auto;border:none;background:none;color:var(--dim);cursor:pointer;font-size:13px;padding:2px 4px;}
+  .ai-x:hover{color:var(--text);}
+  .ai-log{flex:1;overflow-y:auto;overscroll-behavior:contain;padding:11px 12px;display:flex;
+    flex-direction:column;gap:9px;}
+  .ai-log::-webkit-scrollbar{width:6px;}
+  .ai-log::-webkit-scrollbar-thumb{background:var(--stroke-2);border-radius:99px;}
+  .ai-msg{font-size:10.5px;line-height:1.55;border-radius:11px;padding:9px 11px;max-width:92%;}
+  .ai-msg.me{align-self:flex-end;background:rgba(52,211,153,.13);border:1px solid rgba(52,211,153,.34);color:var(--text);}
+  .ai-msg.bot{align-self:flex-start;background:var(--surface);border:1px solid var(--stroke);color:var(--muted);}
+  .ai-msg b{color:var(--text);}
+  .ai-hit{display:flex;align-items:center;gap:8px;margin-top:6px;padding:7px 8px;border-radius:9px;
+    border:1px solid var(--stroke);background:rgba(255,255,255,.02);cursor:pointer;transition:all .14s var(--ease);}
+  .ai-hit:hover{border-color:rgba(52,211,153,.5);background:rgba(52,211,153,.07);}
+  .ai-hit .n{flex:1;min-width:0;font-size:10px;color:var(--text);overflow:hidden;
+    text-overflow:ellipsis;white-space:nowrap;}
+  .ai-hit .d{flex:none;font-family:var(--mono);font-size:9px;color:var(--accent);}
+  .ai-sug{display:flex;flex-wrap:wrap;gap:5px;padding:0 12px 9px;}
+  .ai-f{display:flex;align-items:center;gap:7px;padding:10px 12px;border-top:1px solid var(--stroke);}
+  .ai-in{flex:1;min-width:0;border:1px solid var(--stroke-2);background:var(--surface);border-radius:10px;
+    padding:8px 10px;color:var(--text);font-family:var(--font);font-size:10.5px;outline:none;}
+  .ai-in:focus{border-color:var(--accent);}
+  .ai-send{flex:none;border:1px solid var(--stroke-2);background:var(--surface);color:var(--accent);
+    border-radius:10px;padding:8px 11px;cursor:pointer;font-size:12px;line-height:1;}
+  .ai-send:hover{border-color:var(--accent);}
+  /* place pin dropped by search / assistant */
+  .pin-ic{background:none!important;border:none!important;}
+  .pin-d{width:15px;height:15px;border-radius:50% 50% 50% 0;transform:rotate(-45deg);
+    background:#F472B6;border:2.4px solid #fff;box-shadow:0 3px 9px rgba(0,0,0,.5);}
+  .pin-pop b{display:block;font-size:11px;color:var(--text);margin-bottom:3px;}
+  .pin-pop .sub{font-size:9px;color:var(--dim);margin-bottom:7px;}
+  .pin-acts{display:flex;gap:5px;flex-wrap:wrap;}
+  .pin-acts button{border:1px solid var(--stroke-2);background:var(--surface);color:var(--text);
+    border-radius:8px;padding:5px 8px;font-size:9.5px;font-family:var(--font);cursor:pointer;}
+  .pin-acts button:hover{border-color:var(--accent);color:var(--accent);}
 
   /* ============ MOBILE APP SHELL (PWA) ============ */
   .mnav,.msheet,.mbackdrop{display:none;}
@@ -1007,6 +1113,21 @@
     <line x1="1.3" y1="12" x2="4" y2="12"/><line x1="20" y1="12" x2="22.7" y2="12"/>
   </svg>
 </button>
+<button id="aiOrb" class="ai-orb glass" data-i18n-title="aiTitle" title="Ask the map" aria-label="Ask the map"
+        aria-expanded="false" aria-controls="aiPanel"><span class="orb" aria-hidden="true"></span></button>
+<div class="ai-panel glass" id="aiPanel" role="dialog" aria-labelledby="aiHd">
+  <div class="ai-h"><span class="orb" style="width:14px;height:14px;border-radius:50%;
+       background:conic-gradient(from 0deg,#34D399,#38BDF8,#A78BFA,#F472B6,#34D399)"></span>
+    <b id="aiHd" data-i18n="aiTitle">Ask the map</b>
+    <button class="ai-x" id="aiX" data-i18n-title="close" title="Close" aria-label="Close">✕</button></div>
+  <div class="ai-log" id="aiLog"></div>
+  <div class="ai-sug" id="aiSug"></div>
+  <div class="ai-f">
+    <input id="aiIn" class="ai-in" type="text" data-i18n-ph="aiPh"
+           placeholder="Where can I eat near Kadıköy?" autocomplete="off" />
+    <button class="ai-send" id="aiSend" data-i18n-title="aiSend" title="Ask" aria-label="Ask">➤</button>
+  </div>
+</div>
 
 <div class="topbar glass">
   <h1><svg class="logo" viewBox="0 0 34 34" width="30" height="30" aria-hidden="true">
@@ -1025,6 +1146,17 @@
     <div class="kv"><b id="sLines">0</b><span data-i18n="lines">Lines</span></div>
     <div class="kv"><b id="sStations">0</b><span data-i18n="stations">Stations</span></div>
     <div class="kv"><b id="sTrains">0</b><span data-i18n="carriages">Carriages</span></div>
+  </div>
+  <div class="omni" id="omni">
+    <div class="omni-bar">
+      <svg class="omni-ic" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor"
+           stroke-width="2.2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><line x1="16.5" y1="16.5" x2="21" y2="21"/></svg>
+      <input id="omniIn" class="omni-in" type="text" data-i18n-ph="omniPh"
+             placeholder="Search anywhere — places, food, hospitals…" autocomplete="off"
+             role="combobox" aria-expanded="false" aria-controls="omniRes" />
+      <button class="omni-x" id="omniX" data-i18n-title="clear" title="Clear" aria-label="Clear">✕</button>
+    </div>
+    <div class="omni-res glass" id="omniRes" role="listbox"></div>
   </div>
   <button id="settingsBtn" class="settings-btn" data-i18n-title="settings" title="Settings" aria-label="Settings">
     <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
@@ -1459,6 +1591,18 @@ const I18N = {
     busDir:"Bus Directory", busSearchPh:"Search line no. or stop (e.g. 500T, Kadıköy)",
     tripPlanner:"Trip Planner", from:"From", to:"To", searchStop:"Search a stop, place or address…",
     pickPoint:"Pick point on map", swap:"Swap", findPath:"◇ Find Optimal Path", clear:"Clear",
+    omniPh:"Search anywhere — places, food, hospitals…", omniStops:"Stops & landmarks",
+    omniPlaces:"Places", omniNear:"Nearby", omniNone:"Nothing found. Try a place, a district or a category like “food”.",
+    omniOff:"Offline — showing stops and landmarks only.", omniLook:"Searching…",
+    omniHint:"Search a stop, a landmark, a street or a district — or pick a category above.",
+    aiTitle:"Ask the map", aiPh:"Where can I eat near Kadıköy?", aiSend:"Ask",
+    aiHello:"Ask me for places, directions or what is nearby. I answer from this map’s own data and OpenStreetMap — I don’t invent anything.",
+    aiNoIdea:"I couldn’t match that to a place, a category or a route. Try “food near Taksim”, “M2 to Kadıköy” or “buses at Levent”.",
+    aiFound:"Nearest matches", aiRouting:"Planning that route now — the result is in the Trip panel.",
+    aiNeedTwo:"Tell me both ends, e.g. “Taksim to Kadıköy”.", aiNoPlace:"I couldn’t find",
+    aiStops:"Nearest stops", aiBusAt:"Bus routes here", aiNoBus:"No bus routes recorded at that stop.",
+    aiOffline:"I need a connection to look up places. Stops and lines still work offline.",
+    routeFrom:"Route from", routeTo:"Route to", nearHere:"What’s nearby",
     min:"Min", stops:"Stops", transfers:"Transfers", favourites:"★ Favourites",
     recentPlans:"Recent plans", clearAll:"clear all", setOrigin:"Set as Origin", setDest:"Set as Destination",
     predArrivals:"Predictive Arrivals", live:"LIVE", connectivity:"Connectivity", expansion:"Expansion Projects",
@@ -1579,6 +1723,18 @@ const I18N = {
     busDir:"Otobüs Rehberi", busSearchPh:"Hat no veya durak ara (örn. 500T, Kadıköy)",
     tripPlanner:"Yol Planlayıcı", from:"Nereden", to:"Nereye", searchStop:"Durak, yer veya adres ara…",
     pickPoint:"Haritada nokta seç", swap:"Yer değiştir", findPath:"◇ En İyi Rotayı Bul", clear:"Temizle",
+    omniPh:"Her yeri ara — mekan, yemek, hastane…", omniStops:"Duraklar ve simgeler",
+    omniPlaces:"Yerler", omniNear:"Yakında", omniNone:"Sonuç yok. Bir yer, semt ya da “yemek” gibi bir kategori deneyin.",
+    omniOff:"Çevrimdışı — yalnızca duraklar ve simgeler.", omniLook:"Aranıyor…",
+    omniHint:"Durak, simge yapı, sokak veya semt arayın — ya da yukarıdan bir kategori seçin.",
+    aiTitle:"Haritaya sor", aiPh:"Kadıköy’de nerede yemek yenir?", aiSend:"Sor",
+    aiHello:"Yer, yol tarifi veya yakındakileri sorun. Yanıtlarım bu haritanın verisi ve OpenStreetMap’ten gelir — uydurmam.",
+    aiNoIdea:"Bunu bir yere, kategoriye ya da rotaya eşleyemedim. “Taksim’de yemek”, “M2 Kadıköy” veya “Levent otobüs” deneyin.",
+    aiFound:"En yakın sonuçlar", aiRouting:"Rota hesaplanıyor — sonuç Rota panelinde.",
+    aiNeedTwo:"İki ucu da yazın, örn. “Taksim Kadıköy”.", aiNoPlace:"Bulamadım:",
+    aiStops:"En yakın duraklar", aiBusAt:"Buradaki otobüsler", aiNoBus:"Bu durakta kayıtlı otobüs hattı yok.",
+    aiOffline:"Yer aramak için bağlantı gerekiyor. Duraklar ve hatlar çevrimdışı çalışır.",
+    routeFrom:"Buradan", routeTo:"Buraya", nearHere:"Yakında ne var",
     min:"Dk", stops:"Durak", transfers:"Aktarma", favourites:"★ Favoriler",
     recentPlans:"Son planlar", clearAll:"tümünü sil", setOrigin:"Başlangıç yap", setDest:"Varış yap",
     predArrivals:"Tahmini Varışlar", live:"CANLI", connectivity:"Bağlantılar", expansion:"Genişleme Projeleri",
@@ -6279,6 +6435,444 @@ document.addEventListener('keydown', e=>{ if(e.key==='Escape' && focusRefs) clea
   document.getElementById('helpBtn').addEventListener('click', ()=> ov.classList.add('show'));
   try{ if(!localStorage.getItem('irn_welcomed')) ov.classList.add('show'); }catch(e){}
 })();
+/* ==================================================================================
+   OMNI SEARCH + MAP ASSISTANT
+   Two surfaces over one engine. The engine has three sources, all real:
+     • PLACES        — this map’s own stops + curated landmarks (instant, offline)
+     • Photon /api   — free-text places anywhere in the city (keyless, city-clipped)
+     • Photon /reverse + osm_tag — category lookup ("food", "hospital") around a point
+   There is no language model behind the assistant: this is a public static site and
+   an API key cannot be embedded in it. Every answer is composed from the data above,
+   so it never invents a place, a fare or a route — if it cannot answer it says so.
+   ================================================================================== */
+
+/* keyword → OpenStreetMap tag. Turkish and English both matter here. */
+const POI_CATS = [
+  {tag:"amenity:restaurant",     ic:"🍽️", en:"Restaurants", tr:"Restoranlar", k:["food","eat","restaurant","restaurants","dinner","lunch","yemek","restoran","lokanta","yemek yeri"]},
+  {tag:"amenity:cafe",           ic:"☕",  en:"Cafés",       tr:"Kafeler",     k:["cafe","cafes","coffee","kahve","kafe","kahveci"]},
+  {tag:"amenity:hospital",       ic:"🏥", en:"Hospitals",   tr:"Hastaneler",  k:["hospital","hospitals","emergency","er","hastane","acil"]},
+  {tag:"amenity:pharmacy",       ic:"💊", en:"Pharmacies",  tr:"Eczaneler",   k:["pharmacy","pharmacies","chemist","drugstore","eczane"]},
+  {tag:"amenity:atm",            ic:"🏧", en:"ATMs",        tr:"ATM’ler",     k:["atm","atms","cashpoint","bankamatik","para"]},
+  {tag:"amenity:bank",           ic:"🏦", en:"Banks",       tr:"Bankalar",    k:["bank","banks","banka"]},
+  {tag:"shop:supermarket",       ic:"🛒", en:"Supermarkets",tr:"Marketler",   k:["market","markets","supermarket","grocery","groceries","bakkal","süpermarket"]},
+  {tag:"tourism:hotel",          ic:"🛏️", en:"Hotels",      tr:"Oteller",     k:["hotel","hotels","stay","otel","konaklama"]},
+  {tag:"amenity:toilets",        ic:"🚻", en:"Toilets",     tr:"Tuvaletler",  k:["toilet","toilets","wc","restroom","tuvalet"]},
+  {tag:"amenity:police",         ic:"🚓", en:"Police",      tr:"Polis",       k:["police","polis","karakol"]},
+  {tag:"amenity:fuel",           ic:"⛽", en:"Fuel",        tr:"Benzinlik",   k:["fuel","petrol","gas station","benzin","benzinlik","akaryakıt"]},
+  {tag:"tourism:museum",         ic:"🖼️", en:"Museums",     tr:"Müzeler",     k:["museum","museums","müze","muze"]},
+  {tag:"leisure:park",           ic:"🌳", en:"Parks",       tr:"Parklar",     k:["park","parks","garden","bahçe","yeşil alan"]},
+  {tag:"amenity:place_of_worship",ic:"🕌",en:"Worship",     tr:"İbadet",      k:["mosque","mosques","cami","camii","church","kilise","synagogue"]},
+  {tag:"amenity:pub",            ic:"🍺", en:"Bars",        tr:"Barlar",      k:["bar","bars","pub","pubs","meyhane"]},
+];
+const catLabel = c => (lang==="tr" && c.tr) ? c.tr : c.en;
+/* a query is a category only when a whole word matches — "parkway" must not mean parks */
+function matchCat(q){
+  const f = foldQ(q).trim(); if(!f) return null;
+  for(const c of POI_CATS) for(const w of c.k){ if(f === foldQ(w)) return c; }
+  for(const c of POI_CATS) for(const w of c.k){
+    const fw = foldQ(w);
+    if(new RegExp("(^|\\s)" + fw.replace(/[.*+?^${}()|[\]\\]/g, m => "\\" + m) + "($|\\s)").test(f)) return c;
+  }
+  return null;
+}
+
+/* category lookup around a point. Photon reverse takes radius in KM and sorts by distance. */
+const POI_CACHE = new Map();
+async function poiNear(lat, lng, tag, radiusKm, limit){
+  const key = tag + "@" + lat.toFixed(3) + "," + lng.toFixed(3) + "/" + (radiusKm||2);
+  if(POI_CACHE.has(key)) return POI_CACHE.get(key);
+  const langP = /^(en|de|fr|it)$/.test(lang) ? "&lang=" + lang : "";
+  const url = "https://photon.komoot.io/reverse?lat=" + lat + "&lon=" + lng +
+              "&radius=" + (radiusKm||2) + "&limit=" + (limit||25) +
+              "&osm_tag=" + encodeURIComponent(tag) + langP;
+  const ctrl = new AbortController(); const timer = setTimeout(()=>ctrl.abort(), 6000);
+  try{
+    const r = await fetch(url, {signal:ctrl.signal}); clearTimeout(timer);
+    if(!r.ok) throw 0;
+    const gj = await r.json(); const out = [];
+    for(const f of (gj.features||[])){
+      const c = f.geometry && f.geometry.coordinates; if(!c) continue;
+      const p = f.properties || {};
+      if(!p.name) continue;                       // unnamed OSM nodes are useless in a list
+      const la = +c[1], ln = +c[0];
+      out.push({ name:p.name, lat:la, lng:ln, poiHit:true, tag:tag,
+                 ctx:p.district || p.city || p.county || "",
+                 m: metersBetween([lat,lng],[la,ln]) });
+    }
+    out.sort((a,b)=>a.m-b.m);
+    POI_CACHE.set(key, out); return out;
+  }catch(e){ clearTimeout(timer); return null; }   // null = lookup failed (offline/blocked)
+}
+
+/* nearest rail/ferry stops to a point, with the lines that serve each */
+function nearestStops(lat, lng, count){
+  const seen = new Map();
+  for(const k in nodeMeta){
+    const m = nodeMeta[k]; if(!m.name || m.kind==="bus") continue;
+    const d = metersBetween([lat,lng],[m.lat,m.lng]);
+    const f = fold(m.name); const cur = seen.get(f);
+    if(!cur || d < cur.m) seen.set(f, {name:m.name, lat:m.lat, lng:m.lng, m:d});
+  }
+  const arr = [...seen.values()].sort((a,b)=>a.m-b.m).slice(0, count||3);
+  arr.forEach(st=>{
+    const refs = new Set();
+    (nameNodes[fold(st.name)]||[]).forEach(k=>{ const m=nodeMeta[k]; if(m && m.ref) refs.add(m.ref); });
+    st.refs = [...refs];
+  });
+  return arr;
+}
+function walkMin(m){ return Math.max(1, Math.round(m / WALK)); }
+
+/* ---------------- the dropped pin ---------------- */
+let pinMarker = null, pinPlace = null;
+function dropPin(p, zoom){
+  if(pinMarker){ map.removeLayer(pinMarker); pinMarker = null; }
+  pinPlace = p;
+  pinMarker = L.marker([p.lat,p.lng], {icon:L.divIcon({className:"pin-ic",
+      html:'<div class="pin-d"></div>', iconSize:[15,15], iconAnchor:[7,14]}), zIndexOffset:900}).addTo(map);
+  const near = nearestStops(p.lat, p.lng, 2);
+  const stopTxt = near.length
+    ? near.map(st=>svgEsc(st.name) + " · " + walkMin(st.m) + " min" +
+        (st.refs.length ? " (" + st.refs.slice(0,3).map(svgEsc).join(", ") + ")" : "")).join("<br>")
+    : "—";
+  pinMarker.bindPopup(
+    '<div class="pin-pop"><b>' + svgEsc(p.name) + '</b>' +
+    '<div class="sub">' + (p.ctx ? svgEsc(p.ctx) + " · " : "") + svgEsc(t("aiStops")) + ": <br>" + stopTxt + '</div>' +
+    '<div class="pin-acts">' +
+      '<button data-pin="O">' + svgEsc(t("routeFrom")) + '</button>' +
+      '<button data-pin="D">' + svgEsc(t("routeTo")) + '</button>' +
+      '<button data-pin="N">' + svgEsc(t("nearHere")) + '</button>' +
+    '</div></div>', {maxWidth:250}).openPopup();
+  map.flyTo([p.lat,p.lng], zoom || Math.max(map.getZoom(), 14), {duration:.7});
+}
+/* popup buttons are re-created on every open, so delegate from the map container */
+document.addEventListener("click", e=>{
+  const b = e.target.closest && e.target.closest("[data-pin]"); if(!b || !pinPlace) return;
+  const mode = b.getAttribute("data-pin");
+  if(mode === "N"){ aiOpen(); aiAsk((lang==="tr"?"yakında ne var ":"what is nearby ") + pinPlace.name, true); return; }
+  setPoint(mode, {name:pinPlace.name, lat:pinPlace.lat, lng:pinPlace.lng});
+  setTab("active");
+  map.closePopup();
+});
+
+/* ================================ omni search ================================ */
+(function(){
+  const wrap = document.getElementById("omni"), inp = document.getElementById("omniIn"),
+        res  = document.getElementById("omniRes"), xb  = document.getElementById("omniX");
+  if(!wrap || !inp || !res) return;
+  let seq = 0, lastRows = [], selIdx = -1;
+
+  const row = (ic, nm, sb, d) =>
+    '<div class="omni-row" role="option"><span class="omni-ico">' + ic + '</span>' +
+    '<span class="omni-tx"><span class="omni-nm">' + svgEsc(nm) + '</span>' +
+    (sb ? '<span class="omni-sb">' + svgEsc(sb) + '</span>' : "") + '</span>' +
+    (d ? '<span class="omni-d">' + d + '</span>' : "") + '</div>';
+
+  function chips(){
+    const pick = [0,2,3,1,6,4];   // food, hospital, pharmacy, café, market, ATM
+    return '<div class="omni-chips">' + pick.map(i=>{ const c = POI_CATS[i];
+      return '<button class="omni-chip" data-cat="' + c.tag + '">' + c.ic + " " + svgEsc(catLabel(c)) + '</button>';
+    }).join("") + '</div>';
+  }
+  /* the results list drops straight over the left rail, so the rail steps aside while it is
+     open — otherwise the buttons paint on top of the list and swallow its clicks */
+  function open(){ aiShut();                       // both live in the left column — one at a time
+    wrap.classList.add("open"); document.body.classList.add("omni-open");
+    inp.setAttribute("aria-expanded","true"); }
+  function shut(){ wrap.classList.remove("open"); document.body.classList.remove("omni-open");
+    inp.setAttribute("aria-expanded","false"); selIdx=-1; }
+
+  function paint(html){ res.innerHTML = html; open();
+    lastRows = [...res.querySelectorAll(".omni-row")]; selIdx = -1; }
+
+  async function runCat(cat){
+    const c0 = map.getCenter();
+    paint('<div class="omni-h">' + svgEsc(catLabel(cat)) + '</div><div class="omni-note">' + svgEsc(t("omniLook")) + "</div>");
+    const hits = await poiNear(c0.lat, c0.lng, cat.tag, 3, 25);
+    if(hits === null){ paint('<div class="omni-note">' + svgEsc(t("aiOffline")) + "</div>"); return; }
+    if(!hits.length){ paint('<div class="omni-note">' + svgEsc(t("omniNone")) + "</div>"); return; }
+    results = hits.slice(0,25);
+    paint('<div class="omni-h">' + cat.ic + " " + svgEsc(catLabel(cat)) + '</div>' +
+      results.map(p=>row(cat.ic, p.name, p.ctx, distStr(p.m/1000))).join(""));
+  }
+
+  let results = [];
+  async function run(q){
+    const my = ++seq;
+    if(!q.trim()){ results=[]; paint(chips() + '<div class="omni-note">' + svgEsc(t("omniHint")||t("omniNone")) + "</div>"); return; }
+    const cat = matchCat(q);
+    if(cat){ await runCat(cat); return; }
+    // 1 — local stops + landmarks, instantly and offline
+    const local = searchPlaces(q).slice(0,8);
+    results = local.slice();
+    let html = local.length
+      ? '<div class="omni-h">' + svgEsc(t("omniStops")) + '</div>' +
+        local.map(p=>row(p.poi ? (ATTR_CAT[p.cat]||"📍") : (p.bus ? "🚌" : "🚇"), p.name, p.ref||"", "")).join("")
+      : "";
+    html += '<div class="omni-h">' + svgEsc(t("omniPlaces")) + '</div><div class="omni-note">' + svgEsc(t("omniLook")) + "</div>";
+    paint(html);
+    // 2 — anything else in the city, from OpenStreetMap
+    const geo = await geocode(q);
+    if(my !== seq) return;                              // a newer keystroke won
+    /* Drop only genuine repeats of a local hit — same name, or the same name carrying a
+       district suffix ("Galata Tower, Bereketzade") within 200 m. The planner's dedupeGeo
+       drops everything within 200 m, which here would also bin the pub next door. */
+    const fresh = (geo || []).filter(g => !local.some(l => {
+      if(fold(l.name) === fold(g.name)) return true;
+      return foldQ(g.name).startsWith(foldQ(l.name)) &&
+             metersBetween([l.lat,l.lng],[g.lat,g.lng]) < 200;
+    })).slice(0,8);
+    results = local.concat(fresh);
+    let h2 = local.length
+      ? '<div class="omni-h">' + svgEsc(t("omniStops")) + '</div>' +
+        local.map(p=>row(p.poi ? (ATTR_CAT[p.cat]||"📍") : (p.bus ? "🚌" : "🚇"), p.name, p.ref||"", "")).join("")
+      : "";
+    if(fresh.length) h2 += '<div class="omni-h">' + svgEsc(t("omniPlaces")) + '</div>' +
+        fresh.map(p=>row("📍", p.name, p.ctx||"", "")).join("");
+    else if(!local.length) h2 += '<div class="omni-note">' + svgEsc(geo===null ? t("omniOff") : t("omniNone")) + "</div>";
+    paint(h2);
+  }
+
+  let tmr = 0;
+  inp.addEventListener("input", ()=>{
+    const q = inp.value;
+    wrap.classList.toggle("has-q", !!q);
+    clearTimeout(tmr); tmr = setTimeout(()=>run(q), q.trim() ? 300 : 0);
+  });
+  inp.addEventListener("focus", ()=>{ if(!inp.value.trim()) run(""); else open(); });
+  xb.addEventListener("click", ()=>{ inp.value=""; wrap.classList.remove("has-q"); inp.focus(); run(""); });
+
+  res.addEventListener("click", e=>{
+    const chip = e.target.closest(".omni-chip");
+    if(chip){ const c = POI_CATS.find(x=>x.tag===chip.getAttribute("data-cat")); if(c){ inp.value = catLabel(c); wrap.classList.add("has-q"); runCat(c); } return; }
+    const r = e.target.closest(".omni-row"); if(!r) return;
+    const i = [...res.querySelectorAll(".omni-row")].indexOf(r);
+    const p = results[i]; if(!p) return;
+    dropPin(p); shut(); inp.blur();
+  });
+
+  inp.addEventListener("keydown", e=>{
+    if(e.key === "Escape"){ shut(); inp.blur(); return; }
+    if(!lastRows.length) return;
+    if(e.key === "ArrowDown" || e.key === "ArrowUp"){
+      e.preventDefault();
+      selIdx = (selIdx + (e.key==="ArrowDown"?1:-1) + lastRows.length) % lastRows.length;
+      lastRows.forEach((r,i)=>r.classList.toggle("sel", i===selIdx));
+      lastRows[selIdx].scrollIntoView({block:"nearest"});
+    } else if(e.key === "Enter"){
+      e.preventDefault();
+      (lastRows[selIdx>=0?selIdx:0]||{click:()=>{}}).click();
+    }
+  });
+  document.addEventListener("click", e=>{ if(!wrap.contains(e.target)) shut(); });
+})();
+
+/* ================================ assistant ================================ */
+function aiOpen(){
+  const om=document.getElementById("omni");       // the search list shares this column
+  if(om) om.classList.remove("open");
+  document.body.classList.remove("omni-open");
+  document.body.classList.add("ai-open");
+  const o=document.getElementById("aiOrb"); if(o){ o.classList.add("on"); o.setAttribute("aria-expanded","true"); }
+  const i=document.getElementById("aiIn"); if(i) setTimeout(()=>i.focus(),60); }
+function aiShut(){ document.body.classList.remove("ai-open");
+  const o=document.getElementById("aiOrb"); if(o){ o.classList.remove("on"); o.setAttribute("aria-expanded","false"); } }
+function aiSay(html, who){
+  const log = document.getElementById("aiLog"); if(!log) return null;
+  const d = document.createElement("div"); d.className = "ai-msg " + (who||"bot"); d.innerHTML = html;
+  log.appendChild(d); log.scrollTop = log.scrollHeight; return d;
+}
+let aiAsk = async function(){};
+(function(){
+  const orb = document.getElementById("aiOrb"), pan = document.getElementById("aiPanel"),
+        inp = document.getElementById("aiIn"), snd = document.getElementById("aiSend"),
+        sug = document.getElementById("aiSug"), xb  = document.getElementById("aiX");
+  if(!orb || !pan) return;
+  let greeted = false;
+
+  const SUGS = () => lang==="tr"
+    ? ["Taksim’de yemek", "En yakın hastane", "Taksim Kadıköy", "Levent otobüs"]
+    : ["Food near Taksim", "Nearest hospital", "Taksim to Kadıköy", "Buses at Levent"];
+  function paintSugs(){ if(!sug) return;
+    sug.innerHTML = SUGS().map(x=>'<button class="omni-chip">' + svgEsc(x) + "</button>").join(""); }
+
+  orb.addEventListener("click", ()=>{
+    if(document.body.classList.contains("ai-open")) return aiShut();
+    aiOpen();
+    if(!greeted){ greeted = true; aiSay(svgEsc(t("aiHello"))); paintSugs(); }
+  });
+  if(xb) xb.addEventListener("click", aiShut);
+  if(sug) sug.addEventListener("click", e=>{ const b=e.target.closest("button"); if(b) ask(b.textContent); });
+  if(snd) snd.addEventListener("click", ()=>ask(inp.value));
+  if(inp) inp.addEventListener("keydown", e=>{ if(e.key==="Enter") ask(inp.value); });
+
+  /* resolve a phrase to a real point: our own stops first, then the geocoder */
+  async function resolve(txt){
+    if(!txt || !txt.trim()) return null;
+    const f = foldQ(txt);
+    if(/^(here|me|my location|burada|buradan|yakinimda|yakınımda|benim konumum)$/.test(f)){
+      if(geoPos) return {name: lang==="tr"?"Konumunuz":"Your location", lat:geoPos.lat, lng:geoPos.lng};
+      const c = map.getCenter(); return {name: lang==="tr"?"Harita merkezi":"Map centre", lat:c.lat, lng:c.lng};
+    }
+    const loc = searchPlaces(txt)[0];
+    if(loc) return {name:loc.name, lat:loc.lat, lng:loc.lng};
+    const g = await geocode(txt);
+    return (g && g[0]) ? {name:g[0].name, lat:g[0].lat, lng:g[0].lng, ctx:g[0].ctx} : null;
+  }
+  const hitRow = p => '<div class="ai-hit" data-lat="' + p.lat + '" data-lng="' + p.lng +
+    '" data-nm="' + attrEsc(p.name) + '"><span class="n">' + svgEsc(p.name) + '</span>' +
+    '<span class="d">' + (p.m!=null ? distStr(p.m/1000) : "") + "</span></div>";
+
+  async function ask(raw){
+    const q = (raw||"").trim(); if(!q) return;
+    if(inp) inp.value = "";
+    aiSay(svgEsc(q), "me");
+    orb.classList.add("busy");
+    try{ await answer(q); }
+    catch(e){ aiSay(svgEsc(t("aiNoIdea"))); }
+    orb.classList.remove("busy");
+  }
+  aiAsk = ask;
+
+  async function answer(q){
+    const f = foldQ(q);
+
+    /* --- fares --- */
+    if(/(fare|ticket|how much|price|cost|ucret|ücret|ne kadar|bilet|fiyat)/.test(f)){
+      if(FARE && FARE.base != null){
+        const card = CITY.card || "";
+        let txt = "<b>" + svgEsc(card) + "</b> — " + FARE.base + "₺ " +
+                  (lang==="tr" ? "biniş başına" : "per boarding");
+        if(Array.isArray(FARE.xfer) && FARE.xfer.length)
+          txt += "<br>" + (lang==="tr" ? "Aktarmalar: " : "Transfers: ") +
+                 FARE.xfer.map(v=>v + "₺").join(" → ");
+        txt += '<br><span style="font-size:9px;color:var(--dim)">' +
+               svgEsc(t(FARE.noteKey || "fareNote")) + "</span>";
+        aiSay(txt); return;
+      }
+    }
+
+    /* --- buses at a stop --- */
+    let m = f.match(/^(?:which |what )?(?:buses?|bus routes?|otobus|otobüs|otobusler)\s*(?:at|near|serve|serving|from|de|da)?\s*(.+)$/) ||
+            f.match(/^(.+?)\s+(?:buses?|bus routes?|otobus|otobüs)$/);
+    if(m && m[1]){
+      const place = await resolve(m[1].trim());
+      if(!place){ aiSay(svgEsc(t("aiNoPlace")) + " “" + svgEsc(m[1].trim()) + "”."); return; }
+      const refs = new Set();
+      for(const k in nodeMeta){ const nm = nodeMeta[k];
+        if(nm.kind !== "bus" || !nm.ref) continue;
+        if(metersBetween([place.lat,place.lng],[nm.lat,nm.lng]) < 350) refs.add(nm.ref); }
+      const list = [...refs].sort(trCmp);
+      if(!list.length){ aiSay(svgEsc(t("aiNoBus"))); return; }
+      aiSay("<b>" + svgEsc(t("aiBusAt")) + "</b> — " + svgEsc(place.name) + "<br>" +
+            list.map(svgEsc).join(", "));
+      dropPin(place); return;
+    }
+
+    /* --- directions: "A to B" --- */
+    m = f.match(/^(?:how do i get |how to get |get me |directions |route |yol tarifi |nasil giderim )?(?:from )?(.+?)\s+(?:to|->|→|until|-)\s+(.+)$/);
+    if(m && m[1] && m[2] && !matchCat(m[1])){
+      const a = await resolve(m[1].trim()), b = await resolve(m[2].trim());
+      if(!a || !b){ aiSay(svgEsc(t("aiNoPlace")) + " “" + svgEsc((!a?m[1]:m[2]).trim()) + "”."); return; }
+      setPoint("O", a); setPoint("D", b); setTab("active");
+      aiSay(svgEsc(t("aiRouting")) + "<br><b>" + svgEsc(a.name) + "</b> → <b>" + svgEsc(b.name) + "</b>");
+      const btn = document.getElementById("route"); if(btn) btn.click();
+      return;
+    }
+
+    /* --- category near somewhere ("food near Taksim", "nearest hospital") --- */
+    let cat = matchCat(q), where = null;
+    if(!cat){
+      m = f.match(/^(?:where can i |where to |find |show me |bul |nerede )?(?:the )?(?:nearest|closest|nearby|near|en yakin|en yakın|yakin|yakın)?\s*(.+?)\s+(?:nearby|near|around|close to|by|in|at|yakininda|yakınında|civarinda|civarında|de|da)\s+(.+)$/);
+      if(m){ cat = matchCat(m[1]); if(cat) where = m[2].trim(); }
+    }
+    if(!cat){
+      m = f.match(/^(?:the )?(?:nearest|closest|en yakin|en yakın)\s+(.+)$/);
+      if(m) cat = matchCat(m[1]);
+    }
+    if(!cat){
+      m = f.match(/^(?:where can i |where to )?(?:eat|yemek yiyebilirim)\b.*$/);
+      if(m) cat = POI_CATS[0];
+    }
+    if(cat){
+      let anchor = where ? await resolve(where) : null;
+      if(!anchor){
+        /* Turkish puts the place BEFORE the postposition — "Beşiktaş yakınında eczane" —
+           the mirror of English "pharmacy near Beşiktaş", so it needs its own pattern. */
+        const tm = f.match(/(?:^|\s)(.+?)\s+(?:yakininda|yakınında|yakinlarinda|yakınlarında|civarinda|civarında)\b/);
+        if(tm) anchor = await resolve(tm[1].trim());
+      }
+      if(!anchor){
+        const wm = f.match(/\b(?:near|around|in|at)\s+(.+)$/);
+        if(wm) anchor = await resolve(wm[1].trim());
+      }
+      if(!anchor) anchor = await resolve("here");
+      const hits = await poiNear(anchor.lat, anchor.lng, cat.tag, 3, 20);
+      if(hits === null){ aiSay(svgEsc(t("aiOffline"))); return; }
+      if(!hits.length){ aiSay(svgEsc(t("omniNone"))); return; }
+      const top = hits.slice(0,6);
+      aiSay("<b>" + cat.ic + " " + svgEsc(catLabel(cat)) + "</b> — " + svgEsc(anchor.name) +
+            top.map(hitRow).join(""));
+      dropPin(top[0]);
+      return;
+    }
+
+    /* --- what is nearby --- */
+    /* longest alternative first, or "nearby X" matches "near" and leaves "by X" as the place */
+    m = f.match(/^(?:what(?:\047s| is)? |whats )?(?:nearby|near|around|close to|yakininda|yakınında|civarinda|civarında|yakinda|yakında)\b\s*(?:me|here|is)?\s*(.*)$/);
+    if(m){
+      const anchor = await resolve((m[1]||"").trim() || "here");
+      if(!anchor){ aiSay(svgEsc(t("aiNoIdea"))); return; }
+      const stops = nearestStops(anchor.lat, anchor.lng, 4);
+      let html = "<b>" + svgEsc(t("aiStops")) + "</b> — " + svgEsc(anchor.name);
+      html += stops.map(st=>'<div class="ai-hit" data-lat="' + st.lat + '" data-lng="' + st.lng +
+        '" data-nm="' + attrEsc(st.name) + '"><span class="n">' + svgEsc(st.name) +
+        (st.refs.length ? " · " + svgEsc(st.refs.slice(0,4).join(", ")) : "") +
+        '</span><span class="d">' + walkMin(st.m) + " min</span></div>").join("");
+      aiSay(html); dropPin(anchor); return;
+    }
+
+    /* --- a line by ref ("M2", "where does M4 go") --- */
+    const lm = q.toUpperCase().match(/\b([A-Z]{1,3}\d{1,2}[A-Z]?)\b/);
+    if(lm){
+      const ln = NETWORK.find(l=>String(l.ref).toUpperCase() === lm[1]);
+      if(ln){
+        const st = ln.stations || ln.stops || [];
+        aiSay("<b>" + svgEsc(ln.ref) + "</b> " + svgEsc(ln.name||"") + "<br>" +
+          (st.length ? svgEsc(st[0].name) + " → " + svgEsc(st[st.length-1].name) +
+            " · " + st.length + " " + svgEsc(t("stations")).toLowerCase() : ""));
+        if(st.length) map.flyToBounds(L.latLngBounds(st.map(x=>[x.lat,x.lng])), {padding:[60,60], duration:.8});
+        return;
+      }
+    }
+
+    /* --- last resort: treat it as a place --- */
+    const p = await resolve(q);
+    if(p){ dropPin(p);
+      const stops = nearestStops(p.lat, p.lng, 3);
+      aiSay("<b>" + svgEsc(p.name) + "</b>" + (p.ctx ? " · " + svgEsc(p.ctx) : "") +
+        (stops.length ? "<br>" + svgEsc(t("aiStops")) + ": " +
+          stops.map(st=>svgEsc(st.name) + " (" + walkMin(st.m) + " min)").join(", ") : ""));
+      return; }
+    aiSay(svgEsc(t("aiNoIdea")));
+  }
+
+  /* clicking a result row in the transcript drops the pin there */
+  document.getElementById("aiLog").addEventListener("click", e=>{
+    const h = e.target.closest(".ai-hit"); if(!h) return;
+    dropPin({name:h.getAttribute("data-nm"), lat:+h.getAttribute("data-lat"), lng:+h.getAttribute("data-lng")});
+  });
+})();
+
+/* the left rail hangs off the real header height, so it can never ride up into it */
+(function(){
+  const tb = document.querySelector(".topbar"); if(!tb) return;
+  const set = ()=> document.documentElement.style.setProperty("--topbar-h",
+                    Math.round(tb.getBoundingClientRect().height) + "px");
+  set();
+  if(window.ResizeObserver) new ResizeObserver(set).observe(tb); else window.addEventListener("resize", set);
+})();
+
 init();
 </script>
 </body>
