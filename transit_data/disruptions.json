@@ -21,5 +21,17 @@
     "title": "Section affected",
     "message": "Due to maintenance works, trains operate between Çağlayan and Mahmutbey, with a transfer at Yıldız-Mecidiyeköy and Nurtepe.",
     "messageTr": "Onarım çalışması nedeniyle seferler Yıldız-Mecidiyeköy ve Nurtepe istasyonundan aktarmalı olarak Çağlayan-Mahmutbey istasyonları arasında yapılmaktadır."
+  },
+  {
+    "id": "t4-rami",
+    "ref": "T4",
+    "source": "metro.istanbul",
+    "scope": "segment",
+    "from": "Rami",
+    "to": "Rami",
+    "severity": "partial",
+    "title": "Section affected",
+    "message": "Due to a technical fault, trains Rami from the station with transfer and gecikmeli as are operating.",
+    "messageTr": "Teknik bir arıza nedeniyle seferler Rami istasyonundan aktarmalı ve gecikmeli olarak yapılmaktadır."
   }
 ]
