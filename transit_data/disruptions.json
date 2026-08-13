@@ -23,6 +23,18 @@
     "messageTr": "Onarım çalışması nedeniyle seferler Yıldız-Mecidiyeköy ve Nurtepe istasyonundan aktarmalı olarak Çağlayan-Mahmutbey istasyonları arasında yapılmaktadır."
   },
   {
+    "id": "t1-mithatpa-a",
+    "ref": "T1",
+    "source": "metro.istanbul",
+    "scope": "segment",
+    "from": "Mithatpaşa",
+    "to": "Zeytinburnu",
+    "severity": "partial",
+    "title": "Section affected",
+    "message": "İnşaat alanındaki sac kaplamaların hava muhalefeti due to katener linena teması sonucunda Kabataş-Akşemsettin and Mehmet operate between Akif and Bağcılar.",
+    "messageTr": "İnşaat alanındaki sac kaplamaların hava muhalefeti nedeniyle katener hattına teması sonucunda Kabataş-Akşemsettin ve Mehmet Akif-Bağcılar istasyonları arasında yapılmaktadır."
+  },
+  {
     "id": "tf1-al-m-yor",
     "ref": "TF1",
     "source": "metro.istanbul",
