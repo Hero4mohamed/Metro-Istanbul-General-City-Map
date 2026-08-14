@@ -11,18 +11,6 @@
     "source": "manual"
   },
   {
-    "id": "m2-it-ayaza-a",
-    "ref": "M2",
-    "source": "metro.istanbul",
-    "scope": "segment",
-    "from": "İtü-ayazağa",
-    "to": "İtü-ayazağa",
-    "severity": "minor",
-    "title": "Service notice",
-    "message": "İTÜ stationnda bir yolcunun intihar girişiminde bulunması due to İTÜ our station işletmeye has been closed.",
-    "messageTr": "İTÜ istasyonunda bir yolcunun intihar girişiminde bulunması nedeniyle İTÜ istasyonumuz işletmeye kapatılmıştır."
-  },
-  {
     "id": "m7-mecidiyek-y",
     "ref": "M7",
     "source": "metro.istanbul",
