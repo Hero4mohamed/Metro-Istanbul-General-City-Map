@@ -631,6 +631,22 @@
   body.omni-open .topbar{z-index:1300;}
   body.omni-open .locate-fab,body.omni-open .ai-orb{opacity:0;pointer-events:none;}
 
+  /* ---------- depart at / arrive by ---------- */
+  .when-row{display:flex;gap:7px;align-items:center;margin-bottom:9px;}
+  .when-seg{flex:1;min-width:0;}
+  .when-time{flex:none;width:92px;border:1px solid var(--stroke-2);background:var(--surface);
+    border-radius:9px;padding:6px 7px;color:var(--text);font-family:var(--mono);font-size:10.5px;}
+  .when-time:focus{outline:none;border-color:var(--accent);}
+  .when-time:disabled{opacity:.35;}
+  .when-time::-webkit-calendar-picker-indicator{filter:invert(.65);cursor:pointer;}
+  .tt-row{display:flex;align-items:center;gap:7px;flex-wrap:wrap;font-size:10px;color:var(--muted);
+    padding:8px 10px;border-radius:10px;border:1px solid var(--stroke);background:var(--surface);
+    margin-bottom:9px;line-height:1.5;}
+  .tt-row b{color:var(--text);font-family:var(--mono);font-size:11px;}
+  .tt-row .tt-est{color:var(--dim);font-size:9px;}
+  .tt-warn{border-color:rgba(245,166,35,.5);color:#F5A623;}
+  .tt-warn b{color:#F5A623;}
+
   /* ---------- assistant orb + panel ---------- */
   .ai-orb{position:fixed;left:var(--gutter);top:calc(var(--rail-top) + var(--rail-step));
     z-index:1200;width:44px;height:44px;border-radius:50%;border:1px solid var(--stroke-2);
@@ -1449,6 +1465,15 @@
     <div class="place-chips" id="airportChips"></div>
     <div class="mode-chips" id="modeChips" data-i18n-title="modesTitle" title="Modes for this trip"></div>
     <div class="avoid-row" id="avoidRow"></div>
+    <div class="when-row">
+      <div class="seg when-seg" id="whenSeg">
+        <button data-when="now" class="active" data-i18n="whenNow">Now</button>
+        <button data-when="depart" data-i18n="whenDepart">Depart</button>
+        <button data-when="arrive" data-i18n="whenArrive">Arrive</button>
+      </div>
+      <input type="time" id="whenTime" class="when-time" disabled
+             data-i18n-title="whenTimeT" title="Time of day" aria-label="Time of day" />
+    </div>
     <button class="btn" id="route" data-i18n="findPath">◇ Find Optimal Path</button>
     <button class="btn ghost" id="clear" data-i18n="clear">Clear</button>
     <div class="route-out" id="rout">
@@ -1606,6 +1631,9 @@ const I18N = {
     omniPlaces:"Places", omniNear:"Nearby", omniNone:"Nothing found. Try a place, a district or a category like “food”.",
     omniOff:"Offline — showing stops and landmarks only.", omniLook:"Searching…",
     omniHint:"Search a stop, a landmark, a street or a district — or pick a category above.",
+    whenNow:"Now", whenDepart:"Depart", whenArrive:"Arrive", whenTimeT:"Time of day",
+    ttDepart:"Depart", ttArrive:"Arrive", ttWait:"incl. ~{n} min waiting",
+    ttEst:"estimated from published frequencies", ttShut:"Not running at that time: {l}",
     aiTitle:"Ask the map", aiPh:"Where can I eat near Kadıköy?", aiSend:"Ask",
     aiHello:"Ask me for places, directions or what is nearby. I answer from this map’s own data and OpenStreetMap — I don’t invent anything.",
     aiNoIdea:"I couldn’t match that to a place, a category or a route. Try “food near Taksim”, “M2 to Kadıköy” or “buses at Levent”.",
@@ -1738,6 +1766,9 @@ const I18N = {
     omniPlaces:"Yerler", omniNear:"Yakında", omniNone:"Sonuç yok. Bir yer, semt ya da “yemek” gibi bir kategori deneyin.",
     omniOff:"Çevrimdışı — yalnızca duraklar ve simgeler.", omniLook:"Aranıyor…",
     omniHint:"Durak, simge yapı, sokak veya semt arayın — ya da yukarıdan bir kategori seçin.",
+    whenNow:"Şimdi", whenDepart:"Kalkış", whenArrive:"Varış", whenTimeT:"Saat",
+    ttDepart:"Kalkış", ttArrive:"Varış", ttWait:"~{n} dk bekleme dahil",
+    ttEst:"yayımlanan sefer sıklığından tahmini", ttShut:"O saatte çalışmıyor: {l}",
     aiTitle:"Haritaya sor", aiPh:"Kadıköy’de nerede yemek yenir?", aiSend:"Sor",
     aiHello:"Yer, yol tarifi veya yakındakileri sorun. Yanıtlarım bu haritanın verisi ve OpenStreetMap’ten gelir — uydurmam.",
     aiNoIdea:"Bunu bir yere, kategoriye ya da rotaya eşleyemedim. “Taksim’de yemek”, “M2 Kadıköy” veya “Levent otobüs” deneyin.",
@@ -2872,7 +2903,9 @@ function lineTiming(ref){
    (a) suspended by an active line-scope MAJOR disruption (e.g. B2 engineering works);
    (b) outside its operating hours (İstanbul time; ranges may span midnight).
    Simulated carriages + the predictive-arrivals board both respect this. ---- */
-function lineClosedNow(ref){
+// Same check at an ARBITRARY minute-of-day, so the planner can ask "will this line be
+// running when I actually board it?" rather than only "is it running right now?".
+function lineClosedAt(ref, atMin){
   const d=(DISRUPTIONS||[]).find(x=> x.ref===ref && x.scope==='line' && x.severity==='major'
         && (!x.until || Date.parse(x.until+'T23:59:59')>=Date.now()));
   if(d) return { why:'susp', d };
@@ -2880,10 +2913,12 @@ function lineClosedNow(ref){
   if(/24/.test(h)) return null;                       // 24-hour service (Metrobüs)
   const m=h.match(/(\d{1,2}):(\d{2})\s*[–—-]\s*(\d{1,2}):(\d{2})/);
   if(!m) return null;                                 // unparseable → assume open
-  const start=+m[1]*60+ +m[2], end=+m[3]*60+ +m[4], now=nowIstanbulMin();
+  const start=+m[1]*60+ +m[2], end=+m[3]*60+ +m[4];
+  const now=((Math.round(atMin)%1440)+1440)%1440;     // planner times can run past midnight
   const open = start<=end ? (now>=start && now<end) : (now>=start || now<end);   // spans midnight
   return open ? null : { why:'hours', hours:h, opens:m[1]+':'+m[2] };
 }
+function lineClosedNow(ref){ return lineClosedAt(ref, nowIstanbulMin()); }
 let closedCache={};                                    // ref -> closure info (checked per frame → cached)
 function refreshClosed(){
   const c={};
@@ -4576,6 +4611,72 @@ function drawItin(res, it, allPts, legs){
     pts.forEach(p=>allPts.push(p));
   });
 }
+/* ===== depart at / arrive by =============================================================
+   The routing graph holds no timetable, so this does NOT re-route by time — it anchors the
+   journey to a clock. Waiting comes from each line's published headway (you wait about half
+   a headway on average); the per-leg split is proportional to the router's own total, so the
+   headline ETA can never contradict the steps; and every ride is checked against its
+   operating hours at the moment you would actually board it. It is labelled an estimate
+   because it is one: the only exact times this app holds are bus first/last/headway. ===== */
+let planWhen = { mode:'now', min:null };
+function fmtMinOfDay(m){
+  m = Math.round(((m % 1440) + 1440) % 1440);
+  const h = Math.floor(m / 60), mm = m % 60;
+  if(clock24) return String(h).padStart(2,'0') + ':' + String(mm).padStart(2,'0');
+  const ap = h < 12 ? 'AM' : 'PM', h12 = (h % 12) || 12;
+  return h12 + ':' + String(mm).padStart(2,'0') + ' ' + ap;
+}
+// average wait for the first vehicle on a line = half its published headway
+function rideWait(step){ return Math.max(1, Math.round((lineTiming(step.ref).hwMin || 10) / 2)); }
+function itinWaitTotal(it){
+  return (it.steps||[]).filter(s=>s.type==='ride').reduce((a,s)=>a+rideWait(s), 0);
+}
+// minute-of-day this itinerary should start at, honouring the Now / Depart / Arrive choice
+function plannedStart(it){
+  if(planWhen.mode === 'now' || planWhen.min == null) return nowIstanbulMin();
+  if(planWhen.mode === 'depart') return planWhen.min;
+  return planWhen.min - (it.total || 0) - itinWaitTotal(it);   // arrive by → work backwards
+}
+function itinPlan(it, startMin){
+  const steps = it.steps || [];
+  // shape of each moving leg, then scaled so the parts sum to the router's own total
+  const raw = steps.map(s => s.type==='walk' ? (s.mins||0)
+                          : s.type==='ride' ? Math.max(1, (s.stops||1) * 1.5) : 0);
+  const rawSum = raw.reduce((a,b)=>a+b, 0) || 1;
+  const k = (it.total || rawSum) / rawSum;
+  const rows = []; let t = startMin, wait = 0;
+  steps.forEach((s, i) => {
+    if(s.type === 'ride'){
+      const w = rideWait(s); wait += w; t += w;
+      const dur = raw[i] * k;
+      rows.push({ s, wait:w, board:t, off:t + dur }); t += dur;
+    } else {
+      const dur = raw[i] * k;
+      rows.push({ s, board:t, off:t + dur }); t += dur;
+    }
+  });
+  return { rows, start:startMin, end:t, wait };
+}
+// the summary strip above the steps, plus any "that line is shut then" warnings
+function timetableHTML(it){
+  const p = itinPlan(it, plannedStart(it));
+  let html = '<div class="tt-row">' +
+    '<span>' + svgEsc(t('ttDepart')) + ' <b>' + fmtMinOfDay(p.start) + '</b></span>' +
+    '<span>→</span>' +
+    '<span>' + svgEsc(t('ttArrive')) + ' <b>' + fmtMinOfDay(p.end) + '</b></span>' +
+    (p.wait ? '<span class="tt-est">' + svgEsc(t('ttWait').replace('{n}', p.wait)) + '</span>' : '') +
+    '<span class="tt-est">' + svgEsc(t('ttEst')) + '</span></div>';
+  const shut = [];
+  p.rows.forEach(r => {
+    if(r.s.type !== 'ride' || r.s.bus) return;
+    const c = lineClosedAt(r.s.ref, r.board);
+    if(c && c.why === 'hours') shut.push(r.s.ref + ' (' + c.hours + ')');
+  });
+  if(shut.length) html += '<div class="tt-row tt-warn">⚠ ' +
+    svgEsc(t('ttShut').replace('{l}', shut.join(', '))) + '</div>';
+  return html;
+}
+
 function showItinerary(res, it){
   const stepsEl=document.getElementById('rSteps');
   routeLayer.clearLayers();
@@ -4590,7 +4691,7 @@ function showItinerary(res, it){
   drawItin(res, it, allPts, legs);
   if(allPts.length) map.fitBounds(L.latLngBounds(allPts).pad(0.25));
   const jm=document.getElementById('rJourney'); if(jm) jm.innerHTML = journeyHTML(it, res);
-  stepsEl.innerHTML = stepsHTML(it);
+  stepsEl.innerHTML = timetableHTML(it) + stepsHTML(it);
   if(legs.length){
     const note=document.createElement('div'); note.className='none'; note.id='refineNote';
     note.textContent='⏳ Loading real road & footpath geometry…';
@@ -6796,6 +6897,34 @@ let aiAsk = async function(){};
   document.getElementById("aiLog").addEventListener("click", e=>{
     const h = e.target.closest(".ai-hit"); if(!h) return;
     dropPin({name:h.getAttribute("data-nm"), lat:+h.getAttribute("data-lat"), lng:+h.getAttribute("data-lng")});
+  });
+})();
+
+/* Now / Depart / Arrive. Changing any of it re-renders the itinerary that is already on
+   screen, so the times follow the choice without needing the route recomputed. */
+(function(){
+  const seg = document.getElementById('whenSeg'), inp = document.getElementById('whenTime');
+  if(!seg || !inp) return;
+  const reflow = () => { if(goCurrent) showItinerary(goCurrent.res, goCurrent.it); };
+  seg.addEventListener('click', e => {
+    const b = e.target.closest('button[data-when]'); if(!b) return;
+    planWhen.mode = b.getAttribute('data-when');
+    [...seg.children].forEach(x => x.classList.toggle('active', x === b));
+    inp.disabled = planWhen.mode === 'now';
+    if(planWhen.mode !== 'now' && !inp.value){
+      // default to half an hour out, rounded to 5 — a usable starting point, not 00:00
+      const m = Math.ceil((nowIstanbulMin() + 30) / 5) * 5;
+      inp.value = String(Math.floor((m % 1440) / 60)).padStart(2,'0') + ':' +
+                  String(m % 60).padStart(2,'0');
+    }
+    const p = (inp.value || '').split(':');
+    planWhen.min = p.length === 2 ? (+p[0] * 60 + +p[1]) : null;
+    reflow();
+  });
+  inp.addEventListener('change', () => {
+    const p = (inp.value || '').split(':');
+    planWhen.min = p.length === 2 ? (+p[0] * 60 + +p[1]) : null;
+    reflow();
   });
 })();
 
