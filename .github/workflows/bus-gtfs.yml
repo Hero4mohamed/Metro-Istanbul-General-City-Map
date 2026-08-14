@@ -22,6 +22,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0        # a shallow clone cannot rebase when a push loses a race
       - uses: actions/setup-node@v4
         with:
           node-version: '20'
@@ -29,16 +31,25 @@ jobs:
         run: node --max-old-space-size=3072 transit_data/fetch-bus-gtfs.cjs
       - name: Rebuild site
         run: node transit_data/build.cjs
+      # No [skip ci]: Pages publishes the last artifact uploaded by pages.yml, so a commit that
+      # skips CI rebuilds index.html in the repo and never puts it on the live site.
       - name: Commit if changed
         run: |
-          if ! git diff --quiet -- transit_data/bus-graph.json transit_data/bus-schedules.json index.html; then
-            git config user.name  "bus-gtfs-bot"
-            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-            git add transit_data/bus-graph.json transit_data/bus-schedules.json index.html sw.js
-            git commit -m "chore: refresh İETT bus GTFS routes + schedules [skip ci]"
-            git pull --rebase --autostash origin main || true
-            git push
-            echo "Bus GTFS refreshed."
-          else
+          if git diff --quiet -- transit_data/bus-graph.json transit_data/bus-schedules.json index.html; then
             echo "No change — bus GTFS already current."
+            exit 0
           fi
+          git config user.name  "bus-gtfs-bot"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add transit_data/bus-graph.json transit_data/bus-schedules.json index.html sw.js
+          git commit -m "chore: refresh İETT bus GTFS routes + schedules"
+          for attempt in 1 2 3; do
+            if git push; then
+              echo "Bus GTFS refreshed (attempt $attempt)."
+              exit 0
+            fi
+            echo "Push rejected on attempt $attempt — rebasing onto origin/main"
+            git pull --rebase --autostash origin main || exit 1
+          done
+          echo "::error::could not push bus GTFS refresh after 3 attempts"
+          exit 1

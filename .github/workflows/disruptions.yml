@@ -3,11 +3,20 @@ name: Update live disruptions
 # Pulls live service disruptions from the official Metro İstanbul status page (and the
 # official X accounts, only if an X_BEARER_TOKEN secret is set), writes transit_data/
 # disruptions.json, and commits it. The map fetches that file at runtime, so the
-# Announcements panel + map warnings update without rebuilding the page.
+# Announcements panel + map warnings update without rebuilding index.html.
+#
+# The commit deliberately does NOT carry [skip ci]. It used to, from when Pages served files
+# straight off the branch — but this repo now publishes through the Pages *Actions* deployer
+# (pages.yml), which serves the last uploaded ARTIFACT. A commit that skips CI produces no
+# artifact, so it never reaches the live site: between 9 and 14 Aug 2026 seven disruption
+# updates were committed and none of them went live, because nothing else triggered a deploy
+# in those five days. Letting this commit run pages.yml is what actually publishes the data.
 
 on:
   schedule:
-    - cron: '*/15 * * * *'      # every 15 min (GitHub may delay scheduled runs under load)
+    # Every 30 min. GitHub delays scheduled runs under load (observed ~40-70 min apart here),
+    # so a tighter cron buys no real freshness and just burns runs — the feed changes ~2x/day.
+    - cron: '*/30 * * * *'
   workflow_dispatch: {}         # allow manual "Run workflow"
 
 permissions:
@@ -22,6 +31,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0        # a shallow clone cannot rebase when a push loses a race
       - uses: actions/setup-node@v4
         with:
           node-version: '20'
@@ -32,13 +43,23 @@ jobs:
         run: node transit_data/scrape-disruptions.cjs
       - name: Commit if changed
         run: |
-          if ! git diff --quiet -- transit_data/disruptions.json; then
-            git config user.name  "disruptions-bot"
-            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-            git add transit_data/disruptions.json
-            git commit -m "chore: live disruptions update [skip ci]"
-            git push
-            echo "Updated disruptions.json"
-          else
+          if git diff --quiet -- transit_data/disruptions.json; then
             echo "No change — disruptions.json already current."
+            exit 0
           fi
+          git config user.name  "disruptions-bot"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add transit_data/disruptions.json
+          git commit -m "chore: live disruptions update"
+          # A push can lose a race with a human push. Rebase onto whatever landed and retry,
+          # rather than failing the run and leaving the map on stale data until the next tick.
+          for attempt in 1 2 3; do
+            if git push; then
+              echo "Updated disruptions.json (attempt $attempt)"
+              exit 0
+            fi
+            echo "Push rejected on attempt $attempt — rebasing onto origin/main"
+            git pull --rebase --autostash origin main || exit 1
+          done
+          echo "::error::could not push disruptions.json after 3 attempts"
+          exit 1
