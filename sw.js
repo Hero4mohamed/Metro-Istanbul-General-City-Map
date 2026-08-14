@@ -2,7 +2,7 @@
    so every deploy activates immediately and the installed app self-updates.
    Strategy: NETWORK-FIRST for the page (updates always win; cached copy only when offline),
    stale-while-revalidate for static assets/CDNs, and NO caching for live data APIs. */
-const VERSION = '20260809142345';
+const VERSION = '20260814194855';
 const SHELL  = 'raynet-shell-' + VERSION;
 const STATIC = 'raynet-static-v1';
 const STATIC_HOSTS = ['unpkg.com', 'fonts.googleapis.com', 'fonts.gstatic.com'];
@@ -59,18 +59,32 @@ self.addEventListener('fetch', e => {
   if (TILE_HOST.test(url.host)) {
     e.respondWith((async () => {
       const hit = await caches.match(e.request, { cacheName: TILES });
-      if (hit) return hit;
-      try {
-        const r = await fetch(e.request);
-        // Leaflet requests tiles as plain <img>, so these come back OPAQUE (type 'opaque',
-        // status 0, ok false). Testing r.ok alone silently cached nothing at all.
-        if (r && (r.ok || r.type === 'opaque')) {
-          const c = await caches.open(TILES);
-          await c.put(e.request, r.clone());
-          if (++tilePuts % 100 === 0) trimTiles();
-        }
-        return r;
-      } catch (_) { return OFFLINE_TILE.clone(); }
+      // Only trust a cached tile we can actually verify. Entries written before the layers
+      // set crossOrigin are OPAQUE (status 0), which makes a cached ERROR indistinguishable
+      // from a cached tile — and cache-first would then serve that blank square forever.
+      // Anything unverifiable is refetched once and replaced with a real CORS response.
+      if (hit && hit.status === 200) return hit;
+      for (let attempt = 0; attempt < 2; attempt++) {
+        try {
+          const r = await fetch(e.request);
+          if (r && r.ok) {
+            const c = await caches.open(TILES);
+            await c.put(e.request, r.clone());
+            if (++tilePuts % 100 === 0) trimTiles();
+            return r;
+          }
+          // opaque: can't tell success from failure, so hand it back but never cache it
+          if (r && r.type === 'opaque') return r;
+          // a genuine 404/403 will not fix itself; only retry on 429/5xx
+          if (r && r.status >= 400 && r.status < 500 && r.status !== 429) return r;
+        } catch (_) { /* transient (dropped connection, TLS hiccup) — fall through to retry */ }
+        if (attempt === 0) await new Promise(res => setTimeout(res, 350));
+      }
+      // Say "not saved" ONLY when the network is genuinely unreachable. Online, return a real
+      // error so Leaflet marks the tile failed and can re-request it: the old code returned a
+      // 200 placeholder, which fired the <img> load event, so Leaflet believed the blank
+      // square WAS the map and never asked for that tile again.
+      return self.navigator.onLine ? Response.error() : OFFLINE_TILE.clone();
     })());
     return;
   }

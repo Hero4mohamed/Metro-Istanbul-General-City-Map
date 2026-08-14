@@ -3425,14 +3425,32 @@ L.control.zoom({ position:'bottomright' });
    342 cached tiles were being reported as 4.8 GB against a 4.8 GB quota, which both
    mis-reports usage and would exhaust a phone's storage quota within a few hundred tiles.
    CARTO and Esri both send Access-Control-Allow-Origin, so this costs nothing. */
+/* keepBuffer holds a wider ring of tiles around the view so panning does not expose bare
+   background, and updateWhenZooming stops us queueing tiles mid-animation that are stale
+   before they arrive — fewer requests in flight at once, which is also why they land faster. */
+const TILE_OPTS = { crossOrigin:'anonymous', keepBuffer:3, updateWhenZooming:false };
 const BASES = {
   dark:    L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',
-            { subdomains:'abcd', maxZoom:20, crossOrigin:'anonymous', attribution:'&copy; OpenStreetMap &copy; CARTO' }),
+            Object.assign({ subdomains:'abcd', maxZoom:20, attribution:'&copy; OpenStreetMap &copy; CARTO' }, TILE_OPTS)),
   voyager: L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png',
-            { subdomains:'abcd', maxZoom:20, crossOrigin:'anonymous', attribution:'&copy; OpenStreetMap &copy; CARTO' }),
+            Object.assign({ subdomains:'abcd', maxZoom:20, attribution:'&copy; OpenStreetMap &copy; CARTO' }, TILE_OPTS)),
   sat:     L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
-            { maxZoom:19, crossOrigin:'anonymous', attribution:'&copy; Esri, Maxar, Earthstar Geographics' })
+            Object.assign({ maxZoom:19, attribution:'&copy; Esri, Maxar, Earthstar Geographics' }, TILE_OPTS))
 };
+/* A tile that errors stays blank until something happens to re-create it, so one dropped
+   request left a permanent hole in the map. Re-request it a few times with backoff. Leaflet
+   keeps its own onload handler on the <img>, so a late success still fades in normally. */
+Object.keys(BASES).forEach(k => {
+  const tries = new WeakMap();
+  BASES[k].on('tileerror', ev => {
+    const img = ev.tile; if(!img || !img.src) return;
+    const n = (tries.get(img) || 0) + 1;
+    if(n > 3) return;                       // give up rather than hammer the provider
+    tries.set(img, n);
+    const src = img.src;
+    setTimeout(() => { if(img.parentNode) img.src = src; }, 400 * n);
+  });
+});
 let curBase = BASES.dark.addTo(map);
 let curBaseKey = 'dark';
 function setBase(b){
