@@ -631,6 +631,10 @@
   body.omni-open .topbar{z-index:1300;}
   body.omni-open .locate-fab,body.omni-open .ai-orb{opacity:0;pointer-events:none;}
 
+  .ai-key{flex:1;min-width:0;border:1px solid var(--stroke-2);background:var(--surface);
+    border-radius:9px;padding:6px 9px;color:var(--text);font-family:var(--mono);font-size:10px;}
+  .ai-key:focus{outline:none;border-color:var(--accent);}
+
   /* ---------- depart at / arrive by ---------- */
   .when-row{display:flex;gap:7px;align-items:center;margin-bottom:9px;}
   .when-seg{flex:1;min-width:0;}
@@ -1231,6 +1235,15 @@
         </div>
       </div>
     </div>
+    <div class="sp-row sp-col" id="aiKeyRow"><span data-i18n="aiKeyLabel">Assistant AI (optional)</span>
+      <div class="off-wrap">
+        <input type="password" id="aiKeyIn" class="ai-key" autocomplete="off" spellcheck="false"
+               placeholder="sk-ant-…" aria-label="Anthropic API key" />
+        <button class="off-btn" id="aiKeySave" data-i18n="aiKeySave">Save</button>
+        <button class="off-btn ghost" id="aiKeyClear" data-i18n="aiKeyClear">Clear</button>
+      </div>
+      <div class="sp-note" id="aiKeyNote"></div>
+    </div>
     <div class="sp-row sp-col" id="installRow"><span data-i18n="installTitle">App</span>
       <button class="off-btn" id="instBtn" data-i18n="installApp">Install app</button>
       <div class="sp-note" id="instNote"></div>
@@ -1632,6 +1645,10 @@ const I18N = {
     omniOff:"Offline — showing stops and landmarks only.", omniLook:"Searching…",
     omniHint:"Search a stop, a landmark, a street or a district — or pick a category above.",
     whenNow:"Now", whenDepart:"Depart", whenArrive:"Arrive", whenTimeT:"Time of day",
+    aiKeyLabel:"Assistant AI (optional)", aiKeySave:"Save", aiKeyClear:"Clear",
+    aiKeyOn:"Using your Anthropic key — stored only in this browser, sent only to Anthropic. The assistant still answers from this map's data.",
+    aiKeyOff:"Optional. Without a key the assistant works offline from this map's own data. Paste an Anthropic key to let it understand freer wording — it is kept only in this browser.",
+    aiKeyFail:"Your AI key could not be used — answering from the map instead.",
     ttDepart:"Depart", ttArrive:"Arrive", ttWait:"incl. ~{n} min waiting",
     ttEst:"estimated from published frequencies", ttShut:"Not running at that time: {l}",
     aiTitle:"Ask the map", aiPh:"Where can I eat near Kadıköy?", aiSend:"Ask",
@@ -1767,6 +1784,10 @@ const I18N = {
     omniOff:"Çevrimdışı — yalnızca duraklar ve simgeler.", omniLook:"Aranıyor…",
     omniHint:"Durak, simge yapı, sokak veya semt arayın — ya da yukarıdan bir kategori seçin.",
     whenNow:"Şimdi", whenDepart:"Kalkış", whenArrive:"Varış", whenTimeT:"Saat",
+    aiKeyLabel:"Asistan yapay zekâsı (isteğe bağlı)", aiKeySave:"Kaydet", aiKeyClear:"Sil",
+    aiKeyOn:"Kendi Anthropic anahtarınız kullanılıyor — yalnızca bu tarayıcıda saklanır ve yalnızca Anthropic'e gönderilir. Yanıtlar yine bu haritanın verisinden gelir.",
+    aiKeyOff:"İsteğe bağlı. Anahtarsız da asistan bu haritanın verisiyle çevrimdışı çalışır. Daha serbest ifadeleri anlaması için Anthropic anahtarı yapıştırın — yalnızca bu tarayıcıda tutulur.",
+    aiKeyFail:"Yapay zekâ anahtarı kullanılamadı — harita verisinden yanıtlanıyor.",
     ttDepart:"Kalkış", ttArrive:"Varış", ttWait:"~{n} dk bekleme dahil",
     ttEst:"yayımlanan sefer sıklığından tahmini", ttShut:"O saatte çalışmıyor: {l}",
     aiTitle:"Haritaya sor", aiPh:"Kadıköy’de nerede yemek yenir?", aiSend:"Sor",
@@ -6770,7 +6791,123 @@ let aiAsk = async function(){};
   }
   aiAsk = ask;
 
+  /* ===== optional LLM layer =============================================================
+     With a key in Settings the question goes to Claude — but Claude may only speak through
+     the tools below, every one of which returns data this app already holds or fetches from
+     OpenStreetMap. It therefore cannot invent a place, a fare, a line or a journey time; the
+     worst it can do is fail, and failure falls through to the local parser. ===== */
+  const AI_MODEL = "claude-sonnet-5";
+  const AI_TOOLS = [
+    { name:"search_place", description:"Resolve a place, landmark, street or district in this city to coordinates. Use this before tools that need a location.",
+      input_schema:{ type:"object", properties:{ query:{type:"string"} }, required:["query"] } },
+    { name:"find_nearby", description:"Real places of a category near a location, nearest first. category must be one of: food, cafe, hospital, pharmacy, atm, bank, market, hotel, toilets, police, fuel, museum, park, worship, bar.",
+      input_schema:{ type:"object", properties:{ category:{type:"string"}, place:{type:"string", description:"omit to use the map centre or the user location"} }, required:["category"] } },
+    { name:"nearest_stops", description:"Nearest transit stops to a place, with the lines serving each and the walk in minutes.",
+      input_schema:{ type:"object", properties:{ place:{type:"string"} }, required:["place"] } },
+    { name:"plan_route", description:"Plan a journey between two places and draw it on the map. Returns duration, transfers, lines and clock times.",
+      input_schema:{ type:"object", properties:{ from:{type:"string"}, to:{type:"string"} }, required:["from","to"] } },
+    { name:"bus_routes_at", description:"Bus routes serving a stop.",
+      input_schema:{ type:"object", properties:{ place:{type:"string"} }, required:["place"] } },
+    { name:"fare_info", description:"Current published fares for this city.",
+      input_schema:{ type:"object", properties:{} } }
+  ];
+  async function runAiTool(name, a){
+    a = a || {};
+    if(name === "search_place"){
+      const p = await resolve(a.query);
+      if(!p) return { found:false };
+      dropPin(p);
+      return { found:true, name:p.name, lat:+p.lat.toFixed(5), lng:+p.lng.toFixed(5) };
+    }
+    if(name === "find_nearby"){
+      const cat = matchCat(a.category) || POI_CATS[0];
+      const anchor = await resolve(a.place || "here");
+      if(!anchor) return { error:"could not resolve " + (a.place||"") };
+      const hits = await poiNear(anchor.lat, anchor.lng, cat.tag, 3, 12);
+      if(hits === null) return { error:"place lookup unavailable (offline)" };
+      if(hits.length) dropPin(hits[0]);
+      return { near:anchor.name, category:catLabel(cat),
+               results:hits.slice(0,8).map(h=>({ name:h.name, metres:Math.round(h.m), area:h.ctx })) };
+    }
+    if(name === "nearest_stops"){
+      const p = await resolve(a.place);
+      if(!p) return { error:"could not resolve " + a.place };
+      dropPin(p);
+      return { place:p.name, stops:nearestStops(p.lat, p.lng, 4)
+        .map(st=>({ name:st.name, lines:st.refs, walk_min:walkMin(st.m) })) };
+    }
+    if(name === "plan_route"){
+      const o = await resolve(a.from), d = await resolve(a.to);
+      if(!o || !d) return { error:"could not resolve " + (!o ? a.from : a.to) };
+      setPoint("O", o); setPoint("D", d); setTab("active");
+      const btn = document.getElementById("route"); if(btn) btn.click();
+      await new Promise(r=>setTimeout(r, 2600));
+      if(!goCurrent) return { planned:false, note:"no route found between those points" };
+      const it = goCurrent.it, pl = itinPlan(it, plannedStart(it));
+      return { planned:true, from:o.name, to:d.name, minutes:Math.round(it.total),
+               transfers:it.transfers, lines:(it.steps||[]).filter(x=>x.type==="ride").map(x=>x.ref),
+               depart:fmtMinOfDay(pl.start), arrive:fmtMinOfDay(pl.end) };
+    }
+    if(name === "bus_routes_at"){
+      const p = await resolve(a.place);
+      if(!p) return { error:"could not resolve " + a.place };
+      const refs = new Set();
+      for(const k in nodeMeta){ const nm = nodeMeta[k];
+        if(nm.kind !== "bus" || !nm.ref) continue;
+        if(metersBetween([p.lat,p.lng],[nm.lat,nm.lng]) < 350) refs.add(nm.ref); }
+      return { place:p.name, buses:[...refs].sort(trCmp) };
+    }
+    if(name === "fare_info"){
+      return { card:CITY.card || "", per_boarding:FARE && FARE.base, currency:"TRY",
+               transfers:(FARE && FARE.xfer) || [], note:t(FARE && FARE.noteKey || "fareNote") };
+    }
+    return { error:"unknown tool" };
+  }
+  async function aiLLM(question){
+    const key = aiKey(); if(!key) return null;
+    const sys = "You are the assistant inside a live public-transport map of " + (CITY.label||CITY.name||"this city") + ". " +
+      "Answer ONLY from the tools. Never invent a place, fare, line, stop or journey time — if a tool " +
+      "returns nothing, say plainly that you could not find it. Prefer plan_route for journeys. " +
+      "Be concise: under 60 words, no markdown headings. Reply in the language of the question.";
+    const msgs = [{ role:"user", content:question }];
+    for(let turn=0; turn<4; turn++){
+      const r = await fetch("https://api.anthropic.com/v1/messages", {
+        method:"POST",
+        headers:{ "content-type":"application/json", "x-api-key":key,
+                  "anthropic-version":"2023-06-01",
+                  "anthropic-dangerous-direct-browser-access":"true" },
+        body: JSON.stringify({ model:AI_MODEL, max_tokens:700, system:sys, tools:AI_TOOLS, messages:msgs })
+      });
+      if(!r.ok) throw new Error("HTTP " + r.status);
+      const data = await r.json();
+      msgs.push({ role:"assistant", content:data.content });
+      const calls = (data.content||[]).filter(c=>c.type === "tool_use");
+      if(!calls.length){
+        return (data.content||[]).filter(c=>c.type === "text").map(c=>c.text).join("\n").trim() || null;
+      }
+      const results = [];
+      for(const c of calls){
+        let outp; try{ outp = await runAiTool(c.name, c.input); }
+        catch(e){ outp = { error:String((e && e.message) || e) }; }
+        results.push({ type:"tool_result", tool_use_id:c.id,
+                       content: JSON.stringify(outp).slice(0, 4000) });
+      }
+      msgs.push({ role:"user", content:results });
+    }
+    return null;                                   // ran out of turns — fall back
+  }
+
   async function answer(q){
+    // A key in Settings routes the question through Claude first; no key, a failed call or an
+    // empty reply all fall through to the local parser, which needs no network at all.
+    if(aiKey()){
+      try{
+        const said = await aiLLM(q);
+        if(said){ aiSay(svgEsc(said).replace(/\n/g, "<br>")); return; }
+      }catch(e){
+        aiSay('<span style="color:var(--dim)">' + svgEsc(t("aiKeyFail")) + "</span>");
+      }
+    }
     const f = foldQ(q);
 
     /* --- fares --- */
@@ -6898,6 +7035,36 @@ let aiAsk = async function(){};
     const h = e.target.closest(".ai-hit"); if(!h) return;
     dropPin({name:h.getAttribute("data-nm"), lat:+h.getAttribute("data-lat"), lng:+h.getAttribute("data-lng")});
   });
+})();
+
+/* ---- optional Anthropic key, kept ONLY in this browser ---------------------------------
+   A public static site cannot ship a key, so the assistant is local by default. If you paste
+   your own key it is written to localStorage on this device and sent to api.anthropic.com and
+   nowhere else — it is never committed, never bundled, and never reaches this repo. */
+function aiKey(){ try{ return localStorage.getItem("irn_ai_key") || ""; }catch(e){ return ""; } }
+function refreshAiKeyRow(){
+  const inp=document.getElementById("aiKeyIn"), note=document.getElementById("aiKeyNote");
+  if(!inp || !note) return;
+  const k=aiKey();
+  inp.value = k ? "\u2022".repeat(18) : "";
+  note.textContent = k ? t("aiKeyOn") : t("aiKeyOff");
+}
+(function(){
+  const inp=document.getElementById("aiKeyIn"), save=document.getElementById("aiKeySave"),
+        clr=document.getElementById("aiKeyClear");
+  if(!inp || !save) return;
+  save.addEventListener("click", ()=>{
+    const v=inp.value.trim();
+    if(!v || /^\u2022+$/.test(v)) return;            // untouched mask → leave the stored key alone
+    try{ localStorage.setItem("irn_ai_key", v); }catch(e){}
+    refreshAiKeyRow();
+  });
+  if(clr) clr.addEventListener("click", ()=>{
+    try{ localStorage.removeItem("irn_ai_key"); }catch(e){}
+    refreshAiKeyRow();
+  });
+  inp.addEventListener("focus", ()=>{ if(/^\u2022+$/.test(inp.value)) inp.value=""; });
+  refreshAiKeyRow();
 })();
 
 /* Now / Depart / Arrive. Changing any of it re-renders the itinerary that is already on
