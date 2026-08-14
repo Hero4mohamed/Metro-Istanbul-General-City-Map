@@ -181,7 +181,7 @@
       }
     },
     "has": {
-      "bus": false,
+      "bus": true,
       "ferry": false,
       "disruptions": false,
       "openings": false,
@@ -423,7 +423,9 @@
         "off": 7,
         "hours": "06:00 – 00:50"
       }
-    }
+    },
+    "busOperator": "EGO",
+    "busSource": "osm"
   },
   "bursa": {
     "name": "BURSA",

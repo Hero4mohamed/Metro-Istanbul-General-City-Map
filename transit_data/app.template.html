@@ -1649,6 +1649,7 @@ const I18N = {
     aiKeyOn:"Using your Anthropic key — stored only in this browser, sent only to Anthropic. The assistant still answers from this map's data.",
     aiKeyOff:"Optional. Without a key the assistant works offline from this map's own data. Paste an Anthropic key to let it understand freer wording — it is kept only in this browser.",
     aiKeyFail:"Your AI key could not be used — answering from the map instead.",
+    busOsmNote:"Routes mapped by the OpenStreetMap community — no official open feed exists for this city, so coverage may be incomplete and no timetables are available.",
     ttDepart:"Depart", ttArrive:"Arrive", ttWait:"incl. ~{n} min waiting",
     ttEst:"estimated from published frequencies", ttShut:"Not running at that time: {l}",
     aiTitle:"Ask the map", aiPh:"Where can I eat near Kadıköy?", aiSend:"Ask",
@@ -1788,6 +1789,7 @@ const I18N = {
     aiKeyOn:"Kendi Anthropic anahtarınız kullanılıyor — yalnızca bu tarayıcıda saklanır ve yalnızca Anthropic'e gönderilir. Yanıtlar yine bu haritanın verisinden gelir.",
     aiKeyOff:"İsteğe bağlı. Anahtarsız da asistan bu haritanın verisiyle çevrimdışı çalışır. Daha serbest ifadeleri anlaması için Anthropic anahtarı yapıştırın — yalnızca bu tarayıcıda tutulur.",
     aiKeyFail:"Yapay zekâ anahtarı kullanılamadı — harita verisinden yanıtlanıyor.",
+    busOsmNote:"Güzergahlar OpenStreetMap topluluğu tarafından işlenmiştir — bu şehir için resmî açık veri yok; kapsam eksik olabilir ve sefer saati bulunmuyor.",
     ttDepart:"Kalkış", ttArrive:"Varış", ttWait:"~{n} dk bekleme dahil",
     ttEst:"yayımlanan sefer sıklığından tahmini", ttShut:"O saatte çalışmıyor: {l}",
     aiTitle:"Haritaya sor", aiPh:"Kadıköy’de nerede yemek yenir?", aiSend:"Sor",
@@ -5655,8 +5657,13 @@ function renderBusList(q){
     res = BUS_DIR.filter(d => d._s.includes(q));
   }
   const shown = res.slice(0, 150);
-  document.getElementById('busCount').textContent =
-    res.length + ' ' + (res.length!==1?t('busLinesMany'):t('busLines')) + (res.length>shown.length ? ' · '+t('showingFirst')+' '+shown.length : '');
+  document.getElementById('busCount').innerHTML =
+    svgEsc(res.length + ' ' + (res.length!==1?t('busLinesMany'):t('busLines')) +
+           (res.length>shown.length ? ' · '+t('showingFirst')+' '+shown.length : '')) +
+    /* Ankara and İzmir routes are community-mapped in OpenStreetMap, not an operator feed.
+       Say so, rather than let a partial directory read as the whole network. */
+    (CITY.busSource === 'osm'
+      ? '<div class="sp-note" style="margin-top:5px">' + svgEsc(t('busOsmNote')) + '</div>' : '');
   document.getElementById('busList').innerHTML = shown.length
     ? shown.map(d => `<div class="bus-row" data-id="${d.id}" data-ref="${(d.ref||'').replace(/"/g,'&quot;')}">
         <span class="bn">${d.ref}</span><span class="br">${d.from} <small>↔</small> ${d.to}${d.op?` <small>· ${d.op}</small>`:''}</span></div>`).join('')

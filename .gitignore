@@ -42,3 +42,6 @@ transit_data/planned-cities-geom.json
 
 # scrape cache for fetch-kocaeli-bus.cjs — raw HTML, regenerable, never commit
 transit_data/.cache-*/
+
+# raw Overpass bus dumps (re-fetchable via fetch-city-bus.cjs; processed into *-bus-directory/graph)
+transit_data/*-bus-osm.json

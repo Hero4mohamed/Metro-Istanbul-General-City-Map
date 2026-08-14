@@ -14,9 +14,20 @@ const manual  = JSON.parse(fs.readFileSync(path.join(DIR, 'planned-manual.json')
 // Bus networks, per city. İstanbul comes from the İETT GTFS pipeline (with real road shape
 // per route); Kocaeli is scraped from Kocaeli BB's own route pages by fetch-kocaeli-bus.cjs
 // and has no road geometry, so the app falls back to the stop polyline for it.
+// İstanbul comes from the İETT GTFS feed and Kocaeli from its published route pages, so both
+// carry real timetables. Ankara and İzmir have no comparable open feed; their routes come from
+// OpenStreetMap (see fetch-city-bus.cjs), which has stops and ordering but NO times — their
+// schedule files are deliberately empty rather than filled with invented headways.
+// İzmir, Bursa and Antalya are fetched and processed too, but are NOT listed here, because
+// what OSM holds for them would misrepresent the network rather than describe it:
+//   İzmir   — 29 ESHOT routes of ~300, and only ~6 stops per route (Ankara averages 62),
+//             so the shapes would draw as crude straight lines between a handful of points.
+//   Bursa   — 4 usable routes.      Antalya — 3 usable routes.
+// Their files stay on disk so a later OSM improvement only needs re-processing, not re-deciding.
 const BUS_CITIES = {
   istanbul: { dir:'bus-directory.json', graph:'bus-graph.json', sched:'bus-schedules.json', geom:'bus-geom.json' },
-  kocaeli:  { dir:'kocaeli-bus-directory.json', graph:'kocaeli-bus-graph.json', sched:'kocaeli-bus-schedules.json' }
+  kocaeli:  { dir:'kocaeli-bus-directory.json', graph:'kocaeli-bus-graph.json', sched:'kocaeli-bus-schedules.json' },
+  ankara:   { dir:'ankara-bus-directory.json', graph:'ankara-bus-graph.json', sched:'ankara-bus-schedules.json' }
 };
 const rd = f => JSON.parse(fs.readFileSync(path.join(DIR, f), 'utf8'));
 const opt = f => (f && fs.existsSync(path.join(DIR, f))) ? rd(f) : {};
