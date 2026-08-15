@@ -12,6 +12,7 @@ on:
 
 permissions:
   contents: write
+  actions:  write               # lets it dispatch pages.yml — see the publish step
 
 concurrency:
   group: bus-gtfs
@@ -34,9 +35,11 @@ jobs:
       # No [skip ci]: Pages publishes the last artifact uploaded by pages.yml, so a commit that
       # skips CI rebuilds index.html in the repo and never puts it on the live site.
       - name: Commit if changed
+        id: commit
         run: |
           if git diff --quiet -- transit_data/bus-graph.json transit_data/bus-schedules.json index.html; then
             echo "No change — bus GTFS already current."
+            echo "changed=false" >> "$GITHUB_OUTPUT"
             exit 0
           fi
           git config user.name  "bus-gtfs-bot"
@@ -46,6 +49,7 @@ jobs:
           for attempt in 1 2 3; do
             if git push; then
               echo "Bus GTFS refreshed (attempt $attempt)."
+              echo "changed=true" >> "$GITHUB_OUTPUT"
               exit 0
             fi
             echo "Push rejected on attempt $attempt — rebasing onto origin/main"
@@ -53,3 +57,12 @@ jobs:
           done
           echo "::error::could not push bus GTFS refresh after 3 attempts"
           exit 1
+
+      # Pushing is not enough. GitHub deliberately does NOT start a workflow from a push made
+      # with the default GITHUB_TOKEN, so this job's own commit can never trigger pages.yml.
+      # workflow_dispatch is the documented exception, so the publish is asked for explicitly.
+      - name: Publish to Pages
+        if: steps.commit.outputs.changed == 'true' || github.event_name == 'workflow_dispatch'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: gh workflow run pages.yml --ref main
