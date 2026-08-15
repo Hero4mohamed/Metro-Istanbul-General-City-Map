@@ -688,6 +688,10 @@
   .ai-hit .n{flex:1;min-width:0;font-size:10px;color:var(--text);overflow:hidden;
     text-overflow:ellipsis;white-space:nowrap;}
   .ai-hit .d{flex:none;font-family:var(--mono);font-size:9px;color:var(--accent);}
+  /* pulsing ring behind a station-level fault, so it reads as live rather than as a pin */
+  .disr-halo{animation:disrPulse 2.3s ease-in-out infinite;}
+  @keyframes disrPulse{0%,100%{opacity:.30;}50%{opacity:1;}}
+  body.calm .disr-halo{animation:none;opacity:.75;}
   .ai-msg .lr-warn{color:#F5A623;font-size:9.5px;margin-top:4px;line-height:1.45;}
   .ai-msg .tt-est{color:var(--dim);font-size:9px;}
   .ai-sug{display:flex;flex-wrap:wrap;gap:5px;padding:0 12px 9px;}
@@ -6155,6 +6159,14 @@ function disruptionPoints(d){
   const line = lineByRef[d.ref]; const pts = [];
   if(d.scope==='stations' && d.stations && line){
     d.stations.forEach(nm=>{ const st=line.stations.find(s=>fold(s.name)===fold(nm))||stationList.find(c=>fold(c.name)===fold(nm)); if(st) pts.push([st.lat,st.lng]); });
+  } else if(d.scope==='segment' && d.from && d.to && line &&
+            fold(d.from)===fold(d.to)){
+    // Only ONE station could be identified, so there is no section to band. Mark that
+    // station — the old code fell through and dropped the ⚠ at the line's midpoint, which
+    // pointed at a stretch of track that was never affected.
+    const st = line.stations.find(s=>fold(s.name)===fold(d.from)) ||
+               stationList.find(c=>fold(c.name)===fold(d.from));
+    if(st) pts.push([st.lat,st.lng]);
   } else {
     const paths = disruptionPaths(d);
     if(paths.length && paths[0].length) { const c=paths[0]; pts.push(c[Math.floor(c.length/2)]); }
@@ -6179,8 +6191,8 @@ function renderDisruptionMarkers(){
     // "out of service" section — clean solid caution band: a red outline (casing) with a
     // yellow infill and a thin dark centre-seam so it reads as a crisp boxed hazard line.
     // Static, no dots / animation. The ⚠ signage plate marks the affected stations.
-    disruptionPaths(d).forEach(coords=>{
-      if(coords.length<2) return;
+    const bands = disruptionPaths(d).filter(c=>c && c.length>=2);
+    bands.forEach(coords=>{
       const base = (line && KIND[line.kind] && KIND[line.kind].weight) || 4;
       const gw = Math.max(3, (base+1.4) * lineScale(z));
       const red    = L.polyline(coords, { renderer:hazardRenderer, color:'#D42A2A', weight:gw+3.4,
@@ -6195,6 +6207,14 @@ function renderDisruptionMarkers(){
     });
     // warning marker(s): fixed screen size, gently smaller when zoomed out
     disruptionPoints(d).forEach(p=>{
+      // A line-wide or sectional fault glows through its caution band. A fault we can only
+      // pin to a single station has no band, so it would sit there as a flat signpost while
+      // its neighbours pulse. Give it a halo instead — visible, without inventing a length.
+      if(!bands.length){
+        L.circleMarker(p, { renderer:hazardRenderer, className:'disr-halo',
+          radius:Math.max(10, isz*0.62), color:col, weight:2, opacity:.9,
+          fillColor:col, fillOpacity:.16, interactive:false }).addTo(disruptionLayer);
+      }
       const icon = L.divIcon({ className:'warn-icon',
         html:`<span style="--wc:${col};width:${isz}px;height:${isz}px;font-size:${Math.round(isz*0.55)}px">⚠</span>`,
         iconSize:[isz,isz], iconAnchor:[isz/2,isz/2] });

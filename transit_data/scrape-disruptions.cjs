@@ -43,6 +43,9 @@ const TR2EN_PHRASES = [
   [/sinyalizasyon\s+arızası\s+nedeniyle/gi, 'due to a signalling fault,'],
   [/elektrik\s+kesintisi\s+nedeniyle/gi, 'due to a power outage,'],
   [/olumsuz\s+hava\s+koşulları\s+nedeniyle/gi, 'due to adverse weather conditions,'],
+  [/hava\s+muhalefeti\s+(?:nedeniyle|sebebiyle)/gi, 'due to adverse weather,'],
+  [/hava\s+muhalefeti/gi, 'adverse weather'],
+  [/olumsuz\s+hava\s+(?:şartları|koşulları)/gi, 'adverse weather'],
   [/hava\s+koşulları\s+nedeniyle/gi, 'due to weather conditions,'],
   [/yoğunluk\s+nedeniyle/gi, 'due to congestion,'],
   [/çalışmaları?\s+nedeniyle/gi, 'due to works,'],
@@ -113,7 +116,7 @@ function translateTR(text){
 
 // residual-Turkish detector: if the phrase translator left transit jargon untranslated,
 // fall back to an LLM (only when ANTHROPIC_API_KEY is set — otherwise skipped).
-const TR_RESIDUAL=/\b(nedeniyle|sebebiyle|istasyon\w*|seferler\w*|yapıl\w*|aktarma\w*|kapal\w*|kapat\w*|çalışm\w*|arası\w*|durdurul\w*|hizmet|geçici|yönünde|güzergah\w*|yoğunluk|doğrultusunda|talebi|hattı\w*|teleferik|füniküler|vatandaş\w*|yolcu\w*)\b/i;
+const TR_RESIDUAL=/\b(nedeniyle|sebebiyle|istasyon\w*|seferler\w*|yapıl\w*|aktarma\w*|kapal\w*|kapat\w*|çalışm\w*|arası\w*|durdurul\w*|hizmet|geçici|yönünde|güzergah\w*|yoğunluk|doğrultusunda|talebi|hattı\w*|teleferik|füniküler|vatandaş\w*|yolcu\w*|muhalefet\w*|olumsuz|şartlar\w*|koşullar\w*|arıza\w*|bakım|onarım|bilgilerinize|sayın|değerli|ulaşım|sefer)\b/i;
 const hasResidualTurkish = s => TR_RESIDUAL.test(s||'');
 // ==TRANSLATOR-END==
 async function llmTranslate(tr){
@@ -181,12 +184,21 @@ function parseMetro(html){
     const ref=refOf(lineName);
     const { severity, title }=classify(status, desc);
     const e={ id:slug(ref+'-'+(stations[0]||status||'durum')), ref, source:'metro.istanbul' };
-    if(stations.length>=2){ e.scope='segment'; e.from=stations[0]; e.to=stations[stations.length-1]; }
-    else if(stations.length===1){ e.scope='segment'; e.from=stations[0]; e.to=stations[0]; }
+    // A segment needs two DIFFERENT ends. Emitting from===to produced a zero-length section
+    // that drew no caution band at all and pushed the ⚠ to the middle of the line.
+    const uniq=[...new Set(stations.filter(Boolean))];
+    if(uniq.length>=2){ e.scope='segment'; e.from=uniq[0]; e.to=uniq[uniq.length-1]; }
+    else if(uniq.length===1){ e.scope='stations'; e.stations=[uniq[0]]; }
     else { e.scope='line'; }
     e.severity=severity; e.title=title;
-    e.message=translateTR(desc);   // English for the panel
     e.messageTr=desc;              // keep the authoritative original
+    const en=translateTR(desc);
+    // If the phrase table only got half of it, the result is a Turkish-English hybrid like
+    // "Hava muhalefeti due to services cannot operate." — worse than either language alone.
+    // Ship the original instead; llmRefine still upgrades it when a key is available, and the
+    // client re-runs the same translator on load, so a later phrase fix repairs it in place.
+    e.message = hasResidualTurkish(en) ? desc : en;
+    if(hasResidualTurkish(en)) e.translatedBy = 'none';
     const until=parseUntil(desc); if(until) e.until=until;
     out.push(e);
   }

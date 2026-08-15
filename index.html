@@ -688,6 +688,10 @@
   .ai-hit .n{flex:1;min-width:0;font-size:10px;color:var(--text);overflow:hidden;
     text-overflow:ellipsis;white-space:nowrap;}
   .ai-hit .d{flex:none;font-family:var(--mono);font-size:9px;color:var(--accent);}
+  /* pulsing ring behind a station-level fault, so it reads as live rather than as a pin */
+  .disr-halo{animation:disrPulse 2.3s ease-in-out infinite;}
+  @keyframes disrPulse{0%,100%{opacity:.30;}50%{opacity:1;}}
+  body.calm .disr-halo{animation:none;opacity:.75;}
   .ai-msg .lr-warn{color:#F5A623;font-size:9.5px;margin-top:4px;line-height:1.45;}
   .ai-msg .tt-est{color:var(--dim);font-size:9px;}
   .ai-sug{display:flex;flex-wrap:wrap;gap:5px;padding:0 12px 9px;}
@@ -2829,6 +2833,9 @@ const TR2EN_PHRASES = [
   [/sinyalizasyon\s+arızası\s+nedeniyle/gi, 'due to a signalling fault,'],
   [/elektrik\s+kesintisi\s+nedeniyle/gi, 'due to a power outage,'],
   [/olumsuz\s+hava\s+koşulları\s+nedeniyle/gi, 'due to adverse weather conditions,'],
+  [/hava\s+muhalefeti\s+(?:nedeniyle|sebebiyle)/gi, 'due to adverse weather,'],
+  [/hava\s+muhalefeti/gi, 'adverse weather'],
+  [/olumsuz\s+hava\s+(?:şartları|koşulları)/gi, 'adverse weather'],
   [/hava\s+koşulları\s+nedeniyle/gi, 'due to weather conditions,'],
   [/yoğunluk\s+nedeniyle/gi, 'due to congestion,'],
   [/çalışmaları?\s+nedeniyle/gi, 'due to works,'],
@@ -2899,7 +2906,7 @@ function translateTR(text){
 
 // residual-Turkish detector: if the phrase translator left transit jargon untranslated,
 // fall back to an LLM (only when ANTHROPIC_API_KEY is set — otherwise skipped).
-const TR_RESIDUAL=/\b(nedeniyle|sebebiyle|istasyon\w*|seferler\w*|yapıl\w*|aktarma\w*|kapal\w*|kapat\w*|çalışm\w*|arası\w*|durdurul\w*|hizmet|geçici|yönünde|güzergah\w*|yoğunluk|doğrultusunda|talebi|hattı\w*|teleferik|füniküler|vatandaş\w*|yolcu\w*)\b/i;
+const TR_RESIDUAL=/\b(nedeniyle|sebebiyle|istasyon\w*|seferler\w*|yapıl\w*|aktarma\w*|kapal\w*|kapat\w*|çalışm\w*|arası\w*|durdurul\w*|hizmet|geçici|yönünde|güzergah\w*|yoğunluk|doğrultusunda|talebi|hattı\w*|teleferik|füniküler|vatandaş\w*|yolcu\w*|muhalefet\w*|olumsuz|şartlar\w*|koşullar\w*|arıza\w*|bakım|onarım|bilgilerinize|sayın|değerli|ulaşım|sefer)\b/i;
 const hasResidualTurkish = s => TR_RESIDUAL.test(s||'');
 
 function ensureEnglish(list){
@@ -2941,7 +2948,7 @@ const BUS_ALL = {"istanbul":[{"ref":"1","from":"Kirazlıtepe","to":"Acıbadem/Ka
 const BUS_OPERATOR = CITY.busOperator || '';      // İETT, UlaşımPark, …
 const BUS_DIR = HAS.bus ? (BUS_ALL[CITY_ID] || []) : [];
 /* --- Live disruptions: faults / closures / suspensions (editable transit_data/disruptions.json) --- */
-let DISRUPTIONS = HAS.disruptions ? [{"id":"b2-works-2026","ref":"B2","scope":"line","severity":"major","title":"Service suspended","message":"B2 Halkalı–Bahçeşehir is not operating due to engineering works.","messageTr":"B2 Halkalı–Bahçeşehir hattı altyapı çalışmaları nedeniyle çalışmamaktadır.","until":"2026-08-31","source":"manual"},{"id":"m7-mecidiyek-y","ref":"M7","source":"metro.istanbul","scope":"segment","from":"Mecidiyeköy","to":"Mecidiyeköy","severity":"partial","title":"Section affected","message":"Due to maintenance works, trains operate between Çağlayan and Mahmutbey, with a transfer at Yıldız-Mecidiyeköy and Nurtepe.","messageTr":"Onarım çalışması nedeniyle seferler Yıldız-Mecidiyeköy ve Nurtepe istasyonundan aktarmalı olarak Çağlayan-Mahmutbey istasyonları arasında yapılmaktadır."},{"id":"tf1-al-m-yor","ref":"TF1","source":"metro.istanbul","scope":"line","severity":"minor","title":"Service notice","message":"Hava muhalefeti due to services cannot operate.","messageTr":"Hava muhalefeti nedeniyle seferler yapılamamaktadır."},{"id":"tf2-al-m-yor","ref":"TF2","source":"metro.istanbul","scope":"line","severity":"minor","title":"Service notice","message":"Hava muhalefeti due to services cannot operate.","messageTr":"Hava muhalefeti nedeniyle seferler yapılamamaktadır."}] : [];   // baked-in fallback; overridden by the live fetch below
+let DISRUPTIONS = HAS.disruptions ? [{"id":"b2-works-2026","ref":"B2","scope":"line","severity":"major","title":"Service suspended","message":"B2 Halkalı–Bahçeşehir is not operating due to engineering works.","messageTr":"B2 Halkalı–Bahçeşehir hattı altyapı çalışmaları nedeniyle çalışmamaktadır.","until":"2026-08-31","source":"manual"},{"id":"m7-mecidiyek-y","ref":"M7","source":"metro.istanbul","scope":"stations","stations":["Mecidiyeköy"],"severity":"partial","title":"Section affected","messageTr":"Onarım çalışması nedeniyle seferler Yıldız-Mecidiyeköy ve Nurtepe istasyonundan aktarmalı olarak Çağlayan-Mahmutbey istasyonları arasında yapılmaktadır.","message":"Due to maintenance works, trains operate between Çağlayan and Mahmutbey, with a transfer at Yıldız-Mecidiyeköy and Nurtepe."},{"id":"tf1-al-m-yor","ref":"TF1","source":"metro.istanbul","scope":"line","severity":"minor","title":"Service notice","messageTr":"Hava muhalefeti nedeniyle seferler yapılamamaktadır.","message":"Due to adverse weather, services cannot operate."},{"id":"tf2-al-m-yor","ref":"TF2","source":"metro.istanbul","scope":"line","severity":"minor","title":"Service notice","messageTr":"Hava muhalefeti nedeniyle seferler yapılamamaktadır.","message":"Due to adverse weather, services cannot operate."}] : [];   // baked-in fallback; overridden by the live fetch below
 /* --- Upcoming line openings: curated İBB projected launch dates (subject to change). Shown as
        "coming soon" cards in the announcements panel; auto-hide once the projected date passes. --- */
 const OPENINGS = HAS.openings ? [{"ref":"M12","name":"Göztepe – Ümraniye (İFM)","open":"2026-10-29","disp":"29 Oct 2026","km":13,"stations":11},{"ref":"M14","name":"Altunizade – Bosna Bulvarı","color":"#9B59B6","open":"2026-12-15","disp":"Dec 2026","km":4.5,"stations":4},{"ref":"M10","name":"Pendik – Fevzi Çakmak","open":"2027-02-15","disp":"early 2027","km":4.8,"stations":3},{"ref":"M4","name":"Tavşantepe – Kaynarca","open":"2027-02-15","disp":"early 2027","km":1.1,"stations":1}] : [];
@@ -6249,6 +6256,14 @@ function disruptionPoints(d){
   const line = lineByRef[d.ref]; const pts = [];
   if(d.scope==='stations' && d.stations && line){
     d.stations.forEach(nm=>{ const st=line.stations.find(s=>fold(s.name)===fold(nm))||stationList.find(c=>fold(c.name)===fold(nm)); if(st) pts.push([st.lat,st.lng]); });
+  } else if(d.scope==='segment' && d.from && d.to && line &&
+            fold(d.from)===fold(d.to)){
+    // Only ONE station could be identified, so there is no section to band. Mark that
+    // station — the old code fell through and dropped the ⚠ at the line's midpoint, which
+    // pointed at a stretch of track that was never affected.
+    const st = line.stations.find(s=>fold(s.name)===fold(d.from)) ||
+               stationList.find(c=>fold(c.name)===fold(d.from));
+    if(st) pts.push([st.lat,st.lng]);
   } else {
     const paths = disruptionPaths(d);
     if(paths.length && paths[0].length) { const c=paths[0]; pts.push(c[Math.floor(c.length/2)]); }
@@ -6273,8 +6288,8 @@ function renderDisruptionMarkers(){
     // "out of service" section — clean solid caution band: a red outline (casing) with a
     // yellow infill and a thin dark centre-seam so it reads as a crisp boxed hazard line.
     // Static, no dots / animation. The ⚠ signage plate marks the affected stations.
-    disruptionPaths(d).forEach(coords=>{
-      if(coords.length<2) return;
+    const bands = disruptionPaths(d).filter(c=>c && c.length>=2);
+    bands.forEach(coords=>{
       const base = (line && KIND[line.kind] && KIND[line.kind].weight) || 4;
       const gw = Math.max(3, (base+1.4) * lineScale(z));
       const red    = L.polyline(coords, { renderer:hazardRenderer, color:'#D42A2A', weight:gw+3.4,
@@ -6289,6 +6304,14 @@ function renderDisruptionMarkers(){
     });
     // warning marker(s): fixed screen size, gently smaller when zoomed out
     disruptionPoints(d).forEach(p=>{
+      // A line-wide or sectional fault glows through its caution band. A fault we can only
+      // pin to a single station has no band, so it would sit there as a flat signpost while
+      // its neighbours pulse. Give it a halo instead — visible, without inventing a length.
+      if(!bands.length){
+        L.circleMarker(p, { renderer:hazardRenderer, className:'disr-halo',
+          radius:Math.max(10, isz*0.62), color:col, weight:2, opacity:.9,
+          fillColor:col, fillOpacity:.16, interactive:false }).addTo(disruptionLayer);
+      }
       const icon = L.divIcon({ className:'warn-icon',
         html:`<span style="--wc:${col};width:${isz}px;height:${isz}px;font-size:${Math.round(isz*0.55)}px">⚠</span>`,
         iconSize:[isz,isz], iconAnchor:[isz/2,isz/2] });
