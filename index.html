@@ -6683,7 +6683,17 @@ function walkMin(m){ return Math.max(1, Math.round(m / WALK)); }
 
 /* ---------------- the dropped pin ---------------- */
 let pinMarker = null, pinPlace = null;
+// Whether the map can be panned at all. A container that has not been laid out yet (a tab
+// opened in the background, a phone rotating, a sheet covering the map) has size 0, and every
+// Leaflet projection off it returns NaN — flyTo then throws "Invalid LatLng (NaN, NaN)".
+function mapUsable(){
+  try{ const s = map.getSize(); return !!s && s.x > 0 && s.y > 0; }catch(e){ return false; }
+}
 function dropPin(p, zoom){
+  // Showing the pin is a courtesy; the ANSWER is the product. Nothing in here may throw, or a
+  // map that simply has no size on screen would cost the user their reply.
+  if(!p || !isFinite(p.lat) || !isFinite(p.lng)) return;
+  try{
   if(pinMarker){ map.removeLayer(pinMarker); pinMarker = null; }
   pinPlace = p;
   pinMarker = L.marker([p.lat,p.lng], {icon:L.divIcon({className:"pin-ic",
@@ -6700,8 +6710,12 @@ function dropPin(p, zoom){
       '<button data-pin="O">' + svgEsc(t("routeFrom")) + '</button>' +
       '<button data-pin="D">' + svgEsc(t("routeTo")) + '</button>' +
       '<button data-pin="N">' + svgEsc(t("nearHere")) + '</button>' +
-    '</div></div>', {maxWidth:250}).openPopup();
-  map.flyTo([p.lat,p.lng], zoom || Math.max(map.getZoom(), 14), {duration:.7});
+    '</div></div>', {maxWidth:250});
+  if(mapUsable()){
+    pinMarker.openPopup();
+    map.flyTo([p.lat,p.lng], zoom || Math.max(map.getZoom(), 14), {duration:.7});
+  }
+  }catch(e){ /* pin is cosmetic — never let it break the answer */ }
 }
 /* popup buttons are re-created on every open, so delegate from the map container */
 document.addEventListener("click", e=>{
@@ -6898,6 +6912,49 @@ let aiAsk = async function(){};
      OpenStreetMap. It therefore cannot invent a place, a fare, a line or a journey time; the
      worst it can do is fail, and failure falls through to the local parser. ===== */
   const AI_MODEL = "claude-sonnet-5";
+  // İstanbul weekday/Saturday/Sunday — bus timetables are published per day type
+  function istDayType(){
+    const d = new Date(new Date().toLocaleString("en-US", { timeZone:"Europe/Istanbul" }));
+    const n = d.getDay();
+    return n === 0 ? "sun" : n === 6 ? "sat" : "wd";
+  }
+  /* Everything the app knows about one line. Buses carry a REAL operator timetable
+     (first/last/headway per day type, from GTFS), so "when is the last one today" is exact.
+     Rail publishes an operating-hours window rather than a per-station timetable, so that is
+     what is returned — labelled as such, so the model does not present it as a departure. */
+  function lineFacts(ref){
+    const ln = lineByRef[ref], out = { ref };
+    if(ln){
+      const st = ln.stations || ln.stops || [];
+      out.name = ln.name || ""; out.mode = kindLabel(ln.kind) || ln.kind;
+      out.from = st[0] && st[0].name; out.to = st[st.length-1] && st[st.length-1].name;
+      out.stations = st.length;
+      const tm = lineTiming(ref);
+      out.service_hours = tm.hours; out.frequency = tm.freq;
+      out.hours_note = "published operating window for the line, not a per-station timetable";
+      const c = lineClosedAt(ref, nowIstanbulMin());
+      out.running_now = !c;
+      if(c) out.not_running_because = c.why === "susp" ? "suspended by a service alert"
+                                                       : "outside service hours " + c.hours;
+    }
+    const bs = BUS_SCHED[ref];
+    if(bs && bs.length){
+      const dt = istDayType();
+      out.is_bus = true;
+      out.day_type = dt === "wd" ? "weekday" : dt === "sat" ? "Saturday" : "Sunday";
+      out.today = bs.map(d => ({ towards:d.head, first:d[dt] && d[dt].first, last:d[dt] && d[dt].last,
+                                 every_minutes:d[dt] && d[dt].hw, departures:d[dt] && d[dt].n }))
+                    .filter(x => x.first || x.last);
+      out.timetable_source = "operator timetable (exact)";
+      if(!ln){ const bd = BUS_DIR.find(x => x.ref === ref);
+               if(bd){ out.from = bd.from; out.to = bd.to; out.operator = bd.op || BUS_OPERATOR; } }
+    }
+    const al = (DISRUPTIONS||[]).filter(x => x.ref === ref);
+    if(al.length) out.alerts = al.map(a => ({ severity:a.severity, title:a.title,
+                                              detail:a.message, until:a.until || null }));
+    if(!ln && !out.is_bus) return { ref, found:false };
+    return out;
+  }
   const AI_TOOLS = [
     { name:"search_place", description:"Resolve a place, landmark, street or district in this city to coordinates. Use this before tools that need a location.",
       input_schema:{ type:"object", properties:{ query:{type:"string"} }, required:["query"] } },
@@ -6910,6 +6967,16 @@ let aiAsk = async function(){};
     { name:"bus_routes_at", description:"Bus routes serving a stop.",
       input_schema:{ type:"object", properties:{ place:{type:"string"} }, required:["place"] } },
     { name:"fare_info", description:"Current published fares for this city.",
+      input_schema:{ type:"object", properties:{} } },
+    { name:"line_info", description:"Everything known about one line by its ref (M2, T1, Marmaray, 500T, …): route, number of stations, operating hours, frequency, whether it is running right now, any service alert, and for buses the EXACT first and last departure today with the interval. Use this for questions like \"when is the last ride today\".",
+      input_schema:{ type:"object", properties:{ ref:{type:"string"} }, required:["ref"] } },
+    { name:"list_lines", description:"Every line in this city with its ref, mode and end points. Use it to find a line when the user describes it instead of naming it, or to answer \"which lines are there\".",
+      input_schema:{ type:"object", properties:{ mode:{type:"string", description:"optional filter: metro, tram, ferry, funicular, cable, marmaray, suburban, metrobus, bus"} } } },
+    { name:"station_info", description:"A station: which lines serve it, whether it is an interchange, step-free access, lifts and escalators where known.",
+      input_schema:{ type:"object", properties:{ name:{type:"string"} }, required:["name"] } },
+    { name:"service_alerts", description:"Current service disruptions, closures and suspensions for this city.",
+      input_schema:{ type:"object", properties:{} } },
+    { name:"city_info", description:"Which city is loaded, what modes it has, how big the network is, and the CURRENT local date and time in that city. Call this whenever the question involves today, now, or the time.",
       input_schema:{ type:"object", properties:{} } }
   ];
   async function runAiTool(name, a){
@@ -6962,22 +7029,97 @@ let aiAsk = async function(){};
       return { card:CITY.card || "", per_boarding:FARE && FARE.base, currency:"TRY",
                transfers:(FARE && FARE.xfer) || [], note:t(FARE && FARE.noteKey || "fareNote") };
     }
+    if(name === "line_info"){
+      const want = String(a.ref || "").trim();
+      if(!want) return { error:"no ref given" };
+      // tolerate case and spacing: "marmaray" → "Marmaray", "500 t" → "500T"
+      const all = NETWORK.map(l => l.ref).concat(BUS_DIR.map(b => b.ref));
+      const hit = all.find(r => String(r).toLowerCase() === want.toLowerCase()) ||
+                  all.find(r => String(r).toLowerCase().replace(/\s+/g,"") === want.toLowerCase().replace(/\s+/g,""));
+      if(!hit) return { found:false, ref:want, hint:"call list_lines to see the refs this city uses" };
+      return lineFacts(hit);
+    }
+    if(name === "list_lines"){
+      const want = (a.mode || "").toLowerCase();
+      const rail = NETWORK.filter(l => !want || (l.kind||"").toLowerCase().includes(want) ||
+                                       (kindLabel(l.kind)||"").toLowerCase().includes(want))
+        .map(l => { const st = l.stations || l.stops || [];
+                    return { ref:l.ref, mode:kindLabel(l.kind)||l.kind,
+                             from:st[0] && st[0].name, to:st[st.length-1] && st[st.length-1].name }; });
+      const out = { lines:rail };
+      if(!want || want === "bus"){
+        out.bus_lines = BUS_DIR.length;
+        out.bus_sample = BUS_DIR.slice(0, 40).map(b => b.ref);
+        if(BUS_DIR.length > 40) out.bus_note = "only the first 40 refs are listed; ask bus_routes_at for a place, or line_info for one ref";
+      }
+      return out;
+    }
+    if(name === "station_info"){
+      const f = fold(String(a.name || ""));
+      let keys = nameNodes[f];
+      if(!keys){ const p = searchPlaces(a.name)[0]; if(p) keys = nameNodes[fold(p.name)]; }
+      if(!keys || !keys.length) return { found:false, name:a.name };
+      const m0 = nodeMeta[keys[0]];
+      const refs = [...new Set(keys.map(k => nodeMeta[k] && nodeMeta[k].ref).filter(Boolean))];
+      const acc = (ACCESS_RAW||[]).find(x => fold(x.name) === fold(m0.name));
+      return { found:true, name:m0.name, lines:refs, interchange:refs.length > 1,
+               lat:+m0.lat.toFixed(5), lng:+m0.lng.toFixed(5),
+               step_free: acc ? acc.stepFree : null,
+               lifts: acc ? acc.elevators : null, escalators: acc ? acc.escalators : null,
+               district: acc ? acc.district : null,
+               accessibility_known: !!acc };
+    }
+    if(name === "service_alerts"){
+      return { count:(DISRUPTIONS||[]).length,
+               alerts:(DISRUPTIONS||[]).map(d => ({ line:d.ref, scope:d.scope, severity:d.severity,
+                 title:d.title, detail:d.message, until:d.until || null })) };
+    }
+    if(name === "city_info"){
+      const now = new Date();
+      const local = now.toLocaleString("en-GB", { timeZone:"Europe/Istanbul", weekday:"long",
+                      year:"numeric", month:"long", day:"numeric", hour:"2-digit", minute:"2-digit" });
+      const dt = istDayType();
+      return { city:CITY.label || CITY.name, local_datetime:local,
+               day_type: dt === "wd" ? "weekday" : dt === "sat" ? "Saturday" : "Sunday",
+               rail_lines:NETWORK.length, stations:stationList.length,
+               bus_lines:BUS_DIR.length, bus_timetables:Object.keys(BUS_SCHED).length > 0,
+               modes:[...new Set(NETWORK.map(l => kindLabel(l.kind) || l.kind))],
+               fare_card:CITY.card || null };
+    }
     return { error:"unknown tool" };
   }
   async function aiLLM(question){
     const key = aiKey(); if(!key) return null;
-    const sys = "You are the assistant inside a live public-transport map of " + (CITY.label||CITY.name||"this city") + ". " +
-      "Answer ONLY from the tools. Never invent a place, fare, line, stop or journey time — if a tool " +
-      "returns nothing, say plainly that you could not find it. Prefer plan_route for journeys. " +
-      "Be concise: under 60 words, no markdown headings. Reply in the language of the question.";
+    const sys = [
+      "You are the assistant inside a live public-transport map of " + (CITY.label||CITY.name||"this city") + ".",
+      "Answer the user's question directly and helpfully — including follow-ups, comparisons and",
+      "practical advice. Do not refuse a question just because it is phrased unusually.",
+      "",
+      "The one hard rule is sourcing. Any concrete fact about this city's transport — a line, a stop,",
+      "a place, a fare, a departure, a duration, a service alert — must come from a tool call. Never",
+      "state one from memory or guess it, and never round a tool's number into a different one.",
+      "If a tool returns nothing, say plainly that you could not find it and suggest what would help.",
+      "",
+      "Reach for tools freely; several in one turn is normal. city_info for anything involving today,",
+      "now or the time. line_info for a specific line, including first and last departures — for buses",
+      "those are exact operator times, while rail returns an operating-hours window, so word it that",
+      "way rather than presenting a window as a departure. list_lines when the user describes a line",
+      "instead of naming it. plan_route for journeys. service_alerts before reassuring anyone that",
+      "something is running.",
+      "",
+      "General knowledge unrelated to this map (etiquette, what a district is like, travel tips) you",
+      "may answer normally, but say when you are speaking generally rather than from the map.",
+      "Be concise — usually two or three sentences. Plain text, no markdown headings.",
+      "Reply in the language of the question."
+    ].join(" ");
     const msgs = [{ role:"user", content:question }];
-    for(let turn=0; turn<4; turn++){
+    for(let turn=0; turn<6; turn++){          // several tool calls per answer is normal
       const r = await fetch("https://api.anthropic.com/v1/messages", {
         method:"POST",
         headers:{ "content-type":"application/json", "x-api-key":key,
                   "anthropic-version":"2023-06-01",
                   "anthropic-dangerous-direct-browser-access":"true" },
-        body: JSON.stringify({ model:AI_MODEL, max_tokens:700, system:sys, tools:AI_TOOLS, messages:msgs })
+        body: JSON.stringify({ model:AI_MODEL, max_tokens:1200, system:sys, tools:AI_TOOLS, messages:msgs })
       });
       if(!r.ok) throw new Error("HTTP " + r.status);
       const data = await r.json();
@@ -7115,7 +7257,9 @@ let aiAsk = async function(){};
         aiSay("<b>" + svgEsc(ln.ref) + "</b> " + svgEsc(ln.name||"") + "<br>" +
           (st.length ? svgEsc(st[0].name) + " → " + svgEsc(st[st.length-1].name) +
             " · " + st.length + " " + svgEsc(t("stations")).toLowerCase() : ""));
-        if(st.length) map.flyToBounds(L.latLngBounds(st.map(x=>[x.lat,x.lng])), {padding:[60,60], duration:.8});
+        if(st.length && mapUsable()){
+          try{ map.flyToBounds(L.latLngBounds(st.map(x=>[x.lat,x.lng])), {padding:[60,60], duration:.8}); }catch(e){}
+        }
         return;
       }
     }
