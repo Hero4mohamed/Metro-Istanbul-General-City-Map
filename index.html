@@ -688,6 +688,8 @@
   .ai-hit .n{flex:1;min-width:0;font-size:10px;color:var(--text);overflow:hidden;
     text-overflow:ellipsis;white-space:nowrap;}
   .ai-hit .d{flex:none;font-family:var(--mono);font-size:9px;color:var(--accent);}
+  .ai-msg .lr-warn{color:#F5A623;font-size:9.5px;margin-top:4px;line-height:1.45;}
+  .ai-msg .tt-est{color:var(--dim);font-size:9px;}
   .ai-sug{display:flex;flex-wrap:wrap;gap:5px;padding:0 12px 9px;}
   .ai-f{display:flex;align-items:center;gap:7px;padding:10px 12px;border-top:1px solid var(--stroke);}
   .ai-in{flex:1;min-width:0;border:1px solid var(--stroke-2);background:var(--surface);border-radius:10px;
@@ -1650,6 +1652,11 @@ const I18N = {
     aiKeyOff:"Optional. Without a key the assistant works offline from this map's own data. Paste an Anthropic key to let it understand freer wording — it is kept only in this browser.",
     aiKeyFail:"Your AI key could not be used — answering from the map instead.",
     busOsmNote:"Routes mapped by the OpenStreetMap community — no official open feed exists for this city, so coverage may be incomplete and no timetables are available.",
+    lrToday:"Today ({d}) — first and last departure:", lrEvery:"about every {n} min",
+    lrExact:"operator timetable", lrHours:"Service hours:",
+    lrWindow:"published operating window for the line, not a departure board",
+    lrNoTimes:"No timetable is published for this line.",
+    lrWhich:"Which line? Give me its number or name — for example “last ride M2” or “son sefer 500T”.",
     ttDepart:"Depart", ttArrive:"Arrive", ttWait:"incl. ~{n} min waiting",
     ttEst:"estimated from published frequencies", ttShut:"Not running at that time: {l}",
     aiTitle:"Ask the map", aiPh:"Where can I eat near Kadıköy?", aiSend:"Ask",
@@ -1790,6 +1797,11 @@ const I18N = {
     aiKeyOff:"İsteğe bağlı. Anahtarsız da asistan bu haritanın verisiyle çevrimdışı çalışır. Daha serbest ifadeleri anlaması için Anthropic anahtarı yapıştırın — yalnızca bu tarayıcıda tutulur.",
     aiKeyFail:"Yapay zekâ anahtarı kullanılamadı — harita verisinden yanıtlanıyor.",
     busOsmNote:"Güzergahlar OpenStreetMap topluluğu tarafından işlenmiştir — bu şehir için resmî açık veri yok; kapsam eksik olabilir ve sefer saati bulunmuyor.",
+    lrToday:"Bugün ({d}) — ilk ve son sefer:", lrEvery:"yaklaşık her {n} dakikada bir",
+    lrExact:"işletme tarifesi", lrHours:"Çalışma saatleri:",
+    lrWindow:"hattın yayımlanan çalışma aralığı, sefer saati değil",
+    lrNoTimes:"Bu hat için yayımlanmış tarife yok.",
+    lrWhich:"Hangi hat? Numarasını veya adını yazın — örneğin “son sefer M2” ya da “500T son sefer”.",
     ttDepart:"Kalkış", ttArrive:"Varış", ttWait:"~{n} dk bekleme dahil",
     ttEst:"yayımlanan sefer sıklığından tahmini", ttShut:"O saatte çalışmıyor: {l}",
     aiTitle:"Haritaya sor", aiPh:"Kadıköy’de nerede yemek yenir?", aiSend:"Sor",
@@ -2929,7 +2941,7 @@ const BUS_ALL = {"istanbul":[{"ref":"1","from":"Kirazlıtepe","to":"Acıbadem/Ka
 const BUS_OPERATOR = CITY.busOperator || '';      // İETT, UlaşımPark, …
 const BUS_DIR = HAS.bus ? (BUS_ALL[CITY_ID] || []) : [];
 /* --- Live disruptions: faults / closures / suspensions (editable transit_data/disruptions.json) --- */
-let DISRUPTIONS = HAS.disruptions ? [{"id":"b2-works-2026","ref":"B2","scope":"line","severity":"major","title":"Service suspended","message":"B2 Halkalı–Bahçeşehir is not operating due to engineering works.","messageTr":"B2 Halkalı–Bahçeşehir hattı altyapı çalışmaları nedeniyle çalışmamaktadır.","until":"2026-08-31","source":"manual"},{"id":"m7-mecidiyek-y","ref":"M7","source":"metro.istanbul","scope":"segment","from":"Mecidiyeköy","to":"Mecidiyeköy","severity":"partial","title":"Section affected","message":"Due to maintenance works, trains operate between Çağlayan and Mahmutbey, with a transfer at Yıldız-Mecidiyeköy and Nurtepe.","messageTr":"Onarım çalışması nedeniyle seferler Yıldız-Mecidiyeköy ve Nurtepe istasyonundan aktarmalı olarak Çağlayan-Mahmutbey istasyonları arasında yapılmaktadır."}] : [];   // baked-in fallback; overridden by the live fetch below
+let DISRUPTIONS = HAS.disruptions ? [{"id":"b2-works-2026","ref":"B2","scope":"line","severity":"major","title":"Service suspended","message":"B2 Halkalı–Bahçeşehir is not operating due to engineering works.","messageTr":"B2 Halkalı–Bahçeşehir hattı altyapı çalışmaları nedeniyle çalışmamaktadır.","until":"2026-08-31","source":"manual"},{"id":"m7-mecidiyek-y","ref":"M7","source":"metro.istanbul","scope":"segment","from":"Mecidiyeköy","to":"Mecidiyeköy","severity":"partial","title":"Section affected","message":"Due to maintenance works, trains operate between Çağlayan and Mahmutbey, with a transfer at Yıldız-Mecidiyeköy and Nurtepe.","messageTr":"Onarım çalışması nedeniyle seferler Yıldız-Mecidiyeköy ve Nurtepe istasyonundan aktarmalı olarak Çağlayan-Mahmutbey istasyonları arasında yapılmaktadır."},{"id":"tf1-al-m-yor","ref":"TF1","source":"metro.istanbul","scope":"line","severity":"minor","title":"Service notice","message":"Hava muhalefeti due to services cannot operate.","messageTr":"Hava muhalefeti nedeniyle seferler yapılamamaktadır."},{"id":"tf2-al-m-yor","ref":"TF2","source":"metro.istanbul","scope":"line","severity":"minor","title":"Service notice","message":"Hava muhalefeti due to services cannot operate.","messageTr":"Hava muhalefeti nedeniyle seferler yapılamamaktadır."}] : [];   // baked-in fallback; overridden by the live fetch below
 /* --- Upcoming line openings: curated İBB projected launch dates (subject to change). Shown as
        "coming soon" cards in the announcements panel; auto-hide once the projected date passes. --- */
 const OPENINGS = HAS.openings ? [{"ref":"M12","name":"Göztepe – Ümraniye (İFM)","open":"2026-10-29","disp":"29 Oct 2026","km":13,"stations":11},{"ref":"M14","name":"Altunizade – Bosna Bulvarı","color":"#9B59B6","open":"2026-12-15","disp":"Dec 2026","km":4.5,"stations":4},{"ref":"M10","name":"Pendik – Fevzi Çakmak","open":"2027-02-15","disp":"early 2027","km":4.8,"stations":3},{"ref":"M4","name":"Tavşantepe – Kaynarca","open":"2027-02-15","disp":"early 2027","km":1.1,"stations":1}] : [];
@@ -6979,6 +6991,51 @@ let aiAsk = async function(){};
     { name:"city_info", description:"Which city is loaded, what modes it has, how big the network is, and the CURRENT local date and time in that city. Call this whenever the question involves today, now, or the time.",
       input_schema:{ type:"object", properties:{} } }
   ];
+  /* Find a line ref inside a free-text question. Token-based rather than substring, so "29"
+     cannot match inside "129"; two-token joins are tried first so "500 T" finds 500T. */
+  function findRef(q){
+    const toks = String(q || "").toUpperCase().match(/[A-ZÇĞİıÖŞÜ0-9]+/g) || [];
+    const set = new Map();
+    NETWORK.forEach(l => set.set(String(l.ref).toUpperCase(), String(l.ref)));
+    BUS_DIR.forEach(b => set.set(String(b.ref).toUpperCase(), String(b.ref)));
+    for(let i = 0; i < toks.length - 1; i++){
+      const j = toks[i] + toks[i+1]; if(set.has(j)) return set.get(j);
+    }
+    for(const tk of toks) if(set.has(tk)) return set.get(tk);
+    return null;
+  }
+  /* First/last service for one line, from the SAME lineFacts the AI tool uses — so this
+     answer needs no key and no network. Buses carry an exact operator timetable; rail only
+     publishes an operating window, so the two are worded differently rather than blurred. */
+  function lineTimesHTML(ref){
+    const f = lineFacts(ref);
+    if(f.found === false) return null;
+    let h = "<b>" + svgEsc(ref) + "</b>" + (f.name ? " " + svgEsc(f.name) : "");
+    if(f.from && f.to) h += '<span class="tt-est"> · ' + svgEsc(f.from) + " → " + svgEsc(f.to) + "</span>";
+    if(f.today && f.today.length){
+      h += "<br>" + svgEsc(t("lrToday").replace("{d}", f.day_type));
+      f.today.forEach(d => {
+        h += '<div class="ai-hit"><span class="n">→ ' + svgEsc(d.towards || "") + "</span>" +
+             '<span class="d">' + svgEsc((d.first || "?") + " – " + (d.last || "?")) + "</span></div>";
+      });
+      const hw = f.today[0] && f.today[0].every_minutes;
+      if(hw) h += '<div class="tt-est" style="margin-top:4px">' + svgEsc(t("lrEvery").replace("{n}", hw)) + "</div>";
+      h += '<div class="tt-est">' + svgEsc(t("lrExact")) + "</div>";
+    } else if(f.service_hours){
+      h += "<br>" + svgEsc(t("lrHours")) + " <b>" + svgEsc(f.service_hours) + "</b>" +
+           (f.frequency ? '<span class="tt-est"> · ' + svgEsc(f.frequency) + "</span>" : "");
+      h += '<div class="tt-est">' + svgEsc(t("lrWindow")) + "</div>";
+    } else if(f.is_bus){
+      h += "<br>" + svgEsc(t("lrNoTimes"));
+    } else return null;
+    if(f.running_now === false && f.not_running_because)
+      h += '<div class="lr-warn">⚠ ' + svgEsc(f.not_running_because) + "</div>";
+    (f.alerts || []).forEach(a => {
+      h += '<div class="lr-warn">⚠ ' + svgEsc(a.title || "") + (a.until ? " · " + svgEsc(a.until) : "") + "</div>";
+    });
+    return h;
+  }
+
   async function runAiTool(name, a){
     a = a || {};
     if(name === "search_place"){
@@ -7166,6 +7223,25 @@ let aiAsk = async function(){};
                svgEsc(t(FARE.noteKey || "fareNote")) + "</span>";
         aiSay(txt); return;
       }
+    }
+
+    /* --- first / last service for a line ("when is the last ride today?") --------------
+       Placed before the generic line branch, which would otherwise answer a timing question
+       with a route summary. Requires a first/last word, so "buses at Levent" is unaffected. */
+    if(/\b(first|last|final|earliest|latest|closing|opening)\b/i.test(q) ||
+       /\b(ilk|son)\s*(sefer|otob|tren|vapur|metro|araç)/i.test(q) ||
+       /kaçta|saat kaç|çalışma saat|operating hours|service hours/i.test(q)){
+      const ref = findRef(q);
+      if(ref){
+        // bus timetables arrive with the lazy per-city dataset; wait briefly if it is in flight
+        if(!lineByRef[ref] && !busReady){
+          await Promise.race([busDataPromise, new Promise(r => setTimeout(r, 4000))]);
+        }
+        const html = lineTimesHTML(ref);
+        if(html){ aiSay(html); return; }
+      }
+      aiSay(svgEsc(t("lrWhich")));
+      return;
     }
 
     /* --- buses at a stop --- */

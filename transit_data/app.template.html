@@ -688,6 +688,8 @@
   .ai-hit .n{flex:1;min-width:0;font-size:10px;color:var(--text);overflow:hidden;
     text-overflow:ellipsis;white-space:nowrap;}
   .ai-hit .d{flex:none;font-family:var(--mono);font-size:9px;color:var(--accent);}
+  .ai-msg .lr-warn{color:#F5A623;font-size:9.5px;margin-top:4px;line-height:1.45;}
+  .ai-msg .tt-est{color:var(--dim);font-size:9px;}
   .ai-sug{display:flex;flex-wrap:wrap;gap:5px;padding:0 12px 9px;}
   .ai-f{display:flex;align-items:center;gap:7px;padding:10px 12px;border-top:1px solid var(--stroke);}
   .ai-in{flex:1;min-width:0;border:1px solid var(--stroke-2);background:var(--surface);border-radius:10px;
@@ -1650,6 +1652,11 @@ const I18N = {
     aiKeyOff:"Optional. Without a key the assistant works offline from this map's own data. Paste an Anthropic key to let it understand freer wording — it is kept only in this browser.",
     aiKeyFail:"Your AI key could not be used — answering from the map instead.",
     busOsmNote:"Routes mapped by the OpenStreetMap community — no official open feed exists for this city, so coverage may be incomplete and no timetables are available.",
+    lrToday:"Today ({d}) — first and last departure:", lrEvery:"about every {n} min",
+    lrExact:"operator timetable", lrHours:"Service hours:",
+    lrWindow:"published operating window for the line, not a departure board",
+    lrNoTimes:"No timetable is published for this line.",
+    lrWhich:"Which line? Give me its number or name — for example “last ride M2” or “son sefer 500T”.",
     ttDepart:"Depart", ttArrive:"Arrive", ttWait:"incl. ~{n} min waiting",
     ttEst:"estimated from published frequencies", ttShut:"Not running at that time: {l}",
     aiTitle:"Ask the map", aiPh:"Where can I eat near Kadıköy?", aiSend:"Ask",
@@ -1790,6 +1797,11 @@ const I18N = {
     aiKeyOff:"İsteğe bağlı. Anahtarsız da asistan bu haritanın verisiyle çevrimdışı çalışır. Daha serbest ifadeleri anlaması için Anthropic anahtarı yapıştırın — yalnızca bu tarayıcıda tutulur.",
     aiKeyFail:"Yapay zekâ anahtarı kullanılamadı — harita verisinden yanıtlanıyor.",
     busOsmNote:"Güzergahlar OpenStreetMap topluluğu tarafından işlenmiştir — bu şehir için resmî açık veri yok; kapsam eksik olabilir ve sefer saati bulunmuyor.",
+    lrToday:"Bugün ({d}) — ilk ve son sefer:", lrEvery:"yaklaşık her {n} dakikada bir",
+    lrExact:"işletme tarifesi", lrHours:"Çalışma saatleri:",
+    lrWindow:"hattın yayımlanan çalışma aralığı, sefer saati değil",
+    lrNoTimes:"Bu hat için yayımlanmış tarife yok.",
+    lrWhich:"Hangi hat? Numarasını veya adını yazın — örneğin “son sefer M2” ya da “500T son sefer”.",
     ttDepart:"Kalkış", ttArrive:"Varış", ttWait:"~{n} dk bekleme dahil",
     ttEst:"yayımlanan sefer sıklığından tahmini", ttShut:"O saatte çalışmıyor: {l}",
     aiTitle:"Haritaya sor", aiPh:"Kadıköy’de nerede yemek yenir?", aiSend:"Sor",
@@ -6885,6 +6897,51 @@ let aiAsk = async function(){};
     { name:"city_info", description:"Which city is loaded, what modes it has, how big the network is, and the CURRENT local date and time in that city. Call this whenever the question involves today, now, or the time.",
       input_schema:{ type:"object", properties:{} } }
   ];
+  /* Find a line ref inside a free-text question. Token-based rather than substring, so "29"
+     cannot match inside "129"; two-token joins are tried first so "500 T" finds 500T. */
+  function findRef(q){
+    const toks = String(q || "").toUpperCase().match(/[A-ZÇĞİıÖŞÜ0-9]+/g) || [];
+    const set = new Map();
+    NETWORK.forEach(l => set.set(String(l.ref).toUpperCase(), String(l.ref)));
+    BUS_DIR.forEach(b => set.set(String(b.ref).toUpperCase(), String(b.ref)));
+    for(let i = 0; i < toks.length - 1; i++){
+      const j = toks[i] + toks[i+1]; if(set.has(j)) return set.get(j);
+    }
+    for(const tk of toks) if(set.has(tk)) return set.get(tk);
+    return null;
+  }
+  /* First/last service for one line, from the SAME lineFacts the AI tool uses — so this
+     answer needs no key and no network. Buses carry an exact operator timetable; rail only
+     publishes an operating window, so the two are worded differently rather than blurred. */
+  function lineTimesHTML(ref){
+    const f = lineFacts(ref);
+    if(f.found === false) return null;
+    let h = "<b>" + svgEsc(ref) + "</b>" + (f.name ? " " + svgEsc(f.name) : "");
+    if(f.from && f.to) h += '<span class="tt-est"> · ' + svgEsc(f.from) + " → " + svgEsc(f.to) + "</span>";
+    if(f.today && f.today.length){
+      h += "<br>" + svgEsc(t("lrToday").replace("{d}", f.day_type));
+      f.today.forEach(d => {
+        h += '<div class="ai-hit"><span class="n">→ ' + svgEsc(d.towards || "") + "</span>" +
+             '<span class="d">' + svgEsc((d.first || "?") + " – " + (d.last || "?")) + "</span></div>";
+      });
+      const hw = f.today[0] && f.today[0].every_minutes;
+      if(hw) h += '<div class="tt-est" style="margin-top:4px">' + svgEsc(t("lrEvery").replace("{n}", hw)) + "</div>";
+      h += '<div class="tt-est">' + svgEsc(t("lrExact")) + "</div>";
+    } else if(f.service_hours){
+      h += "<br>" + svgEsc(t("lrHours")) + " <b>" + svgEsc(f.service_hours) + "</b>" +
+           (f.frequency ? '<span class="tt-est"> · ' + svgEsc(f.frequency) + "</span>" : "");
+      h += '<div class="tt-est">' + svgEsc(t("lrWindow")) + "</div>";
+    } else if(f.is_bus){
+      h += "<br>" + svgEsc(t("lrNoTimes"));
+    } else return null;
+    if(f.running_now === false && f.not_running_because)
+      h += '<div class="lr-warn">⚠ ' + svgEsc(f.not_running_because) + "</div>";
+    (f.alerts || []).forEach(a => {
+      h += '<div class="lr-warn">⚠ ' + svgEsc(a.title || "") + (a.until ? " · " + svgEsc(a.until) : "") + "</div>";
+    });
+    return h;
+  }
+
   async function runAiTool(name, a){
     a = a || {};
     if(name === "search_place"){
@@ -7072,6 +7129,25 @@ let aiAsk = async function(){};
                svgEsc(t(FARE.noteKey || "fareNote")) + "</span>";
         aiSay(txt); return;
       }
+    }
+
+    /* --- first / last service for a line ("when is the last ride today?") --------------
+       Placed before the generic line branch, which would otherwise answer a timing question
+       with a route summary. Requires a first/last word, so "buses at Levent" is unaffected. */
+    if(/\b(first|last|final|earliest|latest|closing|opening)\b/i.test(q) ||
+       /\b(ilk|son)\s*(sefer|otob|tren|vapur|metro|araç)/i.test(q) ||
+       /kaçta|saat kaç|çalışma saat|operating hours|service hours/i.test(q)){
+      const ref = findRef(q);
+      if(ref){
+        // bus timetables arrive with the lazy per-city dataset; wait briefly if it is in flight
+        if(!lineByRef[ref] && !busReady){
+          await Promise.race([busDataPromise, new Promise(r => setTimeout(r, 4000))]);
+        }
+        const html = lineTimesHTML(ref);
+        if(html){ aiSay(html); return; }
+      }
+      aiSay(svgEsc(t("lrWhich")));
+      return;
     }
 
     /* --- buses at a stop --- */
