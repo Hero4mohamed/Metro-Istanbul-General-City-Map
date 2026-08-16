@@ -24,16 +24,16 @@
     "message": "Due to maintenance works, trains operate between Çağlayan and Mahmutbey, with a transfer at Yıldız-Mecidiyeköy and Nurtepe."
   },
   {
-    "id": "t1-sirkeci",
+    "id": "t1-mithatpa-a",
     "ref": "T1",
     "source": "metro.istanbul",
-    "scope": "segment",
-    "from": "Sirkeci",
-    "to": "Gülhane",
+    "scope": "stations",
+    "stations": [
+      "Mithatpaşa"
+    ],
     "severity": "partial",
     "title": "Section affected",
-    "messageTr": "İstanbul Emniyeti’nin talebi doğrultusunda Beyazıt-Eminönü güzergahında yapılan yürüyüş nedeniyle seferler Kabataş-Eminönü ve Sultanahmet-Bağcılar istasyonları arasında yapılmaktadır.",
-    "message": "İstanbul Emniyeti’nin talebi doğrultusunda Beyazıt-Eminönü güzergahında yapılan yürüyüş nedeniyle seferler Kabataş-Eminönü ve Sultanahmet-Bağcılar istasyonları arasında yapılmaktadır.",
-    "translatedBy": "none"
+    "messageTr": "Teknik bir arıza nedeniyle seferler Kabataş-Akşemsettin ve Zeytinburnu-Bağcılar istasyonları arasında yapılmaktadır.",
+    "message": "Due to a technical fault, trains Kabataş-Akşemsettin and operate between Zeytinburnu and Bağcılar."
   }
 ]
