@@ -22,5 +22,18 @@
     "title": "Section affected",
     "messageTr": "Onarım çalışması nedeniyle seferler Yıldız-Mecidiyeköy ve Nurtepe istasyonundan aktarmalı olarak Çağlayan-Mahmutbey istasyonları arasında yapılmaktadır.",
     "message": "Due to maintenance works, trains operate between Çağlayan and Mahmutbey, with a transfer at Yıldız-Mecidiyeköy and Nurtepe."
+  },
+  {
+    "id": "t1-sirkeci",
+    "ref": "T1",
+    "source": "metro.istanbul",
+    "scope": "segment",
+    "from": "Sirkeci",
+    "to": "Aksaray",
+    "severity": "partial",
+    "title": "Section affected",
+    "messageTr": "İstanbul Emniyeti’nin talebi doğrultusunda Beyazıt-Eminönü güzergahında yapılan yürüyüş nedeniyle seferler Kabataş-Eminönü ve Yusufpaşa-Bağcılar istasyonları arasında yapılmaktadır.",
+    "message": "İstanbul Emniyeti’nin talebi doğrultusunda Beyazıt-Eminönü güzergahında yapılan yürüyüş nedeniyle seferler Kabataş-Eminönü ve Yusufpaşa-Bağcılar istasyonları arasında yapılmaktadır.",
+    "translatedBy": "none"
   }
 ]
