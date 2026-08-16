@@ -29,11 +29,11 @@
     "source": "metro.istanbul",
     "scope": "segment",
     "from": "Sirkeci",
-    "to": "Aksaray",
+    "to": "Gülhane",
     "severity": "partial",
     "title": "Section affected",
-    "messageTr": "İstanbul Emniyeti’nin talebi doğrultusunda Beyazıt-Eminönü güzergahında yapılan yürüyüş nedeniyle seferler Kabataş-Eminönü ve Yusufpaşa-Bağcılar istasyonları arasında yapılmaktadır.",
-    "message": "İstanbul Emniyeti’nin talebi doğrultusunda Beyazıt-Eminönü güzergahında yapılan yürüyüş nedeniyle seferler Kabataş-Eminönü ve Yusufpaşa-Bağcılar istasyonları arasında yapılmaktadır.",
+    "messageTr": "İstanbul Emniyeti’nin talebi doğrultusunda Beyazıt-Eminönü güzergahında yapılan yürüyüş nedeniyle seferler Kabataş-Eminönü ve Sultanahmet-Bağcılar istasyonları arasında yapılmaktadır.",
+    "message": "İstanbul Emniyeti’nin talebi doğrultusunda Beyazıt-Eminönü güzergahında yapılan yürüyüş nedeniyle seferler Kabataş-Eminönü ve Sultanahmet-Bağcılar istasyonları arasında yapılmaktadır.",
     "translatedBy": "none"
   }
 ]
