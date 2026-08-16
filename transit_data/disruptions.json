@@ -22,18 +22,5 @@
     "title": "Section affected",
     "messageTr": "Onarım çalışması nedeniyle seferler Yıldız-Mecidiyeköy ve Nurtepe istasyonundan aktarmalı olarak Çağlayan-Mahmutbey istasyonları arasında yapılmaktadır.",
     "message": "Due to maintenance works, trains operate between Çağlayan and Mahmutbey, with a transfer at Yıldız-Mecidiyeköy and Nurtepe."
-  },
-  {
-    "id": "t1-mithatpa-a",
-    "ref": "T1",
-    "source": "metro.istanbul",
-    "scope": "stations",
-    "stations": [
-      "Mithatpaşa"
-    ],
-    "severity": "partial",
-    "title": "Section affected",
-    "messageTr": "Teknik bir arıza nedeniyle seferler Kabataş-Akşemsettin ve Zeytinburnu-Bağcılar istasyonları arasında yapılmaktadır.",
-    "message": "Due to a technical fault, trains Kabataş-Akşemsettin and operate between Zeytinburnu and Bağcılar."
   }
 ]
