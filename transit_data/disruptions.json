@@ -24,10 +24,25 @@
     "message": "Due to maintenance works, trains operate between Çağlayan and Mahmutbey, with a transfer at Yıldız-Mecidiyeköy and Nurtepe."
   },
   {
-    "id": "t5-al-yor",
+    "id": "t1-kabata",
+    "ref": "T1",
+    "source": "metro.istanbul",
+    "scope": "stations",
+    "stations": [
+      "Kabataş"
+    ],
+    "severity": "partial",
+    "title": "Section affected",
+    "messageTr": "Teknik bir arıza nedeniyle seferler Fındıklı-Bağcılar istasyonları arasında yapılmaktadır.",
+    "message": "Due to a technical fault, trains operate between Fındıklı and Bağcılar."
+  },
+  {
+    "id": "t5-alibeyk-y-merkez",
     "ref": "T5",
     "source": "metro.istanbul",
-    "scope": "line",
+    "scope": "segment",
+    "from": "Alibeyköy merkez",
+    "to": "Alibeyköy cep otogarı",
     "severity": "partial",
     "title": "Section affected",
     "messageTr": "Teknik bir arıza nedeniyle seferler Üniversite-Alibeyköy Cep Otogarı istasyonları arasında tek yol üzerinden, Eminönü-Üniversite arasında ise normal işletme döngüsünde yapılmaktadır.",
