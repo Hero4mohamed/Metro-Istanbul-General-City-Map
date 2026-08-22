@@ -1,0 +1,44 @@
+{
+  "note": "Progress against the Phase 0 audit. Hand-maintained: mark items done only when verified, never when merely attempted.",
+  "phases": [
+    {
+      "phase": "1 — Make it safe to change",
+      "items": [
+        { "id": "tests-static", "title": "Static test suite over the built artifact", "priority": "P0", "state": "done",
+          "note": "18 checks, zero dependencies, mutation-verified 7/7" },
+        { "id": "tests-browser", "title": "Browser smoke layer", "priority": "P0", "state": "done",
+          "note": "10 checks in a real browser; proven to catch the never-laid-out map regression" },
+        { "id": "ci-gate", "title": "Gate every publishing path on the suite", "priority": "P0", "state": "done",
+          "note": "pages.yml plus all three data bots" },
+        { "id": "telemetry", "title": "Error telemetry and window.onerror", "priority": "P0", "state": "todo",
+          "note": "Nothing tells you the app broke for a real user" },
+        { "id": "licence", "title": "LICENSE and third-party data terms", "priority": "P0", "state": "todo",
+          "note": "Public repo, ODbL-derived data, scraped operator content" },
+        { "id": "csp", "title": "Content Security Policy", "priority": "P0", "state": "todo",
+          "note": "14 external hosts, no CSP; cheapest hardening available" }
+      ]
+    },
+    {
+      "phase": "2 — Make it safe to grow",
+      "items": [
+        { "id": "modules", "title": "Split the monolith into modules", "priority": "P1", "state": "todo",
+          "note": "407 functions in one global scope; do it AFTER the tests, never before" },
+        { "id": "payload", "title": "Shrink the 6.1 MB bus payload", "priority": "P1", "state": "todo",
+          "note": "Worst mobile number in the product" },
+        { "id": "confidence", "title": "Per-record data confidence model", "priority": "P1", "state": "todo",
+          "note": "Source, freshness and verified flag per record" },
+        { "id": "bus-orphans", "title": "Close the 40 orphaned Istanbul bus refs", "priority": "P1", "state": "todo",
+          "note": "Routable by the planner, invisible in the directory; ratcheted at 65" }
+      ]
+    },
+    {
+      "phase": "3 — Depth over breadth",
+      "items": [
+        { "id": "city-depth", "title": "Bring Izmir, Bursa, Antalya to Kocaeli's level", "priority": "P2", "state": "todo" },
+        { "id": "search-rank", "title": "Search ranking: distance, popularity, open-now", "priority": "P2", "state": "todo" },
+        { "id": "assistant-intents", "title": "Widen local assistant intent coverage", "priority": "P2", "state": "partial",
+          "note": "First/last service added; nearby, directions, buses, fares, line info already local" }
+      ]
+    }
+  ]
+}

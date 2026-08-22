@@ -1,0 +1,279 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>RAY-NET status</title>
+<link rel="icon" href="assets/icon-192.png">
+<style>
+  :root{
+    --bg:#0B1016; --panel:#141C25; --panel-2:#1B2530; --line:#243140; --line-2:#31414F;
+    --ink:#E8EEF4; --ink-2:#B3C2D0; --dim:#7C8FA1;
+    --ok:#4FBE92; --ok-bg:#0F2C22;
+    --bad:#EE7A6F; --bad-bg:#331714;
+    --warn:#DFA344; --warn-bg:#332409;
+    --acc:#43BFCB; --acc-bg:#0E2E33;
+    --mono:ui-monospace,"SF Mono",SFMono-Regular,Menlo,Consolas,monospace;
+    --sans:system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0}
+  body{
+    background:var(--bg);color:var(--ink);font:14px/1.55 var(--sans);
+    padding:clamp(14px,2.5vw,26px);-webkit-font-smoothing:antialiased;
+  }
+  .wrap{max-width:1180px;margin:0 auto}
+
+  header{display:flex;flex-wrap:wrap;gap:14px;align-items:flex-end;justify-content:space-between;
+    border-bottom:1px solid var(--line);padding-bottom:14px;margin-bottom:20px}
+  h1{font-size:19px;margin:0;letter-spacing:-.015em}
+  h1 span{color:var(--acc)}
+  .stamp{font:11px var(--mono);color:var(--dim);margin-top:5px}
+  .controls{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+  button{background:var(--panel);color:var(--ink);border:1px solid var(--line-2);border-radius:7px;
+    padding:7px 12px;font:600 12px var(--sans);cursor:pointer}
+  button:hover:not(:disabled){border-color:var(--acc);color:var(--acc)}
+  button:disabled{opacity:.45;cursor:default}
+  label.tog{display:flex;gap:6px;align-items:center;font-size:12px;color:var(--dim);cursor:pointer}
+
+  .tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:12px;margin-bottom:22px}
+  .tile{background:var(--panel);border:1px solid var(--line);border-radius:11px;padding:15px 16px}
+  .tile .k{font:10.5px var(--mono);letter-spacing:.11em;text-transform:uppercase;color:var(--dim);margin-bottom:9px}
+  .tile .v{font:600 27px/1 var(--mono);letter-spacing:-.02em;font-variant-numeric:tabular-nums}
+  .tile .m{font-size:12px;color:var(--ink-2);margin-top:7px;line-height:1.4}
+  .v.ok{color:var(--ok)} .v.bad{color:var(--bad)} .v.warn{color:var(--warn)} .v.acc{color:var(--acc)}
+
+  section{margin-bottom:26px}
+  h2{font-size:13px;letter-spacing:.06em;text-transform:uppercase;color:var(--dim);
+    margin:0 0 11px;font-weight:600}
+
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:11px;overflow:hidden}
+  .scroll{overflow-x:auto}
+  table{border-collapse:collapse;width:100%;min-width:640px;font-size:13px}
+  th,td{text-align:left;padding:9px 14px;border-bottom:1px solid var(--line)}
+  thead th{background:var(--panel-2);font:600 10.5px var(--mono);letter-spacing:.1em;
+    text-transform:uppercase;color:var(--ink-2);white-space:nowrap}
+  tbody tr:last-child td{border-bottom:none}
+  td.n{font-family:var(--mono);font-variant-numeric:tabular-nums;text-align:right;white-space:nowrap}
+
+  .pill{display:inline-block;font:600 10px var(--mono);letter-spacing:.05em;text-transform:uppercase;
+    padding:2px 7px;border-radius:4px;white-space:nowrap}
+  .p-ok{background:var(--ok-bg);color:var(--ok)}
+  .p-bad{background:var(--bad-bg);color:var(--bad)}
+  .p-warn{background:var(--warn-bg);color:var(--warn)}
+  .p-acc{background:var(--acc-bg);color:var(--acc)}
+  .p-off{background:var(--panel-2);color:var(--dim)}
+
+  .meter{display:flex;align-items:center;gap:9px;min-width:130px}
+  .meter .t{flex:1;height:5px;background:var(--panel-2);border-radius:99px;overflow:hidden;min-width:54px}
+  .meter .f{height:100%;border-radius:99px;background:var(--acc)}
+  .meter .f.done{background:var(--ok)}
+  .meter .n{font:600 11.5px var(--mono);font-variant-numeric:tabular-nums;color:var(--ink-2)}
+
+  .phase{padding:13px 15px;border-bottom:1px solid var(--line)}
+  .phase:last-child{border-bottom:none}
+  .phase-h{display:flex;gap:12px;align-items:center;justify-content:space-between;margin-bottom:9px}
+  .phase-h b{font-size:13.5px;font-weight:600}
+  .item{display:flex;gap:10px;align-items:flex-start;padding:6px 0;font-size:13px}
+  .item .st{flex:none;width:58px;padding-top:1px}
+  .item .tx{flex:1;min-width:0}
+  .item .nt{color:var(--dim);font-size:12px;margin-top:1px}
+  .item.done .tx{color:var(--ink-2)}
+
+  #smokeFrame{width:100%;height:520px;border:0;border-radius:11px;background:var(--panel);display:block}
+  .hint{color:var(--dim);font-size:12px;margin:9px 0 0;max-width:76ch}
+  .err{background:var(--bad-bg);border:1px solid var(--bad);color:var(--bad);
+    padding:12px 15px;border-radius:11px;font-size:13px}
+  a{color:var(--acc)}
+  @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+  :focus-visible{outline:2px solid var(--acc);outline-offset:2px}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <div>
+      <h1>RAY-NET <span>status</span></h1>
+      <div class="stamp" id="stamp">loading…</div>
+    </div>
+    <div class="controls">
+      <button id="reload">Refresh data</button>
+      <button id="runSmoke">Run browser tests</button>
+      <label class="tog"><input type="checkbox" id="auto"> auto-refresh (60s)</label>
+    </div>
+  </header>
+
+  <div id="fatal"></div>
+
+  <div class="tiles" id="tiles"></div>
+
+  <section>
+    <h2>City coverage</h2>
+    <div class="card scroll">
+      <table>
+        <thead><tr>
+          <th>City</th><th class="n">Lines</th><th class="n">Stations</th><th class="n">Bus routes</th>
+          <th>Bus source</th><th>Ferry</th><th>Disruptions</th><th>Step-free</th>
+        </tr></thead>
+        <tbody id="cov"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <section>
+    <h2>Live service alerts</h2>
+    <div class="card scroll">
+      <table>
+        <thead><tr><th>Line</th><th>Severity</th><th>Scope</th><th>Title</th></tr></thead>
+        <tbody id="disr"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <section>
+    <h2>Roadmap</h2>
+    <div class="card" id="road"></div>
+  </section>
+
+  <section>
+    <h2>Browser tests <span style="color:var(--dim);font-weight:400;text-transform:none;letter-spacing:0">— runs the real app in an iframe, live</span></h2>
+    <iframe id="smokeFrame" title="browser smoke tests" src="transit_data/test/smoke.html?manual=1"></iframe>
+    <p class="hint">
+      Keep this window visible while the tests run. Several checks depend on the page actually
+      painting — <code>requestAnimationFrame</code> does not fire in a background tab — so they
+      skip rather than fail when the window is hidden.
+    </p>
+  </section>
+
+</div>
+
+<script>
+const $ = id => document.getElementById(id);
+const esc = s => String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+const pill = (cls, txt) => '<span class="pill ' + cls + '">' + esc(txt) + '</span>';
+
+function ago(iso) {
+  if (!iso) return 'unknown';
+  const s = Math.max(0, (Date.now() - Date.parse(iso)) / 1000);
+  if (s < 90) return Math.round(s) + 's ago';
+  if (s < 5400) return Math.round(s / 60) + ' min ago';
+  if (s < 172800) return Math.round(s / 3600) + ' h ago';
+  return Math.round(s / 86400) + ' days ago';
+}
+
+function tile(k, v, cls, m) {
+  return '<div class="tile"><div class="k">' + esc(k) + '</div>' +
+         '<div class="v ' + cls + '">' + v + '</div>' +
+         (m ? '<div class="m">' + m + '</div>' : '') + '</div>';
+}
+
+let smokeSummary = null;
+
+function render(s) {
+  const suite = s.staticSuite || {};
+  const t = (s.coverage && s.coverage.totals) || {};
+  const green = suite.fail === 0 && suite.total > 0;
+
+  $('stamp').innerHTML =
+    'generated ' + esc(ago(s.generated)) +
+    (s.commit ? ' · commit <code>' + esc(s.commit) + '</code>' : '') +
+    (s.ref ? ' · ' + esc(s.ref) : '');
+
+  const smokeTile = smokeSummary
+    ? tile('Browser tests', smokeSummary.pass + '<span style="font-size:15px;color:var(--dim)">/' +
+        (smokeSummary.pass + smokeSummary.fail) + '</span>',
+        smokeSummary.fail ? 'bad' : 'ok',
+        smokeSummary.fail ? smokeSummary.fail + ' failing' :
+          (smokeSummary.skip ? smokeSummary.skip + ' skipped (window hidden)' : 'all passing'))
+    : tile('Browser tests', '—', 'acc', 'not run yet — press Run browser tests');
+
+  $('tiles').innerHTML =
+    tile('Static suite', (suite.pass || 0) + '<span style="font-size:15px;color:var(--dim)">/' + (suite.total || 0) + '</span>',
+      green ? 'ok' : 'bad',
+      green ? 'passing at last deploy' : esc((suite.failed || []).slice(0, 2).join('; ') || 'failing')) +
+    smokeTile +
+    tile('Network', t.lines || 0, 'acc',
+      (t.stations || 0) + ' stations · ' + (t.busRoutes || 0) + ' bus routes · ' + (t.cities || 0) + ' cities') +
+    tile('Live alerts', (s.disruptions || []).length, (s.disruptions || []).some(d => d.severity === 'major') ? 'warn' : 'ok',
+      (s.disruptions || []).map(d => d.ref).join(', ') || 'no disruptions reported') +
+    tile('Page weight', Math.round((t.pageBytes || 0) / 1024) + '<span style="font-size:15px;color:var(--dim)"> KB</span>', 'acc',
+      'uncompressed; Pages serves it gzipped');
+
+  $('cov').innerHTML = (s.coverage && s.coverage.cities || []).map(c =>
+    '<tr><td><strong>' + esc(c.label) + '</strong></td>' +
+    '<td class="n">' + c.lines + '</td><td class="n">' + c.stations + '</td>' +
+    '<td class="n">' + (c.buses || '—') + '</td>' +
+    '<td>' + (c.busSource === 'osm' ? pill('p-warn', 'OSM, no timetable')
+            : c.busSource ? pill('p-ok', 'operator feed') : pill('p-off', 'none')) + '</td>' +
+    '<td>' + (c.ferry ? pill('p-ok', 'yes') : pill('p-off', '—')) + '</td>' +
+    '<td>' + (c.disruptions ? pill('p-ok', 'live') : pill('p-off', '—')) + '</td>' +
+    '<td>' + (c.stepFree ? pill('p-ok', 'yes') : pill('p-off', '—')) + '</td></tr>'
+  ).join('') || '<tr><td colspan="8" style="color:var(--dim)">no coverage data</td></tr>';
+
+  $('disr').innerHTML = (s.disruptions || []).map(d =>
+    '<tr><td><strong>' + esc(d.ref) + '</strong></td>' +
+    '<td>' + pill(d.severity === 'major' ? 'p-bad' : d.severity === 'partial' ? 'p-warn' : 'p-acc', d.severity) + '</td>' +
+    '<td style="color:var(--dim);font-family:var(--mono);font-size:12px">' + esc(d.scope) + '</td>' +
+    '<td>' + esc(d.title) + '</td></tr>'
+  ).join('') || '<tr><td colspan="4" style="color:var(--dim)">no active alerts</td></tr>';
+
+  const road = s.roadmap && s.roadmap.phases || [];
+  $('road').innerHTML = road.map(p => {
+    const done = p.items.filter(i => i.state === 'done').length;
+    const pct = Math.round(done / p.items.length * 100);
+    return '<div class="phase">' +
+      '<div class="phase-h"><b>' + esc(p.phase) + '</b>' +
+      '<span class="meter"><span class="t"><span class="f' + (done === p.items.length ? ' done' : '') +
+        '" style="width:' + pct + '%"></span></span>' +
+      '<span class="n">' + done + '/' + p.items.length + '</span></span></div>' +
+      p.items.map(i =>
+        '<div class="item' + (i.state === 'done' ? ' done' : '') + '">' +
+        '<span class="st">' + (i.state === 'done' ? pill('p-ok', 'done')
+                             : i.state === 'partial' ? pill('p-warn', 'part')
+                             : pill('p-off', i.priority || 'todo')) + '</span>' +
+        '<span class="tx">' + esc(i.title) +
+        (i.note ? '<div class="nt">' + esc(i.note) + '</div>' : '') + '</span></div>'
+      ).join('') + '</div>';
+  }).join('') || '<div class="phase" style="color:var(--dim)">no roadmap data</div>';
+}
+
+async function load() {
+  try {
+    const r = await fetch('status.json?t=' + Date.now(), { cache: 'no-store' });
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    $('fatal').innerHTML = '';
+    render(await r.json());
+  } catch (e) {
+    $('fatal').innerHTML = '<div class="err"><strong>status.json could not be read</strong> (' +
+      esc(e.message) + ').<br>It is generated at deploy time and is not committed. ' +
+      'Run <code>npm run status</code> to produce it locally.</div>';
+    $('stamp').textContent = 'no data';
+  }
+}
+
+// the smoke page reports back when a run finishes
+window.addEventListener('message', e => {
+  if (e.data && e.data.type === 'smoke-done') {
+    smokeSummary = e.data.result;
+    load();
+  }
+});
+
+$('reload').addEventListener('click', load);
+$('runSmoke').addEventListener('click', () => {
+  const f = $('smokeFrame');
+  f.src = 'transit_data/test/smoke.html?t=' + Date.now();   // no ?manual → auto-runs
+  f.scrollIntoView({ behavior: 'smooth', block: 'start' });
+});
+
+let timer = null;
+$('auto').addEventListener('change', e => {
+  clearInterval(timer);
+  if (e.target.checked) timer = setInterval(load, 60000);
+});
+
+load();
+</script>
+</body>
+</html>

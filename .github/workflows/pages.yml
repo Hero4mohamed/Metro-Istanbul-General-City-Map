@@ -42,6 +42,10 @@ jobs:
           node-version: '20'
       - name: Verify the built artifact
         run: npm test
+      # Record what was tested and what is being shipped, into the artifact only. The
+      # dashboard at /status.html reads this, so it is never staler than the live site.
+      - name: Generate the status dashboard data
+        run: node transit_data/gen-status.cjs
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
         with:

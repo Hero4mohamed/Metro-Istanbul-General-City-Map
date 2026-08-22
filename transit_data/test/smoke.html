@@ -1,0 +1,300 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>RAY-NET browser smoke tests</title>
+<style>
+  :root{
+    --bg:#0E141A; --panel:#151E27; --line:#26333F; --ink:#E7EDF3; --dim:#8397A9;
+    --ok:#5BC194; --bad:#F08379; --warn:#E0A245; --acc:#45C2CB;
+    --mono:ui-monospace,"SF Mono",Menlo,Consolas,monospace;
+    --sans:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);font:14px/1.55 var(--sans);padding:20px;}
+  h1{font-size:18px;margin:0 0 3px;letter-spacing:-.01em}
+  .sub{color:var(--dim);font-size:12px;margin:0 0 16px}
+  .bar{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:16px}
+  button{
+    background:var(--panel);color:var(--ink);border:1px solid var(--line);border-radius:7px;
+    padding:7px 13px;font:600 12px var(--sans);cursor:pointer;
+  }
+  button:hover:not(:disabled){border-color:var(--acc);color:var(--acc)}
+  button:disabled{opacity:.45;cursor:default}
+  #summary{font:600 13px var(--mono);padding:7px 13px;border-radius:7px;border:1px solid var(--line)}
+  .s-run{color:var(--warn)} .s-ok{color:var(--ok);border-color:var(--ok)} .s-bad{color:var(--bad);border-color:var(--bad)}
+  ol{list-style:none;padding:0;margin:0;border:1px solid var(--line);border-radius:9px;overflow:hidden}
+  li{display:flex;gap:11px;padding:9px 13px;border-bottom:1px solid var(--line);align-items:flex-start}
+  li:last-child{border-bottom:none}
+  .mark{font:600 11px var(--mono);width:52px;flex:none;padding-top:1px}
+  .m-ok{color:var(--ok)} .m-bad{color:var(--bad)} .m-skip{color:var(--dim)} .m-run{color:var(--warn)}
+  .name{flex:1;min-width:0}
+  .why{color:var(--dim);font-size:12px;margin-top:2px;word-break:break-word}
+  .ms{color:var(--dim);font:11px var(--mono);flex:none}
+  #stage{position:fixed;left:-10000px;top:0;width:1280px;height:820px;border:0}
+  .note{color:var(--dim);font-size:12px;margin-top:14px;max-width:70ch}
+</style>
+</head>
+<body>
+
+<h1>Browser smoke tests</h1>
+<p class="sub">
+  Boots the real built page in an iframe and exercises it. This is the tier the static suite
+  cannot reach: a runtime throw, a dead boot, a map that never renders.
+</p>
+
+<div class="bar">
+  <button id="run">Run tests</button>
+  <span id="summary">idle</span>
+</div>
+
+<ol id="out"></ol>
+
+<p class="note">
+  Open this in a normal, visible window. Several checks depend on the page actually painting —
+  <code>requestAnimationFrame</code> does not fire in a background tab, so the animated stat
+  counters would read 0 and the map would report no size. Those checks skip rather than fail
+  when the document is hidden.
+</p>
+
+<iframe id="stage" title="application under test"></iframe>
+
+<script>
+/* Each check receives the application's window and document and returns nothing on success,
+   a string on failure, or {skip:'reason'}. Keep them independent: a failure must not cascade. */
+/* ?app=<url> aims the suite at a different build — used to prove these checks still fail when
+   the defect they were written for is put back. Same-origin only, since we read the document. */
+const APP_URL = new URLSearchParams(location.search).get('app')
+             || '../../index.html?city=istanbul&smoke=1';
+
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+
+async function until(fn, ms = 9000, step = 150) {
+  const t0 = Date.now();
+  for (;;) {
+    let v; try { v = fn(); } catch (e) { v = false; }
+    if (v) return v;
+    if (Date.now() - t0 > ms) return null;
+    await sleep(step);
+  }
+}
+
+const CHECKS = [
+  {
+    name: 'the application boots',
+    why: 'A corrupted build still serves HTML and still loads Leaflet. Only the app’s own effects prove it ran.',
+    run: async (w, d) => {
+      const panes = await until(() => d.querySelectorAll('#map .leaflet-pane').length >= 6);
+      if (!panes) return 'Leaflet panes never appeared — the inline script did not execute';
+      const legend = await until(() => (d.getElementById('legend') || { children: [] }).children.length > 0);
+      if (!legend) return 'the legend never populated — init() did not complete';
+    },
+  },
+  {
+    name: 'no uncaught error after boot',
+    why: 'Catches a throw in a deferred path that leaves the first paint looking healthy.',
+    run: async (w) => {
+      const errs = w.__smokeErrors || [];
+      if (errs.length) return errs.length + ' uncaught: ' + errs.slice(0, 2).join(' | ');
+    },
+  },
+  {
+    name: 'the map has real size and a real centre',
+    run: async (w, d) => {
+      if (d.hidden || document.hidden) return { skip: 'document hidden — the map cannot lay out' };
+      const r = d.getElementById('map').getBoundingClientRect();
+      if (r.width < 200 || r.height < 200) return 'map container is ' + Math.round(r.width) + '×' + Math.round(r.height);
+    },
+  },
+  {
+    name: 'basemap tiles load',
+    why: 'The service worker once answered failures with a 200 placeholder, so Leaflet believed a blank square was the map.',
+    run: async (w, d) => {
+      if (document.hidden) return { skip: 'hidden documents do not fetch tile images' };
+      const some = await until(() => d.querySelectorAll('#map img.leaflet-tile').length > 4, 12000);
+      if (!some) return 'no tiles were requested at all';
+      await sleep(2500);
+      const t = [...d.querySelectorAll('#map img.leaflet-tile')];
+      const failed = t.filter(i => i.complete && i.naturalWidth === 0).length;
+      const placeholder = t.filter(i => /^data:image\/svg/.test(i.src)).length;
+      if (placeholder) return placeholder + ' placeholder tile(s) — the worker is faking success';
+      if (failed > Math.max(2, t.length * 0.15)) return failed + ' of ' + t.length + ' tiles failed';
+    },
+  },
+  {
+    name: 'the stat counters reach their totals',
+    why: 'Driven by requestAnimationFrame; a value stuck at 0 means the animation loop never ran.',
+    run: async (w, d) => {
+      if (document.hidden) return { skip: 'requestAnimationFrame is throttled in hidden documents' };
+      const ok = await until(() => +(d.getElementById('sLines') || {}).textContent > 0, 8000);
+      if (!ok) return 'lines counter never left 0';
+    },
+  },
+  {
+    name: 'search returns local stops',
+    run: async (w, d) => {
+      const inp = d.getElementById('omniIn');
+      if (!inp) return 'the search input is missing';
+      inp.focus(); inp.value = 'Taksim';
+      inp.dispatchEvent(new w.Event('input', { bubbles: true }));
+      const rows = await until(() => d.querySelectorAll('#omniRes .omni-row').length > 0, 6000);
+      if (!rows) return 'no results for a stop that certainly exists';
+      d.body.click();
+    },
+  },
+  {
+    name: 'the planner produces a route',
+    why: 'Exercises the graph, the walk legs and the itinerary renderer in one go.',
+    run: async (w, d) => {
+      const orb = d.getElementById('aiOrb');
+      if (!orb) return 'the assistant control is missing';
+      orb.click(); await sleep(200);
+      const ai = d.getElementById('aiIn');
+      ai.value = 'Taksim to Kadıköy';
+      ai.dispatchEvent(new w.KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
+      const opts = await until(() => d.querySelectorAll('.ropt').length > 0, 14000);
+      const xb = d.getElementById('aiX'); if (xb) xb.click();
+      if (!opts) return 'no route options were produced';
+    },
+  },
+  {
+    name: 'the assistant answers from local data',
+    why: 'No API key is set, so this must be answered by the offline intent engine.',
+    run: async (w, d) => {
+      d.getElementById('aiOrb').click(); await sleep(200);
+      const ai = d.getElementById('aiIn'), log = d.getElementById('aiLog');
+      const before = log.querySelectorAll('.ai-msg').length;
+      ai.value = 'when is the last ride of 500T today?';
+      ai.dispatchEvent(new w.KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
+      const grew = await until(() => log.querySelectorAll('.ai-msg').length > before + 1, 12000);
+      const msgs = [...log.querySelectorAll('.ai-msg')];
+      const last = msgs[msgs.length - 1];
+      const txt = last ? last.textContent : '';
+      const xb = d.getElementById('aiX'); if (xb) xb.click();
+      if (!grew) return 'the assistant never replied';
+      if (/couldn’t match|couldn't match/i.test(txt)) return 'declined a question it holds the data for: ' + txt.slice(0, 70);
+      if (!/\d{2}:\d{2}/.test(txt)) return 'replied without any departure time: ' + txt.slice(0, 70);
+    },
+  },
+  {
+    name: 'a never-laid-out map does not cost the user an answer',
+    why: 'dropPin called flyTo unconditionally. A container that never laid out projects to NaN, flyTo threw, and the catch turned it into "I couldn’t match that" — a wrong answer rather than a crash. Shrinking a booted map is NOT enough to reproduce it: Leaflet keeps a valid cached centre. The app has to boot at zero size, as it does in a background tab or behind a sheet.',
+    run: async () => {
+      const frame = document.createElement('iframe');
+      frame.title = 'application booted at zero size';
+      // 0×0 from the start, not shrunk afterwards — this is the real-world condition
+      frame.style.cssText = 'position:fixed;left:-10000px;top:0;width:0;height:0;border:0';
+      document.body.appendChild(frame);
+      try {
+        await new Promise(res => { frame.onload = () => res(); frame.src = APP_URL + '&zero=' + Date.now(); });
+        const zd = frame.contentDocument, zw = frame.contentWindow;
+        const booted = await until(() => zd.querySelectorAll('#map .leaflet-pane').length >= 6, 15000);
+        if (!booted) return 'the app did not even boot at zero size';
+
+        const orb = zd.getElementById('aiOrb');
+        if (!orb) return 'assistant control missing in the zero-size frame';
+        orb.click(); await sleep(250);
+        const ai = zd.getElementById('aiIn'), log = zd.getElementById('aiLog');
+        const before = log.querySelectorAll('.ai-msg').length;
+        // a local-only intent: nearest stops + a dropped pin, no network involved
+        ai.value = 'what is nearby Kadıköy';
+        ai.dispatchEvent(new zw.KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
+        const grew = await until(() => log.querySelectorAll('.ai-msg').length > before + 1, 14000);
+        if (!grew) return 'no reply at all when the map never laid out';
+        const msgs = [...log.querySelectorAll('.ai-msg')];
+        const txt = msgs[msgs.length - 1].textContent || '';
+        if (/couldn’t match|couldn't match/i.test(txt)) return 'the unlaid-out map swallowed the answer: "' + txt.slice(0, 60) + '"';
+        if (!/Kadıköy/i.test(txt)) return 'answered, but not about the place asked for: ' + txt.slice(0, 60);
+      } finally {
+        frame.remove();
+      }
+    },
+  },
+  {
+    name: 'the service worker registers',
+    run: async (w) => {
+      if (w.location.protocol === 'file:') return { skip: 'workers need http(s)' };
+      if (!w.navigator.serviceWorker) return 'no serviceWorker API';
+      const reg = await until(() => w.navigator.serviceWorker.controller || w.navigator.serviceWorker.getRegistration, 6000);
+      if (!reg) return 'no worker registered';
+    },
+  },
+];
+
+const out = document.getElementById('out');
+const summary = document.getElementById('summary');
+const runBtn = document.getElementById('run');
+
+function row(i, c) {
+  const li = document.createElement('li');
+  li.innerHTML = '<span class="mark m-run" id="mk' + i + '">run</span>' +
+                 '<span class="name">' + c.name +
+                 (c.why ? '<div class="why">' + c.why + '</div>' : '') + '</span>' +
+                 '<span class="ms" id="ms' + i + '"></span>';
+  out.appendChild(li);
+  return li;
+}
+
+async function run() {
+  runBtn.disabled = true;
+  out.innerHTML = '';
+  summary.className = 's-run';
+  summary.textContent = 'booting the application…';
+
+  const frame = document.getElementById('stage');
+  const booted = new Promise(res => { frame.onload = () => res(true); });
+  frame.src = APP_URL + '&t=' + Date.now();
+  await booted;
+
+  const w = frame.contentWindow, d = frame.contentDocument;
+  w.__smokeErrors = [];
+  w.addEventListener('error', e => w.__smokeErrors.push(String(e.message || e)));
+  w.addEventListener('unhandledrejection', e => w.__smokeErrors.push('unhandled rejection: ' + (e.reason && e.reason.message || e.reason)));
+
+  let pass = 0, fail = 0, skip = 0;
+  const results = [];
+
+  for (let i = 0; i < CHECKS.length; i++) {
+    const c = CHECKS[i];
+    row(i, c);
+    summary.textContent = 'running ' + (i + 1) + '/' + CHECKS.length + '…';
+    const t0 = performance.now();
+    let verdict;
+    try { verdict = await c.run(w, d); }
+    catch (e) { verdict = 'threw: ' + (e && e.message || e); }
+    const ms = Math.round(performance.now() - t0);
+
+    const mk = document.getElementById('mk' + i);
+    document.getElementById('ms' + i).textContent = ms + 'ms';
+    if (verdict && verdict.skip) {
+      mk.className = 'mark m-skip'; mk.textContent = 'skip'; skip++;
+      results.push({ name: c.name, status: 'skip', detail: verdict.skip, ms });
+      const n = mk.parentElement.querySelector('.name');
+      n.insertAdjacentHTML('beforeend', '<div class="why">skipped: ' + verdict.skip + '</div>');
+    } else if (verdict) {
+      mk.className = 'mark m-bad'; mk.textContent = 'FAIL'; fail++;
+      results.push({ name: c.name, status: 'fail', detail: String(verdict), ms });
+      mk.parentElement.querySelector('.name')
+        .insertAdjacentHTML('beforeend', '<div class="why" style="color:var(--bad)">' + String(verdict) + '</div>');
+    } else {
+      mk.className = 'mark m-ok'; mk.textContent = 'ok'; pass++;
+      results.push({ name: c.name, status: 'pass', ms });
+    }
+  }
+
+  summary.className = fail ? 's-bad' : 's-ok';
+  summary.textContent = pass + ' passed, ' + fail + ' failed' + (skip ? ', ' + skip + ' skipped' : '');
+  runBtn.disabled = false;
+
+  // consumed by the status dashboard and by any future automation
+  window.SMOKE_RESULT = { pass, fail, skip, total: CHECKS.length, results, at: new Date().toISOString() };
+  window.dispatchEvent(new CustomEvent('smoke-done', { detail: window.SMOKE_RESULT }));
+  try { parent.postMessage({ type: 'smoke-done', result: window.SMOKE_RESULT }, '*'); } catch (e) {}
+}
+
+runBtn.addEventListener('click', run);
+if (!/[?&]manual/.test(location.search)) run();
+</script>
+</body>
+</html>

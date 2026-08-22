@@ -66,3 +66,38 @@ number may **shrink, never grow**. Lower the baseline when the pipeline improves
 
 This is a static suite. It cannot catch a runtime fault in a real browser — the zero-size-map
 `flyTo` throw would still get through. A DOM smoke test is the next layer.
+
+## Tier 2 — browser smoke tests
+
+`transit_data/test/smoke.html` boots the real built page in an iframe and exercises it. This
+is the tier static analysis cannot reach: a runtime throw, a dead boot, a map that never
+renders. Open it directly, or press **Run browser tests** on `/status.html`.
+
+Ten checks: boot, uncaught errors, map size, tile loading, animated counters, search, the
+planner, the assistant answering from local data, service-worker registration — and the one
+that matters most:
+
+**A never-laid-out map must not cost the user an answer.** `dropPin` used to call `flyTo`
+unconditionally; a container that never laid out projects to `NaN`, `flyTo` threw, and the
+surrounding catch turned it into "I couldn't match that" — a wrong answer rather than a crash.
+
+Reproducing it correctly took two attempts. Shrinking a *booted* map is not enough: Leaflet
+keeps a valid cached centre, so the mutant passed. The app has to **boot at zero size**, as it
+does in a background tab or behind a sheet. The check now spins up its own 0×0 iframe. Verified
+against a mutant with the `mapUsable()` guard removed: it fails with the exact original
+symptom, and passes on the real build.
+
+Checks that need real painting (`requestAnimationFrame`, tile fetches, layout) **skip** rather
+than fail when the document is hidden. Run it in a visible window.
+
+`?app=<url>` aims the suite at a different build — that is how the mutant above was tested.
+
+## The status dashboard
+
+`/status.html` — open it in its own window and keep it there. It reads `status.json`, which
+`transit_data/gen-status.cjs` generates **into the Pages artifact at deploy time and never
+commits**, so the dashboard is exactly as fresh as the live site and the repo stays free of
+churn. Locally: `npm run status`.
+
+It shows the static suite result, city coverage, live service alerts, roadmap progress from
+`transit_data/roadmap.json`, and it can run the browser suite live in an embedded frame.

@@ -45,3 +45,7 @@ transit_data/.cache-*/
 
 # raw Overpass bus dumps (re-fetchable via fetch-city-bus.cjs; processed into *-bus-directory/graph)
 transit_data/*-bus-osm.json
+
+# generated into the Pages artifact at deploy time; never committed, so the dashboard
+# is always as fresh as the deploy and the repo stays free of churn
+status.json
