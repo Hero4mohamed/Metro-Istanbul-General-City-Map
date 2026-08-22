@@ -642,9 +642,10 @@ let aiAsk = async function(){};
         return;
       }
       const rows = mine.map(d => {
-        const msg = (lang === "tr" && d.messageTr) ? d.messageTr : d.message;
+        // same text and the same "shown in Turkish" label the announcements panel uses; the
+        // badge is our own markup, the operator’s text stays escaped
         return '<div class="ai-hit"><span class="n"><b>' + svgEsc(d.ref || "") + "</b> " +
-               svgEsc(d.title || "") + "<br>" + svgEsc(msg || "") +
+               svgEsc(d.title || "") + "<br>" + disTrTag(d) + svgEsc(disMsg(d) || "") +
                (d.until ? ' <span style="color:var(--dim)">(' + svgEsc(t("aiAlertsUntil")) + " " +
                  svgEsc(d.until) + ")</span>" : "") + "</span></div>";
       }).join("");

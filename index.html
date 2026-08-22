@@ -6,7 +6,7 @@
 <!-- Substituted by build.cjs, which hashes the inline script from the final bytes. Pages
      cannot set headers, so this ships as meta; frame-ancestors and report-uri are
      unavailable that way. -->
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-//2IPZQh0wIOgUukNO78j38vTzpVov2oUtGkeCZ2kQo=' https://unpkg.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://unpkg.com; font-src https://fonts.gstatic.com data:; img-src 'self' data: blob: https://*.basemaps.cartocdn.com https://server.arcgisonline.com; connect-src 'self' https://*.basemaps.cartocdn.com https://server.arcgisonline.com https://photon.komoot.io https://overpass-api.de https://api.ibb.gov.tr https://api.open-meteo.com https://routing.openstreetmap.de https://api.anthropic.com; worker-src 'self'; manifest-src 'self'; base-uri 'self'; form-action 'none'; object-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-2u5nE2OjiPdHL4yN+3CHTzFnqaHPYtFuPA64Apc85Ec=' https://unpkg.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://unpkg.com; font-src https://fonts.gstatic.com data:; img-src 'self' data: blob: https://*.basemaps.cartocdn.com https://server.arcgisonline.com; connect-src 'self' https://*.basemaps.cartocdn.com https://server.arcgisonline.com https://photon.komoot.io https://overpass-api.de https://api.ibb.gov.tr https://api.open-meteo.com https://routing.openstreetmap.de https://api.anthropic.com; worker-src 'self'; manifest-src 'self'; base-uri 'self'; form-action 'none'; object-src 'none'">
 <title>İSTANBUL RAY-NET · Live Rail Network Map &amp; Simulation</title>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
       integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
@@ -527,6 +527,11 @@
   .ann-ttl{font-size:11px;font-weight:700;color:var(--text);}
   .ann-msg{font-size:10px;color:var(--muted);line-height:1.45;}
   .ann-until{font-size:9.5px;color:#FCD97C;margin-top:4px;font-weight:600;}
+  /* "shown in Turkish" badge: an alert the phrase rules could not carry into English is
+     printed in the operator’s own words, and says so rather than pretending to be a translation */
+  .ann-tr{display:inline-block;font-size:8.5px;font-weight:800;letter-spacing:.4px;text-transform:uppercase;
+    padding:1px 6px;border-radius:99px;border:1px solid var(--stroke);color:var(--dim);
+    background:var(--surface-2);vertical-align:1px;margin-right:2px;white-space:nowrap;cursor:help;}
   .ann-item .ann-tx small{display:block;color:var(--muted);font-size:9.5px;margin-top:1px;}
   .ann-foot{font-size:9px;color:var(--dim);padding-top:4px;border-top:1px solid var(--stroke);margin-top:2px;line-height:1.55;}
   .ann-foot a{color:var(--accent);text-decoration:none;}
@@ -1649,7 +1654,7 @@
 
    The report carries the fault, the build, the city, the language and the browser. It never
    carries location, saved places, trip history or the API key. ===== */
-const BUILD = "20260822151033";
+const BUILD = "20260822220450";
 const DIAG_MAX = 20;
 let DIAG = [];
 try { DIAG = JSON.parse(localStorage.getItem("irn_diag") || "[]"); } catch (e) { DIAG = []; }
@@ -1779,6 +1784,8 @@ const I18N = {
     toYourDest:"to your destination", toStop:"to", fromStop:"from",
     annNone:"✓ No reported disruptions — network running normally.",
     annFoot:"Reported service faults &amp; closures. Live official status:",
+    trOnlyTag:"Turkish original",
+    trOnlyWhy:"The operator wrote this in wording our English rules do not cover, so the official Turkish is shown unchanged rather than half-translated.",
     until:"until", daysLeft:"days left", endsToday:"ends today", ended:"ended",
     openHdr:"Coming soon", openTtl:"New line opening", opensOn:"Opens", openSoon:"SOON",
     inMonths:"in ~{n} mo", inWeeks:"in ~{n} wk", inDays:"in {n} d", kmU:"km", stnU:"stations",
@@ -1938,6 +1945,8 @@ const I18N = {
     toYourDest:"varış noktanıza", toStop:"→", fromStop:"şuradan:",
     annNone:"✓ Bildirilen aksama yok — ağ normal çalışıyor.",
     annFoot:"Bildirilen servis arızaları ve kapanışları. Canlı resmi durum:",
+    trOnlyTag:"Türkçe orijinal",
+    trOnlyWhy:"İşletmecinin ifadesi İngilizce çeviri kurallarımızın kapsamı dışında kaldığı için resmi Türkçe metin olduğu gibi gösteriliyor.",
     until:"şu tarihe kadar:", daysLeft:"gün kaldı", endsToday:"bugün bitiyor", ended:"sona erdi",
     openHdr:"Yakında açılıyor", openTtl:"Yeni hat açılışı", opensOn:"Açılış", openSoon:"YAKINDA",
     inMonths:"~{n} ay içinde", inWeeks:"~{n} hafta içinde", inDays:"{n} gün içinde", kmU:"km", stnU:"istasyon",
@@ -2058,6 +2067,8 @@ const I18N = {
     toYourDest:"إلى وجهتك", toStop:"إلى", fromStop:"من",
     annNone:"✓ لا اضطرابات مبلّغة — الشبكة تعمل بشكل طبيعي.",
     annFoot:"الأعطال والإغلاقات المبلّغة. الحالة الرسمية:",
+    trOnlyTag:"النص التركي الأصلي",
+    trOnlyWhy:"صياغة المشغّل غير مشمولة بقواعد الترجمة لدينا، لذا يُعرض النص التركي الرسمي كما هو بدل ترجمة ناقصة.",
     until:"حتى", daysLeft:"يومًا متبقيًا", endsToday:"ينتهي اليوم", ended:"انتهى",
     openHdr:"قريبًا", openTtl:"افتتاح خط جديد", opensOn:"يفتتح", openSoon:"قريبًا",
     inMonths:"خلال ~{n} شهر", inWeeks:"خلال ~{n} أسبوع", inDays:"خلال {n} يوم", kmU:"كم", stnU:"محطة",
@@ -2176,6 +2187,8 @@ const I18N = {
     toYourDest:"jusqu'à votre destination", toStop:"vers", fromStop:"depuis",
     annNone:"✓ Aucune perturbation signalée — réseau normal.",
     annFoot:"Pannes et fermetures signalées. Statut officiel :",
+    trOnlyTag:"Original en turc",
+    trOnlyWhy:"La formulation de l’exploitant n’est pas couverte par nos règles de traduction ; le texte turc officiel est donc affiché tel quel plutôt qu’à moitié traduit.",
     until:"jusqu'au", daysLeft:"jours restants", endsToday:"se termine aujourd'hui", ended:"terminé",
     openHdr:"Bientôt", openTtl:"Nouvelle ligne", opensOn:"Ouvre", openSoon:"BIENTÔT",
     inMonths:"dans ~{n} mois", inWeeks:"dans ~{n} sem", inDays:"dans {n} j", kmU:"km", stnU:"stations",
@@ -3025,19 +3038,103 @@ function translateTR(text){
 // fall back to an LLM (only when ANTHROPIC_API_KEY is set — otherwise skipped).
 const TR_RESIDUAL=/\b(nedeniyle|sebebiyle|istasyon\w*|seferler\w*|yapıl\w*|aktarma\w*|kapal\w*|kapat\w*|çalışm\w*|arası\w*|durdurul\w*|hizmet|geçici|yönünde|güzergah\w*|yoğunluk|doğrultusunda|talebi|hattı\w*|teleferik|füniküler|vatandaş\w*|yolcu\w*|muhalefet\w*|olumsuz|şartlar\w*|koşullar\w*|arıza\w*|bakım|onarım|bilgilerinize|sayın|değerli|ulaşım|sefer)\b/i;
 const hasResidualTurkish = s => TR_RESIDUAL.test(s||'');
+
+/* --- how much of the announcement did the rules actually reach? ---------------------------
+   hasResidualTurkish is a keyword list, so it answers "is ANY known Turkish left" — the wrong
+   question in both directions. One stray "hizmet" condemns an otherwise clean sentence, and
+   vocabulary nobody thought to list sails straight through. A real M2 alert shipped as
+
+     "Sanayi at the station bir yolcunun intihar girişiminde bulunması due to Sanayi our
+      station işletmeye has been closed."
+
+   — half of each language and readable in neither, because not one of "bir / yolcunun /
+   intihar / girişiminde / bulunması / işletmeye" is on the list.
+
+   What matters is the PROPORTION, and it can be measured exactly rather than sniffed at:
+   every English word translateTR is capable of producing comes from the replacement side of
+   the two tables above. So a word in the output that is not in that vocabulary, and is not a
+   proper noun, is BY CONSTRUCTION source text that no rule matched. No language detection,
+   and no word list that has to be kept in step with the rules by hand. */
+const EN_EMITTED = (function(){
+  const set = new Set();
+  const add = str => String(str).toLowerCase().replace(/\$\d/g,' ').split(/[^a-z]+/)
+                      .forEach(w=>{ if(w) set.add(w); });
+  for(const rule of TR2EN_PHRASES) add(rule[1]);
+  for(const k in TR2EN_WORDS) add(TR2EN_WORDS[k]);
+  return set;
+})();
+// letter-initial, so dates and numbers are not words; digits allowed, so "M2"/"T1" stay whole
+const TR_TOKEN  = /[A-Za-zÇĞİIÖŞÜçğıöşü][A-Za-zÇĞİIÖŞÜçğıöşü0-9'’]*/g;
+const TR_CAPPED = /^[A-ZÇĞİIÖŞÜ]/;
+
+/* Share of the classifiable words in `en` that are still Turkish, 0..1.
+   `names` are this alert's station and line names: they pass through untranslated BY DESIGN
+   and must never count against coverage. Capitalised words are read as proper nouns and left
+   out of the count entirely — including the first word, whose capital was put there by
+   translateTR itself and so says nothing about what it is. Leaving a word out is the honest
+   move where we cannot classify it: it neither excuses the rules nor condemns them. */
+function turkishShare(en, names){
+  const known = new Set();
+  for(const n of (names||[]))
+    for(const w of (String(n).match(TR_TOKEN)||[])) known.add(w.toLocaleLowerCase('tr'));
+  let english=0, turkish=0;
+  for(const w of (String(en||'').match(TR_TOKEN)||[])){
+    const k = w.toLocaleLowerCase('tr');
+    if(known.has(k)) continue;                  // a station or line name
+    if(EN_EMITTED.has(k)){ english++; continue; }
+    if(TR_CAPPED.test(w)) continue;             // proper noun (or, on word one, unknowable)
+    turkish++;                                  // source text no rule touched
+  }
+  return (english+turkish) ? turkish/(english+turkish) : 0;
+}
+/* Past this share the hybrid is worse than either language, so the original ships instead.
+   A quarter sits in a wide empty gap: the formulaic alerts the rules DO cover measure 0.00
+   to 0.17, and the ones they do not measure 0.37 and up. Nothing real lands between. */
+const TR_FALLBACK_SHARE = 0.25;
+
+/* The one decision the scraper and the app both make about an announcement.
+   It never invents English. Where the rules fall short it returns the CLEAN ORIGINAL, flagged
+   lang:'tr' so the UI can say so, instead of passing a half-translation off as a translation. */
+function bestEffortEnglish(tr, names){
+  const src   = String(tr||'').trim();
+  const en    = translateTR(src);
+  const share = turkishShare(en, names);
+  return share > TR_FALLBACK_SHARE ? { text:src, lang:'tr', share:share }
+                                   : { text:en,  lang:'en', share:share };
+}
 // ==TRANSLATOR-END==
+// the names in an alert that are supposed to survive translation unchanged
+function disNames(d){ return [d.ref, d.from, d.to].concat(d.stations||[]).filter(Boolean); }
 function ensureEnglish(list){
   for(const d of (list||[])){
     if(!d || !d.message) continue;
-    if(hasResidualTurkish(d.message)){
-      if(!d.messageTr) d.messageTr = d.message;      // preserve the authoritative original
-      d.message = translateTR(d.messageTr);
+    /* A hand-written entry and an LLM translation are both better English than these rules can
+       produce, and judging them by the rules’ own vocabulary would only mistake ordinary
+       English ("engineering works", "cancelled") for untranslated Turkish. Leave them alone. */
+    if(d.source==='manual' || d.translatedBy==='llm'){ if(!d.messageLang) d.messageLang='en'; continue; }
+    /* Everything else is machine output, so re-derive it from the authoritative original using
+       the DEPLOYED rules instead of trusting whatever the feed happens to store: the vocabulary
+       may have grown since it was written, and a hybrid baked in by an older build must not
+       outlive the fix for it. bestEffortEnglish hands back the untouched original — never a
+       guess — when the rules still fall short, and says which language that is in .lang. */
+    if(!d.messageTr){                                // legacy entry that kept no original
+      if(!hasResidualTurkish(d.message)){ if(!d.messageLang) d.messageLang='en'; continue; }
+      d.messageTr = d.message;
     }
+    const best = bestEffortEnglish(d.messageTr, disNames(d));
+    d.message = best.text; d.messageLang = best.lang;
   }
 }
 // localized disruption title + message (TR uses the original messageTr when present)
 function disTitle(d){ const k='ttl:'+(d.title||''); return I18N[lang][k]!==undefined ? I18N[lang][k] : (d.title||''); }
 function disMsg(d){ return (lang==='tr' && d.messageTr) ? d.messageTr : d.message; }
+/* True when the reader is NOT reading Turkish but the text on screen is the Turkish original.
+   Untranslated is a fine outcome — inventing English we cannot vouch for is not — so the one
+   thing we owe the reader is to say which language they are looking at, and why. */
+function disUntranslated(d){ return lang!=='tr' && !!d && d.messageLang==='tr'; }
+function disTrTag(d){
+  return disUntranslated(d) ? '<span class="ann-tr" title="'+t('trOnlyWhy')+'">'+t('trOnlyTag')+'</span> ' : '';
+}
 // best-effort translation of LINE_META status strings (data); unknown values pass through
 function transStatus(s){
   const m={ 'Under construction':'st_construction', 'Planned':'st_planned', 'Under construction / testing':'st_testing',
@@ -5342,7 +5439,9 @@ function checkDisruptionAlerts(silent){
   for(const d of (DISRUPTIONS||[])){ if(!d||!d.ref) continue; active.add(d.id);
     if(followedLines.has(d.ref) && !alertedIds.has(d.id)){
       alertedIds.add(d.id);
-      if(!silent) notify('⚠ '+d.ref+' · '+disTitle(d), disMsg(d), d.severity==='major'?'err':null);
+      // plain text here, so the "shown in Turkish" label is a prefix rather than a badge
+      const body=(disUntranslated(d)?'['+t('trOnlyTag')+'] ':'')+disMsg(d);
+      if(!silent) notify('⚠ '+d.ref+' · '+disTitle(d), body, d.severity==='major'?'err':null);
     }
   }
   alertedIds = new Set([...alertedIds].filter(id=>active.has(id)));   // clear resolved so they re-alert if they recur
@@ -6550,7 +6649,7 @@ function disruptionPoints(d){
   return pts;
 }
 function disrTip(d){
-  return `<b>⚠ ${d.ref?d.ref+' · ':''}${disTitle(d)}</b><br>${disMsg(d)}${d.until?'<br>⏱ '+untilText(d):''}`;
+  return `<b>⚠ ${d.ref?d.ref+' · ':''}${disTitle(d)}</b><br>${disTrTag(d)}${disMsg(d)}${d.until?'<br>⏱ '+untilText(d):''}`;
 }
 function openDisruption(d){
   const pts = disruptionPoints(d);
@@ -6637,7 +6736,7 @@ function renderAnnouncements(){
         <span class="ann-sev" style="background:${col}">${sevLabel(d.severity)}</span>
         <span class="ann-ttl">${disTitle(d)}</span>
       </div>
-      <div class="ann-msg">${disMsg(d)}</div>
+      <div class="ann-msg">${disTrTag(d)}${disMsg(d)}</div>
       ${d.until?`<div class="ann-until">⏱ ${untilText(d)}</div>`:''}</div>`;
   }).join('');
   const opRows = ops.map((o,i)=>{
@@ -7550,9 +7649,10 @@ let aiAsk = async function(){};
         return;
       }
       const rows = mine.map(d => {
-        const msg = (lang === "tr" && d.messageTr) ? d.messageTr : d.message;
+        // same text and the same "shown in Turkish" label the announcements panel uses; the
+        // badge is our own markup, the operator’s text stays escaped
         return '<div class="ai-hit"><span class="n"><b>' + svgEsc(d.ref || "") + "</b> " +
-               svgEsc(d.title || "") + "<br>" + svgEsc(msg || "") +
+               svgEsc(d.title || "") + "<br>" + disTrTag(d) + svgEsc(disMsg(d) || "") +
                (d.until ? ' <span style="color:var(--dim)">(' + svgEsc(t("aiAlertsUntil")) + " " +
                  svgEsc(d.until) + ")</span>" : "") + "</span></div>";
       }).join("");

@@ -128,6 +128,70 @@ function translateTR(text){
 // fall back to an LLM (only when ANTHROPIC_API_KEY is set — otherwise skipped).
 const TR_RESIDUAL=/\b(nedeniyle|sebebiyle|istasyon\w*|seferler\w*|yapıl\w*|aktarma\w*|kapal\w*|kapat\w*|çalışm\w*|arası\w*|durdurul\w*|hizmet|geçici|yönünde|güzergah\w*|yoğunluk|doğrultusunda|talebi|hattı\w*|teleferik|füniküler|vatandaş\w*|yolcu\w*|muhalefet\w*|olumsuz|şartlar\w*|koşullar\w*|arıza\w*|bakım|onarım|bilgilerinize|sayın|değerli|ulaşım|sefer)\b/i;
 const hasResidualTurkish = s => TR_RESIDUAL.test(s||'');
+
+/* --- how much of the announcement did the rules actually reach? ---------------------------
+   hasResidualTurkish is a keyword list, so it answers "is ANY known Turkish left" — the wrong
+   question in both directions. One stray "hizmet" condemns an otherwise clean sentence, and
+   vocabulary nobody thought to list sails straight through. A real M2 alert shipped as
+
+     "Sanayi at the station bir yolcunun intihar girişiminde bulunması due to Sanayi our
+      station işletmeye has been closed."
+
+   — half of each language and readable in neither, because not one of "bir / yolcunun /
+   intihar / girişiminde / bulunması / işletmeye" is on the list.
+
+   What matters is the PROPORTION, and it can be measured exactly rather than sniffed at:
+   every English word translateTR is capable of producing comes from the replacement side of
+   the two tables above. So a word in the output that is not in that vocabulary, and is not a
+   proper noun, is BY CONSTRUCTION source text that no rule matched. No language detection,
+   and no word list that has to be kept in step with the rules by hand. */
+const EN_EMITTED = (function(){
+  const set = new Set();
+  const add = str => String(str).toLowerCase().replace(/\$\d/g,' ').split(/[^a-z]+/)
+                      .forEach(w=>{ if(w) set.add(w); });
+  for(const rule of TR2EN_PHRASES) add(rule[1]);
+  for(const k in TR2EN_WORDS) add(TR2EN_WORDS[k]);
+  return set;
+})();
+// letter-initial, so dates and numbers are not words; digits allowed, so "M2"/"T1" stay whole
+const TR_TOKEN  = /[A-Za-zÇĞİIÖŞÜçğıöşü][A-Za-zÇĞİIÖŞÜçğıöşü0-9'’]*/g;
+const TR_CAPPED = /^[A-ZÇĞİIÖŞÜ]/;
+
+/* Share of the classifiable words in `en` that are still Turkish, 0..1.
+   `names` are this alert's station and line names: they pass through untranslated BY DESIGN
+   and must never count against coverage. Capitalised words are read as proper nouns and left
+   out of the count entirely — including the first word, whose capital was put there by
+   translateTR itself and so says nothing about what it is. Leaving a word out is the honest
+   move where we cannot classify it: it neither excuses the rules nor condemns them. */
+function turkishShare(en, names){
+  const known = new Set();
+  for(const n of (names||[]))
+    for(const w of (String(n).match(TR_TOKEN)||[])) known.add(w.toLocaleLowerCase('tr'));
+  let english=0, turkish=0;
+  for(const w of (String(en||'').match(TR_TOKEN)||[])){
+    const k = w.toLocaleLowerCase('tr');
+    if(known.has(k)) continue;                  // a station or line name
+    if(EN_EMITTED.has(k)){ english++; continue; }
+    if(TR_CAPPED.test(w)) continue;             // proper noun (or, on word one, unknowable)
+    turkish++;                                  // source text no rule touched
+  }
+  return (english+turkish) ? turkish/(english+turkish) : 0;
+}
+/* Past this share the hybrid is worse than either language, so the original ships instead.
+   A quarter sits in a wide empty gap: the formulaic alerts the rules DO cover measure 0.00
+   to 0.17, and the ones they do not measure 0.37 and up. Nothing real lands between. */
+const TR_FALLBACK_SHARE = 0.25;
+
+/* The one decision the scraper and the app both make about an announcement.
+   It never invents English. Where the rules fall short it returns the CLEAN ORIGINAL, flagged
+   lang:'tr' so the UI can say so, instead of passing a half-translation off as a translation. */
+function bestEffortEnglish(tr, names){
+  const src   = String(tr||'').trim();
+  const en    = translateTR(src);
+  const share = turkishShare(en, names);
+  return share > TR_FALLBACK_SHARE ? { text:src, lang:'tr', share:share }
+                                   : { text:en,  lang:'en', share:share };
+}
 // ==TRANSLATOR-END==
 async function llmTranslate(tr){
   const key=process.env.ANTHROPIC_API_KEY; if(!key) return null;
@@ -145,9 +209,10 @@ async function llmTranslate(tr){
 async function llmRefine(items){
   if(!process.env.ANTHROPIC_API_KEY) return;
   for(const e of items){
-    if(!e.messageTr || !hasResidualTurkish(e.message)) continue;
+    // refine both what the rules mangled and what they gave up on entirely
+    if(!e.messageTr || !(e.messageLang==='tr' || hasResidualTurkish(e.message))) continue;
     const en=await llmTranslate(e.messageTr);
-    if(en){ e.message=en; e.translatedBy='llm'; }
+    if(en){ e.message=en; e.messageLang='en'; e.translatedBy='llm'; }
   }
 }
 
@@ -202,13 +267,17 @@ function parseMetro(html){
     else { e.scope='line'; }
     e.severity=severity; e.title=title;
     e.messageTr=desc;              // keep the authoritative original
-    const en=translateTR(desc);
     // If the phrase table only got half of it, the result is a Turkish-English hybrid like
     // "Hava muhalefeti due to services cannot operate." — worse than either language alone.
-    // Ship the original instead; llmRefine still upgrades it when a key is available, and the
-    // client re-runs the same translator on load, so a later phrase fix repairs it in place.
-    e.message = hasResidualTurkish(en) ? desc : en;
-    if(hasResidualTurkish(en)) e.translatedBy = 'none';
+    // bestEffortEnglish measures how much of it the rules actually reached and ships the clean
+    // original when the answer is "not enough"; llmRefine still upgrades it when a key is
+    // available, and the client re-runs the same decision on load, so a later phrase rule
+    // repairs it in place. The station and line names go in so they are not mistaken for
+    // untranslated Turkish — they are supposed to stay exactly as the operator wrote them.
+    const best = bestEffortEnglish(desc, uniq.concat([lineName, ref]));
+    e.message = best.text;
+    e.messageLang = best.lang;                   // 'tr' = the rules did not cover this one
+    if(best.lang === 'tr') e.translatedBy = 'none';
     const until=parseUntil(desc); if(until) e.until=until;
     out.push(e);
   }
@@ -229,8 +298,11 @@ async function parseX(){
       const j=await r.json();
       for(const t of (j.data||[])){
         // conservative: keep as an advisory note tagged to the account; do NOT invent stations
+        const trText=decode(t.text);
+        const best=bestEffortEnglish(trText, [user]);
         out.push({ id:slug('x-'+user+'-'+t.id).slice(0,40), ref:null, scope:'note',
-                   severity:'minor', title:'@'+user, message:decode(t.text), source:'x:@'+user, untilText:null });
+                   severity:'minor', title:'@'+user, message:best.text, messageTr:trText,
+                   messageLang:best.lang, source:'x:@'+user, untilText:null });
       }
     }catch(e){ console.error('X '+user+' error', e.message); }
   }

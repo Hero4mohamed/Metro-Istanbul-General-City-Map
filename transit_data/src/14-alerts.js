@@ -34,7 +34,9 @@ function checkDisruptionAlerts(silent){
   for(const d of (DISRUPTIONS||[])){ if(!d||!d.ref) continue; active.add(d.id);
     if(followedLines.has(d.ref) && !alertedIds.has(d.id)){
       alertedIds.add(d.id);
-      if(!silent) notify('⚠ '+d.ref+' · '+disTitle(d), disMsg(d), d.severity==='major'?'err':null);
+      // plain text here, so the "shown in Turkish" label is a prefix rather than a badge
+      const body=(disUntranslated(d)?'['+t('trOnlyTag')+'] ':'')+disMsg(d);
+      if(!silent) notify('⚠ '+d.ref+' · '+disTitle(d), body, d.severity==='major'?'err':null);
     }
   }
   alertedIds = new Set([...alertedIds].filter(id=>active.has(id)));   // clear resolved so they re-alert if they recur

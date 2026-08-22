@@ -239,6 +239,26 @@ const CHECKS = [
     },
   },
   {
+    name: 'an alert the rules cannot translate is shown in Turkish, and labelled',
+    why: 'A half-translated announcement reads as neither language. The page re-runs the same decision the scraper made, on the same rules, so it must reach the same verdict — the operator’s own words, never invented English — and say which language the reader is looking at.',
+    run: async (w, d) => {
+      if (typeof w.bestEffortEnglish !== 'function') return 'the translator never reached the page';
+      // the real M2 alert: nothing in the phrase table covers a passenger incident
+      const TR = 'Sanayi istasyonunda bir yolcunun intihar girişiminde bulunması nedeniyle ' +
+                 'Sanayi istasyonumuz işletmeye kapatılmıştır.';
+      const out = w.bestEffortEnglish(TR, ['Sanayi mahallesi', 'M2']);
+      if (out.lang !== 'tr') return 'shipped a hybrid: ' + String(out.text).slice(0, 80);
+      if (out.text !== TR) return 'the text offered as the Turkish original is not the original';
+      const covered = w.bestEffortEnglish('Kadıköy istasyonu kapalıdır.', ['Kadıköy']);
+      if (covered.lang !== 'en') return 'gave up on an alert the rules do cover';
+      // the badge exists for a reader who is NOT reading Turkish; a Turkish reader needs none
+      const tag = String(w.disTrTag({ messageLang: 'tr' }) || '');
+      const readingTurkish = (d.documentElement.lang || 'en') === 'tr';
+      if (!readingTurkish && !/ann-tr/.test(tag)) return 'Turkish shown with nothing to explain it';
+      if (readingTurkish && tag) return 'labelled the Turkish original for a Turkish reader';
+    },
+  },
+  {
     name: 'the service worker registers',
     run: async (w) => {
       if (w.location.protocol === 'file:') return { skip: 'workers need http(s)' };

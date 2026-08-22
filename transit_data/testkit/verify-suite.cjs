@@ -104,6 +104,36 @@ const MUTATIONS = [
     apply: h => h.replace("[/[İi]stasyon(?:umuz|u)?ndan\\b/gi, 'from the station']",
                           "[/[İi]stasyon(?:umuz|u)?ndan\\b/gi, 'station']"),
   },
+  /* The four ways the coverage fallback can be got wrong. It decides whether an alert is
+     shown in English or in the operator's own Turkish, so both directions of the threshold
+     matter, and so does what the "Turkish" branch actually hands back. */
+  {
+    // too loose: back to shipping "Sanayi at the station bir yolcunun … has been closed."
+    name: 'let a half-translated alert through as English',
+    expect: 'an alert the rules cannot carry into English is shown in Turkish, not as a hybrid',
+    apply: h => h.replace('const TR_FALLBACK_SHARE = 0.25;', 'const TR_FALLBACK_SHARE = 1;'),
+  },
+  {
+    // too tight: one surviving word now condemns an otherwise good translation, and English
+    // readers lose every alert the app CAN translate — a quieter failure than the hybrid
+    name: 'tighten the coverage threshold until good translations are thrown away',
+    expect: 'an alert the rules do cover is still translated',
+    apply: h => h.replace('const TR_FALLBACK_SHARE = 0.25;', 'const TR_FALLBACK_SHARE = 0.1;'),
+  },
+  {
+    // the fallback labels the text as the Turkish original but returns the hybrid: the same
+    // defect wearing a badge, and invisible to any check that only looks at the label
+    name: 'label the hybrid as the Turkish original instead of returning the original',
+    expect: 'the Turkish fallback is the untouched original, never a rewrite',
+    apply: h => h.replace("? { text:src, lang:'tr', share:share }", "? { text:en, lang:'tr', share:share }"),
+  },
+  {
+    // station names pass through the translator untouched by design; counting them as
+    // untranslated Turkish makes an alert score worse the more places it names
+    name: 'count proper nouns as untranslated Turkish',
+    expect: 'station and line names do not count against translation coverage',
+    apply: h => h.replace('    if(TR_CAPPED.test(w)) continue;', '    if(false) continue;'),
+  },
 ];
 
 const original = fs.readFileSync(SRC, 'utf8');

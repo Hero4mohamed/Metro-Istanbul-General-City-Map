@@ -3,7 +3,7 @@
 Zero dependencies. Node's built-in runner, nothing to install, works offline.
 
 ```bash
-npm test              # the suite (18 checks, ~1s)
+npm test              # the suite (43 checks, ~2s)
 npm run test:mutation # prove the suite can still fail
 npm run verify        # build + suite + mutation check
 ```
@@ -35,7 +35,8 @@ a stale file.
 | `../testkit/helpers.cjs` | Loads the built page; `codeOnly()` strips comments and string bodies while keeping `${...}` interpolations, so scanners do not mistake prose for source |
 | `structure.test.cjs` | Parse, CSS integrity, build tokens, DOM ids, undefined globals, SRI, secrets |
 | `data.test.cjs` | i18n key coverage, station/bus coordinates, fares, disruption shape, translation quality |
-| `../testkit/verify-suite.cjs` | Mutation check — breaks a copy of the build 7 ways and requires the right test to fail |
+| `translator.test.cjs` | TR→EN disruption translator: no welded suffixes, case endings resolved, and the coverage fallback that shows the Turkish original rather than a hybrid |
+| `../testkit/verify-suite.cjs` | Mutation check — breaks a copy of the build 17 ways and requires the right test to fail |
 
 ## The mutation check is not optional
 
@@ -73,9 +74,9 @@ This is a static suite. It cannot catch a runtime fault in a real browser — th
 is the tier static analysis cannot reach: a runtime throw, a dead boot, a map that never
 renders. Open it directly, or press **Run browser tests** on `/status.html`.
 
-Ten checks: boot, uncaught errors, map size, tile loading, animated counters, search, the
-planner, the assistant answering from local data, service-worker registration — and the one
-that matters most:
+Eleven checks: boot, uncaught errors, map size, tile loading, animated counters, search, the
+planner, the assistant answering from local data, an untranslatable alert falling back to
+labelled Turkish, service-worker registration — and the one that matters most:
 
 **A never-laid-out map must not cost the user an answer.** `dropPin` used to call `flyTo`
 unconditionally; a container that never laid out projects to `NaN`, `flyTo` threw, and the
@@ -145,3 +146,40 @@ A caution about the analysis itself: the first two runs said "one 20-file cycle"
 2-file cycle", and both were artefacts. The tool was counting `arr.map(...)` as a reference to
 the `map` object — the same lookbehind mistake the undefined-global check had. Corrected, the
 answer is zero. It would have argued against a refactor on false evidence.
+
+## Half-translated alerts: a measured fallback, never an invented translation
+
+The disruption translator (`scrape-disruptions.cjs`, between the `TRANSLATOR` markers, spliced
+into the page by `build.cjs`) is ordered phrase substitution. It covers the formulaic half of
+metro.istanbul's announcements very well and knows nothing else, so an alert with an unusual
+clause used to come back as a hybrid. This really shipped, on M2:
+
+> Sanayi at the station bir yolcunun intihar girişiminde bulunması due to Sanayi our station
+> işletmeye has been closed.
+
+Half of each language, readable in neither. The old guard, `hasResidualTurkish()`, is a keyword
+list — it asks *is any known Turkish left*, which both over-fires (one stray `hizmet` condemns a
+clean sentence) and under-fires (nothing in that sentence is on the list).
+
+What matters is the **proportion**, and it can be measured exactly rather than guessed at: every
+English word `translateTR` can emit comes from the replacement side of the rule tables, so a word
+in the output that is not in that vocabulary and is not a proper noun is, by construction, source
+text no rule matched. `turkishShare()` returns that fraction; `bestEffortEnglish()` compares it
+to `TR_FALLBACK_SHARE` and returns either the translation or **the untouched Turkish original**,
+tagged `lang`. It never writes English the rules could not derive.
+
+The threshold is **0.25**, and it sits in a gap rather than in the middle of the data: the alerts
+the rules do cover measure 0.00–0.17, the ones they do not measure 0.37 and up. `translator.test.cjs`
+pins both populations *and* requires 0.05 of daylight either side, so a threshold quietly nudged
+into the crowd fails rather than becoming a coin-flip.
+
+Station and line names are passed in and excluded from the count — they survive translation by
+design, and an alert should not score worse for naming more places.
+
+When the original is shown, the UI says so: an `ann-tr` badge reading “Turkish original”, with
+the reason in its `title`. It appears only for readers who are *not* reading Turkish, since a
+Turkish reader needs no explanation. `ensureEnglish()` re-derives the decision on load from
+`messageTr` with the **deployed** rules, so a hybrid baked into an older feed cannot outlive the
+phrase rule that fixes it — and hand-written entries (`source:"manual"`) and LLM translations are
+left exactly as written, because judging their English by the rules' own small vocabulary would
+only mistake ordinary words for Turkish.

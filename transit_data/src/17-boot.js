@@ -69,7 +69,7 @@ function disruptionPoints(d){
   return pts;
 }
 function disrTip(d){
-  return `<b>⚠ ${d.ref?d.ref+' · ':''}${disTitle(d)}</b><br>${disMsg(d)}${d.until?'<br>⏱ '+untilText(d):''}`;
+  return `<b>⚠ ${d.ref?d.ref+' · ':''}${disTitle(d)}</b><br>${disTrTag(d)}${disMsg(d)}${d.until?'<br>⏱ '+untilText(d):''}`;
 }
 function openDisruption(d){
   const pts = disruptionPoints(d);
@@ -156,7 +156,7 @@ function renderAnnouncements(){
         <span class="ann-sev" style="background:${col}">${sevLabel(d.severity)}</span>
         <span class="ann-ttl">${disTitle(d)}</span>
       </div>
-      <div class="ann-msg">${disMsg(d)}</div>
+      <div class="ann-msg">${disTrTag(d)}${disMsg(d)}</div>
       ${d.until?`<div class="ann-until">⏱ ${untilText(d)}</div>`:''}</div>`;
   }).join('');
   const opRows = ops.map((o,i)=>{

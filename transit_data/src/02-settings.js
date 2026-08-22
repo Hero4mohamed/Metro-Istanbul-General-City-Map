@@ -616,18 +616,38 @@ function kindLabel(kind){ const k=I18N[lang]['kind_'+kind]; return k!==undefined
        Client-side safety net: if a live update arrives with wording newer than the
        deployed vocabulary, English mode still translates it on the spot. --- */
 __TRANSLATOR_JS__
+// the names in an alert that are supposed to survive translation unchanged
+function disNames(d){ return [d.ref, d.from, d.to].concat(d.stations||[]).filter(Boolean); }
 function ensureEnglish(list){
   for(const d of (list||[])){
     if(!d || !d.message) continue;
-    if(hasResidualTurkish(d.message)){
-      if(!d.messageTr) d.messageTr = d.message;      // preserve the authoritative original
-      d.message = translateTR(d.messageTr);
+    /* A hand-written entry and an LLM translation are both better English than these rules can
+       produce, and judging them by the rules’ own vocabulary would only mistake ordinary
+       English ("engineering works", "cancelled") for untranslated Turkish. Leave them alone. */
+    if(d.source==='manual' || d.translatedBy==='llm'){ if(!d.messageLang) d.messageLang='en'; continue; }
+    /* Everything else is machine output, so re-derive it from the authoritative original using
+       the DEPLOYED rules instead of trusting whatever the feed happens to store: the vocabulary
+       may have grown since it was written, and a hybrid baked in by an older build must not
+       outlive the fix for it. bestEffortEnglish hands back the untouched original — never a
+       guess — when the rules still fall short, and says which language that is in .lang. */
+    if(!d.messageTr){                                // legacy entry that kept no original
+      if(!hasResidualTurkish(d.message)){ if(!d.messageLang) d.messageLang='en'; continue; }
+      d.messageTr = d.message;
     }
+    const best = bestEffortEnglish(d.messageTr, disNames(d));
+    d.message = best.text; d.messageLang = best.lang;
   }
 }
 // localized disruption title + message (TR uses the original messageTr when present)
 function disTitle(d){ const k='ttl:'+(d.title||''); return I18N[lang][k]!==undefined ? I18N[lang][k] : (d.title||''); }
 function disMsg(d){ return (lang==='tr' && d.messageTr) ? d.messageTr : d.message; }
+/* True when the reader is NOT reading Turkish but the text on screen is the Turkish original.
+   Untranslated is a fine outcome — inventing English we cannot vouch for is not — so the one
+   thing we owe the reader is to say which language they are looking at, and why. */
+function disUntranslated(d){ return lang!=='tr' && !!d && d.messageLang==='tr'; }
+function disTrTag(d){
+  return disUntranslated(d) ? '<span class="ann-tr" title="'+t('trOnlyWhy')+'">'+t('trOnlyTag')+'</span> ' : '';
+}
 // best-effort translation of LINE_META status strings (data); unknown values pass through
 function transStatus(s){
   const m={ 'Under construction':'st_construction', 'Planned':'st_planned', 'Under construction / testing':'st_testing',
