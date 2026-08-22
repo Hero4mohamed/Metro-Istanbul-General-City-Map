@@ -35,7 +35,39 @@ const opt = f => (f && fs.existsSync(path.join(DIR, f))) ? rd(f) : {};
 const busSets = {};
 for (const [city, f] of Object.entries(BUS_CITIES))
   busSets[city] = { dir: rd(f.dir), graph: rd(f.graph), sched: rd(f.sched), geom: opt(f.geom) };
-const busDirs = Object.fromEntries(Object.entries(busSets).map(([c, s]) => [c, s.dir]));
+/* The directory and the graph come from DIFFERENT sources — the directory from İETT's published
+   line list (process-bus.cjs), the graph and timetables from the GTFS feed — and they disagree.
+   40 İstanbul refs (14E, 19FB, 29Ş, 34A …) exist in the graph with full stops and schedules but
+   were absent from the line list, so the planner would happily route you onto a bus that the
+   Buses directory could not show or search. The graph carries everything a directory row needs,
+   so those rows are reconstructed here rather than left missing.
+   Done in memory: the source files stay exactly as their scrapers wrote them, and a re-scrape
+   cannot undo the merge. Casing is left as the operator publishes it — title-casing Turkish
+   text mangles İ and ı, and the directory already mixes both styles. */
+function completeDirectory(city, s) {
+  const known = new Set(s.dir.map(d => String(d.ref)));
+  const byRef = new Map();
+  for (const g of s.graph) {
+    const ref = String(g.ref);
+    if (known.has(ref)) continue;
+    if (!byRef.has(ref)) byRef.set(ref, []);
+    byRef.get(ref).push(g);
+  }
+  if (!byRef.size) return s.dir;
+  const added = [];
+  for (const [ref, dirs] of byRef) {
+    const a = dirs.find(d => d.dir === 0) || dirs[0];
+    const first = (a.stops && a.stops[0] && a.stops[0][2]) || '';
+    const last = a.head || (a.stops && a.stops[a.stops.length - 1] && a.stops[a.stops.length - 1][2]) || '';
+    if (!first && !last) continue;                 // nothing usable; better absent than blank
+    added.push({ ref, from: first, to: last, id: null, op: '', fromGraph: true });
+  }
+  if (added.length) console.log('  ' + city + ': recovered ' + added.length +
+    ' route(s) present in the graph but missing from the directory');
+  return s.dir.concat(added);
+}
+const busDirs = Object.fromEntries(
+  Object.entries(busSets).map(([c, s]) => [c, completeDirectory(c, s)]));
 const disrupt = JSON.parse(fs.readFileSync(path.join(DIR, 'disruptions.json'), 'utf8'));     // live faults/closures
 const miStns  = JSON.parse(fs.readFileSync(path.join(DIR, 'mi-stations.json'), 'utf8'));     // official station ids (exact timetables)
 const access  = JSON.parse(fs.readFileSync(path.join(DIR, 'accessibility.json'), 'utf8'));   // İBB+OSM step-free/elevator data
@@ -137,13 +169,30 @@ fs.writeFileSync(outPath, html);
 console.log('WROTE', outPath, (fs.statSync(outPath).size/1024).toFixed(1), 'KB',
             ' cardArt:', Object.keys(cardImg.cities).map(c=>c+'×'+Object.keys(cardImg.cities[c]).length).join(' '));
 
-// bus graph + schedules are the heaviest datasets and most visitors never plan a bus trip in
-// the first seconds — each city gets its own file, fetched after first paint for that city
+/* Bus data is the heaviest thing the app fetches, and it is split in two because the halves
+   are needed at very different moments.
+
+   graph + schedules drive the directory, search, routing and timetables, so they are needed as
+   soon as anyone opens the Buses tab. Road GEOMETRY is only read when a specific route is
+   drawn, which most visitors never do — and for İstanbul it is the larger half: measured over
+   the wire, graph+sched gzip to 0.48 MB against geometry's 0.66 MB. Shipping them together made
+   the first bus interaction cost 1.16 MB when 0.48 MB would do.
+
+   Kocaeli and Ankara have no baked geometry at all, so no file is written for them and the app
+   falls back to the stop polyline exactly as it already did. */
 for (const [city, s] of Object.entries(busSets)) {
   const p = path.join(DIR, 'bus-data-' + city + '.json');
-  fs.writeFileSync(p, JSON.stringify({ graph: s.graph, sched: s.sched, geom: s.geom }));
-  console.log('WROTE', p, (fs.statSync(p).size/1024).toFixed(1), 'KB  (lazy)  dirs:', s.graph.length,
-              ' geom routes:', Object.keys(s.geom).filter(k => s.geom[k]).length);
+  fs.writeFileSync(p, JSON.stringify({ graph: s.graph, sched: s.sched }));
+  const geomRefs = Object.keys(s.geom || {}).filter(k => s.geom[k]);
+  let geomNote = 'no geometry';
+  if (geomRefs.length) {
+    const gp = path.join(DIR, 'bus-geom-' + city + '.json');
+    fs.writeFileSync(gp, JSON.stringify(s.geom));
+    geomNote = 'geometry split into ' + path.basename(gp) + ' (' +
+               (fs.statSync(gp).size / 1024).toFixed(0) + ' KB, ' + geomRefs.length + ' routes)';
+  }
+  console.log('WROTE', p, (fs.statSync(p).size / 1024).toFixed(1), 'KB  (lazy)  dirs:', s.graph.length,
+              ' ' + geomNote);
 }
 
 // emit the service worker with a fresh version stamp → installed apps self-update on deploy

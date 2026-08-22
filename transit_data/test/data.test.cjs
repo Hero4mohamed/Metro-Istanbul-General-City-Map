@@ -124,38 +124,38 @@ test('no disruption message is a Turkish-English hybrid', () => {
 });
 
 /* --- bus datasets ------------------------------------------------------------------- */
-/* A RATCHET, not a clean assertion.
+/* Was a ratchet at 65; now a clean assertion, because the gap is closed.
  *
- * İstanbul's İETT graph contains 40 route refs (14E, 19FB, 29Ş, 34A and others) that the
- * directory scrape never picked up. The planner can route over them; the Buses list cannot
- * show or search them. That is a real pre-existing gap in fetch-bus-gtfs.cjs, not something
- * to paper over — but it also predates this suite, so failing the build on it would only
- * teach people to skip tests. The number is pinned instead: it may shrink, never grow.
+ * The directory and the graph come from different sources — İETT's published line list and the
+ * GTFS feed — and disagreed by 40 refs (14E, 19FB, 29Ş, 34A …) that had full stops and
+ * timetables but no directory row. The planner would route you onto a bus the Buses list could
+ * neither show nor search. build.cjs now reconstructs those rows from the graph.
  *
- * Lower BASELINE whenever the pipeline improves. Do not raise it.
+ * This checks the DIRECTORY THE APP RECEIVES, not the raw file: the merge happens at build
+ * time, so testing the source files would report a gap that no user experiences, and testing
+ * the built page is what the question was actually about.
  */
-const ORPHAN_BASELINE = 65;   // graph directions whose ref is absent from the directory
+test('every bus route the planner can use is in the directory the app ships', () => {
+  const html = H.html();
+  const i = html.indexOf('const BUS_ALL = ');
+  assert.ok(i > -1, 'BUS_ALL not found in the built page');
+  const shipped = JSON.parse(html.slice(i + 16, html.indexOf(';', i)));
 
-test('bus routes missing from their directory do not increase', () => {
-  const SETS = [
-    ['istanbul', 'bus-directory.json', 'bus-graph.json'],
-    ['kocaeli', 'kocaeli-bus-directory.json', 'kocaeli-bus-graph.json'],
-    ['ankara', 'ankara-bus-directory.json', 'ankara-bus-graph.json'],
-  ];
+  const GRAPHS = {
+    istanbul: 'bus-graph.json',
+    kocaeli: 'kocaeli-bus-graph.json',
+    ankara: 'ankara-bus-graph.json',
+  };
   const orphans = [];
-  for (const [city, dirFile, graphFile] of SETS) {
-    if (!H.exists('transit_data/' + dirFile) || !H.exists('transit_data/' + graphFile)) continue;
-    const refs = new Set(H.json(dirFile).map(d => String(d.ref)));
+  for (const [city, graphFile] of Object.entries(GRAPHS)) {
+    if (!H.exists('transit_data/' + graphFile) || !shipped[city]) continue;
+    const refs = new Set(shipped[city].map(d => String(d.ref)));
     for (const g of H.json(graphFile)) {
       if (!refs.has(String(g.ref))) orphans.push(city + '/' + g.ref);
     }
   }
-  assert.ok(orphans.length <= ORPHAN_BASELINE,
-    'orphaned bus routes rose from ' + ORPHAN_BASELINE + ' to ' + orphans.length +
-    ' — e.g. ' + orphans.slice(0, 6).join(', '));
-  if (orphans.length < ORPHAN_BASELINE) {
-    console.log('    note: orphans down to ' + orphans.length + ' — lower ORPHAN_BASELINE to lock the gain in');
-  }
+  assert.deepStrictEqual([...new Set(orphans)].slice(0, 10), [],
+    orphans.length + ' route(s) routable but absent from the directory');
 });
 
 test('bus stops carry usable coordinates', () => {

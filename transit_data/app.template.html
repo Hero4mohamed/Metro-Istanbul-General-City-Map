@@ -2930,6 +2930,20 @@ const OPENINGS = HAS.openings ? __OPENINGS_JSON__ : [];
 let BUS_GRAPH = [];   // İETT GTFS: per line per direction {ref,dir,head,stops}
 let BUS_SCHED = {};   // İETT GTFS departure schedules {ref:[{dir,head,wd,sat,sun}]}
 let BUS_GEOM  = {};   // real road shape per bus ref: [[ [lat,lng]… ], …] (baked, no live fetch)
+/* Road geometry is the larger half of the bus payload (0.66 MB gzipped for İstanbul against
+   0.48 MB for graph+schedules) and is only read when a specific route is drawn, which most
+   visitors never do. It is therefore fetched on first use rather than with the rest. Cities
+   with no baked geometry never request it, and a failure is remembered so a route draw does
+   not retry on every click — the stop-polyline fallback already covers that case. */
+let busGeomPromise = null;
+function ensureBusGeom(){
+  if (busGeomPromise) return busGeomPromise;
+  busGeomPromise = fetch('transit_data/bus-geom-' + CITY_ID + '.json')
+    .then(r => r.ok ? r.json() : null)
+    .then(g => { if (g) BUS_GEOM = g; return BUS_GEOM; })
+    .catch(() => BUS_GEOM);           // offline, or a city that ships none
+  return busGeomPromise;
+}
 let busReady = false;
 let busReadyResolve;
 const busDataPromise = new Promise(res => { busReadyResolve = res; });
@@ -4589,6 +4603,7 @@ async function fetchBusGeom(ref){
   // baked road shape (from bus-data-<city>.json) — instant, offline, immune to Overpass outages.
   // Previously this always went to Overpass live, so whenever Overpass was busy the leg stayed
   // a straight placeholder line cutting across the city.
+  await ensureBusGeom();
   if(BUS_GEOM && BUS_GEOM[ref]) return busGeoCache[ref]=BUS_GEOM[ref];
   const id=busIdByRef[ref]; if(!id) return busGeoCache[ref]=null;
   try{
@@ -5758,6 +5773,7 @@ let busSelToken = 0;
 const busShapeCache = {};
 async function busOsmShapes(ref){
   if(ref in busShapeCache) return busShapeCache[ref];
+  await ensureBusGeom();
   if(BUS_GEOM && BUS_GEOM[ref]) return busShapeCache[ref]=[BUS_GEOM[ref]];   // baked road shape
   try{
     const q = `[out:json][timeout:60];relation[route="bus"]["ref"="${(ref||'').replace(/["\\]/g,'')}"];out geom;`;
@@ -5923,6 +5939,7 @@ async function selectBus(id, row){
   if(dirs.length){
     const dl = dirs.length+' '+(dirs.length===1?t('direction1'):t('directionN'));
     // baked road chains are already in memory → draw the real shape immediately, no "loading"
+    await ensureBusGeom();
     const chains = (BUS_GEOM && BUS_GEOM[ref]) ? BUS_GEOM[ref] : null;
     let all = drawBusDirs(dirs, chains);
     detail.innerHTML = busFareHTML(ref) + busScheduleHTML(ref) + busStopsHTML(dirs);
@@ -6530,7 +6547,7 @@ async function loadBusData(){
     const r = await fetch('transit_data/bus-data-' + CITY_ID + '.json');
     if(!r.ok) throw new Error('HTTP '+r.status);
     const d = await r.json();
-    BUS_GRAPH = d.graph || [];  BUS_SCHED = d.sched || {};  BUS_GEOM = d.geom || {};
+    BUS_GRAPH = d.graph || [];  BUS_SCHED = d.sched || {};   // geometry loads on first route draw
     // graph integration builds ~70k nodes — run it off the critical path
     const go = ()=>{ integrateBuses(); for(const k in HW_CACHE) delete HW_CACHE[k]; busReady = true; busReadyResolve(); };
     if('requestIdleCallback' in window) requestIdleCallback(go, { timeout: 4000 });

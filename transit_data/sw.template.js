@@ -93,7 +93,10 @@ self.addEventListener('fetch', e => {
 
   // the big lazy-loaded bus dataset: stale-while-revalidate → instant on repeat visits, works
   // offline after the first load, silently refreshed in the background when it changes
-  if (/\/transit_data\/bus-data-[a-z]+\.json$/.test(url.pathname)) {
+  // bus-geom-* is matched too: road geometry used to travel inside bus-data-*, and splitting it
+  // out for the payload win would otherwise have silently dropped it from the offline cache,
+  // leaving saved-area users with straight lines where a route shape used to be.
+  if (/\/transit_data\/bus-(?:data|geom)-[a-z]+\.json$/.test(url.pathname)) {
     e.respondWith((async () => {
       const cached = await caches.match(e.request);
       const fresh = fetch(e.request).then(r => {

@@ -62,8 +62,8 @@
           "id": "payload",
           "title": "Shrink the 6.1 MB bus payload",
           "priority": "P1",
-          "state": "todo",
-          "note": "Worst mobile number in the product"
+          "state": "done",
+          "note": "Road geometry split into its own lazily-fetched file: the first bus interaction is 0.48 MB over the wire instead of 1.16 MB, and geometry loads only when a route is actually drawn"
         },
         {
           "id": "confidence",
@@ -76,8 +76,8 @@
           "id": "bus-orphans",
           "title": "Close the 40 orphaned Istanbul bus refs",
           "priority": "P1",
-          "state": "todo",
-          "note": "Routable by the planner, invisible in the directory; ratcheted at 65"
+          "state": "done",
+          "note": "All 40 recovered: build.cjs reconstructs the missing directory rows from the graph, so nothing routable is unlistable. Ratchet retired for a clean assertion"
         }
       ]
     },
