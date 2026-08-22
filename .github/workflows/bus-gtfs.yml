@@ -32,6 +32,11 @@ jobs:
         run: node --max-old-space-size=3072 transit_data/fetch-bus-gtfs.cjs
       - name: Rebuild site
         run: node transit_data/build.cjs
+      # These bots commit a rebuilt index.html. If the rebuild is broken, the commit both
+      # ships the break and triggers a deploy of it, so the suite runs before anything is
+      # committed rather than after.
+      - name: Verify the rebuilt artifact
+        run: npm test
       # No [skip ci]: Pages publishes the last artifact uploaded by pages.yml, so a commit that
       # skips CI rebuilds index.html in the repo and never puts it on the live site.
       - name: Commit if changed

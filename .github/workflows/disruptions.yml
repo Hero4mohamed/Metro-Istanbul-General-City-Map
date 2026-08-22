@@ -42,6 +42,11 @@ jobs:
           X_BEARER_TOKEN:    ${{ secrets.X_BEARER_TOKEN }}     # optional; skipped when unset
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}  # optional; LLM translation fallback
         run: node transit_data/scrape-disruptions.cjs
+      # The scraper feeds the live panel directly. It has shipped a zero-length segment that
+      # drew no caution band, and a half-translated Turkish/English sentence; the suite checks
+      # for both, so it runs before the result is committed.
+      - name: Verify the scraped data
+        run: npm test
       - name: Commit if changed
         id: commit
         run: |

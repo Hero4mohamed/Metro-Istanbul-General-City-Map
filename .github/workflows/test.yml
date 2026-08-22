@@ -1,0 +1,53 @@
+name: Tests
+
+# Fast feedback on every push and pull request, independent of deployment. pages.yml runs the
+# same suite as a deploy gate; this one exists so a failure is visible on a branch before it
+# ever reaches main.
+#
+# There is no install step and no lockfile: the suite runs on Node's built-in test runner with
+# zero dependencies, which keeps it usable offline and immune to registry or TLS problems.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+
+concurrency:
+  group: tests-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      # The suite reads the COMMITTED index.html, because that is what users receive.
+      - name: Suite against the committed build
+        run: npm test
+
+      # Then prove the committed build is what the template actually produces. A drift here
+      # means someone edited app.template.html and forgot to rebuild, so the tests above just
+      # validated a stale artifact.
+      - name: The committed build matches the template
+        run: |
+          cp index.html /tmp/committed-index.html
+          node transit_data/build.cjs > /dev/null
+          if ! diff -q /tmp/committed-index.html index.html > /dev/null; then
+            echo "::error::index.html is not what transit_data/build.cjs produces — run the build and commit the result"
+            diff <(head -c 400000 /tmp/committed-index.html) <(head -c 400000 index.html) | head -20 || true
+            exit 1
+          fi
+          echo "committed build is current"
+
+      # Finally, prove the suite can still fail. A green suite that no longer detects the
+      # defects it was written for is worse than no suite at all.
+      - name: The suite still catches known defects
+        run: npm run test:mutation
