@@ -13,8 +13,11 @@
 const fs = require('fs');
 const path = require('path');
 const DIR = __dirname;
+// İzmir is deliberately NOT a default target any more. It now comes from the city's own
+// open-data portal via process-izmir-bus.cjs, which writes the same filenames — running this
+// over it would silently replace 441 operator-sourced lines with 29 thin OSM ones.
 const TARGETS = process.argv.slice(2).length ? process.argv.slice(2)
-                                             : ['ankara', 'izmir', 'bursa', 'antalya'];
+                                             : ['ankara', 'bursa', 'antalya'];
 
 /* A bounding box does not respect a city boundary — this project has been bitten by that
  * before, when İstanbul's box reached into Kocaeli and stole its "M2"/"T2" refs. The same

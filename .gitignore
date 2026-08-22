@@ -46,6 +46,11 @@ transit_data/.cache-*/
 # raw Overpass bus dumps (re-fetchable via fetch-city-bus.cjs; processed into *-bus-directory/graph)
 transit_data/*-bus-osm.json
 
+# raw Izmir open-data CSVs (13 MB, re-fetchable via fetch-izmir-bus.cjs; processed into izmir-bus-*)
+transit_data/izmir-hatlar.csv
+transit_data/izmir-duraklar.csv
+transit_data/izmir-guzergah.csv
+
 # generated into the Pages artifact at deploy time; never committed, so the dashboard
 # is always as fresh as the deploy and the repo stays free of churn
 status.json

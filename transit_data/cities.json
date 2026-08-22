@@ -1010,7 +1010,7 @@
       }
     },
     "has": {
-      "bus": false,
+      "bus": true,
       "ferry": true,
       "disruptions": false,
       "openings": false,
@@ -1267,7 +1267,8 @@
         "off": 20,
         "hours": "05:20 – 01:23"
       }
-    }
+    },
+    "busOperator": "ESHOT"
   },
   "kocaeli": {
     "name": "KOCAELİ",
