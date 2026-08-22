@@ -11,20 +11,6 @@
     "source": "manual"
   },
   {
-    "id": "m2-sanayi-mahallesi",
-    "ref": "M2",
-    "source": "metro.istanbul",
-    "scope": "stations",
-    "stations": [
-      "Sanayi mahallesi"
-    ],
-    "severity": "minor",
-    "title": "Service notice",
-    "messageTr": "Sanayi istasyonunda bir yolcunun intihar girişiminde bulunması nedeniyle Sanayi istasyonumuz işletmeye kapatılmıştır.",
-    "message": "Sanayi istasyonunda bir yolcunun intihar girişiminde bulunması nedeniyle Sanayi istasyonumuz işletmeye kapatılmıştır.",
-    "translatedBy": "none"
-  },
-  {
     "id": "m7-mecidiyek-y",
     "ref": "M7",
     "source": "metro.istanbul",
