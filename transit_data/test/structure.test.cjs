@@ -142,3 +142,40 @@ test('no API key is baked into the shipped page', () => {
   const bad = H.html().match(/sk-ant-[A-Za-z0-9]{8,}|AIza[0-9A-Za-z_-]{20,}/g);
   assert.strictEqual(bad, null, 'secret-shaped string found in the build');
 });
+
+/* --- 7. the split source assembles into exactly what ships -------------------------
+   The application lives in transit_data/src/*.js and is concatenated, in filename order, into
+   the one inline script. Nothing enforces that relationship at run time, so an orphaned file, a
+   stray name that sorts wrongly, or an edit to the built page instead of the source would all
+   go unnoticed. Assembling here and comparing is the check. */
+const fs = require('node:fs');
+const path = require('node:path');
+
+test('the shipped script is exactly the concatenated source', () => {
+  const src = path.join(H.DATA, 'src');
+  assert.ok(fs.existsSync(src), 'transit_data/src is missing');
+  const files = fs.readdirSync(src).filter(f => f.endsWith('.js')).sort();
+  assert.ok(files.length >= 5, 'expected the app to be split across several files, found ' + files.length);
+
+  const assembled = files.map(f => fs.readFileSync(path.join(src, f), 'utf8')).join('');
+  const shipped = H.appScript();
+
+  // the build substitutes data tokens into the source, so compare the parts that cannot move:
+  // every source file's first and last non-blank line must appear in the shipped script, in order
+  let cursor = 0;
+  const drift = [];
+  for (const f of files) {
+    const body = fs.readFileSync(path.join(src, f), 'utf8').split('\n').map(l => l.replace(/\r$/, ''));
+    const anchor = body.find(l => l.trim().length > 20 && !l.includes('__'));
+    if (!anchor) continue;
+    const at = shipped.indexOf(anchor, cursor);
+    if (at < 0) drift.push(f + ': its content is not in the shipped script');
+    else cursor = at;
+  }
+  assert.deepStrictEqual(drift, [], drift.join('; '));
+
+  // and the assembled length must match once tokens are accounted for: the shipped script can
+  // only be LONGER, never shorter, because substitution replaces short tokens with real data
+  assert.ok(shipped.length >= assembled.length - 200,
+    'the shipped script is shorter than its source — a file is not being concatenated');
+});

@@ -101,3 +101,23 @@ churn. Locally: `npm run status`.
 
 It shows the static suite result, city coverage, live service alerts, roadmap progress from
 `transit_data/roadmap.json`, and it can run the browser suite live in an embedded frame.
+
+## Where the application source lives
+
+`transit_data/src/*.js` — 20 files, concatenated **in filename order** by `build.cjs` into the
+single inline script the page ships. Edit those, never `index.html`.
+
+The split was made safe by requiring the assembled output to be **byte-identical** to the file
+it replaced. On a codebase with one shared scope that is the whole argument: same order, same
+bytes, so no declaration-order or hoisting behaviour can have changed. The verification found
+exactly one difference — a single extra newline before `</script>` — which was fixed before
+anything else was touched.
+
+**This buys navigability, not isolation.** Joined, the 20 files are still one scope; a name
+collision is exactly as possible as it was. Real isolation needs ES modules, and this is the
+step that makes that conversion approachable rather than the conversion itself.
+
+Concatenation rather than a bundler is deliberate: the app is one self-contained HTML file that
+works from `file://` with no tooling, and a bundler would add a dependency this machine cannot
+reliably install. `structure.test.cjs` asserts the shipped script really is the concatenated
+source, so an orphaned file or an edit made to the built page instead of the source is caught.

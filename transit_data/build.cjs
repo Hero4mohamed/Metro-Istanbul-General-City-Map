@@ -99,10 +99,32 @@ const tStart = scraper.indexOf('// ==TRANSLATOR-START=='), tEnd = scraper.indexO
 if (tStart < 0 || tEnd < 0) { console.error('translator markers missing in scrape-disruptions.cjs'); process.exit(1); }
 const translatorJS = scraper.slice(tStart, tEnd);
 
-for (const t of ['__CITIES_JSON__','__INTERCITY_JSON__','__BUS_JSON__','__DISRUPTIONS_JSON__','__OPENINGS_JSON__','__MISTATIONS_JSON__','__ACCESS_JSON__','__ATTRACTIONS_JSON__','__CARDIMG_JSON__','__TRANSLATOR_JS__'])
-  if (!template.includes(t)) { console.error('token missing:', t); process.exit(1); }
+/* The application source lives in transit_data/src/*.js and is concatenated here, in filename
+   order, into the single inline script the page ships.
+
+   This is deliberately concatenation and not a bundler. The app is one self-contained HTML file
+   that works from file:// with no tooling, and adding a bundler would mean a dependency this
+   machine cannot reliably install. Concatenating in a fixed order is also what makes the split
+   provably safe on a codebase with one shared scope: the assembled text is byte-identical to
+   the file it replaced, so no declaration order or hoisting behaviour can have changed.
+
+   What this buys is navigability, not isolation. The 20 files are still one scope once joined;
+   a name collision is exactly as possible as it was. Real isolation needs ES modules, and this
+   is the step that makes that conversion approachable rather than the conversion itself. */
+const SRC = path.join(DIR, 'src');
+const srcFiles = fs.readdirSync(SRC).filter(f => f.endsWith('.js')).sort();
+if (!srcFiles.length) { console.error('no source files in transit_data/src'); process.exit(1); }
+const appJs = srcFiles.map(f => fs.readFileSync(path.join(SRC, f), 'utf8')).join('');
+if (!template.includes('__APP_JS__')) { console.error('token missing: __APP_JS__'); process.exit(1); }
+
 const buildStamp = new Date().toISOString().replace(/[-:TZ.]/g, '').slice(0, 14);
-let html = template.replace('__BUILD__', () => buildStamp)
+// the script goes in FIRST: every other token below lives inside the application source
+let html = template.replace('__APP_JS__', () => appJs);
+
+for (const t of ['__CITIES_JSON__','__INTERCITY_JSON__','__BUS_JSON__','__DISRUPTIONS_JSON__','__OPENINGS_JSON__','__MISTATIONS_JSON__','__ACCESS_JSON__','__ATTRACTIONS_JSON__','__CARDIMG_JSON__','__TRANSLATOR_JS__','__BUILD__'])
+  if (!html.includes(t)) { console.error('token missing:', t); process.exit(1); }
+
+html = html.replace('__BUILD__', () => buildStamp)
                      .replace('__CITIES_JSON__', data)
                      .replace('__INTERCITY_JSON__', () => JSON.stringify(intercity))
                      .replace('__BUS_JSON__', () => JSON.stringify(busDirs))

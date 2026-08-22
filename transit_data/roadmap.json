@@ -53,10 +53,10 @@
       "items": [
         {
           "id": "modules",
-          "title": "Split the monolith into modules",
+          "title": "Split the monolith into source files (isolation still pending)",
           "priority": "P1",
-          "state": "todo",
-          "note": "407 functions in one global scope; do it AFTER the tests, never before"
+          "state": "partial",
+          "note": "5,747 lines became 20 files in transit_data/src, concatenated by build.cjs into a byte-identical page. That buys navigability, NOT isolation: joined, it is still one scope, so a name collision is exactly as possible as before. Real isolation needs ES modules; this is the step that makes that approachable."
         },
         {
           "id": "payload",
