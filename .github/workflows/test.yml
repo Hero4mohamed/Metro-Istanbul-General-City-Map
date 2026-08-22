@@ -38,14 +38,22 @@ jobs:
       # validated a stale artifact.
       - name: The committed build matches the template
         run: |
-          cp index.html /tmp/committed-index.html
+          # Two values are intentionally different on every build: the diagnostics build stamp,
+          # and the CSP script hash that necessarily changes with it. Normalise both, or this
+          # check reports drift on every single run and stops meaning anything.
+          normalise() {
+            sed -E -e 's/const BUILD = "[0-9]+"/const BUILD = "STAMP"/' \
+                   -e "s/'sha256-[A-Za-z0-9+\\/=]+'/'sha256-HASH'/g" "$1"
+          }
+          normalise index.html > /tmp/committed.html
           node transit_data/build.cjs > /dev/null
-          if ! diff -q /tmp/committed-index.html index.html > /dev/null; then
+          normalise index.html > /tmp/rebuilt.html
+          if ! diff -q /tmp/committed.html /tmp/rebuilt.html > /dev/null; then
             echo "::error::index.html is not what transit_data/build.cjs produces — run the build and commit the result"
-            diff <(head -c 400000 /tmp/committed-index.html) <(head -c 400000 index.html) | head -20 || true
+            diff /tmp/committed.html /tmp/rebuilt.html | head -20 || true
             exit 1
           fi
-          echo "committed build is current"
+          echo "committed build is current (build stamp and CSP hash normalised)"
 
       # Finally, prove the suite can still fail. A green suite that no longer detects the
       # defects it was written for is worse than no suite at all.
