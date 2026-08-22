@@ -55,7 +55,8 @@ const TR2EN_PHRASES = [
   [/[Mm]etro\s+[Hh]attı(?:mız)?/gi, 'metro line'], [/[Tt]ramvay\s+[Hh]attı(?:mız)?/gi, 'tram line'],
   [/[Bb]anliyö\s+[Hh]attı(?:mız)?/gi, 'suburban line'],
   [/[Hh]attımız/gi, 'our line'], [/[Hh]attında/gi, 'on the line'], [/[Hh]attı/gi, 'line'],
-  [/[İi]stasyonumuz/gi, 'our station'],
+  [/[İi]stasyonumuzdan\b/gi, 'from our station'], [/[İi]stasyonumuzda\b/gi, 'at our station'],
+  [/[İi]stasyonumuz\b/gi, 'our station'],
   // status clauses
   [/seferler(?:imiz)?\s+(?:geçici\s+(?:bir\s+)?süreyle\s+)?durdurul(?:muştur|du)/gi, 'services are temporarily suspended'],
   [/seferler(?:imiz)?\s+normale\s+dön(?:müştür|dü)/gi, 'services have returned to normal'],
@@ -76,8 +77,17 @@ const TR2EN_PHRASES = [
   [/istasyonları\s+arasında/gi, 'between the stations'],
   [/arasında\s+yapılmaktadır/gi, 'operate between'], [/yapılmaktadır/gi, 'are operating'],
   [/yapıl(?:a)?mamaktadır/gi, 'cannot operate'],
-  [/istasyonları/gi, 'stations'], [/[İi]stasyon(?:undan|dan)/gi, 'from the station'],
-  [/[İi]stasyon(?:umuz|u)?/gi, 'station'],
+  /* The locative was missing, and the generic rules matched the "istasyonu" inside
+     "istasyonunda" and left the "nda" stranded — real output was "Sanayi stationnda bir
+     yolcunun…". A half-eaten word is worse than an untranslated one, so the inflected forms are
+     spelled out FIRST (longest first, or the shorter stem consumes the stem and strands the
+     suffix) and the general rules are \b-anchored: an inflection nobody listed now stays
+     Turkish instead of becoming a non-word. */
+  [/istasyonlarından/gi, 'from the stations'], [/istasyonlarında/gi, 'at the stations'],
+  [/[İi]stasyon(?:umuz|u)?ndan\b/gi, 'from the station'], [/[İi]stasyondan\b/gi, 'from the station'],
+  [/[İi]stasyon(?:umuz|u)?nda\b/gi, 'at the station'], [/[İi]stasyonda\b/gi, 'at the station'],
+  [/istasyonları\b/gi, 'stations'],
+  [/[İi]stasyon(?:umuz|u)?\b/gi, 'station'],
   [/aktarmalı/gi, 'with transfer'], [/arasında/gi, 'between'],
   [/devam\s+etmektedir/gi, 'continues'], [/başlamıştır/gi, 'has started'],
   [/kapalıdır/gi, 'is closed'], [/açıktır/gi, 'is open'],

@@ -98,7 +98,9 @@ const data = JSON.stringify(cities);
 const scraper = fs.readFileSync(path.join(DIR, 'scrape-disruptions.cjs'), 'utf8');
 const tStart = scraper.indexOf('// ==TRANSLATOR-START=='), tEnd = scraper.indexOf('// ==TRANSLATOR-END==');
 if (tStart < 0 || tEnd < 0) { console.error('translator markers missing in scrape-disruptions.cjs'); process.exit(1); }
-const translatorJS = scraper.slice(tStart, tEnd);
+// include the closing marker, so the block is delimited at BOTH ends in the shipped page and a
+// test can lift out exactly the translator that ships rather than trusting the scraper source
+const translatorJS = scraper.slice(tStart, tEnd) + '// ==TRANSLATOR-END==';
 
 /* The application source lives in transit_data/src/*.js and is concatenated here, in filename
    order, into the single inline script the page ships.

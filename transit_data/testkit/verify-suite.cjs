@@ -86,6 +86,24 @@ const MUTATIONS = [
     apply: h => h.replace(/('Galata Tower':\s*\['Galata Kulesi')\]/,
                           (m, keep) => keep + ", 'Galata Tower']"),
   },
+  {
+    /* Reproduce the defect as it actually shipped: no locative rule, and the general rule left
+       unanchored. Either half alone is now survivable — the \b stops the mangling even with the
+       locative gone — so the mutation has to undo both to prove the check still bites. */
+    name: 'restore the unanchored rule that rendered "istasyonunda" as "stationnda"',
+    expect: 'the disruption translator never welds a Turkish suffix onto an English word',
+    apply: h => h
+      .replace("[/[İi]stasyon(?:umuz|u)?nda\\b/gi, 'at the station'], [/[İi]stasyonda\\b/gi, 'at the station'],", '')
+      .replace("[/[İi]stasyon(?:umuz|u)?\\b/gi, 'station'],", "[/[İi]stasyon(?:umuz|u)?/gi, 'station'],"),
+  },
+  {
+    // a rule that deletes the ending instead of translating it: nothing is mangled, but the
+    // meaning is gone — which the mangle check alone would not notice
+    name: 'translate a case ending to nothing instead of to English',
+    expect: 'the disruption translator resolves the Turkish case endings it claims to',
+    apply: h => h.replace("[/[İi]stasyon(?:umuz|u)?ndan\\b/gi, 'from the station']",
+                          "[/[İi]stasyon(?:umuz|u)?ndan\\b/gi, 'station']"),
+  },
 ];
 
 const original = fs.readFileSync(SRC, 'utf8');

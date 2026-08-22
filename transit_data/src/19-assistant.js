@@ -627,6 +627,74 @@ let aiAsk = async function(){};
       }
     }
 
+    /* --- service alerts ("any disruptions today?", "is M2 running?", "M2 aksaklık var mı") --
+       The LLM path has had a service_alerts tool all along; without this branch the offline
+       parser answered "is M2 running" with a route summary, which reads like a yes. Must sit
+       before the line-ref branch for that reason. */
+    if(/\b(disruption|disruptions|delay|delays|alert|alerts|closure|closed|suspended|outage|service status|running|works)\b/i.test(q) ||
+       /(aksakl|arıza|ariza|gecikme|kapalı|kapali|çalışıyor mu|calisiyor mu|sefer var m|sorun var m)/i.test(q)){
+      const all = DISRUPTIONS || [];
+      const ref = findRef(q);
+      const mine = ref ? all.filter(d => String(d.ref).toUpperCase() === ref.toUpperCase()) : all;
+      if(!mine.length){
+        aiSay(svgEsc(t(ref ? "aiAlertsLineOk" : "aiAlertsNone")) +
+              (ref ? ' <b>' + svgEsc(ref) + '</b>' : ''));
+        return;
+      }
+      const rows = mine.map(d => {
+        const msg = (lang === "tr" && d.messageTr) ? d.messageTr : d.message;
+        return '<div class="ai-hit"><span class="n"><b>' + svgEsc(d.ref || "") + "</b> " +
+               svgEsc(d.title || "") + "<br>" + svgEsc(msg || "") +
+               (d.until ? ' <span style="color:var(--dim)">(' + svgEsc(t("aiAlertsUntil")) + " " +
+                 svgEsc(d.until) + ")</span>" : "") + "</span></div>";
+      }).join("");
+      aiSay("<b>" + svgEsc(t("aiAlertsSome")) + "</b>" + (ref ? " — " + svgEsc(ref) : "") + rows);
+      return;
+    }
+
+    /* --- accessibility ("is Levent step free?", "Levent asansör var mı") -----------------
+       Answers from the İBB lift/escalator data already shipped, and says plainly when a
+       station has no record rather than implying it is inaccessible. */
+    if(/\b(step.?free|wheelchair|elevator|lift|lifts|escalator|accessible|accessibility)\b/i.test(q) ||
+       /(asansör|asansor|yürüyen merdiven|yuruyen merdiven|engelli|erişilebilir|erisilebilir|tekerlekli)/i.test(q)){
+      const bare = f
+        .replace(/\b(is|are|does|do|has|have|there|any|the|a|an|at|in|on|of|to|var|mi|mı|mu|mü|midir|mıdır)\b/g, " ")
+        .replace(/(step.?free|wheelchair|elevator|lifts?|escalators?|accessible|accessibility|asansor|yuruyen merdiven|engelli|erisilebilir|tekerlekli sandalye|tekerlekli)/g, " ")
+        .replace(/\s+/g, " ").trim();
+      const st = bare ? await resolve(bare) : null;
+      if(!st){ aiSay(svgEsc(t("aiNoPlace")) + " “" + svgEsc(bare || q) + "”."); return; }
+      const acc = (typeof accFor === "function") ? accFor(st.name) : undefined;
+      if(!acc){
+        aiSay("<b>" + svgEsc(st.name) + "</b><br>" + svgEsc(t("aiAccUnknown")) +
+              '<br><span style="font-size:9px;color:var(--dim)">' + svgEsc(t("aiAccCityOnly")) + "</span>");
+        dropPin(st); return;
+      }
+      const bits = [];
+      if(acc.elevators != null) bits.push(acc.elevators + " " + t("accLifts"));
+      if(acc.escalators != null) bits.push(acc.escalators + " " + t("accEscalators"));
+      aiSay("<b>" + svgEsc(st.name) + "</b><br>" +
+            (acc.stepFree ? "♿ " + svgEsc(t("aiAccStepFree")) : svgEsc(t("aiAccNot"))) +
+            (bits.length ? " · " + svgEsc(bits.join(" · ")) : "") +
+            '<br><span style="font-size:9px;color:var(--dim)">' + svgEsc(t("accSource")) +
+            " İBB + OpenStreetMap</span>");
+      dropPin(st); return;
+    }
+
+    /* --- which lines serve a station ("what lines stop at Yenikapı?") -------------------
+       "buses at X" already existed; this is the rail half of the same question. */
+    let lq = f.match(/^(?:which|what)\s+(?:lines?|trains?|metros?|hatlar|hat)\s*(?:stop|serve|serves|go|goes|run|pass|are)?\s*(?:at|through|from|in|on)?\s+(.+)$/) ||
+             f.match(/^(.+?)\s+(?:hangi hatlar|hatlar[iı]|hangi hat)$/);
+    if(lq && lq[1]){
+      const st = await resolve(lq[1].trim());
+      if(!st){ aiSay(svgEsc(t("aiNoPlace")) + " “" + svgEsc(lq[1].trim()) + "”."); return; }
+      const keys = nameNodes[fold(st.name)] || [];
+      const refs = [...new Set(keys.map(k => nodeMeta[k] && nodeMeta[k].ref).filter(Boolean))].sort(trCmp);
+      if(!refs.length){ aiSay(svgEsc(t("aiLinesNone"))); return; }
+      aiSay("<b>" + svgEsc(t("aiLinesAt")) + "</b> " + svgEsc(st.name) + "<br>" +
+            refs.map(svgEsc).join(", "));
+      dropPin(st); return;
+    }
+
     /* --- first / last service for a line ("when is the last ride today?") --------------
        Placed before the generic line branch, which would otherwise answer a timing question
        with a route summary. Requires a first/last word, so "buses at Levent" is unaffected. */
@@ -664,7 +732,10 @@ let aiAsk = async function(){};
     }
 
     /* --- directions: "A to B" --- */
-    m = f.match(/^(?:how do i get |how to get |get me |directions |route |yol tarifi |nasil giderim )?(?:from )?(.+?)\s+(?:to|->|→|until|-)\s+(.+)$/);
+    /* "how long from Taksim to Kadıköy" used to resolve the whole phrase as a place name and
+       fail on "how long from taksim". A duration question about two points is the same request
+       as a route between them — the plan already reports the time. */
+    m = f.match(/^(?:how (?:do i get|to get|long(?: does it take)?|far)\s*|get me |directions |route |yol tarifi |nasil giderim |ne kadar (?:surer|sürer)\s*)?(?:from )?(.+?)\s+(?:to|->|→|until|-)\s+(.+)$/);
     if(m && m[1] && m[2] && !matchCat(m[1])){
       const a = await resolve(m[1].trim()), b = await resolve(m[2].trim());
       if(!a || !b){ aiSay(svgEsc(t("aiNoPlace")) + " “" + svgEsc((!a?m[1]:m[2]).trim()) + "”."); return; }

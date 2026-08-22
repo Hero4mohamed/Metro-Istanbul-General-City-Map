@@ -109,8 +109,8 @@
           "id": "assistant-intents",
           "title": "Widen local assistant intent coverage",
           "priority": "P2",
-          "state": "partial",
-          "note": "First/last service added; nearby, directions, buses, fares, line info already local"
+          "state": "done",
+          "note": "Offline parser now answers the questions its own LLM tools already could: service alerts (“is M2 running” used to return a route summary, which reads as a yes), step-free/lift data per station, which rail lines serve a stop, and “how long from A to B”. All from data already shipped, EN and TR. Fixing the alert path also exposed a translator bug that rendered “istasyonunda” as “stationnda”; the missing Turkish case endings are now handled and every rule is \b-anchored, so an unlisted inflection stays Turkish instead of becoming a non-word. Covered by transit_data/test/translator.test.cjs and 2 mutations."
         }
       ]
     }

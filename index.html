@@ -6,7 +6,7 @@
 <!-- Substituted by build.cjs, which hashes the inline script from the final bytes. Pages
      cannot set headers, so this ships as meta; frame-ancestors and report-uri are
      unavailable that way. -->
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-FkxLD/x6sBPCB3MZqjWsW2luoGymmA8P0wgCkakqxQs=' https://unpkg.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://unpkg.com; font-src https://fonts.gstatic.com data:; img-src 'self' data: blob: https://*.basemaps.cartocdn.com https://server.arcgisonline.com; connect-src 'self' https://*.basemaps.cartocdn.com https://server.arcgisonline.com https://photon.komoot.io https://overpass-api.de https://api.ibb.gov.tr https://api.open-meteo.com https://routing.openstreetmap.de https://api.anthropic.com; worker-src 'self'; manifest-src 'self'; base-uri 'self'; form-action 'none'; object-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-//2IPZQh0wIOgUukNO78j38vTzpVov2oUtGkeCZ2kQo=' https://unpkg.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://unpkg.com; font-src https://fonts.gstatic.com data:; img-src 'self' data: blob: https://*.basemaps.cartocdn.com https://server.arcgisonline.com; connect-src 'self' https://*.basemaps.cartocdn.com https://server.arcgisonline.com https://photon.komoot.io https://overpass-api.de https://api.ibb.gov.tr https://api.open-meteo.com https://routing.openstreetmap.de https://api.anthropic.com; worker-src 'self'; manifest-src 'self'; base-uri 'self'; form-action 'none'; object-src 'none'">
 <title>İSTANBUL RAY-NET · Live Rail Network Map &amp; Simulation</title>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
       integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
@@ -1649,7 +1649,7 @@
 
    The report carries the fault, the build, the city, the language and the browser. It never
    carries location, saved places, trip history or the API key. ===== */
-const BUILD = "20260822150037";
+const BUILD = "20260822151033";
 const DIAG_MAX = 20;
 let DIAG = [];
 try { DIAG = JSON.parse(localStorage.getItem("irn_diag") || "[]"); } catch (e) { DIAG = []; }
@@ -1758,6 +1758,11 @@ const I18N = {
     aiNeedTwo:"Tell me both ends, e.g. “Taksim to Kadıköy”.", aiNoPlace:"I couldn’t find",
     aiStops:"Nearest stops", aiBusAt:"Bus routes here", aiNoBus:"No bus routes recorded at that stop.",
     aiOffline:"I need a connection to look up places. Stops and lines still work offline.",
+    aiAlertsNone:"No disruptions are currently reported.", aiAlertsSome:"Reported disruptions",
+    aiAlertsLineOk:"No disruption is reported on this line.", aiAlertsUntil:"until",
+    aiAccStepFree:"Step-free", aiAccNot:"Not step-free", aiAccUnknown:"No accessibility data is recorded for this station.",
+    aiAccCityOnly:"Lift and escalator data is published for İstanbul only.",
+    aiLinesAt:"Lines serving", aiLinesNone:"No lines are recorded at that stop.",
     routeFrom:"Route from", routeTo:"Route to", nearHere:"What’s nearby",
     min:"Min", stops:"Stops", transfers:"Transfers", favourites:"★ Favourites",
     recentPlans:"Recent plans", clearAll:"clear all", setOrigin:"Set as Origin", setDest:"Set as Destination",
@@ -1912,6 +1917,11 @@ const I18N = {
     aiNeedTwo:"İki ucu da yazın, örn. “Taksim Kadıköy”.", aiNoPlace:"Bulamadım:",
     aiStops:"En yakın duraklar", aiBusAt:"Buradaki otobüsler", aiNoBus:"Bu durakta kayıtlı otobüs hattı yok.",
     aiOffline:"Yer aramak için bağlantı gerekiyor. Duraklar ve hatlar çevrimdışı çalışır.",
+    aiAlertsNone:"Şu anda bildirilen bir aksaklık yok.", aiAlertsSome:"Bildirilen aksaklıklar",
+    aiAlertsLineOk:"Bu hatta bildirilen bir aksaklık yok.", aiAlertsUntil:"bitiş",
+    aiAccStepFree:"Basamaksız", aiAccNot:"Basamaksız değil", aiAccUnknown:"Bu istasyon için erişilebilirlik verisi kayıtlı değil.",
+    aiAccCityOnly:"Asansör ve yürüyen merdiven verisi yalnızca İstanbul için yayımlanıyor.",
+    aiLinesAt:"Şu hatlar geçiyor:", aiLinesNone:"Bu durakta kayıtlı hat yok.",
     routeFrom:"Buradan", routeTo:"Buraya", nearHere:"Yakında ne var",
     min:"Dk", stops:"Durak", transfers:"Aktarma", favourites:"★ Favoriler",
     recentPlans:"Son planlar", clearAll:"tümünü sil", setOrigin:"Başlangıç yap", setDest:"Varış yap",
@@ -2942,7 +2952,8 @@ const TR2EN_PHRASES = [
   [/[Mm]etro\s+[Hh]attı(?:mız)?/gi, 'metro line'], [/[Tt]ramvay\s+[Hh]attı(?:mız)?/gi, 'tram line'],
   [/[Bb]anliyö\s+[Hh]attı(?:mız)?/gi, 'suburban line'],
   [/[Hh]attımız/gi, 'our line'], [/[Hh]attında/gi, 'on the line'], [/[Hh]attı/gi, 'line'],
-  [/[İi]stasyonumuz/gi, 'our station'],
+  [/[İi]stasyonumuzdan\b/gi, 'from our station'], [/[İi]stasyonumuzda\b/gi, 'at our station'],
+  [/[İi]stasyonumuz\b/gi, 'our station'],
   // status clauses
   [/seferler(?:imiz)?\s+(?:geçici\s+(?:bir\s+)?süreyle\s+)?durdurul(?:muştur|du)/gi, 'services are temporarily suspended'],
   [/seferler(?:imiz)?\s+normale\s+dön(?:müştür|dü)/gi, 'services have returned to normal'],
@@ -2963,8 +2974,17 @@ const TR2EN_PHRASES = [
   [/istasyonları\s+arasında/gi, 'between the stations'],
   [/arasında\s+yapılmaktadır/gi, 'operate between'], [/yapılmaktadır/gi, 'are operating'],
   [/yapıl(?:a)?mamaktadır/gi, 'cannot operate'],
-  [/istasyonları/gi, 'stations'], [/[İi]stasyon(?:undan|dan)/gi, 'from the station'],
-  [/[İi]stasyon(?:umuz|u)?/gi, 'station'],
+  /* The locative was missing, and the generic rules matched the "istasyonu" inside
+     "istasyonunda" and left the "nda" stranded — real output was "Sanayi stationnda bir
+     yolcunun…". A half-eaten word is worse than an untranslated one, so the inflected forms are
+     spelled out FIRST (longest first, or the shorter stem consumes the stem and strands the
+     suffix) and the general rules are \b-anchored: an inflection nobody listed now stays
+     Turkish instead of becoming a non-word. */
+  [/istasyonlarından/gi, 'from the stations'], [/istasyonlarında/gi, 'at the stations'],
+  [/[İi]stasyon(?:umuz|u)?ndan\b/gi, 'from the station'], [/[İi]stasyondan\b/gi, 'from the station'],
+  [/[İi]stasyon(?:umuz|u)?nda\b/gi, 'at the station'], [/[İi]stasyonda\b/gi, 'at the station'],
+  [/istasyonları\b/gi, 'stations'],
+  [/[İi]stasyon(?:umuz|u)?\b/gi, 'station'],
   [/aktarmalı/gi, 'with transfer'], [/arasında/gi, 'between'],
   [/devam\s+etmektedir/gi, 'continues'], [/başlamıştır/gi, 'has started'],
   [/kapalıdır/gi, 'is closed'], [/açıktır/gi, 'is open'],
@@ -3005,7 +3025,7 @@ function translateTR(text){
 // fall back to an LLM (only when ANTHROPIC_API_KEY is set — otherwise skipped).
 const TR_RESIDUAL=/\b(nedeniyle|sebebiyle|istasyon\w*|seferler\w*|yapıl\w*|aktarma\w*|kapal\w*|kapat\w*|çalışm\w*|arası\w*|durdurul\w*|hizmet|geçici|yönünde|güzergah\w*|yoğunluk|doğrultusunda|talebi|hattı\w*|teleferik|füniküler|vatandaş\w*|yolcu\w*|muhalefet\w*|olumsuz|şartlar\w*|koşullar\w*|arıza\w*|bakım|onarım|bilgilerinize|sayın|değerli|ulaşım|sefer)\b/i;
 const hasResidualTurkish = s => TR_RESIDUAL.test(s||'');
-
+// ==TRANSLATOR-END==
 function ensureEnglish(list){
   for(const d of (list||[])){
     if(!d || !d.message) continue;
@@ -7515,6 +7535,74 @@ let aiAsk = async function(){};
       }
     }
 
+    /* --- service alerts ("any disruptions today?", "is M2 running?", "M2 aksaklık var mı") --
+       The LLM path has had a service_alerts tool all along; without this branch the offline
+       parser answered "is M2 running" with a route summary, which reads like a yes. Must sit
+       before the line-ref branch for that reason. */
+    if(/\b(disruption|disruptions|delay|delays|alert|alerts|closure|closed|suspended|outage|service status|running|works)\b/i.test(q) ||
+       /(aksakl|arıza|ariza|gecikme|kapalı|kapali|çalışıyor mu|calisiyor mu|sefer var m|sorun var m)/i.test(q)){
+      const all = DISRUPTIONS || [];
+      const ref = findRef(q);
+      const mine = ref ? all.filter(d => String(d.ref).toUpperCase() === ref.toUpperCase()) : all;
+      if(!mine.length){
+        aiSay(svgEsc(t(ref ? "aiAlertsLineOk" : "aiAlertsNone")) +
+              (ref ? ' <b>' + svgEsc(ref) + '</b>' : ''));
+        return;
+      }
+      const rows = mine.map(d => {
+        const msg = (lang === "tr" && d.messageTr) ? d.messageTr : d.message;
+        return '<div class="ai-hit"><span class="n"><b>' + svgEsc(d.ref || "") + "</b> " +
+               svgEsc(d.title || "") + "<br>" + svgEsc(msg || "") +
+               (d.until ? ' <span style="color:var(--dim)">(' + svgEsc(t("aiAlertsUntil")) + " " +
+                 svgEsc(d.until) + ")</span>" : "") + "</span></div>";
+      }).join("");
+      aiSay("<b>" + svgEsc(t("aiAlertsSome")) + "</b>" + (ref ? " — " + svgEsc(ref) : "") + rows);
+      return;
+    }
+
+    /* --- accessibility ("is Levent step free?", "Levent asansör var mı") -----------------
+       Answers from the İBB lift/escalator data already shipped, and says plainly when a
+       station has no record rather than implying it is inaccessible. */
+    if(/\b(step.?free|wheelchair|elevator|lift|lifts|escalator|accessible|accessibility)\b/i.test(q) ||
+       /(asansör|asansor|yürüyen merdiven|yuruyen merdiven|engelli|erişilebilir|erisilebilir|tekerlekli)/i.test(q)){
+      const bare = f
+        .replace(/\b(is|are|does|do|has|have|there|any|the|a|an|at|in|on|of|to|var|mi|mı|mu|mü|midir|mıdır)\b/g, " ")
+        .replace(/(step.?free|wheelchair|elevator|lifts?|escalators?|accessible|accessibility|asansor|yuruyen merdiven|engelli|erisilebilir|tekerlekli sandalye|tekerlekli)/g, " ")
+        .replace(/\s+/g, " ").trim();
+      const st = bare ? await resolve(bare) : null;
+      if(!st){ aiSay(svgEsc(t("aiNoPlace")) + " “" + svgEsc(bare || q) + "”."); return; }
+      const acc = (typeof accFor === "function") ? accFor(st.name) : undefined;
+      if(!acc){
+        aiSay("<b>" + svgEsc(st.name) + "</b><br>" + svgEsc(t("aiAccUnknown")) +
+              '<br><span style="font-size:9px;color:var(--dim)">' + svgEsc(t("aiAccCityOnly")) + "</span>");
+        dropPin(st); return;
+      }
+      const bits = [];
+      if(acc.elevators != null) bits.push(acc.elevators + " " + t("accLifts"));
+      if(acc.escalators != null) bits.push(acc.escalators + " " + t("accEscalators"));
+      aiSay("<b>" + svgEsc(st.name) + "</b><br>" +
+            (acc.stepFree ? "♿ " + svgEsc(t("aiAccStepFree")) : svgEsc(t("aiAccNot"))) +
+            (bits.length ? " · " + svgEsc(bits.join(" · ")) : "") +
+            '<br><span style="font-size:9px;color:var(--dim)">' + svgEsc(t("accSource")) +
+            " İBB + OpenStreetMap</span>");
+      dropPin(st); return;
+    }
+
+    /* --- which lines serve a station ("what lines stop at Yenikapı?") -------------------
+       "buses at X" already existed; this is the rail half of the same question. */
+    let lq = f.match(/^(?:which|what)\s+(?:lines?|trains?|metros?|hatlar|hat)\s*(?:stop|serve|serves|go|goes|run|pass|are)?\s*(?:at|through|from|in|on)?\s+(.+)$/) ||
+             f.match(/^(.+?)\s+(?:hangi hatlar|hatlar[iı]|hangi hat)$/);
+    if(lq && lq[1]){
+      const st = await resolve(lq[1].trim());
+      if(!st){ aiSay(svgEsc(t("aiNoPlace")) + " “" + svgEsc(lq[1].trim()) + "”."); return; }
+      const keys = nameNodes[fold(st.name)] || [];
+      const refs = [...new Set(keys.map(k => nodeMeta[k] && nodeMeta[k].ref).filter(Boolean))].sort(trCmp);
+      if(!refs.length){ aiSay(svgEsc(t("aiLinesNone"))); return; }
+      aiSay("<b>" + svgEsc(t("aiLinesAt")) + "</b> " + svgEsc(st.name) + "<br>" +
+            refs.map(svgEsc).join(", "));
+      dropPin(st); return;
+    }
+
     /* --- first / last service for a line ("when is the last ride today?") --------------
        Placed before the generic line branch, which would otherwise answer a timing question
        with a route summary. Requires a first/last word, so "buses at Levent" is unaffected. */
@@ -7552,7 +7640,10 @@ let aiAsk = async function(){};
     }
 
     /* --- directions: "A to B" --- */
-    m = f.match(/^(?:how do i get |how to get |get me |directions |route |yol tarifi |nasil giderim )?(?:from )?(.+?)\s+(?:to|->|→|until|-)\s+(.+)$/);
+    /* "how long from Taksim to Kadıköy" used to resolve the whole phrase as a place name and
+       fail on "how long from taksim". A duration question about two points is the same request
+       as a route between them — the plan already reports the time. */
+    m = f.match(/^(?:how (?:do i get|to get|long(?: does it take)?|far)\s*|get me |directions |route |yol tarifi |nasil giderim |ne kadar (?:surer|sürer)\s*)?(?:from )?(.+?)\s+(?:to|->|→|until|-)\s+(.+)$/);
     if(m && m[1] && m[2] && !matchCat(m[1])){
       const a = await resolve(m[1].trim()), b = await resolve(m[2].trim());
       if(!a || !b){ aiSay(svgEsc(t("aiNoPlace")) + " “" + svgEsc((!a?m[1]:m[2]).trim()) + "”."); return; }
