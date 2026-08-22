@@ -73,6 +73,19 @@ const MUTATIONS = [
     apply: h => h.replace('const AI_MODEL',
       'const LEAKED = "sk-ant-abcdef123456";\n  const AI_MODEL'),
   },
+  {
+    // renaming a landmark breaks its Turkish aliases silently: nothing throws, the alias just
+    // stops matching anything and Turkish speakers quietly lose the place
+    name: 'rename a landmark out from under its Turkish aliases',
+    expect: 'every search alias points at a landmark that still exists',
+    apply: h => h.replace("'Galata Tower':", "'Galata Tower (old)':"),
+  },
+  {
+    name: 'add an alias that just repeats the name it points at',
+    expect: 'no search alias merely repeats the name it points at',
+    apply: h => h.replace(/('Galata Tower':\s*\['Galata Kulesi')\]/,
+                          (m, keep) => keep + ", 'Galata Tower']"),
+  },
 ];
 
 const original = fs.readFileSync(SRC, 'utf8');

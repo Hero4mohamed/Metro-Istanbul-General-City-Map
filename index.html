@@ -6,7 +6,7 @@
 <!-- Substituted by build.cjs, which hashes the inline script from the final bytes. Pages
      cannot set headers, so this ships as meta; frame-ancestors and report-uri are
      unavailable that way. -->
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-U1N5rSdm07lMEfAOsUT7sYK5/ePVaePwL5cq6DqTbQs=' https://unpkg.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://unpkg.com; font-src https://fonts.gstatic.com data:; img-src 'self' data: blob: https://*.basemaps.cartocdn.com https://server.arcgisonline.com; connect-src 'self' https://*.basemaps.cartocdn.com https://server.arcgisonline.com https://photon.komoot.io https://overpass-api.de https://api.ibb.gov.tr https://api.open-meteo.com https://routing.openstreetmap.de https://api.anthropic.com; worker-src 'self'; manifest-src 'self'; base-uri 'self'; form-action 'none'; object-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-ig2TcvPuuwY0V9SnLsJMajYz/aUwWF+7ZbKlwbDUBrw=' https://unpkg.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://unpkg.com; font-src https://fonts.gstatic.com data:; img-src 'self' data: blob: https://*.basemaps.cartocdn.com https://server.arcgisonline.com; connect-src 'self' https://*.basemaps.cartocdn.com https://server.arcgisonline.com https://photon.komoot.io https://overpass-api.de https://api.ibb.gov.tr https://api.open-meteo.com https://routing.openstreetmap.de https://api.anthropic.com; worker-src 'self'; manifest-src 'self'; base-uri 'self'; form-action 'none'; object-src 'none'">
 <title>İSTANBUL RAY-NET · Live Rail Network Map &amp; Simulation</title>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
       integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
@@ -1649,7 +1649,7 @@
 
    The report carries the fault, the build, the city, the language and the browser. It never
    carries location, saved places, trip history or the API key. ===== */
-const BUILD = "20260822144202";
+const BUILD = "20260822145945";
 const DIAG_MAX = 20;
 let DIAG = [];
 try { DIAG = JSON.parse(localStorage.getItem("irn_diag") || "[]"); } catch (e) { DIAG = []; }
@@ -3091,7 +3091,7 @@ const ACCESS_RAW = HAS.access ? [{"name":"4.LEVENT","elevators":5,"escalators":2
 /* Where every shipped dataset came from and when, measured at build time. The app uses this
    to say what it knows and how well it knows it, rather than presenting a community-mapped
    route and an operator timetable with the same confidence. */
-const PROVENANCE = {"note":"Where every shipped dataset comes from and how far it can be trusted. build.cjs adds each file's real modification time, so freshness is measured rather than claimed. kind drives how the app words itself: 'operator' data may be stated plainly, 'community' and 'scraped' must be labelled.","kinds":{"operator":"Published by the transport operator. Exact; may be stated without qualification.","official":"Published by a public authority, but not the operator's own timetable.","community":"OpenStreetMap. Real, but coverage is uneven and there are no timetables — must be labelled.","scraped":"Read from a provider's web page with no open-data licence. Accurate when fetched, no guarantee of continuity.","curated":"Compiled by hand for this project from published sources. Subject to human error and to change."},"datasets":{"lines.json":{"kind":"community","source":"OpenStreetMap via Overpass","licence":"ODbL 1.0","covers":"İstanbul rail geometry and stations","present":true,"updated":"2026-07-16T14:54:42+03:00","updatedFrom":"commit"},"b2-line.json":{"kind":"community","source":"OpenStreetMap via Overpass","licence":"ODbL 1.0","covers":"B2 suburban line","present":true,"updated":"2026-07-20T16:49:38+03:00","updatedFrom":"commit"},"ferry-lines.json":{"kind":"community","source":"OpenStreetMap + hand-drawn Bosphorus shore lines","licence":"ODbL 1.0","covers":"İstanbul ferries; two shore routes have no OSM geometry and are approximated","present":true,"updated":"2026-07-20T22:07:41+03:00","updatedFrom":"commit"},"cable-lines.json":{"kind":"community","source":"OpenStreetMap via Overpass","licence":"ODbL 1.0","covers":"TF1/TF2 aerial cable cars","present":true,"updated":"2026-07-05T05:29:15+03:00","updatedFrom":"commit"},"planned-lines.json":{"kind":"curated","source":"metro.istanbul project pages","licence":"n/a","covers":"Lines under construction","present":true,"updated":"2026-06-23T00:10:50+03:00","updatedFrom":"commit"},"planned-manual.json":{"kind":"curated","source":"İBB announcements, hand-placed","licence":"n/a","covers":"In-planning lines with approximate alignments","present":true,"updated":"2026-06-23T00:10:50+03:00","updatedFrom":"commit"},"ankara-lines.json":{"kind":"community","source":"OpenStreetMap via Overpass","licence":"ODbL 1.0","covers":"EGO metro, Ankaray, Başkentray","present":true,"updated":"2026-07-31T04:36:15+03:00","updatedFrom":"commit"},"izmir-lines.json":{"kind":"community","source":"OpenStreetMap via Overpass","licence":"ODbL 1.0","covers":"İzmir Metro, İZBAN, trams","present":true,"updated":"2026-08-03T16:55:04+03:00","updatedFrom":"commit"},"bursa-lines.json":{"kind":"community","source":"OpenStreetMap via Overpass","licence":"ODbL 1.0","covers":"BursaRay and trams","present":true,"updated":"2026-07-30T02:25:56+03:00","updatedFrom":"commit"},"antalya-lines.json":{"kind":"community","source":"OpenStreetMap via Overpass","licence":"ODbL 1.0","covers":"AntRay tram lines","present":true,"updated":"2026-07-29T21:16:25+03:00","updatedFrom":"commit"},"kocaeli-lines.json":{"kind":"community","source":"OpenStreetMap via Overpass","licence":"ODbL 1.0","covers":"Akçaray trams and projects","present":true,"updated":"2026-08-05T14:12:06+03:00","updatedFrom":"commit"},"intercity-lines.json":{"kind":"curated","source":"TCDD Taşımacılık published routes","licence":"n/a","covers":"National rail, YHT and main line","present":true,"updated":"2026-07-22T21:30:59+03:00","updatedFrom":"commit"},"bus-directory.json":{"kind":"operator","source":"İETT line list","licence":"İBB Open Data terms","covers":"İstanbul bus routes; 40 rows are reconstructed from the GTFS graph because the line list omits them","present":true,"updated":"2026-06-23T00:10:50+03:00","updatedFrom":"commit"},"bus-graph.json":{"kind":"operator","source":"İETT GTFS","licence":"İBB Open Data terms","covers":"İstanbul bus stops in order","present":true,"updated":"2026-07-12T07:42:46+03:00","updatedFrom":"commit"},"bus-schedules.json":{"kind":"operator","source":"İETT GTFS","licence":"İBB Open Data terms","covers":"İstanbul bus first/last/headway per day type — exact","present":true,"updated":"2026-07-12T07:42:46+03:00","updatedFrom":"commit"},"bus-geom.json":{"kind":"operator","source":"İETT GTFS shapes","licence":"İBB Open Data terms","covers":"İstanbul bus road geometry","present":true,"updated":"2026-08-01T09:35:58+03:00","updatedFrom":"commit"},"kocaeli-bus-directory.json":{"kind":"scraped","source":"Kocaeli BB / UlaşımPark route pages","licence":"no open-data licence","covers":"Kocaeli bus routes","present":true,"updated":"2026-08-04T20:54:32+03:00","updatedFrom":"commit"},"kocaeli-bus-graph.json":{"kind":"scraped","source":"Kocaeli BB / UlaşımPark route pages","licence":"no open-data licence","covers":"Kocaeli bus stops in order","present":true,"updated":"2026-08-04T20:54:32+03:00","updatedFrom":"commit"},"kocaeli-bus-schedules.json":{"kind":"scraped","source":"Kocaeli BB / UlaşımPark route pages","licence":"no open-data licence","covers":"Kocaeli bus timetables","present":true,"updated":"2026-08-04T20:54:32+03:00","updatedFrom":"commit"},"ankara-bus-directory.json":{"kind":"community","source":"OpenStreetMap via Overpass","licence":"ODbL 1.0","covers":"264 EGO routes; coverage may be incomplete and there are NO timetables","present":true,"updated":"2026-08-14T23:45:42+03:00","updatedFrom":"commit"},"ankara-bus-graph.json":{"kind":"community","source":"OpenStreetMap via Overpass","licence":"ODbL 1.0","covers":"Ankara bus stops in order","present":true,"updated":"2026-08-14T23:45:42+03:00","updatedFrom":"commit"},"ankara-bus-schedules.json":{"kind":"community","source":"none — OSM has no timetables","licence":"n/a","covers":"Deliberately empty rather than invented","present":true,"updated":"2026-08-14T23:45:42+03:00","updatedFrom":"commit"},"disruptions.json":{"kind":"scraped","source":"metro.istanbul service status","licence":"no open-data licence","covers":"Live faults and closures; refreshed every 30 min","present":true,"updated":"2026-08-21T04:11:08Z","updatedFrom":"commit"},"accessibility.json":{"kind":"official","source":"İBB Open Data, enriched with OSM wheelchair tags","licence":"İBB Open Data terms + ODbL","covers":"Lift and escalator counts, step-free flags — İstanbul only","present":true,"updated":"2026-07-12T01:58:53+03:00","updatedFrom":"commit"},"mi-stations.json":{"kind":"official","source":"Metro İstanbul station registry","licence":"İBB Open Data terms","covers":"Official station ids used for exact departures","present":true,"updated":"2026-07-02T01:08:31+03:00","updatedFrom":"commit"},"attractions.json":{"kind":"curated","source":"Compiled for this project","licence":"n/a","covers":"İstanbul landmarks for the Explore layer","present":true,"updated":"2026-07-13T09:31:56+03:00","updatedFrom":"commit"},"openings.json":{"kind":"curated","source":"İBB projected opening dates","licence":"n/a","covers":"Announced targets, which slip","present":true,"updated":"2026-07-14T17:29:41+03:00","updatedFrom":"commit"},"card-images.json":{"kind":"curated","source":"Wikimedia Commons (public domain / Belbim)","licence":"see Commons per file","covers":"Fare card artwork","present":true,"updated":"2026-08-04T10:08:51+03:00","updatedFrom":"commit"},"cities.json":{"kind":"curated","source":"Operator tariffs and published figures","licence":"n/a","covers":"Per-city centre, bounds, fares, feature flags","present":true,"updated":"2026-08-14T23:45:42+03:00","updatedFrom":"commit"},"izmir-bus-directory.json":{"kind":"official","source":"İzmir Büyükşehir open data (ESHOT)","licence":"İzmir açık veri terms","covers":"441 ESHOT bus lines with endpoints","present":true,"updated":"2026-08-14T23:45:42+03:00","updatedFrom":"commit"},"izmir-bus-graph.json":{"kind":"official","source":"İzmir Büyükşehir open data (ESHOT)","licence":"İzmir açık veri terms","covers":"İzmir bus stops in order, derived by projecting stops onto each line’s published route geometry","present":true,"updated":"2026-08-14T23:45:42+03:00","updatedFrom":"commit"},"izmir-bus-schedules.json":{"kind":"official","source":"none — İzmir publishes no bus timetable","licence":"n/a","covers":"Deliberately empty rather than invented","present":true,"updated":"2026-08-14T23:45:42+03:00","updatedFrom":"commit"},"izmir-bus-geom.json":{"kind":"official","source":"İzmir Büyükşehir open data (ESHOT)","licence":"İzmir açık veri terms","covers":"İzmir bus road geometry, simplified to 12 m","present":true,"updated":"2026-08-22T14:36:09.958Z","updatedFrom":"mtime"}}};
+const PROVENANCE = {"note":"Where every shipped dataset comes from and how far it can be trusted. build.cjs adds each file's real modification time, so freshness is measured rather than claimed. kind drives how the app words itself: 'operator' data may be stated plainly, 'community' and 'scraped' must be labelled.","kinds":{"operator":"Published by the transport operator. Exact; may be stated without qualification.","official":"Published by a public authority, but not the operator's own timetable.","community":"OpenStreetMap. Real, but coverage is uneven and there are no timetables — must be labelled.","scraped":"Read from a provider's web page with no open-data licence. Accurate when fetched, no guarantee of continuity.","curated":"Compiled by hand for this project from published sources. Subject to human error and to change."},"datasets":{"lines.json":{"kind":"community","source":"OpenStreetMap via Overpass","licence":"ODbL 1.0","covers":"İstanbul rail geometry and stations","present":true,"updated":"2026-07-16T14:54:42+03:00","updatedFrom":"commit"},"b2-line.json":{"kind":"community","source":"OpenStreetMap via Overpass","licence":"ODbL 1.0","covers":"B2 suburban line","present":true,"updated":"2026-07-20T16:49:38+03:00","updatedFrom":"commit"},"ferry-lines.json":{"kind":"community","source":"OpenStreetMap + hand-drawn Bosphorus shore lines","licence":"ODbL 1.0","covers":"İstanbul ferries; two shore routes have no OSM geometry and are approximated","present":true,"updated":"2026-07-20T22:07:41+03:00","updatedFrom":"commit"},"cable-lines.json":{"kind":"community","source":"OpenStreetMap via Overpass","licence":"ODbL 1.0","covers":"TF1/TF2 aerial cable cars","present":true,"updated":"2026-07-05T05:29:15+03:00","updatedFrom":"commit"},"planned-lines.json":{"kind":"curated","source":"metro.istanbul project pages","licence":"n/a","covers":"Lines under construction","present":true,"updated":"2026-06-23T00:10:50+03:00","updatedFrom":"commit"},"planned-manual.json":{"kind":"curated","source":"İBB announcements, hand-placed","licence":"n/a","covers":"In-planning lines with approximate alignments","present":true,"updated":"2026-06-23T00:10:50+03:00","updatedFrom":"commit"},"ankara-lines.json":{"kind":"community","source":"OpenStreetMap via Overpass","licence":"ODbL 1.0","covers":"EGO metro, Ankaray, Başkentray","present":true,"updated":"2026-07-31T04:36:15+03:00","updatedFrom":"commit"},"izmir-lines.json":{"kind":"community","source":"OpenStreetMap via Overpass","licence":"ODbL 1.0","covers":"İzmir Metro, İZBAN, trams","present":true,"updated":"2026-08-03T16:55:04+03:00","updatedFrom":"commit"},"bursa-lines.json":{"kind":"community","source":"OpenStreetMap via Overpass","licence":"ODbL 1.0","covers":"BursaRay and trams","present":true,"updated":"2026-07-30T02:25:56+03:00","updatedFrom":"commit"},"antalya-lines.json":{"kind":"community","source":"OpenStreetMap via Overpass","licence":"ODbL 1.0","covers":"AntRay tram lines","present":true,"updated":"2026-07-29T21:16:25+03:00","updatedFrom":"commit"},"kocaeli-lines.json":{"kind":"community","source":"OpenStreetMap via Overpass","licence":"ODbL 1.0","covers":"Akçaray trams and projects","present":true,"updated":"2026-08-05T14:12:06+03:00","updatedFrom":"commit"},"intercity-lines.json":{"kind":"curated","source":"TCDD Taşımacılık published routes","licence":"n/a","covers":"National rail, YHT and main line","present":true,"updated":"2026-07-22T21:30:59+03:00","updatedFrom":"commit"},"bus-directory.json":{"kind":"operator","source":"İETT line list","licence":"İBB Open Data terms","covers":"İstanbul bus routes; 40 rows are reconstructed from the GTFS graph because the line list omits them","present":true,"updated":"2026-06-23T00:10:50+03:00","updatedFrom":"commit"},"bus-graph.json":{"kind":"operator","source":"İETT GTFS","licence":"İBB Open Data terms","covers":"İstanbul bus stops in order","present":true,"updated":"2026-07-12T07:42:46+03:00","updatedFrom":"commit"},"bus-schedules.json":{"kind":"operator","source":"İETT GTFS","licence":"İBB Open Data terms","covers":"İstanbul bus first/last/headway per day type — exact","present":true,"updated":"2026-07-12T07:42:46+03:00","updatedFrom":"commit"},"bus-geom.json":{"kind":"operator","source":"İETT GTFS shapes","licence":"İBB Open Data terms","covers":"İstanbul bus road geometry","present":true,"updated":"2026-08-01T09:35:58+03:00","updatedFrom":"commit"},"kocaeli-bus-directory.json":{"kind":"scraped","source":"Kocaeli BB / UlaşımPark route pages","licence":"no open-data licence","covers":"Kocaeli bus routes","present":true,"updated":"2026-08-04T20:54:32+03:00","updatedFrom":"commit"},"kocaeli-bus-graph.json":{"kind":"scraped","source":"Kocaeli BB / UlaşımPark route pages","licence":"no open-data licence","covers":"Kocaeli bus stops in order","present":true,"updated":"2026-08-04T20:54:32+03:00","updatedFrom":"commit"},"kocaeli-bus-schedules.json":{"kind":"scraped","source":"Kocaeli BB / UlaşımPark route pages","licence":"no open-data licence","covers":"Kocaeli bus timetables","present":true,"updated":"2026-08-04T20:54:32+03:00","updatedFrom":"commit"},"ankara-bus-directory.json":{"kind":"community","source":"OpenStreetMap via Overpass","licence":"ODbL 1.0","covers":"264 EGO routes; coverage may be incomplete and there are NO timetables","present":true,"updated":"2026-08-14T23:45:42+03:00","updatedFrom":"commit"},"ankara-bus-graph.json":{"kind":"community","source":"OpenStreetMap via Overpass","licence":"ODbL 1.0","covers":"Ankara bus stops in order","present":true,"updated":"2026-08-14T23:45:42+03:00","updatedFrom":"commit"},"ankara-bus-schedules.json":{"kind":"community","source":"none — OSM has no timetables","licence":"n/a","covers":"Deliberately empty rather than invented","present":true,"updated":"2026-08-14T23:45:42+03:00","updatedFrom":"commit"},"disruptions.json":{"kind":"scraped","source":"metro.istanbul service status","licence":"no open-data licence","covers":"Live faults and closures; refreshed every 30 min","present":true,"updated":"2026-08-21T04:11:08Z","updatedFrom":"commit"},"accessibility.json":{"kind":"official","source":"İBB Open Data, enriched with OSM wheelchair tags","licence":"İBB Open Data terms + ODbL","covers":"Lift and escalator counts, step-free flags — İstanbul only","present":true,"updated":"2026-07-12T01:58:53+03:00","updatedFrom":"commit"},"mi-stations.json":{"kind":"official","source":"Metro İstanbul station registry","licence":"İBB Open Data terms","covers":"Official station ids used for exact departures","present":true,"updated":"2026-07-02T01:08:31+03:00","updatedFrom":"commit"},"attractions.json":{"kind":"curated","source":"Compiled for this project","licence":"n/a","covers":"İstanbul landmarks for the Explore layer","present":true,"updated":"2026-07-13T09:31:56+03:00","updatedFrom":"commit"},"openings.json":{"kind":"curated","source":"İBB projected opening dates","licence":"n/a","covers":"Announced targets, which slip","present":true,"updated":"2026-07-14T17:29:41+03:00","updatedFrom":"commit"},"card-images.json":{"kind":"curated","source":"Wikimedia Commons (public domain / Belbim)","licence":"see Commons per file","covers":"Fare card artwork","present":true,"updated":"2026-08-04T10:08:51+03:00","updatedFrom":"commit"},"cities.json":{"kind":"curated","source":"Operator tariffs and published figures","licence":"n/a","covers":"Per-city centre, bounds, fares, feature flags","present":true,"updated":"2026-08-22T17:47:29+03:00","updatedFrom":"commit"},"izmir-bus-directory.json":{"kind":"official","source":"İzmir Büyükşehir open data (ESHOT)","licence":"İzmir açık veri terms","covers":"441 ESHOT bus lines with endpoints","present":true,"updated":"2026-08-22T17:47:29+03:00","updatedFrom":"commit"},"izmir-bus-graph.json":{"kind":"official","source":"İzmir Büyükşehir open data (ESHOT)","licence":"İzmir açık veri terms","covers":"İzmir bus stops in order, derived by projecting stops onto each line’s published route geometry","present":true,"updated":"2026-08-22T17:47:29+03:00","updatedFrom":"commit"},"izmir-bus-schedules.json":{"kind":"official","source":"none — İzmir publishes no bus timetable","licence":"n/a","covers":"Deliberately empty rather than invented","present":true,"updated":"2026-08-14T23:45:42+03:00","updatedFrom":"commit"},"izmir-bus-geom.json":{"kind":"official","source":"İzmir Büyükşehir open data (ESHOT)","licence":"İzmir açık veri terms","covers":"İzmir bus road geometry, simplified to 12 m","present":true,"updated":"2026-08-22T17:47:29+03:00","updatedFrom":"commit"}}};
 /* --- curated İstanbul landmarks for the "Explore" layer (real places; the app computes the
        nearest station + walk). {name,cat,lat,lng} --- */
 const ATTRACTIONS = CITY.attractions || [{"name":"Hagia Sophia","cat":"historic","lat":41.0086,"lng":28.9802},{"name":"Blue Mosque","cat":"mosque","lat":41.0054,"lng":28.9768},{"name":"Topkapı Palace","cat":"palace","lat":41.0115,"lng":28.9833},{"name":"Basilica Cistern","cat":"historic","lat":41.0084,"lng":28.9779},{"name":"Hippodrome (Sultanahmet Sq.)","cat":"historic","lat":41.006,"lng":28.9754},{"name":"Gülhane Park","cat":"park","lat":41.0134,"lng":28.9814},{"name":"Grand Bazaar","cat":"market","lat":41.0106,"lng":28.968},{"name":"Spice Bazaar","cat":"market","lat":41.0165,"lng":28.9705},{"name":"Süleymaniye Mosque","cat":"mosque","lat":41.0165,"lng":28.9639},{"name":"Galata Bridge","cat":"landmark","lat":41.0201,"lng":28.9737},{"name":"Galata Tower","cat":"viewpoint","lat":41.0256,"lng":28.9744},{"name":"İstiklal Avenue","cat":"market","lat":41.0335,"lng":28.9778},{"name":"Taksim Square","cat":"landmark","lat":41.037,"lng":28.9857},{"name":"İstanbul Modern","cat":"museum","lat":41.0264,"lng":28.9805},{"name":"Dolmabahçe Palace","cat":"palace","lat":41.0391,"lng":29.0006},{"name":"Yıldız Park","cat":"park","lat":41.049,"lng":29.011},{"name":"Ortaköy Mosque","cat":"mosque","lat":41.0475,"lng":29.027},{"name":"Bebek Bay","cat":"waterfront","lat":41.0776,"lng":29.0433},{"name":"Rumeli Fortress","cat":"historic","lat":41.0847,"lng":29.0566},{"name":"Emirgan Park","cat":"park","lat":41.1085,"lng":29.0546},{"name":"Maiden's Tower","cat":"viewpoint","lat":41.0211,"lng":29.0041},{"name":"Kadıköy & Moda","cat":"waterfront","lat":40.988,"lng":29.027},{"name":"Beylerbeyi Palace","cat":"palace","lat":41.0428,"lng":29.0419},{"name":"Büyük Çamlıca Hill","cat":"viewpoint","lat":41.0289,"lng":29.0686},{"name":"Çamlıca Mosque","cat":"mosque","lat":41.0275,"lng":29.0669},{"name":"Üsküdar Waterfront","cat":"waterfront","lat":41.0256,"lng":29.015},{"name":"Chora (Kariye) Mosque","cat":"historic","lat":41.0312,"lng":28.9391},{"name":"Eyüp Sultan Mosque","cat":"mosque","lat":41.0479,"lng":28.9337},{"name":"Pierre Loti Hill","cat":"viewpoint","lat":41.049,"lng":28.9337},{"name":"Balat & Fener","cat":"landmark","lat":41.0296,"lng":28.949},{"name":"Miniatürk","cat":"park","lat":41.062,"lng":28.9497},{"name":"Panorama 1453","cat":"museum","lat":41.0186,"lng":28.92},{"name":"Zorlu Center","cat":"market","lat":41.0668,"lng":29.017},{"name":"Vialand / İsfanbul","cat":"park","lat":41.073,"lng":28.933},{"name":"Princes' Islands (ferry)","cat":"waterfront","lat":40.876,"lng":29.129}];
@@ -3519,6 +3519,60 @@ const foldQ = s => {
   }
   return v;
 };
+/* The curated landmarks are stored under their ENGLISH names, which means a Turkish speaker —
+   most of this map's audience — could not find one of them by the name they actually use.
+   "Ayasofya", "Kapalıçarşı", "Kız Kulesi", "Sultanahmet Camii" all returned bus stops instead.
+   These are the real Turkish names for those same places, not translations invented here; a
+   landmark keeps every name it is genuinely known by, in both directions. */
+const PLACE_ALIASES = {
+  'Hagia Sophia':                 ['Ayasofya', 'Ayasofya Camii', 'Ayasofya Müzesi'],
+  'Blue Mosque':                  ['Sultanahmet Camii', 'Sultan Ahmet Camii'],
+  'Topkapı Palace':               ['Topkapı Sarayı'],
+  'Basilica Cistern':             ['Yerebatan Sarnıcı', 'Bazilika Sarnıcı'],
+  'Hippodrome (Sultanahmet Sq.)': ['Sultanahmet Meydanı', 'At Meydanı', 'Hipodrom'],
+  'Gülhane Park':                 ['Gülhane Parkı'],
+  'Grand Bazaar':                 ['Kapalıçarşı', 'Kapalı Çarşı'],
+  'Spice Bazaar':                 ['Mısır Çarşısı'],
+  'Süleymaniye Mosque':           ['Süleymaniye Camii'],
+  'Galata Bridge':                ['Galata Köprüsü'],
+  'Galata Tower':                 ['Galata Kulesi'],
+  'İstiklal Avenue':              ['İstiklal Caddesi', 'İstiklal Cad'],
+  'Taksim Square':                ['Taksim Meydanı'],
+  'Dolmabahçe Palace':            ['Dolmabahçe Sarayı'],
+  'Yıldız Park':                  ['Yıldız Parkı'],
+  'Ortaköy Mosque':               ['Ortaköy Camii', 'Büyük Mecidiye Camii'],
+  'Bebek Bay':                    ['Bebek Koyu'],
+  'Rumeli Fortress':              ['Rumeli Hisarı'],
+  'Emirgan Park':                 ['Emirgan Korusu'],
+  "Maiden's Tower":               ['Kız Kulesi'],
+  'Beylerbeyi Palace':            ['Beylerbeyi Sarayı'],
+  'Büyük Çamlıca Hill':           ['Büyük Çamlıca Tepesi', 'Çamlıca Tepesi'],
+  'Çamlıca Mosque':               ['Çamlıca Camii'],
+  'Üsküdar Waterfront':           ['Üsküdar Sahili'],
+  'Chora (Kariye) Mosque':        ['Kariye Camii', 'Kariye Müzesi', 'Chora Church'],
+  'Eyüp Sultan Mosque':           ['Eyüp Sultan Camii', 'Eyüpsultan Camii'],
+  'Pierre Loti Hill':             ['Piyer Loti Tepesi', 'Piyerloti'],
+  'Panorama 1453':                ['Panorama 1453 Tarih Müzesi'],
+  "Princes' Islands (ferry)":     ['Adalar', 'Büyükada', 'Prens Adaları'],
+};
+/* Category words, so "müze" lists the museums and "cami" the mosques instead of matching
+   whichever bus stop happens to carry the word. Both languages, since the UI ships both. */
+const CAT_WORDS = {
+  museum:     ['müze', 'muze', 'museum', 'müzesi'],
+  mosque:     ['cami', 'camii', 'mosque', 'camisi'],
+  palace:     ['saray', 'sarayı', 'palace'],
+  market:     ['çarşı', 'carsi', 'çarşısı', 'pazar', 'bazaar', 'market'],
+  park:       ['park', 'parkı', 'korusu', 'bahçe'],
+  viewpoint:  ['manzara', 'tepe', 'tepesi', 'seyir', 'viewpoint', 'kule', 'kulesi'],
+  waterfront: ['sahil', 'sahili', 'kıyı', 'waterfront', 'koy'],
+  historic:   ['tarihi', 'tarih', 'historic', 'antik'],
+  landmark:   ['landmark', 'simge'],
+};
+// folded category word -> [cat], built once
+const CAT_LOOKUP = (()=>{ const m=new Map();
+  for(const cat in CAT_WORDS) for(const w of CAT_WORDS[cat]){
+    const f=foldQ(w); if(!m.has(f)) m.set(f,[]); if(!m.get(f).includes(cat)) m.get(f).push(cat); }
+  return m; })();
 // searchable places: unique named stops across rail + ferry + bus (rail wins name clashes)
 const PLACES = (()=>{ const seen=new Set(), arr=[];
   for(const k in nodeMeta){ const m=nodeMeta[k]; if(!m.name) continue;
@@ -3527,8 +3581,18 @@ const PLACES = (()=>{ const seen=new Set(), arr=[];
     arr.push({ name:m.name, lat:m.lat, lng:m.lng, ref:m.ref, bus:m.kind==='bus', _f:f, _q:foldQ(m.name) }); }
   // curated landmarks so "Hagia Sophia", "Galata Tower", "Grand Bazaar" resolve instantly & offline
   ATTRACTIONS.forEach(a=>{ const f=fold(a.name); if(seen.has(f)) return; seen.add(f);
-    arr.push({ name:a.name, lat:a.lat, lng:a.lng, poi:true, cat:a.cat, _f:f, _q:foldQ(a.name) }); });
+    arr.push({ name:a.name, lat:a.lat, lng:a.lng, poi:true, cat:a.cat, _f:f, _q:foldQ(a.name),
+               _alias:(PLACE_ALIASES[a.name]||[]).map(foldQ) }); });
   arr.sort((a,b)=>trCmp(a.name,b.name)); return arr; })();
+/* How many distinct line-nodes share a stop name — an interchange is a more likely search
+   target than a single-line halt with the same word in it. Counted from nodeMeta rather than
+   guessed, and only for rail: every bus line serving a street produces its own node, so the
+   same count would just measure how busy the road is. */
+const PLACE_DEGREE = (()=>{ const m=new Map();
+  for(const k in nodeMeta){ const n=nodeMeta[k]; if(!n.name || n.kind==='bus') continue;
+    const f=fold(n.name); if(!f) continue;
+    let s=m.get(f); if(!s){ s=new Set(); m.set(f,s); } s.add(n.ref); }
+  const out=new Map(); m.forEach((s,f)=>out.set(f,s.size)); return out; })();
 // bus stops arrive AFTER first paint (lazy bus-data-<city>.json) → register them into the search
 // list + the door-to-door spatial grid once integrateBuses has built their nodes
 function registerBusPlaces(){
@@ -3554,27 +3618,98 @@ function editDist2(a,b){
     if(rowMin>2) return 3; const t2=prev; prev=cur; cur=t2; }
   return prev[m];
 }
-// shared stop search: diacritic-insensitive prefix > substring > small-typo fallback
+/* Where the search is measured from, so that among equally good matches the near one wins.
+   The map centre is what the user is actually looking at; their own position beats it when
+   they have shared it. Never a network call, and safe before the map exists. */
+function searchOrigin(){
+  try{ if(typeof myPos!=='undefined' && myPos && isFinite(myPos.lat)) return {lat:myPos.lat, lng:myPos.lng}; }catch(e){}
+  try{ const c=map.getCenter(); if(c && isFinite(c.lat)) return {lat:c.lat, lng:c.lng}; }catch(e){}
+  return { lat:CITY.center[0], lng:CITY.center[1] };
+}
+/* Ranking. The previous order was "every prefix match, then every substring match, each
+   alphabetically". That accidentally looked right whenever a station's name was a strict
+   prefix of the bus stops around it — "Kadıköy" does sort before "KADIKÖY ANADOLU…" — and
+   fell over everywhere else: "sahil" buried the first rail stop at rank 15, "havalimanı" put
+   a taxi rank above both airports, "marmaray" found no rail at all, and a query that hit the
+   30-result cap, like "camii", returned an alphabetical slice of 30 mosques with no regard
+   for which one you were standing next to. So score, and sort by the score.
+
+   Deliberately mild on distance: someone in Beşiktaş typing "Kadıköy" still means Kadıköy, so
+   proximity only settles ties between matches of similar quality — it never outranks a better
+   name match. */
+const _MATCH_EXACT=1000, _MATCH_ALIAS=900, _MATCH_PREFIX=700, _MATCH_WORD=500,
+      _MATCH_CAT=430, _MATCH_SUB=300, _MATCH_TYPO=150;
+const _WORD_BREAK = " -–—/().,'&";
+function placeScore(pl, f, org){
+  let m = 0;
+  if(pl._q === f) m = _MATCH_EXACT;
+  else if(pl._alias && pl._alias.length){
+    for(const a of pl._alias){
+      if(a === f){ m = Math.max(m, _MATCH_ALIAS); break; }
+      if(a.startsWith(f)) m = Math.max(m, _MATCH_ALIAS - 60);
+      else if(a.includes(f)) m = Math.max(m, _MATCH_ALIAS - 160);
+    }
+  }
+  if(!m || m < _MATCH_PREFIX){
+    /* A prefix match is scaled by how much of the name the query actually covers. Flat-scoring
+       every prefix put "HAVALİMANI TAKSİ KOOPERATİFİ" — a taxi rank — above both airports,
+       because a 200-point prefix-over-word-match gap outweighed everything else. Covering the
+       whole name still scores the full prefix bonus; covering a third of it barely beats a
+       word match, which is the honest reading of that match. */
+    if(pl._q.startsWith(f))
+      m = Math.max(m, _MATCH_WORD + (_MATCH_PREFIX - _MATCH_WORD) * (f.length / pl._q.length));
+    else {
+      // does it start a word anywhere in the name? scan occurrences — no regex is built per
+      // place per keystroke, which at 6,000+ places would be felt on every character typed
+      let i = pl._q.indexOf(f), best = 0;
+      while(i > 0){
+        best = Math.max(best, _WORD_BREAK.indexOf(pl._q.charAt(i-1)) >= 0 ? _MATCH_WORD : _MATCH_SUB);
+        if(best === _MATCH_WORD) break;
+        i = pl._q.indexOf(f, i + 1);
+      }
+      if(best) m = Math.max(m, best);
+    }
+  }
+  if(!m) return 0;
+  // kind: a rail/ferry station is a likelier destination than one of the many bus stops on a street
+  m += pl.bus ? 0 : (pl.poi ? 100 : 130);
+  // interchanges outrank single-line halts of the same name
+  const deg = PLACE_DEGREE.get(pl._f) || 1;
+  m += Math.min(48, (deg - 1) * 12);
+  // the shorter of two matching names is usually the canonical one ("Levent" over "LEVENT CAMİİ").
+  // Kept small: for prefix matches the coverage scaling above already carries most of this.
+  m -= Math.min(20, Math.max(0, pl._q.length - f.length) * 0.4);
+  // proximity, as a tie-breaker only
+  if(org && isFinite(pl.lat)) m -= Math.min(45, metersBetween([org.lat,org.lng],[pl.lat,pl.lng]) / 1000 * 1.5);
+  return m;
+}
+// shared stop search: scored over name, Turkish alias and category, with a small-typo fallback
 function searchPlaces(q){
   const f=foldQ(q); if(!f) return [];
-  const pre=[], sub=[];
-  for(const pl of PLACES){ if(pl._q.startsWith(f)) pre.push(pl); else if(pl._q.includes(f)) sub.push(pl); }
-  let out=pre.concat(sub);
-  if(!out.length && f.length>=3){                       // no direct hit → tolerate 1–2 typos
-    const maxD=f.length<=5?1:2, scored=[];
+  const org=searchOrigin();
+  const cats=CAT_LOOKUP.get(f);
+  const scored=[];
+  for(const pl of PLACES){
+    let s=placeScore(pl, f, org);
+    // "müze" should list the museums even though no landmark is literally called that
+    if(cats && pl.poi && cats.includes(pl.cat)) s=Math.max(s, _MATCH_CAT + 100 -
+      (org && isFinite(pl.lat) ? Math.min(45, metersBetween([org.lat,org.lng],[pl.lat,pl.lng])/1000*1.5) : 0));
+    if(s>0) scored.push([s,pl]);
+  }
+  if(!scored.length && f.length>=3){                    // no direct hit → tolerate 1–2 typos
+    const maxD=f.length<=5?1:2;
     for(const pl of PLACES){
       let best=3;
       for(const tok of pl._q.split(/[\s\-–—\/().]+/)){
         if(!tok || Math.abs(tok.length-f.length)>maxD) continue;
         const d=editDist2(f,tok); if(d<best) best=d;
       }
-      if(best<=maxD) scored.push([best,pl]);
+      if(best<=maxD) scored.push([_MATCH_TYPO - best*40 + (pl.bus?0:(pl.poi?100:130))
+        - Math.min(35, Math.max(0, pl._q.length-f.length)*0.6), pl]);
     }
-    // rank: closer edit distance, then rail stations before bus streets, then shorter names
-    scored.sort((a,b)=> a[0]-b[0] || (a[1].bus?1:0)-(b[1].bus?1:0) || a[1].name.length-b[1].name.length);
-    out=scored.map(x=>x[1]);
   }
-  return out.slice(0,30);
+  scored.sort((a,b)=> b[0]-a[0] || trCmp(a[1].name, b[1].name));
+  return scored.slice(0,30).map(x=>x[1]);
 }
 /* ---- live place/address geocoder — lets people TYPE any destination (a landmark, a
    neighbourhood, a street) instead of pinning it on the map. Photon (photon.komoot.io) is
@@ -4597,7 +4732,11 @@ function resolveTyped(which){
   if(!val){ if(which==='O') originPt=null; else destPt=null; return null; }
   if(cur && cur.name===val) return cur;             // already a chosen stop / pinned point
   const f=foldQ(val);
-  const m = PLACES.find(p=>p._q===f) || PLACES.find(p=>p._q.startsWith(f)) || PLACES.find(p=>p._q.includes(f)) || searchPlaces(val)[0];
+  /* Anything past an exact hit goes through the ranked search. Scanning PLACES directly returns
+     the alphabetically first prefix match, so the dropdown would offer "Atatürk Havalimanı"
+     while pressing Enter silently resolved to "HAVALİMANI TAKSİ KOOPERATİFİ" — the list and
+     the field disagreeing about what you picked. */
+  const m = PLACES.find(p=>p._q===f) || searchPlaces(val)[0];
   if(m){ const pt={name:m.name,lat:m.lat,lng:m.lng}; if(which==='O') originPt=pt; else destPt=pt;
     document.getElementById(which==='O'?'selO':'selD').value=m.name; return pt; }
   return null;
@@ -5393,7 +5532,8 @@ function resolveAdv(i){
   const inp=document.getElementById('advI'+i); const val=inp?inp.value.trim():'';
   if(!val) return null;
   const f=foldQ(val);
-  const m = PLACES.find(p=>p._q===f) || PLACES.find(p=>p._q.startsWith(f)) || PLACES.find(p=>p._q.includes(f)) || searchPlaces(val)[0];
+  // ranked, for the same reason as resolveTyped: a raw scan returns the alphabetically first hit
+  const m = PLACES.find(p=>p._q===f) || searchPlaces(val)[0];
   if(m){ const pt={name:m.name,lat:m.lat,lng:m.lng}; advStops[i]=pt; if(inp) inp.value=m.name; return pt; }
   return null;
 }

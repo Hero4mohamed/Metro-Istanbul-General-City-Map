@@ -244,7 +244,8 @@ function resolveAdv(i){
   const inp=document.getElementById('advI'+i); const val=inp?inp.value.trim():'';
   if(!val) return null;
   const f=foldQ(val);
-  const m = PLACES.find(p=>p._q===f) || PLACES.find(p=>p._q.startsWith(f)) || PLACES.find(p=>p._q.includes(f)) || searchPlaces(val)[0];
+  // ranked, for the same reason as resolveTyped: a raw scan returns the alphabetically first hit
+  const m = PLACES.find(p=>p._q===f) || searchPlaces(val)[0];
   if(m){ const pt={name:m.name,lat:m.lat,lng:m.lng}; advStops[i]=pt; if(inp) inp.value=m.name; return pt; }
   return null;
 }

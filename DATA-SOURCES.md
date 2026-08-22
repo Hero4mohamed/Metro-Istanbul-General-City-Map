@@ -65,3 +65,23 @@ browser and is never committed, bundled or sent anywhere else.
 - **OSM-derived data**: ODbL, keep the attribution and honour share-alike.
 - **Operator data** (İETT, İBB, metro.istanbul, Kocaeli, TCDD): go to the source. Do not assume
   this repository's copy grants you anything.
+
+## Why Bursa and Antalya have rail but no buses
+
+Not an oversight, and not worth re-investigating without new information. Probed 2026-08-22,
+with İzmir's portal as a control so that a local network or TLS problem could be told apart
+from a genuinely missing feed:
+
+| Endpoint | Result | Reading |
+|---|---|---|
+| `acikveri.bursa.bel.tr`, `data.bursa.bel.tr`, `openfiles.bursa.bel.tr` | DNS does not resolve | these hosts do not exist |
+| `www.bursa.bel.tr` | 200 | the site is up; its only data link is one meteorology page |
+| `acikveri.antalya.bel.tr` | resolves, never answers | portal host exists but is unreachable |
+| `ulasim.antalya.bel.tr` | 200 | a DataTables web app — timetables behind a UI, not a feed |
+| `api.transit.land` (both cities) | 401 | needs an API key |
+| `acikveri.bizizmir.com` (control) | 200 | so the path out is fine |
+
+So neither city publishes an open bus feed that can be fetched. İzmir does, and is now wired in
+at operator depth. The remaining route for Bursa/Antalya would be scraping the transport sites
+the way Kocaeli was scraped — possible, but unlicensed and fragile, so it is a deliberate
+choice not taken rather than a gap nobody looked at.

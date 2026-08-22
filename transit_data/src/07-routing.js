@@ -145,6 +145,60 @@ const foldQ = s => {
   }
   return v;
 };
+/* The curated landmarks are stored under their ENGLISH names, which means a Turkish speaker —
+   most of this map's audience — could not find one of them by the name they actually use.
+   "Ayasofya", "Kapalıçarşı", "Kız Kulesi", "Sultanahmet Camii" all returned bus stops instead.
+   These are the real Turkish names for those same places, not translations invented here; a
+   landmark keeps every name it is genuinely known by, in both directions. */
+const PLACE_ALIASES = {
+  'Hagia Sophia':                 ['Ayasofya', 'Ayasofya Camii', 'Ayasofya Müzesi'],
+  'Blue Mosque':                  ['Sultanahmet Camii', 'Sultan Ahmet Camii'],
+  'Topkapı Palace':               ['Topkapı Sarayı'],
+  'Basilica Cistern':             ['Yerebatan Sarnıcı', 'Bazilika Sarnıcı'],
+  'Hippodrome (Sultanahmet Sq.)': ['Sultanahmet Meydanı', 'At Meydanı', 'Hipodrom'],
+  'Gülhane Park':                 ['Gülhane Parkı'],
+  'Grand Bazaar':                 ['Kapalıçarşı', 'Kapalı Çarşı'],
+  'Spice Bazaar':                 ['Mısır Çarşısı'],
+  'Süleymaniye Mosque':           ['Süleymaniye Camii'],
+  'Galata Bridge':                ['Galata Köprüsü'],
+  'Galata Tower':                 ['Galata Kulesi'],
+  'İstiklal Avenue':              ['İstiklal Caddesi', 'İstiklal Cad'],
+  'Taksim Square':                ['Taksim Meydanı'],
+  'Dolmabahçe Palace':            ['Dolmabahçe Sarayı'],
+  'Yıldız Park':                  ['Yıldız Parkı'],
+  'Ortaköy Mosque':               ['Ortaköy Camii', 'Büyük Mecidiye Camii'],
+  'Bebek Bay':                    ['Bebek Koyu'],
+  'Rumeli Fortress':              ['Rumeli Hisarı'],
+  'Emirgan Park':                 ['Emirgan Korusu'],
+  "Maiden's Tower":               ['Kız Kulesi'],
+  'Beylerbeyi Palace':            ['Beylerbeyi Sarayı'],
+  'Büyük Çamlıca Hill':           ['Büyük Çamlıca Tepesi', 'Çamlıca Tepesi'],
+  'Çamlıca Mosque':               ['Çamlıca Camii'],
+  'Üsküdar Waterfront':           ['Üsküdar Sahili'],
+  'Chora (Kariye) Mosque':        ['Kariye Camii', 'Kariye Müzesi', 'Chora Church'],
+  'Eyüp Sultan Mosque':           ['Eyüp Sultan Camii', 'Eyüpsultan Camii'],
+  'Pierre Loti Hill':             ['Piyer Loti Tepesi', 'Piyerloti'],
+  'Panorama 1453':                ['Panorama 1453 Tarih Müzesi'],
+  "Princes' Islands (ferry)":     ['Adalar', 'Büyükada', 'Prens Adaları'],
+};
+/* Category words, so "müze" lists the museums and "cami" the mosques instead of matching
+   whichever bus stop happens to carry the word. Both languages, since the UI ships both. */
+const CAT_WORDS = {
+  museum:     ['müze', 'muze', 'museum', 'müzesi'],
+  mosque:     ['cami', 'camii', 'mosque', 'camisi'],
+  palace:     ['saray', 'sarayı', 'palace'],
+  market:     ['çarşı', 'carsi', 'çarşısı', 'pazar', 'bazaar', 'market'],
+  park:       ['park', 'parkı', 'korusu', 'bahçe'],
+  viewpoint:  ['manzara', 'tepe', 'tepesi', 'seyir', 'viewpoint', 'kule', 'kulesi'],
+  waterfront: ['sahil', 'sahili', 'kıyı', 'waterfront', 'koy'],
+  historic:   ['tarihi', 'tarih', 'historic', 'antik'],
+  landmark:   ['landmark', 'simge'],
+};
+// folded category word -> [cat], built once
+const CAT_LOOKUP = (()=>{ const m=new Map();
+  for(const cat in CAT_WORDS) for(const w of CAT_WORDS[cat]){
+    const f=foldQ(w); if(!m.has(f)) m.set(f,[]); if(!m.get(f).includes(cat)) m.get(f).push(cat); }
+  return m; })();
 // searchable places: unique named stops across rail + ferry + bus (rail wins name clashes)
 const PLACES = (()=>{ const seen=new Set(), arr=[];
   for(const k in nodeMeta){ const m=nodeMeta[k]; if(!m.name) continue;
@@ -153,8 +207,18 @@ const PLACES = (()=>{ const seen=new Set(), arr=[];
     arr.push({ name:m.name, lat:m.lat, lng:m.lng, ref:m.ref, bus:m.kind==='bus', _f:f, _q:foldQ(m.name) }); }
   // curated landmarks so "Hagia Sophia", "Galata Tower", "Grand Bazaar" resolve instantly & offline
   ATTRACTIONS.forEach(a=>{ const f=fold(a.name); if(seen.has(f)) return; seen.add(f);
-    arr.push({ name:a.name, lat:a.lat, lng:a.lng, poi:true, cat:a.cat, _f:f, _q:foldQ(a.name) }); });
+    arr.push({ name:a.name, lat:a.lat, lng:a.lng, poi:true, cat:a.cat, _f:f, _q:foldQ(a.name),
+               _alias:(PLACE_ALIASES[a.name]||[]).map(foldQ) }); });
   arr.sort((a,b)=>trCmp(a.name,b.name)); return arr; })();
+/* How many distinct line-nodes share a stop name — an interchange is a more likely search
+   target than a single-line halt with the same word in it. Counted from nodeMeta rather than
+   guessed, and only for rail: every bus line serving a street produces its own node, so the
+   same count would just measure how busy the road is. */
+const PLACE_DEGREE = (()=>{ const m=new Map();
+  for(const k in nodeMeta){ const n=nodeMeta[k]; if(!n.name || n.kind==='bus') continue;
+    const f=fold(n.name); if(!f) continue;
+    let s=m.get(f); if(!s){ s=new Set(); m.set(f,s); } s.add(n.ref); }
+  const out=new Map(); m.forEach((s,f)=>out.set(f,s.size)); return out; })();
 // bus stops arrive AFTER first paint (lazy bus-data-<city>.json) → register them into the search
 // list + the door-to-door spatial grid once integrateBuses has built their nodes
 function registerBusPlaces(){
@@ -180,27 +244,98 @@ function editDist2(a,b){
     if(rowMin>2) return 3; const t2=prev; prev=cur; cur=t2; }
   return prev[m];
 }
-// shared stop search: diacritic-insensitive prefix > substring > small-typo fallback
+/* Where the search is measured from, so that among equally good matches the near one wins.
+   The map centre is what the user is actually looking at; their own position beats it when
+   they have shared it. Never a network call, and safe before the map exists. */
+function searchOrigin(){
+  try{ if(typeof myPos!=='undefined' && myPos && isFinite(myPos.lat)) return {lat:myPos.lat, lng:myPos.lng}; }catch(e){}
+  try{ const c=map.getCenter(); if(c && isFinite(c.lat)) return {lat:c.lat, lng:c.lng}; }catch(e){}
+  return { lat:CITY.center[0], lng:CITY.center[1] };
+}
+/* Ranking. The previous order was "every prefix match, then every substring match, each
+   alphabetically". That accidentally looked right whenever a station's name was a strict
+   prefix of the bus stops around it — "Kadıköy" does sort before "KADIKÖY ANADOLU…" — and
+   fell over everywhere else: "sahil" buried the first rail stop at rank 15, "havalimanı" put
+   a taxi rank above both airports, "marmaray" found no rail at all, and a query that hit the
+   30-result cap, like "camii", returned an alphabetical slice of 30 mosques with no regard
+   for which one you were standing next to. So score, and sort by the score.
+
+   Deliberately mild on distance: someone in Beşiktaş typing "Kadıköy" still means Kadıköy, so
+   proximity only settles ties between matches of similar quality — it never outranks a better
+   name match. */
+const _MATCH_EXACT=1000, _MATCH_ALIAS=900, _MATCH_PREFIX=700, _MATCH_WORD=500,
+      _MATCH_CAT=430, _MATCH_SUB=300, _MATCH_TYPO=150;
+const _WORD_BREAK = " -–—/().,'&";
+function placeScore(pl, f, org){
+  let m = 0;
+  if(pl._q === f) m = _MATCH_EXACT;
+  else if(pl._alias && pl._alias.length){
+    for(const a of pl._alias){
+      if(a === f){ m = Math.max(m, _MATCH_ALIAS); break; }
+      if(a.startsWith(f)) m = Math.max(m, _MATCH_ALIAS - 60);
+      else if(a.includes(f)) m = Math.max(m, _MATCH_ALIAS - 160);
+    }
+  }
+  if(!m || m < _MATCH_PREFIX){
+    /* A prefix match is scaled by how much of the name the query actually covers. Flat-scoring
+       every prefix put "HAVALİMANI TAKSİ KOOPERATİFİ" — a taxi rank — above both airports,
+       because a 200-point prefix-over-word-match gap outweighed everything else. Covering the
+       whole name still scores the full prefix bonus; covering a third of it barely beats a
+       word match, which is the honest reading of that match. */
+    if(pl._q.startsWith(f))
+      m = Math.max(m, _MATCH_WORD + (_MATCH_PREFIX - _MATCH_WORD) * (f.length / pl._q.length));
+    else {
+      // does it start a word anywhere in the name? scan occurrences — no regex is built per
+      // place per keystroke, which at 6,000+ places would be felt on every character typed
+      let i = pl._q.indexOf(f), best = 0;
+      while(i > 0){
+        best = Math.max(best, _WORD_BREAK.indexOf(pl._q.charAt(i-1)) >= 0 ? _MATCH_WORD : _MATCH_SUB);
+        if(best === _MATCH_WORD) break;
+        i = pl._q.indexOf(f, i + 1);
+      }
+      if(best) m = Math.max(m, best);
+    }
+  }
+  if(!m) return 0;
+  // kind: a rail/ferry station is a likelier destination than one of the many bus stops on a street
+  m += pl.bus ? 0 : (pl.poi ? 100 : 130);
+  // interchanges outrank single-line halts of the same name
+  const deg = PLACE_DEGREE.get(pl._f) || 1;
+  m += Math.min(48, (deg - 1) * 12);
+  // the shorter of two matching names is usually the canonical one ("Levent" over "LEVENT CAMİİ").
+  // Kept small: for prefix matches the coverage scaling above already carries most of this.
+  m -= Math.min(20, Math.max(0, pl._q.length - f.length) * 0.4);
+  // proximity, as a tie-breaker only
+  if(org && isFinite(pl.lat)) m -= Math.min(45, metersBetween([org.lat,org.lng],[pl.lat,pl.lng]) / 1000 * 1.5);
+  return m;
+}
+// shared stop search: scored over name, Turkish alias and category, with a small-typo fallback
 function searchPlaces(q){
   const f=foldQ(q); if(!f) return [];
-  const pre=[], sub=[];
-  for(const pl of PLACES){ if(pl._q.startsWith(f)) pre.push(pl); else if(pl._q.includes(f)) sub.push(pl); }
-  let out=pre.concat(sub);
-  if(!out.length && f.length>=3){                       // no direct hit → tolerate 1–2 typos
-    const maxD=f.length<=5?1:2, scored=[];
+  const org=searchOrigin();
+  const cats=CAT_LOOKUP.get(f);
+  const scored=[];
+  for(const pl of PLACES){
+    let s=placeScore(pl, f, org);
+    // "müze" should list the museums even though no landmark is literally called that
+    if(cats && pl.poi && cats.includes(pl.cat)) s=Math.max(s, _MATCH_CAT + 100 -
+      (org && isFinite(pl.lat) ? Math.min(45, metersBetween([org.lat,org.lng],[pl.lat,pl.lng])/1000*1.5) : 0));
+    if(s>0) scored.push([s,pl]);
+  }
+  if(!scored.length && f.length>=3){                    // no direct hit → tolerate 1–2 typos
+    const maxD=f.length<=5?1:2;
     for(const pl of PLACES){
       let best=3;
       for(const tok of pl._q.split(/[\s\-–—\/().]+/)){
         if(!tok || Math.abs(tok.length-f.length)>maxD) continue;
         const d=editDist2(f,tok); if(d<best) best=d;
       }
-      if(best<=maxD) scored.push([best,pl]);
+      if(best<=maxD) scored.push([_MATCH_TYPO - best*40 + (pl.bus?0:(pl.poi?100:130))
+        - Math.min(35, Math.max(0, pl._q.length-f.length)*0.6), pl]);
     }
-    // rank: closer edit distance, then rail stations before bus streets, then shorter names
-    scored.sort((a,b)=> a[0]-b[0] || (a[1].bus?1:0)-(b[1].bus?1:0) || a[1].name.length-b[1].name.length);
-    out=scored.map(x=>x[1]);
   }
-  return out.slice(0,30);
+  scored.sort((a,b)=> b[0]-a[0] || trCmp(a[1].name, b[1].name));
+  return scored.slice(0,30).map(x=>x[1]);
 }
 /* ---- live place/address geocoder — lets people TYPE any destination (a landmark, a
    neighbourhood, a street) instead of pinning it on the map. Photon (photon.komoot.io) is

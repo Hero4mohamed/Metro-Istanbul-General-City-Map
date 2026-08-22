@@ -213,3 +213,40 @@ test('provenance reaches the shipped page with measured timestamps', () => {
   assert.deepStrictEqual(undated, [],
     'present but with no measured timestamp: ' + undated.join(', '));
 });
+
+/* --- search aliases ---------------------------------------------------------------
+   The curated landmarks are stored under their English names, so PLACE_ALIASES is the only
+   way a Turkish speaker reaches them — typing "Ayasofya" found bus stops and not Hagia Sophia
+   until that table existed. The table is keyed by the landmark's exact English name, which
+   makes it silently rot: rename an attraction in attractions.json and its Turkish names stop
+   resolving, with nothing failing and no error anywhere. */
+test('every search alias points at a landmark that still exists', () => {
+  const src = H.appScript();
+  const block = /const PLACE_ALIASES\s*=\s*\{([\s\S]*?)\n\};/.exec(src);
+  assert.ok(block, 'PLACE_ALIASES table not found in the shipped script');
+
+  const keys = [...block[1].matchAll(/^\s*(?:'((?:[^'\\]|\\.)*)'|"((?:[^"\\]|\\.)*)")\s*:/gm)]
+    .map(m => (m[1] !== undefined ? m[1] : m[2]).replace(/\\(['"])/g, '$1'));
+  assert.ok(keys.length >= 20, 'implausibly few aliases parsed: ' + keys.length);
+
+  const names = new Set(H.json('attractions.json').map(a => a.name));
+  const orphans = keys.filter(k => !names.has(k)).sort();
+  assert.deepStrictEqual(orphans, [],
+    'alias keys naming no attraction (renamed or removed): ' + orphans.join(' | '));
+});
+
+/* Aliases exist to be typed. One that duplicates the English name it points at adds a row that
+   can never change an outcome, and usually means a Turkish name was meant and forgotten. */
+test('no search alias merely repeats the name it points at', () => {
+  const src = H.appScript();
+  const block = /const PLACE_ALIASES\s*=\s*\{([\s\S]*?)\n\};/.exec(src);
+  assert.ok(block, 'PLACE_ALIASES table not found');
+  const dupes = [];
+  for (const m of block[1].matchAll(/^\s*(?:'((?:[^'\\]|\\.)*)'|"((?:[^"\\]|\\.)*)")\s*:\s*\[([^\]]*)\]/gm)) {
+    const key = (m[1] !== undefined ? m[1] : m[2]).replace(/\\(['"])/g, '$1');
+    const vals = [...m[3].matchAll(/'((?:[^'\\]|\\.)*)'|"((?:[^"\\]|\\.)*)"/g)]
+      .map(v => (v[1] !== undefined ? v[1] : v[2]).replace(/\\(['"])/g, '$1'));
+    for (const v of vals) if (v.toLocaleLowerCase('tr') === key.toLocaleLowerCase('tr')) dupes.push(key);
+  }
+  assert.deepStrictEqual(dupes, [], 'alias repeats its own key: ' + dupes.join(' | '));
+});

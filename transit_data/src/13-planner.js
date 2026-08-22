@@ -137,7 +137,11 @@ function resolveTyped(which){
   if(!val){ if(which==='O') originPt=null; else destPt=null; return null; }
   if(cur && cur.name===val) return cur;             // already a chosen stop / pinned point
   const f=foldQ(val);
-  const m = PLACES.find(p=>p._q===f) || PLACES.find(p=>p._q.startsWith(f)) || PLACES.find(p=>p._q.includes(f)) || searchPlaces(val)[0];
+  /* Anything past an exact hit goes through the ranked search. Scanning PLACES directly returns
+     the alphabetically first prefix match, so the dropdown would offer "Atatürk Havalimanı"
+     while pressing Enter silently resolved to "HAVALİMANI TAKSİ KOOPERATİFİ" — the list and
+     the field disagreeing about what you picked. */
+  const m = PLACES.find(p=>p._q===f) || searchPlaces(val)[0];
   if(m){ const pt={name:m.name,lat:m.lat,lng:m.lng}; if(which==='O') originPt=pt; else destPt=pt;
     document.getElementById(which==='O'?'selO':'selD').value=m.name; return pt; }
   return null;

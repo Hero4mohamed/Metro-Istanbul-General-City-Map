@@ -93,15 +93,17 @@
       "items": [
         {
           "id": "city-depth",
-          "title": "Bring Izmir, Bursa, Antalya to Kocaeli's level",
+          "title": "Bring İzmir, Bursa, Antalya to Kocaeli’s level",
           "priority": "P2",
-          "state": "todo"
+          "state": "done",
+          "note": "İzmir done at operator depth: 441 ESHOT lines, 882 directions, 62,269 stops and road geometry, from the city’s own portal; stop ORDER derived by projecting each line’s stops onto its own route shape. Bursa and Antalya publish no reachable open bus feed — probed with İzmir as a control, evidence in DATA-SOURCES.md — so they stay rail-only by evidence rather than by omission."
         },
         {
           "id": "search-rank",
-          "title": "Search ranking: distance, popularity, open-now",
+          "title": "Search ranking: match quality, kind, interchange, distance",
           "priority": "P2",
-          "state": "todo"
+          "state": "done",
+          "note": "Replaced “prefix then substring, each alphabetically” with a score. Adds Turkish names for all 35 English-only landmarks (“Ayasofya” found bus stops before), category words, prefix coverage scaling, interchange degree and distance as a tie-break. “havalimanı” now returns the three airports instead of a taxi rank; “sahil” moves rail from rank 15 to 1. Enter-to-resolve shares the ranking, so the list and the field agree. ~2 ms/query over 6,463 places. Open-now deliberately not added: no opening-hours data is shipped, so it could only be invented."
         },
         {
           "id": "assistant-intents",
