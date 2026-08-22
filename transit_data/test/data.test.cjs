@@ -6,7 +6,7 @@
  */
 const { test } = require('node:test');
 const assert = require('node:assert');
-const H = require('./helpers.cjs');
+const H = require('../testkit/helpers.cjs');
 
 /* --- i18n -------------------------------------------------------------------------
    t() falls back to English and, failing that, returns the KEY ITSELF. A key that exists

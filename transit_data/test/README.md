@@ -32,10 +32,10 @@ a stale file.
 
 | File | Purpose |
 |---|---|
-| `helpers.cjs` | Loads the built page; `codeOnly()` strips comments and string bodies while keeping `${...}` interpolations, so scanners do not mistake prose for source |
+| `../testkit/helpers.cjs` | Loads the built page; `codeOnly()` strips comments and string bodies while keeping `${...}` interpolations, so scanners do not mistake prose for source |
 | `structure.test.cjs` | Parse, CSS integrity, build tokens, DOM ids, undefined globals, SRI, secrets |
 | `data.test.cjs` | i18n key coverage, station/bus coordinates, fares, disruption shape, translation quality |
-| `verify-suite.cjs` | Mutation check — breaks a copy of the build 7 ways and requires the right test to fail |
+| `../testkit/verify-suite.cjs` | Mutation check — breaks a copy of the build 7 ways and requires the right test to fail |
 
 ## The mutation check is not optional
 

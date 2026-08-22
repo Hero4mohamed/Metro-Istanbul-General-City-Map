@@ -6,7 +6,7 @@
 const { test } = require('node:test');
 const assert = require('node:assert');
 const vm = require('node:vm');
-const H = require('./helpers.cjs');
+const H = require('../testkit/helpers.cjs');
 
 /* --- 1. The app parses -------------------------------------------------------------
    A patch script once expanded a "$&" inside a replacement string, splicing the matched

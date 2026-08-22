@@ -4,9 +4,11 @@
   "description": "Build pipeline and test suite for the RAY-NET transit map. The app itself ships as a single static index.html with no runtime dependencies.",
   "scripts": {
     "build": "node transit_data/build.cjs",
-    "test": "node --test \"transit_data/test/*.test.cjs\"",
-    "test:mutation": "node transit_data/test/verify-suite.cjs",
+    "test": "node transit_data/testkit/run.cjs",
+    "test:mutation": "node transit_data/testkit/verify-suite.cjs",
     "verify": "npm run build && npm test && npm run test:mutation"
   },
-  "engines": { "node": ">=20" }
+  "engines": {
+    "node": ">=20"
+  }
 }
