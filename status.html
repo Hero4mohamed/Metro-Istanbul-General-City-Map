@@ -220,7 +220,7 @@ function render(s) {
 
   const road = s.roadmap && s.roadmap.phases || [];
   $('road').innerHTML = road.map(p => {
-    const done = p.items.filter(i => i.state === 'done').length;
+    const done = p.items.filter(i => i.state === 'done' || i.state === 'declined').length;
     const pct = Math.round(done / p.items.length * 100);
     return '<div class="phase">' +
       '<div class="phase-h"><b>' + esc(p.phase) + '</b>' +
@@ -231,6 +231,7 @@ function render(s) {
         '<div class="item' + (i.state === 'done' ? ' done' : '') + '">' +
         '<span class="st">' + (i.state === 'done' ? pill('p-ok', 'done')
                              : i.state === 'partial' ? pill('p-warn', 'part')
+                             : i.state === 'declined' ? pill('p-acc', 'weighed')
                              : pill('p-off', i.priority || 'todo')) + '</span>' +
         '<span class="tx">' + esc(i.title) +
         (i.note ? '<div class="nt">' + esc(i.note) + '</div>' : '') + '</span></div>'

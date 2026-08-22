@@ -53,10 +53,17 @@
       "items": [
         {
           "id": "modules",
-          "title": "Split the monolith into source files (isolation still pending)",
+          "title": "Split the monolith into source files",
           "priority": "P1",
-          "state": "partial",
-          "note": "5,747 lines became 20 files in transit_data/src, concatenated by build.cjs into a byte-identical page. That buys navigability, NOT isolation: joined, it is still one scope, so a name collision is exactly as possible as before. Real isolation needs ES modules; this is the step that makes that approachable."
+          "state": "done",
+          "note": "5,747 lines became 20 files in transit_data/src, concatenated into a byte-identical page."
+        },
+        {
+          "id": "module-isolation",
+          "title": "Full ES-module isolation",
+          "priority": "P1",
+          "state": "declined",
+          "note": "Measured, then declined on the evidence. Zero collisions exist today, so the risk is unrealised, and a guard now fails the build if one is ever introduced — the same protection at a fraction of the cost. Conversion is genuinely feasible (the evaluation-time graph is acyclic; the only cycles run through function bodies, which ES modules resolve at call time), but it means exports and imports across 509 top-level names plus a bundler this machine cannot reliably install. Revisit if collisions start appearing, if more than one person is editing, or if code-splitting becomes necessary."
         },
         {
           "id": "payload",

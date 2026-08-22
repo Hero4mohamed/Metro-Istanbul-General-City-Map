@@ -121,3 +121,27 @@ Concatenation rather than a bundler is deliberate: the app is one self-contained
 works from `file://` with no tooling, and a bundler would add a dependency this machine cannot
 reliably install. `structure.test.cjs` asserts the shipped script really is the concatenated
 source, so an orphaned file or an edit made to the built page instead of the source is caught.
+
+## The shared scope, and why it stays shared
+
+`npm run scope` (`transit_data/testkit/analyse-scope.cjs`) measures what the concatenated scope
+actually costs. Two checks in `scope.test.cjs` enforce the result:
+
+- **No two source files declare the same top-level name.** This is the real risk the audit
+  named, and it now fails the build the moment it appears rather than letting one declaration
+  silently win. Proven by introducing a duplicate `svgEsc`: the guard names both files.
+- **The evaluation-time dependency graph stays acyclic.** Cycles through function bodies are
+  harmless — the binding resolves when the function is called. A cycle at *load* time throws on
+  a temporal dead zone, and would also close off any future move to ES modules.
+
+**Full ES-module isolation was measured and declined.** There are zero collisions today, so the
+risk is unrealised, and the guard above gives the same protection for a fraction of the cost.
+Conversion is genuinely feasible — the evaluation-time graph is acyclic — but it means exports
+and imports across 509 top-level names plus a bundler this machine cannot reliably install.
+Revisit if collisions start appearing, if more than one person is editing, or if code-splitting
+becomes necessary.
+
+A caution about the analysis itself: the first two runs said "one 20-file cycle" and then "one
+2-file cycle", and both were artefacts. The tool was counting `arr.map(...)` as a reference to
+the `map` object — the same lookbehind mistake the undefined-global check had. Corrected, the
+answer is zero. It would have argued against a refactor on false evidence.
