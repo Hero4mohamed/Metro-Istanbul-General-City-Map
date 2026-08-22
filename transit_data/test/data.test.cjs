@@ -172,3 +172,44 @@ test('bus stops carry usable coordinates', () => {
   }
   assert.deepStrictEqual(bad.slice(0, 10), [], bad.length + ' bus route(s) with bad coordinates');
 });
+
+/* --- provenance ---------------------------------------------------------------------
+   The app refuses to invent data; this makes the same honesty enforceable. Every dataset the
+   build reads must declare where it came from and how far it can be trusted, or a new source
+   can slip in unlabelled and be presented with the same confidence as an operator timetable. */
+test('every dataset the build consumes declares its provenance', () => {
+  const prov = H.json('provenance.json');
+  assert.ok(prov.datasets && prov.kinds, 'provenance.json is malformed');
+
+  const build = H.readData('build.cjs');
+  // every .json the build reads by name, minus provenance.json itself
+  const consumed = new Set(
+    [...build.matchAll(/['"]([a-z0-9-]+\.json)['"]/g)].map(m => m[1])
+      .filter(f => f !== 'provenance.json' && f !== 'roadmap.json')
+  );
+  const undeclared = [...consumed].filter(f => !prov.datasets[f]).sort();
+  assert.deepStrictEqual(undeclared, [],
+    'read by build.cjs but absent from provenance.json: ' + undeclared.join(', '));
+});
+
+test('every provenance entry uses a defined confidence kind', () => {
+  const prov = H.json('provenance.json');
+  const kinds = new Set(Object.keys(prov.kinds));
+  const bad = Object.entries(prov.datasets)
+    .filter(([, m]) => !kinds.has(m.kind))
+    .map(([f, m]) => f + ': "' + m.kind + '"');
+  assert.deepStrictEqual(bad, [], 'unknown kind(s): ' + bad.join(', '));
+});
+
+test('provenance reaches the shipped page with measured timestamps', () => {
+  const html = H.html();
+  // CRLF: match the terminator with a regex rather than assuming a bare newline
+  const m = /const PROVENANCE = (\{[\s\S]*?\});\r?\n/.exec(html);
+  assert.ok(m, 'PROVENANCE is not in the built page');
+  const shipped = JSON.parse(m[1]);
+  const present = Object.entries(shipped.datasets).filter(([, m]) => m.present);
+  assert.ok(present.length >= 20, 'only ' + present.length + ' datasets marked present');
+  const undated = present.filter(([, m]) => !m.updated).map(([f]) => f);
+  assert.deepStrictEqual(undated, [],
+    'present but with no measured timestamp: ' + undated.join(', '));
+});

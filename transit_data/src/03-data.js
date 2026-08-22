@@ -55,6 +55,10 @@ const MI_STATIONS = HAS.miStations ? __MISTATIONS_JSON__ : [];
 /* --- Step-free / accessibility per station: İBB open data (elevator + escalator counts)
        merged with OpenStreetMap wheelchair tags. {name,elevators,escalators,size,district,wheelchair,stepFree}. --- */
 const ACCESS_RAW = HAS.access ? __ACCESS_JSON__ : [];
+/* Where every shipped dataset came from and when, measured at build time. The app uses this
+   to say what it knows and how well it knows it, rather than presenting a community-mapped
+   route and an operator timetable with the same confidence. */
+const PROVENANCE = __PROVENANCE_JSON__;
 /* --- curated İstanbul landmarks for the "Explore" layer (real places; the app computes the
        nearest station + walk). {name,cat,lat,lng} --- */
 const ATTRACTIONS = CITY.attractions || __ATTRACTIONS_JSON__;

@@ -69,8 +69,8 @@
           "id": "confidence",
           "title": "Per-record data confidence model",
           "priority": "P1",
-          "state": "todo",
-          "note": "Source, freshness and verified flag per record"
+          "state": "done",
+          "note": "provenance.json declares source, licence, coverage and a confidence kind for all 29 shipped datasets; build.cjs stamps each file’s real modification time so freshness is measured, not claimed. Settings shows the list oldest-first, and the suite fails if a dataset the build reads is undeclared."
         },
         {
           "id": "bus-orphans",

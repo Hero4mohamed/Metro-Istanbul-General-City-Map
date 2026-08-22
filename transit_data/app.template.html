@@ -639,6 +639,23 @@
     border-radius:9px;padding:6px 9px;color:var(--text);font-family:var(--mono);font-size:10px;}
   .ai-key:focus{outline:none;border-color:var(--accent);}
 
+  /* ---------- data provenance list ---------- */
+  .pv-list{display:flex;flex-direction:column;gap:1px;margin-top:7px;max-height:34vh;overflow-y:auto;
+    border:1px solid var(--stroke);border-radius:9px;background:var(--surface);}
+  .pv-list::-webkit-scrollbar{width:6px;}
+  .pv-list::-webkit-scrollbar-thumb{background:var(--stroke-2);border-radius:99px;}
+  .pv-row{display:flex;align-items:flex-start;gap:8px;padding:7px 9px;border-bottom:1px solid var(--stroke);}
+  .pv-row:last-child{border-bottom:none;}
+  .pv-k{flex:none;width:64px;font-family:var(--mono);font-size:8.5px;letter-spacing:.06em;
+    text-transform:uppercase;padding:2px 4px;border-radius:4px;text-align:center;}
+  .pv-ok{background:rgba(52,211,153,.13);color:var(--accent);}
+  .pv-warn{background:rgba(245,166,35,.14);color:#F5A623;}
+  .pv-dim{background:var(--surface);color:var(--dim);border:1px solid var(--stroke);}
+  .pv-t{flex:1;min-width:0;display:flex;flex-direction:column;gap:1px;}
+  .pv-t b{font-size:10px;color:var(--text);font-weight:600;line-height:1.35;}
+  .pv-s{font-size:9px;color:var(--dim);line-height:1.35;}
+  .pv-a{flex:none;font-family:var(--mono);font-size:9px;color:var(--muted);padding-top:1px;}
+
   /* ---------- depart at / arrive by ---------- */
   .when-row{display:flex;gap:7px;align-items:center;margin-bottom:9px;}
   .when-seg{flex:1;min-width:0;}
@@ -1244,6 +1261,10 @@
           <div class="sp-note card-credit" id="cardCredit"></div>
         </div>
       </div>
+    </div>
+    <div class="sp-row sp-col" id="provRow"><span data-i18n="provLabel">Data &amp; sources</span>
+      <div class="sp-note" data-i18n="provIntro">Where the data comes from and when it was last refreshed. Operator feeds are exact; community and scraped sources are labelled as such.</div>
+      <div class="pv-list" id="provList"></div>
     </div>
     <div class="sp-row sp-col" id="diagRow"><span data-i18n="diagLabel">Diagnostics</span>
       <div class="off-wrap">

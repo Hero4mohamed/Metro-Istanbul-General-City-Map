@@ -1,0 +1,43 @@
+{
+  "note": "Where every shipped dataset comes from and how far it can be trusted. build.cjs adds each file's real modification time, so freshness is measured rather than claimed. kind drives how the app words itself: 'operator' data may be stated plainly, 'community' and 'scraped' must be labelled.",
+  "kinds": {
+    "operator": "Published by the transport operator. Exact; may be stated without qualification.",
+    "official": "Published by a public authority, but not the operator's own timetable.",
+    "community": "OpenStreetMap. Real, but coverage is uneven and there are no timetables — must be labelled.",
+    "scraped": "Read from a provider's web page with no open-data licence. Accurate when fetched, no guarantee of continuity.",
+    "curated": "Compiled by hand for this project from published sources. Subject to human error and to change."
+  },
+  "datasets": {
+    "lines.json":                 { "kind": "community", "source": "OpenStreetMap via Overpass", "licence": "ODbL 1.0", "covers": "İstanbul rail geometry and stations" },
+    "b2-line.json":               { "kind": "community", "source": "OpenStreetMap via Overpass", "licence": "ODbL 1.0", "covers": "B2 suburban line" },
+    "ferry-lines.json":           { "kind": "community", "source": "OpenStreetMap + hand-drawn Bosphorus shore lines", "licence": "ODbL 1.0", "covers": "İstanbul ferries; two shore routes have no OSM geometry and are approximated" },
+    "cable-lines.json":           { "kind": "community", "source": "OpenStreetMap via Overpass", "licence": "ODbL 1.0", "covers": "TF1/TF2 aerial cable cars" },
+    "planned-lines.json":         { "kind": "curated",   "source": "metro.istanbul project pages", "licence": "n/a", "covers": "Lines under construction" },
+    "planned-manual.json":        { "kind": "curated",   "source": "İBB announcements, hand-placed", "licence": "n/a", "covers": "In-planning lines with approximate alignments" },
+    "ankara-lines.json":          { "kind": "community", "source": "OpenStreetMap via Overpass", "licence": "ODbL 1.0", "covers": "EGO metro, Ankaray, Başkentray" },
+    "izmir-lines.json":           { "kind": "community", "source": "OpenStreetMap via Overpass", "licence": "ODbL 1.0", "covers": "İzmir Metro, İZBAN, trams" },
+    "bursa-lines.json":           { "kind": "community", "source": "OpenStreetMap via Overpass", "licence": "ODbL 1.0", "covers": "BursaRay and trams" },
+    "antalya-lines.json":         { "kind": "community", "source": "OpenStreetMap via Overpass", "licence": "ODbL 1.0", "covers": "AntRay tram lines" },
+    "kocaeli-lines.json":         { "kind": "community", "source": "OpenStreetMap via Overpass", "licence": "ODbL 1.0", "covers": "Akçaray trams and projects" },
+    "intercity-lines.json":       { "kind": "curated",   "source": "TCDD Taşımacılık published routes", "licence": "n/a", "covers": "National rail, YHT and main line" },
+
+    "bus-directory.json":         { "kind": "operator",  "source": "İETT line list", "licence": "İBB Open Data terms", "covers": "İstanbul bus routes; 40 rows are reconstructed from the GTFS graph because the line list omits them" },
+    "bus-graph.json":             { "kind": "operator",  "source": "İETT GTFS", "licence": "İBB Open Data terms", "covers": "İstanbul bus stops in order" },
+    "bus-schedules.json":         { "kind": "operator",  "source": "İETT GTFS", "licence": "İBB Open Data terms", "covers": "İstanbul bus first/last/headway per day type — exact" },
+    "bus-geom.json":              { "kind": "operator",  "source": "İETT GTFS shapes", "licence": "İBB Open Data terms", "covers": "İstanbul bus road geometry" },
+    "kocaeli-bus-directory.json": { "kind": "scraped",   "source": "Kocaeli BB / UlaşımPark route pages", "licence": "no open-data licence", "covers": "Kocaeli bus routes" },
+    "kocaeli-bus-graph.json":     { "kind": "scraped",   "source": "Kocaeli BB / UlaşımPark route pages", "licence": "no open-data licence", "covers": "Kocaeli bus stops in order" },
+    "kocaeli-bus-schedules.json": { "kind": "scraped",   "source": "Kocaeli BB / UlaşımPark route pages", "licence": "no open-data licence", "covers": "Kocaeli bus timetables" },
+    "ankara-bus-directory.json":  { "kind": "community", "source": "OpenStreetMap via Overpass", "licence": "ODbL 1.0", "covers": "264 EGO routes; coverage may be incomplete and there are NO timetables" },
+    "ankara-bus-graph.json":      { "kind": "community", "source": "OpenStreetMap via Overpass", "licence": "ODbL 1.0", "covers": "Ankara bus stops in order" },
+    "ankara-bus-schedules.json":  { "kind": "community", "source": "none — OSM has no timetables", "licence": "n/a", "covers": "Deliberately empty rather than invented" },
+
+    "disruptions.json":           { "kind": "scraped",   "source": "metro.istanbul service status", "licence": "no open-data licence", "covers": "Live faults and closures; refreshed every 30 min" },
+    "accessibility.json":         { "kind": "official",  "source": "İBB Open Data, enriched with OSM wheelchair tags", "licence": "İBB Open Data terms + ODbL", "covers": "Lift and escalator counts, step-free flags — İstanbul only" },
+    "mi-stations.json":           { "kind": "official",  "source": "Metro İstanbul station registry", "licence": "İBB Open Data terms", "covers": "Official station ids used for exact departures" },
+    "attractions.json":           { "kind": "curated",   "source": "Compiled for this project", "licence": "n/a", "covers": "İstanbul landmarks for the Explore layer" },
+    "openings.json":              { "kind": "curated",   "source": "İBB projected opening dates", "licence": "n/a", "covers": "Announced targets, which slip" },
+    "card-images.json":           { "kind": "curated",   "source": "Wikimedia Commons (public domain / Belbim)", "licence": "see Commons per file", "covers": "Fare card artwork" },
+    "cities.json":                { "kind": "curated",   "source": "Operator tariffs and published figures", "licence": "n/a", "covers": "Per-city centre, bounds, fares, feature flags" }
+  }
+}

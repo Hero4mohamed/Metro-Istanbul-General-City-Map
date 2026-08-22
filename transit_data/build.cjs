@@ -117,11 +117,26 @@ if (!srcFiles.length) { console.error('no source files in transit_data/src'); pr
 const appJs = srcFiles.map(f => fs.readFileSync(path.join(SRC, f), 'utf8')).join('');
 if (!template.includes('__APP_JS__')) { console.error('token missing: __APP_JS__'); process.exit(1); }
 
+
+/* Data provenance. Every shipped dataset declares where it came from and how far it can be
+   trusted; the freshness figure is the file's real modification time, measured here rather
+   than claimed, so a stale scrape cannot quietly present itself as current. The app uses the
+   "kind" to decide how to word itself: operator data may be stated plainly, community and
+   scraped data must say so. */
+const provenance = JSON.parse(fs.readFileSync(path.join(DIR, 'provenance.json'), 'utf8'));
+for (const [file, meta] of Object.entries(provenance.datasets)) {
+  const p = path.join(DIR, file);
+  meta.updated = fs.existsSync(p) ? fs.statSync(p).mtime.toISOString() : null;
+  meta.present = fs.existsSync(p);
+}
+const staleDays = Object.values(provenance.datasets)
+  .filter(m => m.present && m.kind === 'scraped')
+  .map(m => (Date.now() - Date.parse(m.updated)) / 86400000);
 const buildStamp = new Date().toISOString().replace(/[-:TZ.]/g, '').slice(0, 14);
 // the script goes in FIRST: every other token below lives inside the application source
 let html = template.replace('__APP_JS__', () => appJs);
 
-for (const t of ['__CITIES_JSON__','__INTERCITY_JSON__','__BUS_JSON__','__DISRUPTIONS_JSON__','__OPENINGS_JSON__','__MISTATIONS_JSON__','__ACCESS_JSON__','__ATTRACTIONS_JSON__','__CARDIMG_JSON__','__TRANSLATOR_JS__','__BUILD__'])
+for (const t of ['__CITIES_JSON__','__INTERCITY_JSON__','__BUS_JSON__','__DISRUPTIONS_JSON__','__OPENINGS_JSON__','__MISTATIONS_JSON__','__ACCESS_JSON__','__ATTRACTIONS_JSON__','__CARDIMG_JSON__','__TRANSLATOR_JS__','__BUILD__','__PROVENANCE_JSON__'])
   if (!html.includes(t)) { console.error('token missing:', t); process.exit(1); }
 
 html = html.replace('__BUILD__', () => buildStamp)
@@ -134,7 +149,8 @@ html = html.replace('__BUILD__', () => buildStamp)
                      .replace('__ACCESS_JSON__', () => JSON.stringify(access))
                      .replace('__ATTRACTIONS_JSON__', () => JSON.stringify(attract))
                      .replace('__CARDIMG_JSON__', () => JSON.stringify(cardImg))
-                     .replace('__TRANSLATOR_JS__', () => translatorJS);
+                     .replace('__TRANSLATOR_JS__', () => translatorJS)
+                     .replace('__PROVENANCE_JSON__', () => JSON.stringify(provenance));
 console.log('İSTANBUL:', cities.istanbul.lines.length, ' ANKARA:', ankara.length, ' İZMİR:', izmir.length, ' BURSA:', bursa.length, ' ANTALYA:', antalya.length, ' KOCAELİ:', kocaeli.length,
             ' INTERCITY:', intercity.length,
             ' BUSES:', Object.entries(busSets).map(([c, s]) => c + ':' + s.dir.length).join(' '),

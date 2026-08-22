@@ -760,6 +760,35 @@ let aiAsk = async function(){};
   });
 })();
 
+/* ---- data sources: what is shipped, from where, and how old ------------------------
+   The app already refuses to invent data; this makes the same honesty inspectable. Sorted
+   oldest first, because staleness is the thing worth noticing. */
+function ageText(iso){
+  if(!iso) return t('provUnknown');
+  const d = (Date.now() - Date.parse(iso)) / 86400000;
+  if(d < 1) return t('provToday');
+  if(d < 2) return t('provYesterday');
+  return t('provDays').replace('{n}', Math.round(d));
+}
+function renderProvenance(){
+  const box = document.getElementById('provList');
+  if(!box || !window.PROVENANCE_READY) return;
+  const rows = Object.entries(PROVENANCE.datasets)
+    .filter(([, m]) => m.present)
+    .sort((a, b) => Date.parse(a[1].updated || 0) - Date.parse(b[1].updated || 0));
+  box.innerHTML = rows.map(([file, m]) => {
+    const cls = m.kind === 'operator' ? 'pv-ok' : m.kind === 'official' ? 'pv-ok'
+              : m.kind === 'community' ? 'pv-warn' : m.kind === 'scraped' ? 'pv-warn' : 'pv-dim';
+    return '<div class="pv-row">' +
+      '<span class="pv-k ' + cls + '">' + svgEsc(t('provKind_' + m.kind) || m.kind) + '</span>' +
+      '<span class="pv-t"><b>' + svgEsc(m.covers || file) + '</b>' +
+      '<span class="pv-s">' + svgEsc(m.source) + '</span></span>' +
+      '<span class="pv-a">' + svgEsc(ageText(m.updated)) + '</span></div>';
+  }).join('');
+}
+window.PROVENANCE_READY = true;
+renderProvenance();
+
 /* ---- diagnostics: show what was recorded, and let the user send it if they choose ---- */
 function diagReportText(){
   const env = [
