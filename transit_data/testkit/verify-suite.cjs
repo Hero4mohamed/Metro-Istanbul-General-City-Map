@@ -18,7 +18,8 @@ const { execFileSync } = require('child_process');
 const ROOT = path.resolve(__dirname, '..', '..');
 const SRC = path.join(ROOT, 'index.html');
 const TMP = path.join(os.tmpdir(), 'raynet-mutant.html');
-const SUITE = path.join(ROOT, 'transit_data', 'test', 'structure.test.cjs');
+const TESTS = path.join(ROOT, 'transit_data', 'test');
+const SUITES = fs.readdirSync(TESTS).filter(f => f.endsWith('.test.cjs')).map(f => path.join(TESTS, f));
 
 const SRI_ON_SCRIPT = new RegExp('(<script[^>]+unpkg\\.com[^>]*?)\\s+integrity="[^"]*"');
 
@@ -55,6 +56,18 @@ const MUTATIONS = [
       'const OPENINGS_PLACEHOLDER = __OPENINGS_JSON__;\nconst OPENINGS'),
   },
   {
+    name: 'drop a CDN host from the directive that governs it',
+    expect: 'every host the page loads from is permitted by the RIGHT directive',
+    // the exact first-attempt CSP bug: the host stayed in script-src, so a whole-policy
+    // check saw it and stayed green while every stylesheet was blocked
+    apply: h => h.replace(new RegExp('(style-src[^;]*?) https://unpkg\\.com'), (m, keep) => keep),
+  },
+  {
+    name: 'hash the bytes on disk instead of the text the parser sees',
+    expect: 'the script hash matches the script the parser will see',
+    apply: h => h.replace(/(script-src [^;]*)'sha256-[^']*'/, (m, keep) => keep + "'sha256-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA='"),
+  },
+  {
     name: 'bake an API key into the page',
     expect: 'no API key is baked into the shipped page',
     apply: h => h.replace('const AI_MODEL',
@@ -80,7 +93,7 @@ for (const m of MUTATIONS) {
 
   let out = '';
   try {
-    out = execFileSync(process.execPath, ['--test', SUITE], {
+    out = execFileSync(process.execPath, ['--test', ...SUITES], {
       cwd: ROOT,
       env: { ...process.env, RAYNET_HTML: TMP },
       encoding: 'utf8',

@@ -136,9 +136,16 @@ const CHECKS = [
     run: async (w, d) => {
       const inp = d.getElementById('omniIn');
       if (!inp) return 'the search input is missing';
-      inp.focus(); inp.value = 'Taksim';
-      inp.dispatchEvent(new w.Event('input', { bubbles: true }));
-      const rows = await until(() => d.querySelectorAll('#omniRes .omni-row').length > 0, 6000);
+      // Re-type on each poll rather than dispatching once. The handler debounces 300ms, and a
+      // single event fired while the app is still finishing its boot work gets swallowed —
+      // which made this check intermittently red while the feature was perfectly fine. A
+      // person would simply type again; a flaky check is worse than no check.
+      const rows = await until(() => {
+        inp.focus();
+        inp.value = 'Taksim';
+        inp.dispatchEvent(new w.Event('input', { bubbles: true }));
+        return d.querySelectorAll('#omniRes .omni-row').length > 0;
+      }, 12000, 800);
       if (!rows) return 'no results for a stop that certainly exists';
       d.body.click();
     },

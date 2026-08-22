@@ -3,6 +3,10 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+<!-- Substituted by build.cjs, which hashes the inline script from the final bytes. Pages
+     cannot set headers, so this ships as meta; frame-ancestors and report-uri are
+     unavailable that way. -->
+<meta http-equiv="Content-Security-Policy" content="__CSP__">
 <title>İSTANBUL RAY-NET · Live Rail Network Map &amp; Simulation</title>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
       integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
@@ -1241,6 +1245,14 @@
         </div>
       </div>
     </div>
+    <div class="sp-row sp-col" id="diagRow"><span data-i18n="diagLabel">Diagnostics</span>
+      <div class="off-wrap">
+        <button class="off-btn" id="diagReport" data-i18n="diagReport">Report a problem</button>
+        <button class="off-btn ghost" id="diagCopy" data-i18n="diagCopy">Copy report</button>
+        <button class="off-btn ghost" id="diagClear" data-i18n="diagClear">Clear</button>
+      </div>
+      <div class="sp-note" id="diagNote"></div>
+    </div>
     <div class="sp-row sp-col" id="aiKeyRow"><span data-i18n="aiKeyLabel">Assistant AI (optional)</span>
       <div class="off-wrap">
         <input type="password" id="aiKeyIn" class="ai-key" autocomplete="off" spellcheck="false"
@@ -1605,6 +1617,52 @@
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
         integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
 <script>
+/* ===== DIAGNOSTICS ========================================================================
+   Installed before anything else, so a fault during boot is recorded rather than lost.
+
+   This is deliberately NOT automatic remote telemetry. There is no server to send to, and
+   the strongest thing this app has is that nothing about where you are or where you go ever
+   leaves the device. Silently posting stack traces to a third party would trade that away
+   for the developer's convenience. So: faults are kept locally, the user can see exactly
+   what would be shared, and reporting is one tap that they initiate.
+
+   The report carries the fault, the build, the city, the language and the browser. It never
+   carries location, saved places, trip history or the API key. ===== */
+const BUILD = "__BUILD__";
+const DIAG_MAX = 20;
+let DIAG = [];
+try { DIAG = JSON.parse(localStorage.getItem("irn_diag") || "[]"); } catch (e) { DIAG = []; }
+function diagSave(){ try { localStorage.setItem("irn_diag", JSON.stringify(DIAG.slice(-DIAG_MAX))); } catch (e) {} }
+function diagRecord(kind, message, stack){
+  const entry = {
+    t: new Date().toISOString(),
+    kind: kind,
+    msg: String(message || "").slice(0, 300),
+    // a stack can be long and can contain the full URL; keep the useful head only
+    at: String(stack || "").split("\n").slice(0, 4).join(" | ").slice(0, 500),
+    build: BUILD,
+  };
+  const last = DIAG[DIAG.length - 1];
+  if (last && last.msg === entry.msg && last.kind === entry.kind) { last.n = (last.n || 1) + 1; last.t = entry.t; }
+  else DIAG.push(entry);
+  if (DIAG.length > DIAG_MAX) DIAG = DIAG.slice(-DIAG_MAX);
+  diagSave();
+  try { if (typeof refreshDiagRow === "function") refreshDiagRow(); } catch (e) {}
+}
+window.addEventListener("error", e => {
+  if (e && e.target && e.target !== window && e.target.tagName) {
+    // a failed image or stylesheet, not a script fault — worth knowing, not worth alarming
+    diagRecord("resource", (e.target.tagName || "").toLowerCase() + " failed to load: " +
+      String(e.target.src || e.target.href || "").slice(0, 120), "");
+    return;
+  }
+  diagRecord("error", e && e.message, e && e.error && e.error.stack);
+}, true);
+window.addEventListener("unhandledrejection", e => {
+  const r = e && e.reason;
+  diagRecord("promise", (r && r.message) || String(r), r && r.stack);
+});
+
 /* ---------------------------------------------------------------------------
    CITY SELECTION. Every city ships its own line set + centre, fare table,
    districts (weather), landmarks and feature flags. The chosen city is picked
@@ -1651,6 +1709,10 @@ const I18N = {
     omniOff:"Offline — showing stops and landmarks only.", omniLook:"Searching…",
     omniHint:"Search a stop, a landmark, a street or a district — or pick a category above.",
     whenNow:"Now", whenDepart:"Depart", whenArrive:"Arrive", whenTimeT:"Time of day",
+    diagLabel:"Diagnostics", diagReport:"Report a problem", diagCopy:"Copy report",
+    diagClear:"Clear", diagCopied:"Copied",
+    diagNone:"No faults recorded on this device. Nothing is ever sent automatically — reporting opens a pre-filled issue you can read and edit first.",
+    diagSome:"{n} fault(s) recorded on this device, most recently: {m}. Nothing is sent automatically. A report includes the fault, build, city, language and browser — never your location, saved places or key.",
     aiKeyLabel:"Assistant AI (optional)", aiKeySave:"Save", aiKeyClear:"Clear",
     aiKeyOn:"Using your Anthropic key — stored only in this browser, sent only to Anthropic. The assistant still answers from this map's data.",
     aiKeyOff:"Optional. Without a key the assistant works offline from this map's own data. Paste an Anthropic key to let it understand freer wording — it is kept only in this browser.",
@@ -1796,6 +1858,10 @@ const I18N = {
     omniOff:"Çevrimdışı — yalnızca duraklar ve simgeler.", omniLook:"Aranıyor…",
     omniHint:"Durak, simge yapı, sokak veya semt arayın — ya da yukarıdan bir kategori seçin.",
     whenNow:"Şimdi", whenDepart:"Kalkış", whenArrive:"Varış", whenTimeT:"Saat",
+    diagLabel:"Tanılama", diagReport:"Sorun bildir", diagCopy:"Raporu kopyala",
+    diagClear:"Temizle", diagCopied:"Kopyalandı",
+    diagNone:"Bu cihazda kayıtlı hata yok. Hiçbir şey otomatik gönderilmez — bildirim, önce okuyup düzenleyebileceğiniz hazır bir kayıt açar.",
+    diagSome:"Bu cihazda {n} hata kaydı var, en sonuncusu: {m}. Otomatik gönderim yoktur. Rapor; hatayı, sürümü, şehri, dili ve tarayıcıyı içerir — konumunuzu, kayıtlı yerlerinizi veya anahtarınızı asla içermez.",
     aiKeyLabel:"Asistan yapay zekâsı (isteğe bağlı)", aiKeySave:"Kaydet", aiKeyClear:"Sil",
     aiKeyOn:"Kendi Anthropic anahtarınız kullanılıyor — yalnızca bu tarayıcıda saklanır ve yalnızca Anthropic'e gönderilir. Yanıtlar yine bu haritanın verisinden gelir.",
     aiKeyOff:"İsteğe bağlı. Anahtarsız da asistan bu haritanın verisiyle çevrimdışı çalışır. Daha serbest ifadeleri anlaması için Anthropic anahtarı yapıştırın — yalnızca bu tarayıcıda tutulur.",
@@ -3130,7 +3196,7 @@ function attrPopup(a,i){
   const chips = a.near ? a.near.lines.slice(0,4).map(r=>`<span class="badge" style="background:${colorForLine(r)};color:${inkOn(colorForLine(r))}">${svgEsc(r)}</span>`).join('') : '';
   return `<div class="ap"><div class="ap-nm">${ATTR_CAT[a.cat]||'📍'} ${svgEsc(a.name)}</div>`
     + (a.near?`<div class="ap-st">🚉 ${svgEsc(a.near.name)} · ${walk} ${t('walkAway')} ${chips}</div>`:'')
-    + `<button class="ap-go" onclick="goToAttraction(${i})">▸ ${t('goHere')}</button></div>`;
+    + `<button class="ap-go" data-attr-go="${i}">▸ ${t('goHere')}</button></div>`;
 }
 function renderAttractions(){
   attractionLayer.clearLayers(); if(!attractionsOn) return;
@@ -3899,7 +3965,7 @@ function openStation(reg){
     const near=attractionsNear(reg.lat, reg.lng, 700);
     atEl.innerHTML = near.length
       ? `<div class="st-attr"><div class="bt">✨ ${t('nearbyAttr')}</div><div class="sa-list">`
-        + near.map(x=>`<span class="sa-chip" onclick="goToAttraction(${x.i})">${ATTR_CAT[x.a.cat]||'📍'} ${svgEsc(x.a.name)} · ${Math.max(1,Math.round(x.d/WALK))}${t('minUnit')}</span>`).join('')
+        + near.map(x=>`<span class="sa-chip" data-attr-go="${x.i}">${ATTR_CAT[x.a.cat]||'📍'} ${svgEsc(x.a.name)} · ${Math.max(1,Math.round(x.d/WALK))}${t('minUnit')}</span>`).join('')
         + `</div></div>`
       : '';
   }
@@ -6655,6 +6721,15 @@ function dropPin(p, zoom){
   }
   }catch(e){ /* pin is cosmetic — never let it break the answer */ }
 }
+/* Attraction chips are rebuilt as innerHTML all over the app and used to carry inline
+   onclick handlers. A strict Content-Security-Policy forbids those, so they are delegated. */
+document.addEventListener("click", e => {
+  const el = e.target.closest && e.target.closest("[data-attr-go]");
+  if (!el) return;
+  const i = +el.getAttribute("data-attr-go");
+  if (Number.isFinite(i)) goToAttraction(i);
+});
+
 /* popup buttons are re-created on every open, so delegate from the map container */
 document.addEventListener("click", e=>{
   const b = e.target.closest && e.target.closest("[data-pin]"); if(!b || !pinPlace) return;
@@ -7282,6 +7357,58 @@ let aiAsk = async function(){};
     const h = e.target.closest(".ai-hit"); if(!h) return;
     dropPin({name:h.getAttribute("data-nm"), lat:+h.getAttribute("data-lat"), lng:+h.getAttribute("data-lng")});
   });
+})();
+
+/* ---- diagnostics: show what was recorded, and let the user send it if they choose ---- */
+function diagReportText(){
+  const env = [
+    "build: " + BUILD,
+    "city: " + CITY_ID,
+    "lang: " + lang,
+    "screen: " + innerWidth + "x" + innerHeight + " dpr" + (devicePixelRatio || 1),
+    "online: " + navigator.onLine,
+    "standalone: " + (isStandalone ? isStandalone() : "?"),
+    "sw: " + (navigator.serviceWorker && navigator.serviceWorker.controller ? "active" : "none"),
+    "ua: " + navigator.userAgent,
+  ].join("\n");
+  const faults = DIAG.length
+    ? DIAG.map(d => "- [" + d.t + "] " + d.kind + (d.n > 1 ? " (x" + d.n + ")" : "") +
+        ": " + d.msg + (d.at ? "\n      " + d.at : "")).join("\n")
+    : "(no faults recorded)";
+  return "### What happened\n\n<!-- what were you doing? -->\n\n### Faults recorded\n\n" +
+         faults + "\n\n### Environment\n\n```\n" + env + "\n```\n";
+}
+function refreshDiagRow(){
+  const note = document.getElementById("diagNote");
+  if (!note) return;
+  note.textContent = DIAG.length
+    ? t("diagSome").replace("{n}", DIAG.length).replace("{m}", DIAG[DIAG.length - 1].msg.slice(0, 80))
+    : t("diagNone");
+}
+(function(){
+  const rep = document.getElementById("diagReport"),
+        cp  = document.getElementById("diagCopy"),
+        cl  = document.getElementById("diagClear");
+  if (!rep) return;
+  const REPO = "https://github.com/Hero4mohamed/Metro-Istanbul-General-City-Map";
+  rep.addEventListener("click", () => {
+    // GitHub caps the URL; the body is trimmed and the full text stays copyable
+    const body = diagReportText().slice(0, 5500);
+    const url = REPO + "/issues/new?title=" + encodeURIComponent("Problem report" +
+      (DIAG.length ? ": " + DIAG[DIAG.length - 1].msg.slice(0, 60) : "")) +
+      "&body=" + encodeURIComponent(body);
+    window.open(url, "_blank", "noopener");
+  });
+  if (cp) cp.addEventListener("click", async () => {
+    const txt = diagReportText();
+    try { await navigator.clipboard.writeText(txt); cp.textContent = t("diagCopied"); }
+    catch (e) { window.prompt(t("diagCopy"), txt); }
+    setTimeout(() => { cp.textContent = t("diagCopy"); }, 1800);
+  });
+  if (cl) cl.addEventListener("click", () => {
+    DIAG = []; diagSave(); refreshDiagRow();
+  });
+  refreshDiagRow();
 })();
 
 /* ---- optional Anthropic key, kept ONLY in this browser ---------------------------------

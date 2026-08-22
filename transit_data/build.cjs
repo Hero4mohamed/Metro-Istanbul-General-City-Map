@@ -1,6 +1,7 @@
 // Inject the processed network JSON into the app template → single self-contained file.
 const fs = require('fs');
 const path = require('path');
+const crypto = require('crypto');   // Content-Security-Policy hashes for the inline script
 const DIR = __dirname;
 const ROOT = path.resolve(DIR, '..');
 
@@ -68,7 +69,9 @@ const translatorJS = scraper.slice(tStart, tEnd);
 
 for (const t of ['__CITIES_JSON__','__INTERCITY_JSON__','__BUS_JSON__','__DISRUPTIONS_JSON__','__OPENINGS_JSON__','__MISTATIONS_JSON__','__ACCESS_JSON__','__ATTRACTIONS_JSON__','__CARDIMG_JSON__','__TRANSLATOR_JS__'])
   if (!template.includes(t)) { console.error('token missing:', t); process.exit(1); }
-const html = template.replace('__CITIES_JSON__', data)
+const buildStamp = new Date().toISOString().replace(/[-:TZ.]/g, '').slice(0, 14);
+let html = template.replace('__BUILD__', () => buildStamp)
+                     .replace('__CITIES_JSON__', data)
                      .replace('__INTERCITY_JSON__', () => JSON.stringify(intercity))
                      .replace('__BUS_JSON__', () => JSON.stringify(busDirs))
                      .replace('__DISRUPTIONS_JSON__', JSON.stringify(disrupt))
@@ -82,6 +85,52 @@ console.log('İSTANBUL:', cities.istanbul.lines.length, ' ANKARA:', ankara.lengt
             ' INTERCITY:', intercity.length,
             ' BUSES:', Object.entries(busSets).map(([c, s]) => c + ':' + s.dir.length).join(' '),
             ' DISRUPTIONS:', disrupt.length, ' MISTATIONS:', miStns.length, ' ACCESS:', access.length);
+
+/* ---- Content-Security-Policy -----------------------------------------------------------
+   GitHub Pages serves static files and cannot set response headers, so the policy ships as a
+   <meta> tag. That costs us frame-ancestors and report-uri, which meta CSP does not support;
+   everything else applies normally.
+
+   script-src is the strict half and the half that matters: the app's one inline script is
+   allowed by HASH, computed here from the exact bytes just assembled, so any injected script —
+   including anything that came in through the scraped disruption text — is refused. There is
+   no eval anywhere in the app, so 'unsafe-eval' is not granted.
+
+   style-src keeps 'unsafe-inline' deliberately. 66 elements carry style="" attributes, which a
+   hash cannot cover, and CSP3 ignores 'unsafe-inline' as soon as a hash is present — so hashing
+   the stylesheet would break every one of them. Style injection is a far smaller problem than
+   script injection, and this is the honest trade rather than a policy that only looks strict. */
+/* The HTML parser normalises CRLF to LF before the script text is hashed for CSP, and this
+   repo checks out with CRLF on Windows — 5,854 of them in the app script. Hashing the bytes
+   on disk produced a policy that blocked the entire application. Normalise first. */
+const LF = s => s.split('\r\n').join('\n');
+const sha256 = s => "'sha256-" +
+  crypto.createHash('sha256').update(LF(s), 'utf8').digest('base64') + "'";
+const inlineScript = /<script(?![^>]*\bsrc=)[^>]*>([\s\S]*?)<\/script>/.exec(html);
+if (!inlineScript) { console.error('CSP: inline script not found'); process.exit(1); }
+
+const CSP = [
+  "default-src 'self'",
+  "script-src 'self' " + sha256(inlineScript[1]) + ' https://unpkg.com',
+  "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://unpkg.com",
+  'font-src https://fonts.gstatic.com data:',
+  // tiles come from CARTO and Esri; card art and marker icons are data: URIs
+  "img-src 'self' data: blob: https://*.basemaps.cartocdn.com https://server.arcgisonline.com",
+  // every host the app fetches from, including tiles (the offline save uses fetch, not <img>)
+  ["connect-src 'self'",
+   'https://*.basemaps.cartocdn.com', 'https://server.arcgisonline.com',
+   'https://photon.komoot.io', 'https://overpass-api.de', 'https://api.ibb.gov.tr',
+   'https://api.open-meteo.com', 'https://routing.openstreetmap.de',
+   'https://api.anthropic.com'].join(' '),
+  "worker-src 'self'",
+  "manifest-src 'self'",
+  "base-uri 'self'",
+  "form-action 'none'",
+  "object-src 'none'",
+].join('; ');
+
+if (html.indexOf('__CSP__') < 0) { console.error('CSP: __CSP__ placeholder missing from the template'); process.exit(1); }
+html = html.replace('__CSP__', () => CSP);
 
 const outPath = path.join(ROOT, 'index.html');   // GitHub Pages serves the repo-root index.html
 fs.writeFileSync(outPath, html);
@@ -99,6 +148,6 @@ for (const [city, s] of Object.entries(busSets)) {
 
 // emit the service worker with a fresh version stamp → installed apps self-update on deploy
 const swTpl = fs.readFileSync(path.join(DIR, 'sw.template.js'), 'utf8');
-const swVersion = new Date().toISOString().replace(/[-:TZ.]/g,'').slice(0,14);
+const swVersion = buildStamp;   // one stamp for the worker and the diagnostics report
 fs.writeFileSync(path.join(ROOT, 'sw.js'), swTpl.replace('__SW_VERSION__', swVersion));
 console.log('WROTE sw.js  version', swVersion);
