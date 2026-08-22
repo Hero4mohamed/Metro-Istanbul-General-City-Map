@@ -25,6 +25,11 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          # full history: provenance freshness is the last COMMIT that touched each data
+          # file, and a shallow clone cannot see that, so the build would fall back to
+          # mtime and tell users their data was refreshed the moment CI checked it out.
+          fetch-depth: 0
       - uses: actions/setup-node@v4
         with:
           node-version: '20'

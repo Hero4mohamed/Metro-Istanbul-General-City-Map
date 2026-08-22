@@ -33,6 +33,11 @@ jobs:
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - uses: actions/checkout@v4
+        with:
+          # full history: provenance freshness is the last COMMIT that touched each data
+          # file, and a shallow clone cannot see that, so the build would fall back to
+          # mtime and tell users their data was refreshed the moment CI checked it out.
+          fetch-depth: 0
       # Gate the deploy on the suite. Twice in one day a change shipped that killed the whole
       # application — a corrupted script and a runtime throw — and both reached main because
       # nothing checked the built artifact before it was published. No install step: the suite

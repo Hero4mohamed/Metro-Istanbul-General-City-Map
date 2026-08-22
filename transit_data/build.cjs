@@ -124,10 +124,27 @@ if (!template.includes('__APP_JS__')) { console.error('token missing: __APP_JS__
    "kind" to decide how to word itself: operator data may be stated plainly, community and
    scraped data must say so. */
 const provenance = JSON.parse(fs.readFileSync(path.join(DIR, 'provenance.json'), 'utf8'));
+/* Freshness comes from the last COMMIT that touched each file, not its mtime.
+   mtime is not reproducible — a fresh clone stamps every file with the checkout time, which
+   made the build differ from the committed one on every CI run and told the user their data
+   was refreshed "today" when nothing had changed in weeks. The commit date is both stable
+   across machines and the honest answer to "when did this data last change". */
+const { execFileSync } = require('child_process');
+const lastChanged = (rel) => {
+  try {
+    const out = execFileSync('git', ['log', '-1', '--format=%cI', '--', rel],
+      { cwd: ROOT, encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] }).trim();
+    return out || null;
+  } catch (e) { return null; }
+};
 for (const [file, meta] of Object.entries(provenance.datasets)) {
   const p = path.join(DIR, file);
-  meta.updated = fs.existsSync(p) ? fs.statSync(p).mtime.toISOString() : null;
   meta.present = fs.existsSync(p);
+  if (!meta.present) { meta.updated = null; continue; }
+  // untracked or no git available → fall back to mtime, and say so
+  const committed = lastChanged('transit_data/' + file);
+  meta.updated = committed || fs.statSync(p).mtime.toISOString();
+  meta.updatedFrom = committed ? 'commit' : 'mtime';
 }
 const staleDays = Object.values(provenance.datasets)
   .filter(m => m.present && m.kind === 'scraped')
