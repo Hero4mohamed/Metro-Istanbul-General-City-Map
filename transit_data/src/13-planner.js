@@ -217,9 +217,14 @@ function buildItinerary(res){
         segs.push({ ref, s0:p[i].s, s1:p[j].s });
       }
       const sibs = isBus ? siblingBuses([p[i].lat,p[i].lng],[p[j].lat,p[j].lng], ref) : null;
-      steps.push({type:"ride", ref, bus:isBus, from:p[i].name, to:p[j].name, stops:Math.abs(p[j].idx-p[i].idx), siblings:sibs});
+      /* Boarding and alighting COORDINATES ride along with the leg. The transfer check needs a
+         measured walk between the platform you step onto and the one you leave from, and the
+         station name alone cannot give that — two lines sharing a name can be 200 m apart. */
+      steps.push({type:"ride", ref, bus:isBus, from:p[i].name, to:p[j].name, stops:Math.abs(p[j].idx-p[i].idx), siblings:sibs,
+                  fromLat:p[i].lat, fromLng:p[i].lng, toLat:p[j].lat, toLng:p[j].lng});
     } else if(steps.length===0){
-      steps.push({type:"ride", ref, bus:isBus, from:p[i].name, to:p[i].name, stops:0});
+      steps.push({type:"ride", ref, bus:isBus, from:p[i].name, to:p[i].name, stops:0,
+                  fromLat:p[i].lat, fromLng:p[i].lng, toLat:p[i].lat, toLng:p[i].lng});
     }
     if(j+1<p.length) steps.push({type:"transfer", at:p[j+1].name, ref:p[j+1].ref, bus:p[j+1].kind==='bus'});
     i=j+1;
@@ -422,10 +427,20 @@ function fmtMinOfDay(m){
   const ap = h < 12 ? 'AM' : 'PM', h12 = (h % 12) || 12;
   return h12 + ':' + String(mm).padStart(2,'0') + ' ' + ap;
 }
-// average wait for the first vehicle on a line = half its published headway
-function rideWait(step){ return Math.max(1, Math.round((lineTiming(step.ref).hwMin || 10) / 2)); }
+/* Waiting now comes from the departure oracle rather than from half a headway everywhere.
+   Where an exact timetable is held the wait is the real gap to the real next departure; where
+   only a frequency is published it is still half a headway, but it SAYS so. */
+function rideWait(step, atMin){
+  const d = departureInfo(step.ref, { afterMin: atMin != null ? atMin : nowIstanbulMin(),
+                                      bus: !!step.bus, lat: step.fromLat, lng: step.fromLng });
+  return (d.waitMin != null) ? d.waitMin : expectedWaitFor(lineTiming(step.ref).hwMin || 10);
+}
 function itinWaitTotal(it){
-  return (it.steps||[]).filter(s=>s.type==='ride').reduce((a,s)=>a+rideWait(s), 0);
+  // used only to anchor an "arrive by" plan before the real timeline is built, so the cheap
+  // frequency estimate is the right tool: the exact pass happens in itinPlan once a start
+  // minute exists, and a departure oracle answer depends on the very time being solved for
+  return (it.steps||[]).filter(s=>s.type==='ride')
+    .reduce((a,s)=>a + expectedWaitFor(lineTiming(s.ref).hwMin || 10), 0);
 }
 // minute-of-day this itinerary should start at, honouring the Now / Depart / Arrive choice
 function plannedStart(it){
@@ -433,6 +448,13 @@ function plannedStart(it){
   if(planWhen.mode === 'depart') return planWhen.min;
   return planWhen.min - (it.total || 0) - itinWaitTotal(it);   // arrive by → work backwards
 }
+/* Walk the journey forward through the clock, asking the oracle at each boarding rather than
+   assuming half a headway. Each ride records WHERE its time came from, so the summary can say
+   how much of the journey is actually known and how much is an expectation.
+
+   Every change is checked for feasibility: arrival + measured walk + interchange buffer is
+   compared against the real next departure, and when the connection cannot be made the plan
+   rolls forward to the one that can instead of quietly quoting a time nobody could achieve. */
 function itinPlan(it, startMin){
   const steps = it.steps || [];
   // shape of each moving leg, then scaled so the parts sum to the router's own total
@@ -441,27 +463,61 @@ function itinPlan(it, startMin){
   const rawSum = raw.reduce((a,b)=>a+b, 0) || 1;
   const k = (it.total || rawSum) / rawSum;
   const rows = []; let t = startMin, wait = 0;
+  const sources = []; let prevRide = null, missed = 0;
+
   steps.forEach((s, i) => {
     if(s.type === 'ride'){
-      const w = rideWait(s); wait += w; t += w;
+      let xfer = null;
+      if(prevRide){
+        // a change: measure it, and let the oracle say whether the connection stands up
+        /* The arrival minute is board + a scaled share of the router's static total, so it is
+           an estimate — say so, and the oracle will decline to name a missed train. Once legs
+           are trip-matched against the alighting station's timetable this becomes true. */
+        xfer = checkTransfer(t, { lat:prevRide.toLat, lng:prevRide.toLng, name:prevRide.to },
+                                { lat:s.fromLat, lng:s.fromLng, ref:s.ref, bus:!!s.bus, name:s.from },
+                                { arrivalExact:false });
+        if(xfer.verdict === 'infeasible') missed++;
+      }
+      /* You cannot board before you can physically be on the platform. On a change that is
+         arrival + the measured walk + the interchange buffer; on the first leg it is simply
+         now. Boarding from the arrival minute instead would hand the traveller a free walk. */
+      const earliest = xfer ? xfer.readyMin : t;
+      const d = departureInfo(s.ref, { afterMin: earliest, bus: !!s.bus, lat: s.fromLat, lng: s.fromLng });
+      sources.push({ ref:s.ref, source:d.source, confidence:d.confidence, exact:d.exact });
+      // board at the real departure when one is known, otherwise after the expected wait
+      const board = (d.exact && d.next != null)
+                  ? Math.max(d.next, earliest)
+                  : earliest + (d.waitMin != null ? d.waitMin : expectedWaitFor(d.headwayMin || 10));
+      const w = Math.max(0, board - t); wait += w; t = board;
       const dur = raw[i] * k;
-      rows.push({ s, wait:w, board:t, off:t + dur }); t += dur;
+      rows.push({ s, wait:w, board:t, off:t + dur, dep:d, xfer }); t += dur;
+      prevRide = s;
     } else {
       const dur = raw[i] * k;
       rows.push({ s, board:t, off:t + dur }); t += dur;
+      if(s.type === 'transfer') { /* the walk is inside checkTransfer; nothing extra to add */ }
     }
   });
-  return { rows, start:startMin, end:t, wait };
+  return { rows, start:startMin, end:t, wait, sources,
+           conf: journeyConfidence(sources), missedConnections: missed };
 }
 // the summary strip above the steps, plus any "that line is shut then" warnings
 function timetableHTML(it){
   const p = itinPlan(it, plannedStart(it));
+  /* The old strip said "estimated from published frequencies" on every journey, including ones
+     built entirely from published timetables — understating what the app knows as badly as the
+     arrivals board once overstated it. Say which it is. */
+  const c = p.conf || { level:'low', exactLegs:0, legs:0, allExact:false };
+  const basis = c.allExact ? t('ttConfHigh')
+              : c.exactLegs ? t('ttConfMixed').replace('{n}', c.exactLegs).replace('{m}', c.legs)
+              : t('ttEst');
   let html = '<div class="tt-row">' +
     '<span>' + svgEsc(t('ttDepart')) + ' <b>' + fmtMinOfDay(p.start) + '</b></span>' +
     '<span>→</span>' +
     '<span>' + svgEsc(t('ttArrive')) + ' <b>' + fmtMinOfDay(p.end) + '</b></span>' +
-    (p.wait ? '<span class="tt-est">' + svgEsc(t('ttWait').replace('{n}', p.wait)) + '</span>' : '') +
-    '<span class="tt-est">' + svgEsc(t('ttEst')) + '</span></div>';
+    (p.wait >= 1 ? '<span class="tt-est">' + svgEsc(t('ttWait').replace('{n}', Math.round(p.wait))) + '</span>' : '') +
+    '<span class="tt-est tt-conf-' + svgEsc(c.level) + '">' + svgEsc(basis) + '</span></div>';
+  if(p.missedConnections) html += '<div class="tt-row tt-warn">⚠ ' + svgEsc(t('ttMissed')) + '</div>';
   const shut = [];
   p.rows.forEach(r => {
     if(r.s.type !== 'ride' || r.s.bus) return;
@@ -473,6 +529,23 @@ function timetableHTML(it){
   return html;
 }
 
+/* Warm the exact timetables for an itinerary's boarding stations, then re-render its timing if
+   anything new arrived and the user has not moved on. Silent by design: nothing is promised
+   before it lands, so there is nothing to apologise for if it never does. */
+async function warmItineraryTimetables(it, token, stepsEl){
+  try{
+    const pts = (it.steps||[]).filter(s=>s.type==='ride' && !s.bus && s.fromLat!=null)
+                              .map(s=>({ ref:s.ref, lat:s.fromLat, lng:s.fromLng, bus:false }));
+    if(!pts.length) return;
+    const added = await warmTimetables(pts, 6000);
+    if(!added) return;
+    if(token !== routeToken) return;                       // a newer route replaced this one
+    if(!stepsEl || !stepsEl.isConnected) return;
+    const note = document.getElementById('refineNote');    // keep the geometry notice if present
+    stepsEl.innerHTML = timetableHTML(it) + stepsHTML(it);
+    if(note && !document.getElementById('refineNote')) stepsEl.insertBefore(note, stepsEl.firstChild);
+  }catch(e){ /* timing stays at the tier it already had */ }
+}
 function showItinerary(res, it){
   const stepsEl=document.getElementById('rSteps');
   routeLayer.clearLayers();
@@ -494,6 +567,13 @@ function showItinerary(res, it){
     stepsEl.insertBefore(note, stepsEl.firstChild);
     upgradeRoute(legs, token, it.total);
   }
+  /* Fetch the operator's exact timetables for the stations this journey actually boards at,
+     then redraw. The plan above is already correct and already labelled — this upgrades it
+     from "about every 4–9 minutes" to "the 19:58, and you have 3 minutes to change". Deliberately
+     after first paint: the answer must never wait on a network call, and if the API is down the
+     user keeps the frequency-based plan instead of a spinner. */
+  warmItineraryTimetables(it, token, stepsEl);
+
   goCurrent = { res, it };                                  // remember the shown itinerary for "Go" mode
   const gs=document.getElementById('goStart'); if(gs) gs.style.display='';
 }

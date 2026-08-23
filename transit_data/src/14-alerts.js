@@ -167,7 +167,20 @@ function stepsHTML(it){
   // per-boarding fares, matched to ride steps in order, so each leg shows what it costs
   const _fare = estimateFare(it); let _fi = 0;
   const fmtTL = v => (Math.round(v*100)/100).toString().replace(/\.00$/,'') + ' ₺';
-  return it.steps.map(s=>{
+  /* Timed plan for this itinerary, so a change can report what it actually costs instead of a
+     flat constant. The check lives on the ride that FOLLOWS the change, which is where the
+     boarding happens, so a transfer step looks ahead for it. */
+  let _plan = null;
+  try{ _plan = itinPlan(it, plannedStart(it)); }catch(e){ _plan = null; }
+  const xferFor = ix => {
+    if(!_plan) return null;
+    for(let j=ix+1; j<_plan.rows.length; j++){
+      const r=_plan.rows[j];
+      if(r && r.s && r.s.type==='ride') return r.xfer || null;
+    }
+    return null;
+  };
+  return it.steps.map((s,ix)=>{
     if(s.type==="walk"){
       return `<div class="step"><div class="rail"><span class="nd" style="border-color:#9fb0c0"></span><span class="pipe" style="background:#9fb0c0"></span></div>
         <div class="tx"><div class="nm">🚶 ${t('walk')} ~${Math.max(1,Math.round(s.mins))} ${t('minUnit')}</div>
@@ -189,9 +202,30 @@ function stepsHTML(it){
         <div class="mt">${s.from} → ${s.to} · ${s.stops} ${s.stops===1?t('stop_one'):t('stop_many')}${freq}</div>${alt}</div></div>`;
     } else {
       const c = s.bus ? BUS_COLOR : colorForLine(s.ref);
+      const x = xferFor(ix);
+      /* What the change actually involves: a measured walk, a buffer scaled to how many lines
+         meet here, and — where a real timetable is held — whether the connection stands up. */
+      let detail = `· +${TRANSFER_MIN} ${t('minUnit')}`, verdict = '';
+      if(x){
+        detail = '· ' + t('xferWalkBuf').replace('{w}', x.walkM)
+                                        .replace('{b}', Math.round(x.bufferMin))
+                                        .replace('{l}', x.lines);
+        const V = { safe:'xferSafe', ok:'xferOk', tight:'xferTight',
+                    risky:'xferRisky', infeasible:'xferMissed' }[x.verdict];
+        if(V){
+          const slack = (x.slackMin != null && x.verdict !== 'infeasible')
+            ? ' · ' + t('xferSlackMin').replace('{n}', Math.max(0, Math.round(x.slackMin))) : '';
+          verdict = `<div class="mt xfer-v xfer-${svgEsc(x.verdict)}" title="${attrEsc(t('xferNoHistory'))}">`
+                  + svgEsc(t(V)) + svgEsc(slack) + '</div>';
+        } else if(x.verdict === 'frequency' && x.waitMin != null){
+          // no timetable for the onward line — say so rather than implying a specific train
+          verdict = `<div class="mt xfer-v xfer-frequency">`
+                  + svgEsc(t('xferNoTt').replace('{n}', Math.max(1, Math.round(x.waitMin)))) + '</div>';
+        }
+      }
       return `<div class="step"><div class="rail"><span class="nd" style="border-color:var(--gold)"></span><span class="pipe" style="background:var(--gold)"></span></div>
         <div class="tx"><div class="nm" style="color:var(--gold)">⇄ ${t('transferAt')} ${s.at}</div>
-        <div class="mt">${t('walkToShort')} <span class="badge" style="background:${c}">${s.bus?'🚌 '+s.ref:s.ref}</span> · +${TRANSFER_MIN} ${t('minUnit')}</div></div></div>`;
+        <div class="mt">${t('walkToShort')} <span class="badge" style="background:${c}">${s.bus?'🚌 '+s.ref:s.ref}</span> ${detail}</div>${verdict}</div></div>`;
     }
   }).join("");
 }

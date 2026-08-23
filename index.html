@@ -6,7 +6,7 @@
 <!-- Substituted by build.cjs, which hashes the inline script from the final bytes. Pages
      cannot set headers, so this ships as meta; frame-ancestors and report-uri are
      unavailable that way. -->
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-M4cmy9dgAz+L1mWGxajbiWwCG9iwlDDlxnMLp8hxIlw=' https://unpkg.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://unpkg.com; font-src https://fonts.gstatic.com data:; img-src 'self' data: blob: https://*.basemaps.cartocdn.com https://server.arcgisonline.com; connect-src 'self' https://*.basemaps.cartocdn.com https://server.arcgisonline.com https://photon.komoot.io https://overpass-api.de https://api.ibb.gov.tr https://api.open-meteo.com https://routing.openstreetmap.de https://api.anthropic.com; worker-src 'self'; manifest-src 'self'; base-uri 'self'; form-action 'none'; object-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-7kjCbJ7USBnjvGxzD56OA1C765ODdXun3SfgWvN3KlM=' https://unpkg.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://unpkg.com; font-src https://fonts.gstatic.com data:; img-src 'self' data: blob: https://*.basemaps.cartocdn.com https://server.arcgisonline.com; connect-src 'self' https://*.basemaps.cartocdn.com https://server.arcgisonline.com https://photon.komoot.io https://overpass-api.de https://api.ibb.gov.tr https://api.open-meteo.com https://routing.openstreetmap.de https://api.anthropic.com; worker-src 'self'; manifest-src 'self'; base-uri 'self'; form-action 'none'; object-src 'none'">
 <title>İSTANBUL RAY-NET · Live Rail Network Map &amp; Simulation</title>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
       integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
@@ -456,6 +456,11 @@
   .st-meta .ix{color:#FCD97C;font-weight:700;}
   .bt{font-size:9px;letter-spacing:1.5px;color:var(--muted);text-transform:uppercase;font-weight:700;margin:6px 0 8px;display:flex;align-items:center;gap:7px;}
   .bt .live{font-size:7.5px;background:linear-gradient(135deg,#F43F5E,#BE123C);color:#fff;padding:2.5px 7px;border-radius:99px;animation:pulse 1.8s infinite;letter-spacing:.8px;}
+  /* Modelled, not observed. Flat and grey on purpose: the pulsing red LIVE badge reads as a
+     feed, and this is not one — the visual weight has to match the confidence. */
+  .bt .modelled{font-size:7.5px;background:var(--surface-2);color:var(--muted);border:1px solid var(--stroke);
+                padding:2px 7px;border-radius:99px;letter-spacing:.8px;}
+  .board-src{font-size:9px;color:var(--dim);margin:2px 0 6px;}
   .arr{display:flex;align-items:center;gap:9px;padding:8px 9px;border-radius:11px;background:var(--surface);border:1px solid var(--stroke);margin-bottom:6px;}
   .arr .cd{font-size:10px;font-weight:800;color:#fff;padding:4px 7px;border-radius:7px;flex:none;min-width:38px;text-align:center;box-shadow:0 2px 6px rgba(0,0,0,.35);}
   .arr .ds{flex:1;font-size:11px;line-height:1.3;}
@@ -676,6 +681,19 @@
   .tt-row .tt-est{color:var(--dim);font-size:9px;}
   .tt-warn{border-color:rgba(245,166,35,.5);color:#F5A623;}
   .tt-warn b{color:#F5A623;}
+  /* How far a quoted time can be trusted. Deliberately quiet — this is a qualifier on a number
+     the user already has, not an alarm, so only the low tier gets a warm colour and none of the
+     three shouts. Colour is never the only signal: the label says which it is in words. */
+  .tt-row .tt-conf-high{color:var(--accent);}
+  .tt-row .tt-conf-medium{color:var(--muted);}
+  .tt-row .tt-conf-low{color:#C99A4B;}
+  /* A change's verdict. Same rule: the word carries the meaning, colour only reinforces it,
+     so this stays legible to a colour-blind reader and in high-contrast mode. */
+  .xfer-v{font-size:9.5px;font-weight:650;letter-spacing:.02em;margin-top:2px;}
+  .xfer-safe,.xfer-ok{color:var(--accent);}
+  .xfer-tight{color:#E0A32E;}
+  .xfer-risky,.xfer-infeasible{color:#F0665A;}
+  .xfer-frequency{color:var(--dim);font-weight:500;}
 
   /* ---------- assistant orb + panel ---------- */
   .ai-orb{position:fixed;left:var(--gutter);top:calc(var(--rail-top) + var(--rail-step));
@@ -1604,7 +1622,11 @@
     <button id="setO" data-i18n="setOrigin">Set as Origin</button>
     <button id="setD" data-i18n="setDest">Set as Destination</button>
   </div>
-  <div class="bt"><span data-i18n="predArrivals">Predictive Arrivals</span> <span class="live" data-i18n="live">LIVE</span></div>
+  <!-- This board is MODELLED from each line's published frequency, not observed from vehicles.
+       It used to be badged "LIVE" next to second-by-second countdowns, which is a claim the data
+       cannot support: the positions come from the map's carriage animation. The exact board
+       below it (#stnSched) is the real one, where the operator publishes a timetable. -->
+  <div class="bt"><span data-i18n="predArrivals">Predictive Arrivals</span> <span class="modelled" data-i18n="modelled">MODELLED</span></div>
   <div id="stnBoard"></div>
   <div id="stnSched"></div>
   <div id="stnService"></div>
@@ -1654,7 +1676,7 @@
 
    The report carries the fault, the build, the city, the language and the browser. It never
    carries location, saved places, trip history or the API key. ===== */
-const BUILD = "20260822220613";
+const BUILD = "20260823171145";
 const DIAG_MAX = 20;
 let DIAG = [];
 try { DIAG = JSON.parse(localStorage.getItem("irn_diag") || "[]"); } catch (e) { DIAG = []; }
@@ -1756,6 +1778,15 @@ const I18N = {
     lrWhich:"Which line? Give me its number or name — for example “last ride M2” or “son sefer 500T”.",
     ttDepart:"Depart", ttArrive:"Arrive", ttWait:"incl. ~{n} min waiting",
     ttEst:"estimated from published frequencies", ttShut:"Not running at that time: {l}",
+    ttConfHigh:"times from published timetables", ttConfMixed:"{n} of {m} legs from timetables, rest estimated",
+    ttMissed:"That connection cannot be made in time — this plan takes the next departure.",
+    xferSafe:"comfortable change", xferOk:"change is fine", xferTight:"tight change",
+    xferRisky:"very tight change", xferMissed:"missed connection", xferSlackMin:"{n} min to change",
+    xferNoTt:"no timetable for this line — expect about {n} min",
+    xferWalkBuf:"{w} m walk + {b} min at a {l}-line interchange",
+    xferNoHistory:"Based on the timetable and the walk only — no delay history is published for this line.",
+    srcTimetable:"published timetable", srcOperator:"operator timetable",
+    srcPublished:"published frequency", srcDefault:"assumed frequency",
     aiTitle:"Ask the map", aiPh:"Where can I eat near Kadıköy?", aiSend:"Ask",
     aiHello:"Ask me for places, directions or what is nearby. I answer from this map’s own data and OpenStreetMap — I don’t invent anything.",
     aiNoIdea:"I couldn’t match that to a place, a category or a route. Try “food near Taksim”, “M2 to Kadıköy” or “buses at Levent”.",
@@ -1878,6 +1909,7 @@ const I18N = {
     liveJourney:"Live journey", startJourney:"Start journey", getOffIn:"Get off in", getOffNow:"Get off now",
     take:"take", walkToDest:"Walk to your destination", arrive:"arrive",
     liveArrivals:"Next departures", dueNow:"now",
+    modelled:"MODELLED", boardModelled:"Modelled from published frequencies, not from live vehicle positions.",
     goHere:"Go here", share:"Share", linkCopied:"Trip link copied", exploreAttr:"Explore attractions", nearbyAttr:"Nearby attractions",
     funStats:"You", passport:"Your travel passport", linesRidden:"lines ridden", tripOne:"trip", tripMany:"trips",
     passportNote:"Complete a journey with ▶ Start to light up its lines. Saved on this device.",
@@ -1917,6 +1949,15 @@ const I18N = {
     lrWhich:"Hangi hat? Numarasını veya adını yazın — örneğin “son sefer M2” ya da “500T son sefer”.",
     ttDepart:"Kalkış", ttArrive:"Varış", ttWait:"~{n} dk bekleme dahil",
     ttEst:"yayımlanan sefer sıklığından tahmini", ttShut:"O saatte çalışmıyor: {l}",
+    ttConfHigh:"saatler yayımlanan tarifelerden", ttConfMixed:"{m} etaptan {n} tanesi tarifeden, kalanı tahmini",
+    ttMissed:"Bu aktarma zamanında yapılamıyor — plan bir sonraki seferi kullanıyor.",
+    xferSafe:"rahat aktarma", xferOk:"aktarma uygun", xferTight:"sıkışık aktarma",
+    xferRisky:"çok sıkışık aktarma", xferMissed:"kaçırılan aktarma", xferSlackMin:"aktarma için {n} dk",
+    xferNoTt:"bu hat için tarife yok — yaklaşık {n} dk bekleyin",
+    xferWalkBuf:"{w} m yürüyüş + {l} hatlı aktarma merkezinde {b} dk",
+    xferNoHistory:"Yalnızca tarife ve yürüyüş süresine dayanır — bu hat için gecikme geçmişi yayımlanmıyor.",
+    srcTimetable:"yayımlanan tarife", srcOperator:"işletmeci tarifesi",
+    srcPublished:"yayımlanan sefer sıklığı", srcDefault:"varsayılan sefer sıklığı",
     aiTitle:"Haritaya sor", aiPh:"Kadıköy’de nerede yemek yenir?", aiSend:"Sor",
     aiHello:"Yer, yol tarifi veya yakındakileri sorun. Yanıtlarım bu haritanın verisi ve OpenStreetMap’ten gelir — uydurmam.",
     aiNoIdea:"Bunu bir yere, kategoriye ya da rotaya eşleyemedim. “Taksim’de yemek”, “M2 Kadıköy” veya “Levent otobüs” deneyin.",
@@ -2039,6 +2080,7 @@ const I18N = {
     liveJourney:"Canlı yolculuk", startJourney:"Yolculuğu başlat", getOffIn:"Kalan", getOffNow:"Şimdi in",
     take:"bin:", walkToDest:"Hedefine yürü", arrive:"varış",
     liveArrivals:"Sonraki kalkışlar", dueNow:"şimdi",
+    modelled:"MODEL", boardModelled:"Yayımlanan sefer sıklığından modellendi; canlı araç konumundan değil.",
     goHere:"Oraya git", share:"Paylaş", linkCopied:"Yolculuk bağlantısı kopyalandı", exploreAttr:"Gezilecek yerler", nearbyAttr:"Yakındaki yerler",
     funStats:"Sen", passport:"Seyahat pasaportun", linesRidden:"hat binildi", tripOne:"yolculuk", tripMany:"yolculuk",
     passportNote:"▶ Başlat ile bir yolculuğu tamamla, hatları aydınlansın. Bu cihazda saklanır.",
@@ -2159,6 +2201,7 @@ const I18N = {
     liveJourney:"رحلة مباشرة", startJourney:"ابدأ الرحلة", getOffIn:"انزل بعد", getOffNow:"انزل الآن",
     take:"استقل", walkToDest:"امشِ إلى وجهتك", arrive:"الوصول",
     liveArrivals:"المغادرات القادمة", dueNow:"الآن",
+    modelled:"نموذج", boardModelled:"مُقدّر من وتيرة الرحلات المنشورة، ليس من مواقع المركبات المباشرة.",
     goHere:"اذهب إلى هنا", share:"مشاركة", linkCopied:"تم نسخ رابط الرحلة", exploreAttr:"استكشف المعالم", nearbyAttr:"معالم قريبة",
     funStats:"أنت", passport:"جواز سفرك", linesRidden:"خطوط مركوبة", tripOne:"رحلة", tripMany:"رحلات",
     passportNote:"أكمل رحلة بزر ▶ ابدأ لتُضيء خطوطها. محفوظ على هذا الجهاز.",
@@ -2279,6 +2322,7 @@ const I18N = {
     liveJourney:"Trajet en direct", startJourney:"Démarrer le trajet", getOffIn:"Descendez dans", getOffNow:"Descendez maintenant",
     take:"prenez", walkToDest:"Marchez vers votre destination", arrive:"arrivée",
     liveArrivals:"Prochains départs", dueNow:"à l'instant",
+    modelled:"MODÉLISÉ", boardModelled:"Estimé à partir des fréquences publiées, non des positions réelles des véhicules.",
     goHere:"Y aller", share:"Partager", linkCopied:"Lien du trajet copié", exploreAttr:"Explorer les lieux", nearbyAttr:"Lieux à proximité",
     funStats:"Vous", passport:"Votre passeport de voyage", linesRidden:"lignes parcourues", tripOne:"trajet", tripMany:"trajets",
     passportNote:"Terminez un trajet avec ▶ Démarrer pour allumer ses lignes. Enregistré sur cet appareil.",
@@ -3490,6 +3534,447 @@ visionLines.forEach(line => line.stations.forEach(st => {
 }));
 
 /* ===========================================================================
+   6a. DEPARTURE ORACLE — the deterministic answer to "when does the next one go?"
+
+   Everything that reasons about time goes through this file. It is pure: no DOM, no
+   rendering, no network of its own. Callers ask, it answers, and it always says WHERE the
+   answer came from, because the four sources this app holds are not equally good:
+
+     tier 4  timetable   exact published departure clock times   Metro Istanbul API
+     tier 3  operator    first + last + published headway        IETT GTFS / Kocaeli pages
+     tier 2  published   a published frequency range             LINE_TIMING (peak/off)
+     tier 1  modeDefault a per-mode assumption                   HW_FALLBACK
+
+   The distinction is the whole point. With tier 4 the app can say "the 19:46 leaves in 4
+   minutes and you will make it". With tier 2 the only honest statement is "about every 4-9
+   minutes, so expect to wait around 3". Presenting the second as if it were the first is the
+   defect this file exists to prevent, and it is the difference between a route that says 25
+   minutes and a platform where the next train is 11 minutes away.
+
+   Coverage is uneven and that is a fact about Istanbul's open data, not a bug here: exact
+   timetables exist for 18 line refs (M1A-M9, T1/T3/T4/T5, F1, F4, TF1, TF2) and NOT for
+   Marmaray, M11, T2, F2, F3, Metrobus or any ferry.
+
+   SYNCHRONOUS BY DESIGN. Routing must work offline and must not block on a network call, so
+   every function here answers immediately from what is already known. Exact timetables are
+   fetched separately (warmTimetables) and land in a cache; the caller re-renders and the
+   answer upgrades from tier 2 to tier 4. Same pattern the bus geometry already uses.
+   =========================================================================== */
+
+/* ---- tiers ---------------------------------------------------------------------------- */
+const DEP_TIER = {
+  timetable:   { rank: 4, conf: 'high',   i18n: 'srcTimetable'  },
+  operator:    { rank: 3, conf: 'high',   i18n: 'srcOperator'   },
+  published:   { rank: 2, conf: 'medium', i18n: 'srcPublished'  },
+  modeDefault: { rank: 1, conf: 'low',    i18n: 'srcDefault'    },
+};
+// a tier at or above this is precise enough to talk about a SPECIFIC vehicle
+const TIER_EXACT = 3;
+
+/* ==TIMING-PURE-START==
+   Everything between these markers is pure arithmetic: no DOM, no network, no app state, no
+   dependency on anything declared elsewhere. That is what makes it testable in isolation, and
+   it is also the boundary the brief draws — the calculations a language model must never be
+   asked to do from memory live here, where they can be pinned by tests.
+   ---------------------------------------------------------------------------------------- */
+
+/* Expected wait for a passenger arriving at an unknown point in a uniform cycle is half the
+   headway. Capped, because on a 90-minute rural bus nobody turns up at random — they read the
+   timetable — so charging 45 minutes would push the router away from a route a real traveller
+   would happily plan around. The cap is a routing convenience, applied in ONE place rather
+   than re-invented per caller. */
+const WAIT_CAP_MIN = 12;
+function expectedWaitFor(headwayMin) {
+  return Math.min(WAIT_CAP_MIN, Math.max(0.5, headwayMin / 2));
+}
+// typical gap in an exact timetable — the median resists the long overnight gap at the ends
+function medianGap(times) {
+  if (!times || times.length < 3) return null;
+  const gaps = [];
+  for (let i = 1; i < times.length; i++) gaps.push(times[i] - times[i - 1]);
+  gaps.sort((a, b) => a - b);
+  return gaps[Math.floor(gaps.length / 2)];
+}
+
+/* How long a change takes before any waiting: the walk is measured from real coordinates by the
+   caller, and the buffer scales with how many lines meet at the interchange — a proxy for
+   concourse size that is COUNTED from the network, not invented. */
+const XFER_BASE_BUFFER = 1.0;
+const XFER_PER_LINE    = 0.5;
+const XFER_MAX_BUFFER  = 3.0;
+function bufferForLines(n) {
+  return Math.min(XFER_MAX_BUFFER, XFER_BASE_BUFFER + (Math.max(1, n || 1) - 1) * XFER_PER_LINE);
+}
+
+/* Verdicts, ordered. Meaningful ONLY against a specific known departure — with a frequency all
+   you can say is how long you expect to wait, so checkTransfer returns 'frequency' instead of
+   inventing a connection to miss. */
+const XFER_VERDICT = [
+  { id: 'infeasible', maxSlack: 0 },
+  { id: 'risky',      maxSlack: 1 },
+  { id: 'tight',      maxSlack: 3 },
+  { id: 'ok',         maxSlack: 8 },
+  { id: 'safe',       maxSlack: Infinity },
+];
+function verdictForSlack(slack) {
+  for (const v of XFER_VERDICT) if (slack < v.maxSlack) return v.id;
+  return 'safe';
+}
+
+/* A journey is only as trustworthy as its weakest leg, so confidence is the MINIMUM across
+   legs, never an average — an average lets one exact leg launder three guessed ones. */
+const CONF_RANK = { high: 3, medium: 2, low: 1 };
+function journeyConfidence(legSources) {
+  let worst = 'high', exactCount = 0, total = 0;
+  for (const s of legSources || []) {
+    total++;
+    if (s.exact) exactCount++;
+    const c = s.confidence || 'low';
+    if (CONF_RANK[c] < CONF_RANK[worst]) worst = c;
+  }
+  return { level: total ? worst : 'low', exactLegs: exactCount, legs: total,
+           allExact: total > 0 && exactCount === total };
+}
+
+/* ---- clock helpers -------------------------------------------------------------------- */
+// "HH:MM" -> minutes since midnight, or null. Operators publish 24:15 / 25:30 for after-midnight
+// departures, which is a real convention and not an error — 24:15 means 00:15 the next day.
+function hhmmToMin(s) {
+  const m = /^(\d{1,2}):(\d{2})/.exec(String(s || '').trim());
+  if (!m) return null;
+  const h = +m[1], mm = +m[2];
+  if (mm > 59) return null;
+  return h * 60 + mm;                       // deliberately NOT %1440: 24:15 stays 1455
+}
+function minToHHMM(min) {
+  const m = Math.round(((min % 1440) + 1440) % 1440);
+  return String(Math.floor(m / 60)).padStart(2, '0') + ':' + String(m % 60).padStart(2, '0');
+}
+/* Comparing a departure to "now" has to survive midnight. A service running 06:00-00:30 has
+   departures at 1440+ in operator notation; a traveller at 00:10 is at minute 10. Lift the
+   traveller onto the same day-line before comparing, never the other way round. */
+function sameDayLine(afterMin, times) {
+  if (!times.length) return afterMin;
+  const late = times[times.length - 1];
+  // if the service runs past midnight and the traveller is in those small hours, they are on
+  // the PREVIOUS service day
+  if (late >= 1440 && afterMin < (late - 1440) + 1) return afterMin + 1440;
+  return afterMin;
+}
+/* ==TIMING-PURE-END== */
+
+/* ---- day type ------------------------------------------------------------------------- */
+/* Istanbul bus timetables are published per day type, so the right column has to be picked
+   before any bus time means anything. istDayType() already exists in the assistant for the
+   same reason; this is the one the engine uses, and both read the same clock. */
+function depDayType(atMin) {
+  try {
+    const d = new Date();
+    // a plan for 25:30 is still "tonight", so do not roll the weekday over for after-midnight
+    const wd = new Intl.DateTimeFormat('en-GB', { timeZone: 'Europe/Istanbul', weekday: 'short' })
+      .format(d);
+    if (/Sat/i.test(wd)) return 'sat';
+    if (/Sun/i.test(wd)) return 'sun';
+    return 'wd';
+  } catch (e) { return 'wd'; }
+}
+
+/* ---- tier 4: exact published timetables ------------------------------------------------
+   Filled by warmTimetables() and by the station panel, which was already fetching this data
+   for its own board while the planner ignored it. One store, so both agree. */
+const TT_STORE = Object.create(null);           // "stationId|dirId" -> [minOfDay, …] ascending
+const TT_BY_STATION = Object.create(null);      // stationId -> [dirId, …]
+function ttKey(stationId, dirId) { return stationId + '|' + dirId; }
+function ttPut(stationId, dirId, times) {
+  const mins = (times || []).map(hhmmToMin).filter(v => v != null).sort((a, b) => a - b);
+  TT_STORE[ttKey(stationId, dirId)] = mins;
+  const list = TT_BY_STATION[stationId] || (TT_BY_STATION[stationId] = []);
+  if (list.indexOf(dirId) < 0) list.push(dirId);
+  return mins;
+}
+function ttHas(stationId) { return !!(TT_BY_STATION[stationId] || []).length; }
+
+/* Resolve a station NAME on a given line to the operator's own station id. The registry is
+   MI_STATIONS = [stationId, lineId, ref, lat, lng, name]; matching on coordinates rather than
+   name avoids the transliteration traps that plague Turkish station names. */
+function miStationFor(ref, lat, lng, maxM) {
+  let best = null, bd = Infinity;
+  for (const s of (typeof MI_STATIONS !== 'undefined' ? MI_STATIONS : [])) {
+    if (s[2] !== ref) continue;
+    const d = metersBetween([lat, lng], [s[3], s[4]]);
+    if (d < bd) { bd = d; best = s; }
+  }
+  return (best && bd <= (maxM || 450)) ? best : null;
+}
+
+/* ---- the oracle ------------------------------------------------------------------------
+   Returns the best available answer for "line REF at this point, after this minute".
+
+     { source, confidence, exact, headwayMin,
+       times:   [minOfDay…] | null      only when exact
+       next:    minOfDay | null         the specific next departure, when known
+       waitMin: number                  minutes to wait: measured if exact, expected if not
+       reason:  null | 'after_last' | 'closed' }
+
+   waitMin for a frequency tier is HALF the headway. That is the expected value for a
+   passenger arriving at an unknown moment in the cycle, which is exactly the situation when
+   no timetable is known — and it is an expectation, never a promise, which is why `exact`
+   is false and the confidence travels with it.
+*/
+function departureInfo(ref, opts) {
+  opts = opts || {};
+  const afterMin = (opts.afterMin != null) ? opts.afterMin : nowIstanbulMin();
+  const isBus = !!opts.bus;
+
+  /* A suspension is a real closure and outranks everything, including a timetable that was
+     printed before the line broke. */
+  const closed = (typeof lineClosedAt === 'function') ? lineClosedAt(ref, afterMin) : null;
+  if (closed && closed.why === 'susp') {
+    return { source: 'modeDefault', confidence: 'high', exact: false, headwayMin: null,
+             times: null, next: null, waitMin: null, reason: 'closed', closed };
+  }
+
+  /* tier 4 — exact clock times for this station and direction.
+     Checked BEFORE the operating-hours string, because that string is this project's summary
+     ("06:00 – 00:00") while the timetable is the operator's own answer. M2 at Yenikapı really
+     does publish 01:00, 02:00 and 03:00 departures — weekend night service the summary flattens
+     away. Where the two disagree the operator wins; the summary is only used when nothing
+     better is held. */
+  if (!isBus && opts.lat != null && opts.lng != null) {
+    const st = miStationFor(ref, opts.lat, opts.lng);
+    if (st && ttHas(st[0])) {
+      let best = null, bestTimes = null, anyTimes = null;
+      for (const dirId of TT_BY_STATION[st[0]]) {
+        const times = TT_STORE[ttKey(st[0], dirId)] || [];
+        if (!times.length) continue;
+        anyTimes = anyTimes || times;
+        const t0 = sameDayLine(afterMin, times);
+        let nxt = times.find(v => v >= t0);
+        /* Past the last departure of the clock day, the next one is the first of tomorrow.
+           The operator publishes a recurring daily set — 00:20 … 23:47 — so a traveller at
+           23:55 is not stranded, they catch the 00:20. Without this wrap the engine reports
+           "after_last" every night and the app looks shut when it is not. */
+        if (nxt == null) nxt = times[0] + 1440;
+        if (best == null || nxt < best) { best = nxt; bestTimes = times; }
+      }
+      if (best != null) {
+        const t0 = sameDayLine(afterMin, bestTimes);
+        const wait = Math.max(0, best - t0);
+        /* A wrap that lands more than a few hours out means the service really has stopped for
+           the night; report that rather than "your train is in 7 hours". */
+        if (wait > 240) {
+          return { source: 'timetable', confidence: 'high', exact: true, headwayMin: medianGap(bestTimes),
+                   times: bestTimes, next: best, waitMin: wait, reason: 'after_last' };
+        }
+        return { source: 'timetable', confidence: 'high', exact: true,
+                 headwayMin: medianGap(bestTimes), times: bestTimes, next: best,
+                 waitMin: wait, reason: null };
+      }
+    }
+  }
+
+  // no exact timetable here — now the published operating hours are the best guard available
+  if (closed) {
+    return { source: 'modeDefault', confidence: 'high', exact: false, headwayMin: null,
+             times: null, next: null, waitMin: null, reason: 'closed', closed };
+  }
+
+  /* tier 3 — operator first/last/headway (buses) */
+  if (isBus && typeof BUS_SCHED !== 'undefined' && BUS_SCHED[ref]) {
+    const day = depDayType(afterMin);
+    let bestWait = Infinity, bestNext = null, hw = null, ended = false;
+    for (const d of BUS_SCHED[ref]) {
+      const col = d && d[day];
+      if (!col || !col.first || !col.hw) continue;
+      const first = hhmmToMin(col.first), last = hhmmToMin(col.last);
+      if (first == null) continue;
+      const t0 = (last != null && last >= 1440 && afterMin < (last - 1440) + 1)
+        ? afterMin + 1440 : afterMin;
+      let next;
+      if (t0 <= first) next = first;
+      else next = first + Math.ceil((t0 - first) / col.hw) * col.hw;
+      if (last != null && next > last) { ended = true; continue; }
+      const w = next - t0;
+      if (w < bestWait) { bestWait = w; bestNext = next; hw = col.hw; }
+    }
+    if (bestNext != null) {
+      /* An operator headway is a PLANNED interval, not a departure board. The vehicle that
+         should leave at 07:20 is a real scheduled trip, so this is exact enough to reason
+         about catching it — but it is a plan, not an observation, which is what separates it
+         from a live feed the app does not have. */
+      return { source: 'operator', confidence: 'high', exact: true, headwayMin: hw,
+               times: null, next: bestNext, waitMin: Math.max(0, bestWait), reason: null };
+    }
+    if (ended) {
+      return { source: 'operator', confidence: 'high', exact: true, headwayMin: null,
+               times: null, next: null, waitMin: null, reason: 'after_last' };
+    }
+  }
+
+  /* tier 2 — a published frequency range */
+  const lt = (typeof lineTiming === 'function') ? lineTiming(ref) : null;
+  const known = !isBus && typeof LINE_TIMING !== 'undefined' && LINE_TIMING[ref];
+  if (lt && lt.hwMin) {
+    return { source: known ? 'published' : 'modeDefault',
+             confidence: known ? 'medium' : 'low',
+             exact: false, headwayMin: lt.hwMin, times: null, next: null,
+             waitMin: expectedWaitFor(lt.hwMin), reason: null };
+  }
+
+  /* tier 1 — nothing better than the mode's assumption */
+  const hwFallback = (typeof busHeadway === 'function' && isBus && busHeadway(ref)) || 10;
+  return { source: 'modeDefault', confidence: 'low', exact: false, headwayMin: hwFallback,
+           times: null, next: null, waitMin: expectedWaitFor(hwFallback), reason: null };
+}
+
+/* ---- transfer feasibility --------------------------------------------------------------
+   The question the old planner could not ask. It charged half a headway at every change and
+   moved on, so a change was never impossible and never tight — every transfer looked alike.
+
+     arrival + walk across the interchange + a buffer = the minute you can be on the platform
+
+   Compare that to the next departure and the answer is arithmetic. What must NOT happen is
+   inventing the parts: the walk is measured from the two nodes' real coordinates, and the
+   buffer is a function of how many lines meet at that station, which is counted, not guessed.
+
+   There is deliberately NO historical-reliability term. This project holds no delay history
+   for any Istanbul line, and a "reliability score" derived from nothing would be the most
+   confident-looking fabrication in the app. `basis` says so explicitly.
+*/
+function interchangeSize(stationName) {
+  if (!stationName || typeof nameNodes === 'undefined') return 1;
+  const keys = nameNodes[fold(stationName)] || [];
+  const refs = new Set();
+  for (const k of keys) { const m = nodeMeta[k]; if (m && m.ref) refs.add(m.ref); }
+  return Math.max(1, refs.size);
+}
+function transferBuffer(stationName) {
+  return bufferForLines(interchangeSize(stationName));
+}
+
+/* from/to carry {lat,lng,ref,bus,name}; arriveMin is when the first vehicle puts you down.
+   opts.arrivalExact says whether that minute came from a timetable or was estimated.
+
+   That flag decides whether "you will miss this train" may be said at all. The arriving leg's
+   duration is currently a scaled share of the router's static path cost, so an arrival minute
+   is an estimate with minutes of slop in it — and a slack of −0.1 against an estimate is noise,
+   not a missed connection. Announcing one would be the same overconfidence as the arrivals
+   board's old second-by-second countdown, merely pointed in the other direction. So while the
+   arrival is estimated the verdict is capped at 'risky': the traveller is told the change is
+   very tight, which is true and useful, and is not told a specific train has gone, which is
+   not knowable yet. Trip-matching each leg against the alighting station's own timetable is
+   what would lift the cap. */
+function checkTransfer(arriveMin, from, to, opts) {
+  const arrivalExact = !!(opts && opts.arrivalExact);
+  const walkM = (from && to && from.lat != null && to.lat != null)
+    ? metersBetween([from.lat, from.lng], [to.lat, to.lng]) : 0;
+  const walkMin = walkM / (typeof WALK !== 'undefined' ? WALK : 80);
+  const buffer = transferBuffer((to && to.name) || (from && from.name));
+  const readyMin = arriveMin + walkMin + buffer;
+
+  /* The connection under test is the one a traveller would AIM for: the first departure after
+     they step off the arriving vehicle. Asking instead for the first departure after they can
+     physically reach the platform would make the answer vacuous — that one is always catchable
+     by construction, and "infeasible" could never occur. The whole question is whether the
+     obvious connection survives the walk. */
+  const aim = departureInfo(to.ref, { afterMin: arriveMin, bus: !!to.bus, lat: to.lat, lng: to.lng });
+
+  const out = {
+    walkM: Math.round(walkM), walkMin, bufferMin: buffer, readyMin,
+    source: aim.source, confidence: aim.confidence, reason: aim.reason,
+    lines: interchangeSize((to && to.name) || ''),
+    basis: 'slack',                       // never 'history' — none is held, see the note above
+  };
+
+  if (aim.reason === 'closed') {
+    return Object.assign(out, { verdict: 'closed', departMin: null, slackMin: null,
+                                waitMin: null, closed: aim.closed });
+  }
+  if (aim.reason === 'after_last') {
+    return Object.assign(out, { verdict: 'after_last', departMin: null, slackMin: null, waitMin: null });
+  }
+
+  /* Without a specific departure there is nothing to miss. Saying "tight" would imply a
+     vehicle we cannot see; the honest answer is the expected wait and no verdict at all. */
+  if (!aim.exact || aim.next == null) {
+    return Object.assign(out, { verdict: 'frequency', departMin: null, slackMin: null,
+                                waitMin: aim.waitMin, headwayMin: aim.headwayMin });
+  }
+
+  const slack = aim.next - readyMin;
+  out.arrivalExact = arrivalExact;
+
+  if (slack < 0 && arrivalExact) {
+    // both times are known, so this is a fact: the obvious connection goes without you
+    const actual = departureInfo(to.ref, { afterMin: readyMin, bus: !!to.bus, lat: to.lat, lng: to.lng });
+    return Object.assign(out, {
+      verdict: 'infeasible', missedMin: aim.next, slackMin: slack,
+      departMin: (actual.exact && actual.next != null) ? actual.next : null,
+      waitMin: (actual.exact && actual.next != null) ? Math.max(0, actual.next - arriveMin) : null,
+      headwayMin: aim.headwayMin,
+    });
+  }
+  if (slack < 0) {
+    /* Estimated arrival: the change is very tight and the plan takes the following departure,
+       but no claim is made about which vehicle was missed. */
+    const actual = departureInfo(to.ref, { afterMin: readyMin, bus: !!to.bus, lat: to.lat, lng: to.lng });
+    return Object.assign(out, {
+      verdict: 'risky', capped: true, slackMin: slack,
+      departMin: (actual.exact && actual.next != null) ? actual.next : aim.next,
+      waitMin: (actual.exact && actual.next != null) ? Math.max(0, actual.next - arriveMin) : null,
+      headwayMin: aim.headwayMin,
+    });
+  }
+  return Object.assign(out, {
+    verdict: verdictForSlack(slack), departMin: aim.next, slackMin: slack,
+    waitMin: Math.max(0, aim.next - arriveMin), headwayMin: aim.headwayMin,
+  });
+}
+
+/* If a connection cannot be made, the useful answer is the one that can. Walks the exact
+   departures forward until one clears the platform-ready minute. */
+function nextFeasibleDeparture(readyMin, to) {
+  const dep = departureInfo(to.ref, { afterMin: readyMin, bus: !!to.bus, lat: to.lat, lng: to.lng });
+  return (dep.exact && dep.next != null) ? dep.next : null;
+}
+
+/* ---- warming the exact timetables ------------------------------------------------------
+   The only part of this file that touches the network. Deliberately separate: everything
+   above answers instantly from what is already known, this upgrades what is known. Callers
+   await it and then re-render, so an itinerary shows an honest tier-2 estimate immediately
+   and sharpens to exact times a moment later rather than blocking on a fetch that may fail.
+
+   miPost/miDirCache live in the station panel, which owned this fetch first; this reuses them
+   rather than opening a second path to the same API. */
+async function warmTimetables(points, timeoutMs) {
+  if (typeof miPost !== 'function' || typeof MI_STATIONS === 'undefined') return 0;
+  const deadline = Date.now() + (timeoutMs || 6000);
+  let added = 0;
+  for (const p of (points || [])) {
+    if (Date.now() > deadline) break;
+    if (!p || p.bus || p.lat == null) continue;
+    const st = miStationFor(p.ref, p.lat, p.lng);
+    if (!st || ttHas(st[0])) continue;                   // unknown to the operator, or already held
+    try {
+      const dkey = 'd' + st[1] + '_' + st[0];
+      if (!miDirCache[dkey]) {
+        miDirCache[dkey] = ((await miPost('/GetDirectionsByLineIdAndStationId',
+          { lineId: st[1], stationId: st[0] })).Data) || [];
+      }
+      for (const d of miDirCache[dkey]) {
+        if (Date.now() > deadline) break;
+        const tt = await miPost('/GetTimeTable',
+          { boardingStationId: st[0], directionId: d.DirectionId });
+        const row = (tt.Data && tt.Data[0]) || {};
+        const ti = row.TimeInfos;
+        const times = (Array.isArray(ti) ? (ti[0] && ti[0].Times) : (ti && ti.Times)) || [];
+        if (times.length) { ttPut(st[0], d.DirectionId, times); added++; }
+      }
+    } catch (e) { /* one station's API hiccup must not cost the whole journey its timing */ }
+  }
+  return added;
+}
+/* ===========================================================================
    3. ROUTING GRAPH (Dijkstra over per-line station nodes + transfers)
    =========================================================================== */
 const G = {};            // nodeKey -> [{to,w}]
@@ -4317,10 +4802,14 @@ function buildBoard(reg){
   });
   return out;
 }
+/* Minutes, not seconds. This board is modelled from a published frequency, so "3m 43s" was
+   claiming to know the arrival to the second — precision the input does not contain, and the
+   most persuasive kind of wrong. Rounding to the minute with a "~" states the same estimate at
+   the resolution it actually has. The exact board below quotes real clock times and is allowed
+   to be precise, because there the operator supplied the number. */
 function fmtEta(sec){
-  if(sec<25) return {t:"Arriving", now:true};
-  const m=Math.floor(sec/60), s=Math.floor(sec%60);
-  return {t:(m>0?m+"m ":"")+String(s).padStart(2,"0")+"s", now:false};
+  if(sec<45) return {t:t('dueNow'), now:true};
+  return {t:'~'+Math.max(1, Math.round(sec/60))+' '+t('minUnit'), now:false};
 }
 function openStation(reg){
   selected = reg;
@@ -4465,7 +4954,9 @@ function renderBoard(){
       <div class="ds">→ ${b.dest}<small>${i===0?t('nextArr'):t('followingArr')}</small></div>
       <div class="et ${e.now?'now':''}">${e.t}</div></div>`;
   }).join("")).join("");
-  el.innerHTML = (liveRows + closedRows) || `<div class="none">${t('noApproach')}</div>`;
+  // say where these numbers come from, right where they are read
+  const src = liveRows ? `<div class="board-src">${svgEsc(t('boardModelled'))}</div>` : '';
+  el.innerHTML = (src + liveRows + closedRows) || `<div class="none">${t('noApproach')}</div>`;
 }
 
 /* ===========================================================================
@@ -4929,9 +5420,14 @@ function buildItinerary(res){
         segs.push({ ref, s0:p[i].s, s1:p[j].s });
       }
       const sibs = isBus ? siblingBuses([p[i].lat,p[i].lng],[p[j].lat,p[j].lng], ref) : null;
-      steps.push({type:"ride", ref, bus:isBus, from:p[i].name, to:p[j].name, stops:Math.abs(p[j].idx-p[i].idx), siblings:sibs});
+      /* Boarding and alighting COORDINATES ride along with the leg. The transfer check needs a
+         measured walk between the platform you step onto and the one you leave from, and the
+         station name alone cannot give that — two lines sharing a name can be 200 m apart. */
+      steps.push({type:"ride", ref, bus:isBus, from:p[i].name, to:p[j].name, stops:Math.abs(p[j].idx-p[i].idx), siblings:sibs,
+                  fromLat:p[i].lat, fromLng:p[i].lng, toLat:p[j].lat, toLng:p[j].lng});
     } else if(steps.length===0){
-      steps.push({type:"ride", ref, bus:isBus, from:p[i].name, to:p[i].name, stops:0});
+      steps.push({type:"ride", ref, bus:isBus, from:p[i].name, to:p[i].name, stops:0,
+                  fromLat:p[i].lat, fromLng:p[i].lng, toLat:p[i].lat, toLng:p[i].lng});
     }
     if(j+1<p.length) steps.push({type:"transfer", at:p[j+1].name, ref:p[j+1].ref, bus:p[j+1].kind==='bus'});
     i=j+1;
@@ -5134,10 +5630,20 @@ function fmtMinOfDay(m){
   const ap = h < 12 ? 'AM' : 'PM', h12 = (h % 12) || 12;
   return h12 + ':' + String(mm).padStart(2,'0') + ' ' + ap;
 }
-// average wait for the first vehicle on a line = half its published headway
-function rideWait(step){ return Math.max(1, Math.round((lineTiming(step.ref).hwMin || 10) / 2)); }
+/* Waiting now comes from the departure oracle rather than from half a headway everywhere.
+   Where an exact timetable is held the wait is the real gap to the real next departure; where
+   only a frequency is published it is still half a headway, but it SAYS so. */
+function rideWait(step, atMin){
+  const d = departureInfo(step.ref, { afterMin: atMin != null ? atMin : nowIstanbulMin(),
+                                      bus: !!step.bus, lat: step.fromLat, lng: step.fromLng });
+  return (d.waitMin != null) ? d.waitMin : expectedWaitFor(lineTiming(step.ref).hwMin || 10);
+}
 function itinWaitTotal(it){
-  return (it.steps||[]).filter(s=>s.type==='ride').reduce((a,s)=>a+rideWait(s), 0);
+  // used only to anchor an "arrive by" plan before the real timeline is built, so the cheap
+  // frequency estimate is the right tool: the exact pass happens in itinPlan once a start
+  // minute exists, and a departure oracle answer depends on the very time being solved for
+  return (it.steps||[]).filter(s=>s.type==='ride')
+    .reduce((a,s)=>a + expectedWaitFor(lineTiming(s.ref).hwMin || 10), 0);
 }
 // minute-of-day this itinerary should start at, honouring the Now / Depart / Arrive choice
 function plannedStart(it){
@@ -5145,6 +5651,13 @@ function plannedStart(it){
   if(planWhen.mode === 'depart') return planWhen.min;
   return planWhen.min - (it.total || 0) - itinWaitTotal(it);   // arrive by → work backwards
 }
+/* Walk the journey forward through the clock, asking the oracle at each boarding rather than
+   assuming half a headway. Each ride records WHERE its time came from, so the summary can say
+   how much of the journey is actually known and how much is an expectation.
+
+   Every change is checked for feasibility: arrival + measured walk + interchange buffer is
+   compared against the real next departure, and when the connection cannot be made the plan
+   rolls forward to the one that can instead of quietly quoting a time nobody could achieve. */
 function itinPlan(it, startMin){
   const steps = it.steps || [];
   // shape of each moving leg, then scaled so the parts sum to the router's own total
@@ -5153,27 +5666,61 @@ function itinPlan(it, startMin){
   const rawSum = raw.reduce((a,b)=>a+b, 0) || 1;
   const k = (it.total || rawSum) / rawSum;
   const rows = []; let t = startMin, wait = 0;
+  const sources = []; let prevRide = null, missed = 0;
+
   steps.forEach((s, i) => {
     if(s.type === 'ride'){
-      const w = rideWait(s); wait += w; t += w;
+      let xfer = null;
+      if(prevRide){
+        // a change: measure it, and let the oracle say whether the connection stands up
+        /* The arrival minute is board + a scaled share of the router's static total, so it is
+           an estimate — say so, and the oracle will decline to name a missed train. Once legs
+           are trip-matched against the alighting station's timetable this becomes true. */
+        xfer = checkTransfer(t, { lat:prevRide.toLat, lng:prevRide.toLng, name:prevRide.to },
+                                { lat:s.fromLat, lng:s.fromLng, ref:s.ref, bus:!!s.bus, name:s.from },
+                                { arrivalExact:false });
+        if(xfer.verdict === 'infeasible') missed++;
+      }
+      /* You cannot board before you can physically be on the platform. On a change that is
+         arrival + the measured walk + the interchange buffer; on the first leg it is simply
+         now. Boarding from the arrival minute instead would hand the traveller a free walk. */
+      const earliest = xfer ? xfer.readyMin : t;
+      const d = departureInfo(s.ref, { afterMin: earliest, bus: !!s.bus, lat: s.fromLat, lng: s.fromLng });
+      sources.push({ ref:s.ref, source:d.source, confidence:d.confidence, exact:d.exact });
+      // board at the real departure when one is known, otherwise after the expected wait
+      const board = (d.exact && d.next != null)
+                  ? Math.max(d.next, earliest)
+                  : earliest + (d.waitMin != null ? d.waitMin : expectedWaitFor(d.headwayMin || 10));
+      const w = Math.max(0, board - t); wait += w; t = board;
       const dur = raw[i] * k;
-      rows.push({ s, wait:w, board:t, off:t + dur }); t += dur;
+      rows.push({ s, wait:w, board:t, off:t + dur, dep:d, xfer }); t += dur;
+      prevRide = s;
     } else {
       const dur = raw[i] * k;
       rows.push({ s, board:t, off:t + dur }); t += dur;
+      if(s.type === 'transfer') { /* the walk is inside checkTransfer; nothing extra to add */ }
     }
   });
-  return { rows, start:startMin, end:t, wait };
+  return { rows, start:startMin, end:t, wait, sources,
+           conf: journeyConfidence(sources), missedConnections: missed };
 }
 // the summary strip above the steps, plus any "that line is shut then" warnings
 function timetableHTML(it){
   const p = itinPlan(it, plannedStart(it));
+  /* The old strip said "estimated from published frequencies" on every journey, including ones
+     built entirely from published timetables — understating what the app knows as badly as the
+     arrivals board once overstated it. Say which it is. */
+  const c = p.conf || { level:'low', exactLegs:0, legs:0, allExact:false };
+  const basis = c.allExact ? t('ttConfHigh')
+              : c.exactLegs ? t('ttConfMixed').replace('{n}', c.exactLegs).replace('{m}', c.legs)
+              : t('ttEst');
   let html = '<div class="tt-row">' +
     '<span>' + svgEsc(t('ttDepart')) + ' <b>' + fmtMinOfDay(p.start) + '</b></span>' +
     '<span>→</span>' +
     '<span>' + svgEsc(t('ttArrive')) + ' <b>' + fmtMinOfDay(p.end) + '</b></span>' +
-    (p.wait ? '<span class="tt-est">' + svgEsc(t('ttWait').replace('{n}', p.wait)) + '</span>' : '') +
-    '<span class="tt-est">' + svgEsc(t('ttEst')) + '</span></div>';
+    (p.wait >= 1 ? '<span class="tt-est">' + svgEsc(t('ttWait').replace('{n}', Math.round(p.wait))) + '</span>' : '') +
+    '<span class="tt-est tt-conf-' + svgEsc(c.level) + '">' + svgEsc(basis) + '</span></div>';
+  if(p.missedConnections) html += '<div class="tt-row tt-warn">⚠ ' + svgEsc(t('ttMissed')) + '</div>';
   const shut = [];
   p.rows.forEach(r => {
     if(r.s.type !== 'ride' || r.s.bus) return;
@@ -5185,6 +5732,23 @@ function timetableHTML(it){
   return html;
 }
 
+/* Warm the exact timetables for an itinerary's boarding stations, then re-render its timing if
+   anything new arrived and the user has not moved on. Silent by design: nothing is promised
+   before it lands, so there is nothing to apologise for if it never does. */
+async function warmItineraryTimetables(it, token, stepsEl){
+  try{
+    const pts = (it.steps||[]).filter(s=>s.type==='ride' && !s.bus && s.fromLat!=null)
+                              .map(s=>({ ref:s.ref, lat:s.fromLat, lng:s.fromLng, bus:false }));
+    if(!pts.length) return;
+    const added = await warmTimetables(pts, 6000);
+    if(!added) return;
+    if(token !== routeToken) return;                       // a newer route replaced this one
+    if(!stepsEl || !stepsEl.isConnected) return;
+    const note = document.getElementById('refineNote');    // keep the geometry notice if present
+    stepsEl.innerHTML = timetableHTML(it) + stepsHTML(it);
+    if(note && !document.getElementById('refineNote')) stepsEl.insertBefore(note, stepsEl.firstChild);
+  }catch(e){ /* timing stays at the tier it already had */ }
+}
 function showItinerary(res, it){
   const stepsEl=document.getElementById('rSteps');
   routeLayer.clearLayers();
@@ -5206,6 +5770,13 @@ function showItinerary(res, it){
     stepsEl.insertBefore(note, stepsEl.firstChild);
     upgradeRoute(legs, token, it.total);
   }
+  /* Fetch the operator's exact timetables for the stations this journey actually boards at,
+     then redraw. The plan above is already correct and already labelled — this upgrades it
+     from "about every 4–9 minutes" to "the 19:58, and you have 3 minutes to change". Deliberately
+     after first paint: the answer must never wait on a network call, and if the API is down the
+     user keeps the frequency-based plan instead of a spinner. */
+  warmItineraryTimetables(it, token, stepsEl);
+
   goCurrent = { res, it };                                  // remember the shown itinerary for "Go" mode
   const gs=document.getElementById('goStart'); if(gs) gs.style.display='';
 }
@@ -5572,7 +6143,20 @@ function stepsHTML(it){
   // per-boarding fares, matched to ride steps in order, so each leg shows what it costs
   const _fare = estimateFare(it); let _fi = 0;
   const fmtTL = v => (Math.round(v*100)/100).toString().replace(/\.00$/,'') + ' ₺';
-  return it.steps.map(s=>{
+  /* Timed plan for this itinerary, so a change can report what it actually costs instead of a
+     flat constant. The check lives on the ride that FOLLOWS the change, which is where the
+     boarding happens, so a transfer step looks ahead for it. */
+  let _plan = null;
+  try{ _plan = itinPlan(it, plannedStart(it)); }catch(e){ _plan = null; }
+  const xferFor = ix => {
+    if(!_plan) return null;
+    for(let j=ix+1; j<_plan.rows.length; j++){
+      const r=_plan.rows[j];
+      if(r && r.s && r.s.type==='ride') return r.xfer || null;
+    }
+    return null;
+  };
+  return it.steps.map((s,ix)=>{
     if(s.type==="walk"){
       return `<div class="step"><div class="rail"><span class="nd" style="border-color:#9fb0c0"></span><span class="pipe" style="background:#9fb0c0"></span></div>
         <div class="tx"><div class="nm">🚶 ${t('walk')} ~${Math.max(1,Math.round(s.mins))} ${t('minUnit')}</div>
@@ -5594,9 +6178,30 @@ function stepsHTML(it){
         <div class="mt">${s.from} → ${s.to} · ${s.stops} ${s.stops===1?t('stop_one'):t('stop_many')}${freq}</div>${alt}</div></div>`;
     } else {
       const c = s.bus ? BUS_COLOR : colorForLine(s.ref);
+      const x = xferFor(ix);
+      /* What the change actually involves: a measured walk, a buffer scaled to how many lines
+         meet here, and — where a real timetable is held — whether the connection stands up. */
+      let detail = `· +${TRANSFER_MIN} ${t('minUnit')}`, verdict = '';
+      if(x){
+        detail = '· ' + t('xferWalkBuf').replace('{w}', x.walkM)
+                                        .replace('{b}', Math.round(x.bufferMin))
+                                        .replace('{l}', x.lines);
+        const V = { safe:'xferSafe', ok:'xferOk', tight:'xferTight',
+                    risky:'xferRisky', infeasible:'xferMissed' }[x.verdict];
+        if(V){
+          const slack = (x.slackMin != null && x.verdict !== 'infeasible')
+            ? ' · ' + t('xferSlackMin').replace('{n}', Math.max(0, Math.round(x.slackMin))) : '';
+          verdict = `<div class="mt xfer-v xfer-${svgEsc(x.verdict)}" title="${attrEsc(t('xferNoHistory'))}">`
+                  + svgEsc(t(V)) + svgEsc(slack) + '</div>';
+        } else if(x.verdict === 'frequency' && x.waitMin != null){
+          // no timetable for the onward line — say so rather than implying a specific train
+          verdict = `<div class="mt xfer-v xfer-frequency">`
+                  + svgEsc(t('xferNoTt').replace('{n}', Math.max(1, Math.round(x.waitMin)))) + '</div>';
+        }
+      }
       return `<div class="step"><div class="rail"><span class="nd" style="border-color:var(--gold)"></span><span class="pipe" style="background:var(--gold)"></span></div>
         <div class="tx"><div class="nm" style="color:var(--gold)">⇄ ${t('transferAt')} ${s.at}</div>
-        <div class="mt">${t('walkToShort')} <span class="badge" style="background:${c}">${s.bus?'🚌 '+s.ref:s.ref}</span> · +${TRANSFER_MIN} ${t('minUnit')}</div></div></div>`;
+        <div class="mt">${t('walkToShort')} <span class="badge" style="background:${c}">${s.bus?'🚌 '+s.ref:s.ref}</span> ${detail}</div>${verdict}</div></div>`;
     }
   }).join("");
 }

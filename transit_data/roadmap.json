@@ -113,6 +113,60 @@
           "note": "Offline parser now answers the questions its own LLM tools already could: service alerts (“is M2 running” used to return a route summary, which reads as a yes), step-free/lift data per station, which rail lines serve a stop, and “how long from A to B”. All from data already shipped, EN and TR. Fixing the alert path also exposed a translator bug that rendered “istasyonunda” as “stationnda”; the missing Turkish case endings are now handled and every rule is \b-anchored, so an unlisted inflection stays Turkish instead of becoming a non-word. Covered by transit_data/test/translator.test.cjs and 2 mutations."
         }
       ]
+    },
+    {
+      "phase": "4 — Intelligent transportation engine",
+      "items": [
+        {
+          "id": "timing-oracle",
+          "title": "Departure oracle with sourced confidence",
+          "priority": "P0",
+          "state": "done",
+          "note": "Four tiers — published timetable > operator first/last/headway > published frequency > mode default — behind one synchronous API that always reports which it used. Exact timetables cover 18 line refs; Marmaray, M11, Metrobüs and every ferry have none, and the engine says so rather than inventing one."
+        },
+        {
+          "id": "transfer-feasibility",
+          "title": "Transfer feasibility and risk",
+          "priority": "P0",
+          "state": "done",
+          "note": "arrival + measured walk + an interchange buffer scaled by how many lines meet there, compared against the real next departure. Verdicts safe/ok/tight/risky/infeasible, and deliberately NO verdict at all when the onward line has no timetable. No historical-reliability term: none is published, so it could only be invented."
+        },
+        {
+          "id": "board-honesty",
+          "title": "Stop presenting modelled arrivals as live",
+          "priority": "P0",
+          "state": "done",
+          "note": "The station board rendered “3m 43s” under a pulsing LIVE badge from the map’s decorative carriage animation. Now badged MODELLED, quoted to the minute with a “~”, and captioned with where the numbers come from. The exact operator board sits below it, unchanged."
+        },
+        {
+          "id": "trip-matching",
+          "title": "Trip-match legs against the alighting station timetable",
+          "priority": "P1",
+          "state": "todo",
+          "note": "A leg’s arrival is still board + a scaled share of the router’s static cost, so arrivals carry minutes of slop and “infeasible” is capped at “risky” rather than naming a train. Warming the alighting station’s timetable and matching the trip would make arrivals exact and lift the cap. This is the Line/Service/Trip/Vehicle model the brief asks for."
+        },
+        {
+          "id": "time-dependent-routing",
+          "title": "Route by time, not just anchor to it",
+          "priority": "P1",
+          "state": "todo",
+          "note": "Dijkstra still runs on static weights and the clock is applied afterwards, so “arrive by” subtracts a fixed total instead of re-routing to catch an earlier connection, and what-if scenarios cannot be simulated. Needs a time-expanded search that preserves offline use."
+        },
+        {
+          "id": "funicular-pairs",
+          "title": "Model rope-linked vehicles as a synchronised pair",
+          "priority": "P1",
+          "state": "todo",
+          "note": "Measured: F1’s two cars sit at 0.05 and 0.53 along the track moving independently. A rope-linked pair must satisfy posA + posB = 1, so they drift and can both reach the same end — physically impossible. Affects F1-F4 and TF1/TF2."
+        },
+        {
+          "id": "ai-transport-tools",
+          "title": "Expose the engine to the assistant as tools",
+          "priority": "P1",
+          "state": "todo",
+          "note": "The deterministic engine now exists; the assistant should call check_transfer / next_departures rather than reasoning about times itself. The brief is explicit that an LLM must never do routing arithmetic from memory."
+        }
+      ]
     }
   ]
 }

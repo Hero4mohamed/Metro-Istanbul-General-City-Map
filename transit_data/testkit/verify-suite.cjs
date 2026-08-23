@@ -134,6 +134,65 @@ const MUTATIONS = [
     expect: 'station and line names do not count against translation coverage',
     apply: h => h.replace('    if(TR_CAPPED.test(w)) continue;', '    if(false) continue;'),
   },
+
+  /* --- timing engine ---------------------------------------------------------------------
+     These reproduce how the planner was wrong before it had a departure oracle, plus the ways
+     it could quietly become wrong again. The theme is the same throughout: a confident number
+     with nothing behind it is worse than an admitted estimate. */
+  {
+    // the original defect: every change cost half a headway and none could ever be missed
+    name: 'make every change safe so no connection can be missed',
+    expect: 'transfer verdicts follow the slack, and a missed connection is reachable',
+    apply: h => h.replace("{ id: 'infeasible', maxSlack: 0 },", "{ id: 'safe', maxSlack: 0 },"),
+  },
+  {
+    name: 'take the strongest leg confidence instead of the weakest',
+    expect: 'journey confidence is the weakest leg, never an average',
+    apply: h => h.replace('if (CONF_RANK[c] < CONF_RANK[worst]) worst = c;',
+                          'if (CONF_RANK[c] > CONF_RANK[worst]) worst = c;'),
+  },
+  {
+    name: 'drop the wait cap so one rare bus dominates every route',
+    expect: 'expected wait on a frequency is half the headway, and capped',
+    apply: h => h.replace('return Math.min(WAIT_CAP_MIN, Math.max(0.5, headwayMin / 2));',
+                          'return Math.max(0.5, headwayMin / 2);'),
+  },
+  {
+    name: "read the operator's 24:15 as a quarter past midnight this morning",
+    expect: 'operator times past midnight are read as the next day, not rejected',
+    apply: h => h.replace('  return h * 60 + mm;', '  return (h * 60 + mm) % 1440;'),
+  },
+  {
+    name: 'badge the modelled arrivals board as LIVE again',
+    expect: 'the modelled arrivals board is not badged as live',
+    apply: h => h.replace('<span class="modelled" data-i18n="modelled">MODELLED</span>',
+                          '<span class="live" data-i18n="live">LIVE</span>'),
+  },
+  {
+    name: 'give a transfer a verdict with no timetable behind it',
+    expect: 'a transfer onto a line with no timetable yields no verdict',
+    apply: h => h.replace("verdict: 'frequency', departMin: null", "verdict: 'ok', departMin: null"),
+  },
+  {
+    // the mean would call a line with one overnight gap "every four hours"
+    name: 'use the mean gap instead of the median',
+    expect: 'the typical gap ignores the overnight hole at the ends of a timetable',
+    apply: h => h.replace('return gaps[Math.floor(gaps.length / 2)];',
+                          'return gaps.reduce((a,b)=>a+b,0)/gaps.length;'),
+  },
+  {
+    // claiming a named train was missed on the strength of an ESTIMATED arrival minute
+    name: 'declare a missed connection from an estimated arrival time',
+    expect: 'a missed connection is only claimed when both times are known',
+    apply: h => h.replace('if (slack < 0 && arrivalExact) {', 'if (slack < 0) {'),
+  },
+  {
+    name: 'put second-level precision back on a modelled arrivals board',
+    expect: 'the modelled board does not quote seconds',
+    apply: h => h.replace("  return {t:'~'+Math.max(1, Math.round(sec/60))+' '+t('minUnit'), now:false};",
+      '  const m=Math.floor(sec/60), s=Math.floor(sec%60);\n' +
+      '  return {t:(m>0?m+"m ":"")+String(s).padStart(2,"0")+"s", now:false};'),
+  },
 ];
 
 const original = fs.readFileSync(SRC, 'utf8');

@@ -51,10 +51,14 @@ function buildBoard(reg){
   });
   return out;
 }
+/* Minutes, not seconds. This board is modelled from a published frequency, so "3m 43s" was
+   claiming to know the arrival to the second — precision the input does not contain, and the
+   most persuasive kind of wrong. Rounding to the minute with a "~" states the same estimate at
+   the resolution it actually has. The exact board below quotes real clock times and is allowed
+   to be precise, because there the operator supplied the number. */
 function fmtEta(sec){
-  if(sec<25) return {t:"Arriving", now:true};
-  const m=Math.floor(sec/60), s=Math.floor(sec%60);
-  return {t:(m>0?m+"m ":"")+String(s).padStart(2,"0")+"s", now:false};
+  if(sec<45) return {t:t('dueNow'), now:true};
+  return {t:'~'+Math.max(1, Math.round(sec/60))+' '+t('minUnit'), now:false};
 }
 function openStation(reg){
   selected = reg;
@@ -199,6 +203,8 @@ function renderBoard(){
       <div class="ds">→ ${b.dest}<small>${i===0?t('nextArr'):t('followingArr')}</small></div>
       <div class="et ${e.now?'now':''}">${e.t}</div></div>`;
   }).join("")).join("");
-  el.innerHTML = (liveRows + closedRows) || `<div class="none">${t('noApproach')}</div>`;
+  // say where these numbers come from, right where they are read
+  const src = liveRows ? `<div class="board-src">${svgEsc(t('boardModelled'))}</div>` : '';
+  el.innerHTML = (src + liveRows + closedRows) || `<div class="none">${t('noApproach')}</div>`;
 }
 
