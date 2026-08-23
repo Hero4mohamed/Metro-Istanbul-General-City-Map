@@ -29,10 +29,56 @@ function timing() {
   const mod = { exports: {} };
   new Function('module', 'exports', src +
     '\nmodule.exports={expectedWaitFor,medianGap,bufferForLines,verdictForSlack,' +
-    'journeyConfidence,hhmmToMin,minToHHMM,sameDayLine,WAIT_CAP_MIN,XFER_VERDICT,CONF_RANK};'
+    'journeyConfidence,hhmmToMin,minToHHMM,sameDayLine,alignOffset,' +
+    'WAIT_CAP_MIN,XFER_VERDICT,CONF_RANK};'
   )(mod, mod.exports);
   return mod.exports;
 }
+
+/* --- trip matching --------------------------------------------------------------------
+   Two stations on a line publish departures for the same vehicles, so the run time between
+   them is the offset that aligns the sequences. The danger is aliasing: offsets a whole
+   headway apart align equally well, and picking between them arbitrarily would manufacture a
+   confident arrival time out of nothing. These tests are mostly about the refusals. */
+const seq = (first, headway, n) => Array.from({ length: n }, (_, i) => first + i * headway);
+
+test('the run time between two stations is read off their published departures', () => {
+  const { alignOffset } = timing();
+  const from = seq(360, 10, 40);                 // 06:00 then every 10 minutes
+  const to = from.map(v => v + 13);              // same vehicles, 13 minutes later
+  const r = alignOffset(from, to, 12, 4);        // physical estimate says about 12
+  assert.ok(r, 'no offset found for two cleanly shifted sequences');
+  assert.strictEqual(r.offset, 13);
+  assert.ok(r.support > 0.9, 'every trip should agree; got ' + r.support);
+});
+
+test('an offset is refused when a whole headway makes two answers equally good', () => {
+  const { alignOffset } = timing();
+  const from = seq(360, 10, 40);
+  const to = from.map(v => v + 13);
+  /* A window WIDER than the headway admits 13 and 23 — both align perfectly, because the
+     sequences cannot tell one vehicle from the next. Guessing here is exactly how a made-up
+     arrival time would enter the app, so the honest answer is none at all. */
+  const r = alignOffset(from, to, 18, 9);        // window 9..27 spans more than one headway
+  assert.strictEqual(r, null, 'an ambiguous window must not yield an offset');
+});
+
+test('an offset is refused when the timetables do not really agree', () => {
+  const { alignOffset } = timing();
+  const from = seq(360, 10, 40);
+  // only a quarter of the trips line up at +13; the rest are unrelated
+  const to = from.filter((_, i) => i % 4 === 0).map(v => v + 13).concat(seq(1000, 7, 20));
+  const r = alignOffset(from, to, 13, 2);
+  assert.strictEqual(r, null, 'weak agreement must not be reported as a run time');
+});
+
+test('trip matching declines rather than guessing on thin or missing data', () => {
+  const { alignOffset } = timing();
+  assert.strictEqual(alignOffset([1, 2], [3, 4], 2, 1), null, 'two departures prove nothing');
+  assert.strictEqual(alignOffset(null, [1, 2, 3], 2, 1), null);
+  assert.strictEqual(alignOffset(seq(360, 10, 20), seq(360, 10, 20), 5, 0), null, 'a zero window');
+  assert.strictEqual(alignOffset(seq(360, 10, 20), seq(360, 10, 20), -3, 2), null, 'a negative hint');
+});
 
 /* --- expected wait ------------------------------------------------------------------- */
 test('expected wait on a frequency is half the headway, and capped', () => {
@@ -146,17 +192,64 @@ test('a transfer onto a line with no timetable yields no verdict', () => {
 
 test('a missed connection is only claimed when both times are known', () => {
   const src = H.appScript();
-  /* The arriving leg's duration is a scaled share of the router's static path cost, so an
-     arrival minute carries minutes of slop. Declaring a SPECIFIC train missed against it would
-     be the arrivals board's old false precision wearing different clothes. While the arrival is
-     estimated the verdict is capped at 'risky' — true and useful — and no vehicle is named. */
+  /* A leg's arrival is exact only when both its ends publish a timetable and the two sequences
+     align unambiguously; otherwise it is board + a scaled share of the router's static cost and
+     carries minutes of slop. Declaring a SPECIFIC train missed against an estimate would be the
+     arrivals board's old false precision wearing different clothes, so the verdict caps at
+     'risky' — true and useful — and no vehicle is named. */
   assert.ok(/if \(slack < 0 && arrivalExact\)/.test(src),
     "the guard is gone — 'infeasible' can now be declared from an estimated arrival time");
   assert.ok(/verdict: 'risky', capped: true/.test(src),
     'the capped verdict for an estimated arrival has been removed');
-  // and the planner must actually admit its arrivals are estimates
-  assert.ok(/arrivalExact:false/.test(src),
-    'the planner now claims exact arrivals it does not compute');
+  /* The planner must pass the leg's REAL exactness. It used to hard-code false, which was
+     honest but permanently pessimistic; hard-coding true would be the opposite and much worse. */
+  assert.ok(/arrivalExact:prevExact/.test(src),
+    'the planner no longer forwards whether the previous leg had a timetabled arrival');
+  assert.ok(!/arrivalExact:\s*true/.test(src),
+    'an arrival is being asserted exact unconditionally, without trip-matching it');
+});
+
+/* Direction matching cost two bugs, both silent, and both would come straight back if these
+   fallbacks were "simplified" away. The oracle picks a platform, and picking the wrong one
+   returns a confident departure time for a train going the other way. */
+test('direction is decided by position or geography, never by terminus name alone', () => {
+  const src = H.appScript();
+  assert.ok(/function dirServes/.test(src), 'dirServes is gone');
+  // 1. positional: the operator's terminus is on our line, so its index settles the direction
+  assert.ok(/stationIndexOnLine\(ctx\.ref, d\.towards\)/.test(src),
+    'the positional direction test has been removed');
+  /* 2. geometric: the operator's M1B runs "to Kirazlı"; this project's M1B ends at Bağcılar
+     Meydan and files Kirazlı under M3, so neither the name nor our station order matches. A
+     terminus nearer the alighting station than the boarding one is still the way you are
+     going. Without this, every M1B leg silently lost its timetable. */
+  assert.ok(/stationCoordsByName\(d\.towards\)/.test(src),
+    'the geometric direction fallback has been removed — lines whose operator terminus is not on our station list will silently lose their timetables');
+  assert.ok(/return dTo < dFrom;/.test(src), 'the geometric comparison no longer chooses a direction');
+  // an unknown direction must never be silently dropped, or a station loses its timetable
+  assert.ok(/if \(!d \|\| !d\.towards\) return true;/.test(src),
+    'an unrecognised direction is now excluded rather than accepted');
+});
+
+test('a leg that ends at a terminus keeps an estimated arrival', () => {
+  const src = H.appScript();
+  /* An operator publishes departures OUT of a terminus, never arrivals INTO it, so there is no
+     sequence to align against and legArrival must return null. This is a property of the
+     published data; the comment is load-bearing because the null looks like a bug otherwise. */
+  assert.ok(/never arrivals into it/i.test(src),
+    'the note explaining why a terminus alighting cannot be trip-matched has gone');
+  assert.ok(/const ta = seqFor\(A\), tb = seqFor\(B\);[\s\S]{0,60}if \(!ta \|\| !tb\) return null;/.test(src),
+    'legArrival no longer declines when either end has no usable direction');
+});
+
+test('a journey through a shut line does not claim timetable-grade confidence', () => {
+  const src = H.appScript();
+  /* Rating a closed line's (non-existent) departure as high confidence let a 01:49 plan across
+     a line that stops at midnight still print "times from published timetables". Confidence
+     rates the departure time; the certainty about the closure rides on reason/closed. */
+  assert.ok(/confidence: 'low', exact: false, headwayMin: null,\s*\n\s*times: null, next: null, waitMin: null, reason: 'closed'/.test(src),
+    'a shut line reports confidence about a departure time it does not have');
+  assert.ok(!/confidence: 'high'[^}]*reason: 'closed'/.test(src),
+    "a closed-line branch is claiming high confidence again");
 });
 
 test('no reliability score is derived from delay history the project does not hold', () => {

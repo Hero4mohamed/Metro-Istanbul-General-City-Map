@@ -203,6 +203,15 @@ function bindPlanItems(container, kind){
   });
 }
 
+/* The terminus a leg is heading for, from the direction of travel along the line's own station
+   order. Rides on a bus or an unknown line return null, which the oracle reads as "no
+   preference" rather than excluding everything. */
+function legTerminus(ref, fromIdx, toIdx){
+  const ln = lineByRef[ref]; if(!ln) return null;
+  const sts = ln.stations || ln.stops; if(!sts || !sts.length) return null;
+  const end = (toIdx >= fromIdx) ? sts[sts.length-1] : sts[0];
+  return (end && end.name) || null;
+}
 function buildItinerary(res){
   const p = res.path.map(k=>nodeMeta[k]);
   const steps=[], segs=[]; let i=0;
@@ -220,8 +229,13 @@ function buildItinerary(res){
       /* Boarding and alighting COORDINATES ride along with the leg. The transfer check needs a
          measured walk between the platform you step onto and the one you leave from, and the
          station name alone cannot give that — two lines sharing a name can be 200 m apart. */
+      /* Which way along the line this leg runs, named by the terminus it heads for. The
+         operator labels its timetables by direction ("Yenikapı->Hacıosman"), so without this
+         the engine cannot tell a traveller's train from the one on the opposite platform. */
       steps.push({type:"ride", ref, bus:isBus, from:p[i].name, to:p[j].name, stops:Math.abs(p[j].idx-p[i].idx), siblings:sibs,
-                  fromLat:p[i].lat, fromLng:p[i].lng, toLat:p[j].lat, toLng:p[j].lng});
+                  fromLat:p[i].lat, fromLng:p[i].lng, toLat:p[j].lat, toLng:p[j].lng,
+                  fromIdx:p[i].idx, toIdx:p[j].idx,
+                  towards:legTerminus(ref, p[i].idx, p[j].idx)});
     } else if(steps.length===0){
       steps.push({type:"ride", ref, bus:isBus, from:p[i].name, to:p[i].name, stops:0,
                   fromLat:p[i].lat, fromLng:p[i].lng, toLat:p[i].lat, toLng:p[i].lng});
@@ -463,43 +477,64 @@ function itinPlan(it, startMin){
   const rawSum = raw.reduce((a,b)=>a+b, 0) || 1;
   const k = (it.total || rawSum) / rawSum;
   const rows = []; let t = startMin, wait = 0;
-  const sources = []; let prevRide = null, missed = 0;
+  const sources = []; let prevRide = null, prevExact = false, missed = 0;
 
   steps.forEach((s, i) => {
     if(s.type === 'ride'){
       let xfer = null;
       if(prevRide){
-        // a change: measure it, and let the oracle say whether the connection stands up
-        /* The arrival minute is board + a scaled share of the router's static total, so it is
-           an estimate — say so, and the oracle will decline to name a missed train. Once legs
-           are trip-matched against the alighting station's timetable this becomes true. */
+        /* Whether a missed connection may be NAMED depends on whether the previous leg's
+           arrival was read off a timetable or merely estimated — prevExact carries that
+           forward, and the oracle refuses to name a train when it is false. */
         xfer = checkTransfer(t, { lat:prevRide.toLat, lng:prevRide.toLng, name:prevRide.to },
-                                { lat:s.fromLat, lng:s.fromLng, ref:s.ref, bus:!!s.bus, name:s.from },
-                                { arrivalExact:false });
+                                { lat:s.fromLat, lng:s.fromLng, ref:s.ref, bus:!!s.bus,
+                                  name:s.from, towards:s.towards,
+                                  fromIdx:s.fromIdx, toIdx:s.toIdx, toLat:s.toLat, toLng:s.toLng },
+                                { arrivalExact:prevExact });
         if(xfer.verdict === 'infeasible') missed++;
       }
       /* You cannot board before you can physically be on the platform. On a change that is
          arrival + the measured walk + the interchange buffer; on the first leg it is simply
          now. Boarding from the arrival minute instead would hand the traveller a free walk. */
       const earliest = xfer ? xfer.readyMin : t;
-      const d = departureInfo(s.ref, { afterMin: earliest, bus: !!s.bus, lat: s.fromLat, lng: s.fromLng });
-      sources.push({ ref:s.ref, source:d.source, confidence:d.confidence, exact:d.exact });
+      const d = departureInfo(s.ref, { afterMin: earliest, bus: !!s.bus,
+                                       lat: s.fromLat, lng: s.fromLng,
+                                       towards: s.towards, fromIdx: s.fromIdx, toIdx: s.toIdx,
+                                       toLat: s.toLat, toLng: s.toLng });
       // board at the real departure when one is known, otherwise after the expected wait
       const board = (d.exact && d.next != null)
                   ? Math.max(d.next, earliest)
                   : earliest + (d.waitMin != null ? d.waitMin : expectedWaitFor(d.headwayMin || 10));
       const w = Math.max(0, board - t); wait += w; t = board;
-      const dur = raw[i] * k;
-      rows.push({ s, wait:w, board:t, off:t + dur, dep:d, xfer }); t += dur;
-      prevRide = s;
+
+      /* How long the ride itself takes. The scaled share of the router's path cost is the
+         physical estimate; where both ends publish a timetable, the operator's own sequences
+         give the real run time and the estimate is demoted to picking which of the aliased
+         offsets was meant. Null from legArrival is the ordinary case, not a failure. */
+      let dur = raw[i] * k, arrExact = false, run = null;
+      if(!s.bus && s.toLat != null){
+        const la = legArrival(s.ref, { lat:s.fromLat, lng:s.fromLng }, { lat:s.toLat, lng:s.toLng },
+                              { towards:s.towards, fromIdx:s.fromIdx, toIdx:s.toIdx }, t, dur);
+        if(la){ dur = la.runMin; arrExact = true; run = la; }
+      }
+      sources.push({ ref:s.ref, source:d.source, confidence:d.confidence,
+                     exact:d.exact, arrivalExact:arrExact });
+      rows.push({ s, wait:w, board:t, off:t + dur, dep:d, xfer, run, arrivalExact:arrExact });
+      t += dur;
+      prevRide = s; prevExact = arrExact;
     } else {
       const dur = raw[i] * k;
       rows.push({ s, board:t, off:t + dur }); t += dur;
       if(s.type === 'transfer') { /* the walk is inside checkTransfer; nothing extra to add */ }
     }
   });
-  return { rows, start:startMin, end:t, wait, sources,
-           conf: journeyConfidence(sources), missedConnections: missed };
+  /* travelMin is the journey without the waiting — the number the headline shows. While every
+     leg is a scaled share it equals the router's own total by construction, so quoting it
+     changes nothing; once a leg is trip-matched it becomes the real figure and the headline
+     stops contradicting the steps beneath it. */
+  return { rows, start:startMin, end:t, wait, sources, travelMin: (t - startMin) - wait,
+           conf: journeyConfidence(sources), missedConnections: missed,
+           exactArrivals: sources.filter(x=>x.arrivalExact).length };
 }
 // the summary strip above the steps, plus any "that line is shut then" warnings
 function timetableHTML(it){
@@ -507,16 +542,30 @@ function timetableHTML(it){
   /* The old strip said "estimated from published frequencies" on every journey, including ones
      built entirely from published timetables — understating what the app knows as badly as the
      arrivals board once overstated it. Say which it is. */
+  // keep the headline in step with the timeline it summarises
+  if(p.travelMin > 0){
+    const eta = document.getElementById('rEta');
+    if(eta) eta.textContent = Math.round(p.travelMin);
+  }
   const c = p.conf || { level:'low', exactLegs:0, legs:0, allExact:false };
   const basis = c.allExact ? t('ttConfHigh')
               : c.exactLegs ? t('ttConfMixed').replace('{n}', c.exactLegs).replace('{m}', c.legs)
               : t('ttEst');
+  /* An overnight gap is not "waiting". Once exact timetables arrived, a plan made at 01:42
+     could read "Depart 01:42 → Arrive 06:41 incl. ~274 min waiting" — truthful arithmetic that
+     buries the only fact that matters, which is that nothing runs for another four hours. Say
+     that first, and quote the departure the traveller would actually catch. */
+  const firstRide = p.rows.find(r => r.s.type === 'ride');
+  const longWait = firstRide && firstRide.wait >= 60;
+
   let html = '<div class="tt-row">' +
-    '<span>' + svgEsc(t('ttDepart')) + ' <b>' + fmtMinOfDay(p.start) + '</b></span>' +
+    '<span>' + svgEsc(t('ttDepart')) + ' <b>' + fmtMinOfDay(longWait ? firstRide.board : p.start) + '</b></span>' +
     '<span>→</span>' +
     '<span>' + svgEsc(t('ttArrive')) + ' <b>' + fmtMinOfDay(p.end) + '</b></span>' +
-    (p.wait >= 1 ? '<span class="tt-est">' + svgEsc(t('ttWait').replace('{n}', Math.round(p.wait))) + '</span>' : '') +
+    (!longWait && p.wait >= 1 ? '<span class="tt-est">' + svgEsc(t('ttWait').replace('{n}', Math.round(p.wait))) + '</span>' : '') +
     '<span class="tt-est tt-conf-' + svgEsc(c.level) + '">' + svgEsc(basis) + '</span></div>';
+  if(longWait) html += '<div class="tt-row tt-warn">⚠ ' +
+    svgEsc(t('ttFirstService').replace('{t}', fmtMinOfDay(firstRide.board))) + '</div>';
   if(p.missedConnections) html += '<div class="tt-row tt-warn">⚠ ' + svgEsc(t('ttMissed')) + '</div>';
   const shut = [];
   p.rows.forEach(r => {
@@ -534,8 +583,15 @@ function timetableHTML(it){
    before it lands, so there is nothing to apologise for if it never does. */
 async function warmItineraryTimetables(it, token, stepsEl){
   try{
-    const pts = (it.steps||[]).filter(s=>s.type==='ride' && !s.bus && s.fromLat!=null)
-                              .map(s=>({ ref:s.ref, lat:s.fromLat, lng:s.fromLng, bus:false }));
+    /* BOTH ends of every rail leg. The boarding station gives the departure; the alighting
+       station is what makes the arrival real — the run time is the offset that aligns the two
+       stations' published sequences, so one end alone can only ever produce an estimate. */
+    const pts = [];
+    for(const s of (it.steps||[])){
+      if(s.type!=='ride' || s.bus || s.fromLat==null) continue;
+      pts.push({ ref:s.ref, lat:s.fromLat, lng:s.fromLng, bus:false });
+      if(s.toLat!=null) pts.push({ ref:s.ref, lat:s.toLat, lng:s.toLng, bus:false });
+    }
     if(!pts.length) return;
     const added = await warmTimetables(pts, 6000);
     if(!added) return;

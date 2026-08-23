@@ -142,15 +142,15 @@
           "id": "trip-matching",
           "title": "Trip-match legs against the alighting station timetable",
           "priority": "P1",
-          "state": "todo",
-          "note": "A leg’s arrival is still board + a scaled share of the router’s static cost, so arrivals carry minutes of slop and “infeasible” is capped at “risky” rather than naming a train. Warming the alighting station’s timetable and matching the trip would make arrivals exact and lift the cap. This is the Line/Service/Trip/Vehicle model the brief asks for."
+          "state": "done",
+          "note": "A leg’s run time is now read off the operator’s own timetables: two stations on the same line publish departures for the SAME vehicles, so the run time is the offset that aligns the sequences. M2 Şişhane–Levent resolves to 10 min at 99% support, M1B Yenikapı–Otogar to 13 min at 99%. Aliasing is the hazard — offsets a whole headway apart align equally well — so the search window is narrower than one headway and centred on a physical estimate; ambiguous or weakly-supported windows return nothing and the leg stays estimated. Arrivals that ARE matched let “missed connection” be claimed as fact."
         },
         {
           "id": "time-dependent-routing",
           "title": "Route by time, not just anchor to it",
           "priority": "P1",
           "state": "todo",
-          "note": "Dijkstra still runs on static weights and the clock is applied afterwards, so “arrive by” subtracts a fixed total instead of re-routing to catch an earlier connection, and what-if scenarios cannot be simulated. Needs a time-expanded search that preserves offline use."
+          "note": "Dijkstra still runs on static weights and the clock is applied afterwards, so “arrive by” subtracts a fixed total instead of re-routing to catch an earlier connection, and what-if scenarios cannot be simulated. Needs a time-expanded search that preserves offline use. Two live consequences now visible: a plan across a shut line still quotes a boarding time (warned, and no longer claiming timetable confidence, but not rolled forward to opening); and route RANKING still uses static costs, so at 01:50 a route needing a 4-hour wait can outrank one running now."
         },
         {
           "id": "funicular-pairs",
@@ -165,6 +165,13 @@
           "priority": "P1",
           "state": "todo",
           "note": "The deterministic engine now exists; the assistant should call check_transfer / next_departures rather than reasoning about times itself. The brief is explicit that an LLM must never do routing arithmetic from memory."
+        },
+        {
+          "id": "terminus-arrivals",
+          "title": "Arrivals into a terminus",
+          "priority": "P2",
+          "state": "declined",
+          "note": "A leg alighting at a line’s terminus cannot be trip-matched: operators publish departures OUT of a terminus, never arrivals INTO it. Affects e.g. any M2 leg ending at Yenikapı. Deriving it would need a turnaround assumption, which is exactly the kind of invented number this engine refuses. Weighed and left estimated."
         }
       ]
     }

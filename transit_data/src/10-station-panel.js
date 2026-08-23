@@ -154,6 +154,9 @@ async function loadSchedule(reg){
           miTTCache[tkey]=(Array.isArray(ti)?(ti[0]&&ti[0].Times):(ti&&ti.Times))||[];
         }
         if(tok!==schedToken) return;               // user opened another station meanwhile
+        // feed the shared store: opening a station panel warms the planner's timing for free,
+        // and both boards then quote the same operator data instead of fetching it twice
+        if(miTTCache[tkey] && miTTCache[tkey].length) ttPut(st[0], d.DirectionId, miTTCache[tkey], d.DirectionName);
         const ln=lineByRef[ref];
         data.push({ ref, color: ln?ln.color:'#888', target:(d.DirectionName||'').split('->').pop().trim(), times: miTTCache[tkey] });
       }

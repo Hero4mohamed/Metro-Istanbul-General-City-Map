@@ -187,6 +187,47 @@ const MUTATIONS = [
     apply: h => h.replace('if (slack < 0 && arrivalExact) {', 'if (slack < 0) {'),
   },
   {
+    /* --- trip matching. The failure mode is always the same shape: a confident arrival time
+       produced from data that cannot support one. */
+    name: 'accept an aliased offset instead of refusing an ambiguous window',
+    expect: 'an offset is refused when a whole headway makes two answers equally good',
+    apply: h => h.replace('if (secondN > 0 && bestN < secondN * 1.5) return null;', ''),
+  },
+  {
+    name: 'accept a run time only a quarter of the trips agree with',
+    expect: 'an offset is refused when the timetables do not really agree',
+    apply: h => h.replace('if (support < 0.6) return null;', 'if (support < 0.05) return null;'),
+  },
+  {
+    name: 'derive a run time from two departures',
+    expect: 'trip matching declines rather than guessing on thin or missing data',
+    apply: h => h.replace('fromTimes.length < 3 || toTimes.length < 3', 'false'),
+  },
+  {
+    // the M1B bug: the operator's terminus is not on our station list, so name and index
+    // matching both fail and every leg on the line silently loses its timetable
+    name: 'drop the geometric direction fallback',
+    expect: 'direction is decided by position or geography, never by terminus name alone',
+    apply: h => h.replace('    const c = stationCoordsByName(d.towards);', '    const c = null;'),
+  },
+  {
+    name: 'exclude a direction the operator describes unusually',
+    expect: 'direction is decided by position or geography, never by terminus name alone',
+    apply: h => h.replace('if (!d || !d.towards) return true;', 'if (!d || !d.towards) return false;'),
+  },
+  {
+    name: 'trip-match a leg even when one end has no usable direction',
+    expect: 'a leg that ends at a terminus keeps an estimated arrival',
+    apply: h => h.replace('if (!ta || !tb) return null;', 'if (!ta && !tb) return null;'),
+  },
+  {
+    name: 'rate a shut line as a high-confidence departure',
+    expect: 'a journey through a shut line does not claim timetable-grade confidence',
+    apply: h => h.replace(
+      "return { source: 'modeDefault', confidence: 'low', exact: false, headwayMin: null,\n             times: null, next: null, waitMin: null, reason: 'closed', closed };",
+      "return { source: 'modeDefault', confidence: 'high', exact: false, headwayMin: null,\n             times: null, next: null, waitMin: null, reason: 'closed', closed };"),
+  },
+  {
     name: 'put second-level precision back on a modelled arrivals board',
     expect: 'the modelled board does not quote seconds',
     apply: h => h.replace("  return {t:'~'+Math.max(1, Math.round(sec/60))+' '+t('minUnit'), now:false};",

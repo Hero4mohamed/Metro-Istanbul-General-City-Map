@@ -61,6 +61,45 @@ function medianGap(times) {
   return gaps[Math.floor(gaps.length / 2)];
 }
 
+/* ---- trip matching ----------------------------------------------------------------------
+   Two stations on the same line and direction publish departure times for the SAME vehicles.
+   The run time between them is therefore whatever offset makes the two sequences line up, and
+   reading it off the operator's own timetables beats any estimate built from commercial speed.
+   This is what turns "a leg takes about 12 minutes" into "this train leaves at 19:58 and is
+   there at 20:10", which is in turn what makes a missed connection a fact rather than a guess.
+
+   The trap is ALIASING. With a 4-minute headway, offsets of 8, 12 and 16 minutes all align
+   almost perfectly, because they differ by whole headways — the sequences cannot tell you which
+   vehicle you are looking at, only that vehicles are regular. The search window must therefore
+   be narrower than one headway and centred on an independent physical estimate. When it cannot
+   be made that narrow, or when the timetables do not agree well enough, this returns null and
+   the caller keeps its estimate rather than guessing between the aliases. */
+function alignOffset(fromTimes, toTimes, hintMin, tolMin) {
+  if (!fromTimes || !toTimes || fromTimes.length < 3 || toTimes.length < 3) return null;
+  if (!(tolMin > 0) || !(hintMin > 0)) return null;
+  const toSet = new Set(toTimes);
+  const lo = Math.max(1, Math.ceil(hintMin - tolMin));
+  const hi = Math.floor(hintMin + tolMin);
+  if (hi < lo) return null;
+  const counts = new Map();
+  for (const a of fromTimes) {
+    for (let off = lo; off <= hi; off++) if (toSet.has(a + off)) counts.set(off, (counts.get(off) || 0) + 1);
+  }
+  if (!counts.size) return null;
+  let best = null, bestN = 0, secondN = 0;
+  for (const [off, n] of counts) {
+    if (n > bestN) { secondN = bestN; bestN = n; best = off; }
+    else if (n > secondN) secondN = n;
+  }
+  const support = bestN / fromTimes.length;
+  /* Two independent guards. Support: the winning offset must explain most of the trips, not a
+     lucky handful. Margin: it must beat the runner-up clearly, or the window still holds two
+     plausible answers and picking one would be arbitrary. */
+  if (support < 0.6) return null;
+  if (secondN > 0 && bestN < secondN * 1.5) return null;
+  return { offset: best, support: support, matched: bestN, runnerUp: secondN };
+}
+
 /* How long a change takes before any waiting: the walk is measured from real coordinates by the
    caller, and the buffer scales with how many lines meet at the interchange — a proxy for
    concourse size that is COUNTED from the network, not invented. */
@@ -149,15 +188,102 @@ function depDayType(atMin) {
    for its own board while the planner ignored it. One store, so both agree. */
 const TT_STORE = Object.create(null);           // "stationId|dirId" -> [minOfDay, …] ascending
 const TT_BY_STATION = Object.create(null);      // stationId -> [dirId, …]
+const TT_DIR = Object.create(null);             // "stationId|dirId" -> { name, towards }
 function ttKey(stationId, dirId) { return stationId + '|' + dirId; }
-function ttPut(stationId, dirId, times) {
+function ttPut(stationId, dirId, times, dirName) {
   const mins = (times || []).map(hhmmToMin).filter(v => v != null).sort((a, b) => a - b);
   TT_STORE[ttKey(stationId, dirId)] = mins;
+  if (dirName) TT_DIR[ttKey(stationId, dirId)] = { name: dirName, towards: dirTerminus(dirName) };
   const list = TT_BY_STATION[stationId] || (TT_BY_STATION[stationId] = []);
   if (list.indexOf(dirId) < 0) list.push(dirId);
   return mins;
 }
 function ttHas(stationId) { return !!(TT_BY_STATION[stationId] || []).length; }
+/* The operator names a direction by its endpoints — "Yenikapı->Hacıosman". The half after the
+   arrow is where those trains are going, which is the only part a traveller's direction can be
+   matched against. */
+function dirTerminus(name) {
+  return String(name || '').split(/->|→|-&gt;/).pop().trim();
+}
+/* Coordinates for a station named anywhere in the network, or null. The operator names a
+   direction after its terminus, and that terminus is not always a station this project holds on
+   that line — the operator's M1B runs "to Kirazlı" while this project's M1B ends at Bağcılar
+   Meydan, and Kirazlı appears only on M3. A place still has a position even when it is filed
+   under a different line, and a position is all the direction test needs. */
+function stationCoordsByName(name) {
+  if (!name || typeof nameNodes === 'undefined') return null;
+  const keys = nameNodes[fold(name)];
+  if (keys && keys.length) {
+    const m = nodeMeta[keys[0]];
+    if (m && m.lat != null) return { lat: m.lat, lng: m.lng };
+  }
+  return null;
+}
+
+/* Where a named station sits along a line, or -1. Folded and tolerant, because the operator and
+   this project do not always spell a station identically. */
+function stationIndexOnLine(ref, name) {
+  const ln = (typeof lineByRef !== 'undefined') ? lineByRef[ref] : null;
+  const sts = ln && (ln.stations || ln.stops);
+  if (!sts || !name) return -1;
+  const want = fold(name);
+  for (let i = 0; i < sts.length; i++) {
+    const n = fold(sts[i] && sts[i].name);
+    if (n && (n === want || n.indexOf(want) >= 0 || want.indexOf(n) >= 0)) return i;
+  }
+  return -1;
+}
+
+/* Does this direction carry someone travelling from fromIdx to toIdx?
+
+   Matching the operator's direction name against OUR terminus name looked obvious and was
+   wrong: M1B runs to "Kirazlı" in the operator's timetable and to "Bağcılar Meydan" in this
+   project's line data, so every leg on it was silently rejected. The reliable comparison is
+   positional — find where the operator's named terminus sits on the line, and ask whether it
+   lies beyond the alighting station in the direction being travelled. Names only decide which
+   station is meant, never which way the train goes.
+
+   Falls back to name equality, and finally to accepting the direction: an unknown direction
+   must not be excluded, or a station the operator describes unusually loses its timetable. */
+/* Assemble the direction context a caller implied. Kept in one place so departureInfo and
+   legArrival cannot drift apart about what "the traveller's direction" means. */
+function dirCtxOf(ref, o) {
+  if (!o) return null;
+  if (o.towards == null && o.fromIdx == null && o.toLat == null) return null;
+  return { ref: ref, towards: o.towards, fromIdx: o.fromIdx, toIdx: o.toIdx,
+           fromLat: o.fromLat != null ? o.fromLat : o.lat,
+           fromLng: o.fromLng != null ? o.fromLng : o.lng,
+           toLat: o.toLat, toLng: o.toLng };
+}
+function dirServes(stationId, dirId, ctx) {
+  if (!ctx) return true;
+  const d = TT_DIR[ttKey(stationId, dirId)];
+  if (!d || !d.towards) return true;               // unknown direction: do not silently exclude it
+
+  // 1. positional: the terminus is on this line, so ask which side of the journey it lies
+  if (ctx.ref && ctx.fromIdx != null && ctx.toIdx != null) {
+    const ti = stationIndexOnLine(ctx.ref, d.towards);
+    if (ti >= 0) {
+      return (ctx.toIdx >= ctx.fromIdx) ? (ti >= ctx.toIdx) : (ti <= ctx.toIdx);
+    }
+  }
+  /* 2. geometric: the terminus is somewhere this project knows, just not on this line's station
+     list. Trains headed for it are going the traveller's way when it lies nearer the alighting
+     station than the boarding one. This is what rescues M1B, where the operator's "Kirazlı" is
+     filed under M3 and matches neither our terminus name nor our station order. */
+  if (ctx.fromLat != null && ctx.toLat != null) {
+    const c = stationCoordsByName(d.towards);
+    if (c) {
+      const dFrom = metersBetween([c.lat, c.lng], [ctx.fromLat, ctx.fromLng]);
+      const dTo   = metersBetween([c.lat, c.lng], [ctx.toLat, ctx.toLng]);
+      return dTo < dFrom;
+    }
+  }
+  // 3. the operator and this project happen to agree on the terminus name
+  if (!ctx.towards) return true;
+  const a = fold(d.towards), b = fold(ctx.towards);
+  return a === b || a.indexOf(b) >= 0 || b.indexOf(a) >= 0;
+}
 
 /* Resolve a station NAME on a given line to the operator's own station id. The registry is
    MI_STATIONS = [stationId, lineId, ref, lat, lng, name]; matching on coordinates rather than
@@ -195,7 +321,12 @@ function departureInfo(ref, opts) {
      printed before the line broke. */
   const closed = (typeof lineClosedAt === 'function') ? lineClosedAt(ref, afterMin) : null;
   if (closed && closed.why === 'susp') {
-    return { source: 'modeDefault', confidence: 'high', exact: false, headwayMin: null,
+    /* 'confidence' rates a DEPARTURE TIME, and a shut line has none — so it is low, even
+       though the closure itself is known perfectly well. Rating it high let a journey whose
+       line was not running still report "times from published timetables", because the
+       journey takes the minimum across legs and this leg claimed to be the strongest. The
+       closure is carried by reason and closed, which is where certainty about it belongs. */
+    return { source: 'modeDefault', confidence: 'low', exact: false, headwayMin: null,
              times: null, next: null, waitMin: null, reason: 'closed', closed };
   }
 
@@ -210,6 +341,11 @@ function departureInfo(ref, opts) {
     if (st && ttHas(st[0])) {
       let best = null, bestTimes = null, anyTimes = null;
       for (const dirId of TT_BY_STATION[st[0]]) {
+        /* Only trains going the traveller's way. Without this the oracle returns whichever
+           train comes first at the platform regardless of where it is headed — at a mid-line
+           station that is the wrong one half the time, and it would quote a confident
+           departure for a journey in the opposite direction. */
+        if (!dirServes(st[0], dirId, dirCtxOf(ref, opts))) continue;
         const times = TT_STORE[ttKey(st[0], dirId)] || [];
         if (!times.length) continue;
         anyTimes = anyTimes || times;
@@ -240,7 +376,12 @@ function departureInfo(ref, opts) {
 
   // no exact timetable here — now the published operating hours are the best guard available
   if (closed) {
-    return { source: 'modeDefault', confidence: 'high', exact: false, headwayMin: null,
+    /* 'confidence' rates a DEPARTURE TIME, and a shut line has none — so it is low, even
+       though the closure itself is known perfectly well. Rating it high let a journey whose
+       line was not running still report "times from published timetables", because the
+       journey takes the minimum across legs and this leg claimed to be the strongest. The
+       closure is carried by reason and closed, which is where certainty about it belongs. */
+    return { source: 'modeDefault', confidence: 'low', exact: false, headwayMin: null,
              times: null, next: null, waitMin: null, reason: 'closed', closed };
   }
 
@@ -342,7 +483,9 @@ function checkTransfer(arriveMin, from, to, opts) {
      physically reach the platform would make the answer vacuous — that one is always catchable
      by construction, and "infeasible" could never occur. The whole question is whether the
      obvious connection survives the walk. */
-  const aim = departureInfo(to.ref, { afterMin: arriveMin, bus: !!to.bus, lat: to.lat, lng: to.lng });
+  const aim = departureInfo(to.ref, { afterMin: arriveMin, bus: !!to.bus, lat: to.lat, lng: to.lng,
+                                     towards: to.towards, fromIdx: to.fromIdx, toIdx: to.toIdx,
+                                     toLat: to.toLat, toLng: to.toLng });
 
   const out = {
     walkM: Math.round(walkM), walkMin, bufferMin: buffer, readyMin,
@@ -371,7 +514,9 @@ function checkTransfer(arriveMin, from, to, opts) {
 
   if (slack < 0 && arrivalExact) {
     // both times are known, so this is a fact: the obvious connection goes without you
-    const actual = departureInfo(to.ref, { afterMin: readyMin, bus: !!to.bus, lat: to.lat, lng: to.lng });
+    const actual = departureInfo(to.ref, { afterMin: readyMin, bus: !!to.bus, lat: to.lat, lng: to.lng,
+                                      towards: to.towards, fromIdx: to.fromIdx, toIdx: to.toIdx,
+                                     toLat: to.toLat, toLng: to.toLng });
     return Object.assign(out, {
       verdict: 'infeasible', missedMin: aim.next, slackMin: slack,
       departMin: (actual.exact && actual.next != null) ? actual.next : null,
@@ -382,7 +527,9 @@ function checkTransfer(arriveMin, from, to, opts) {
   if (slack < 0) {
     /* Estimated arrival: the change is very tight and the plan takes the following departure,
        but no claim is made about which vehicle was missed. */
-    const actual = departureInfo(to.ref, { afterMin: readyMin, bus: !!to.bus, lat: to.lat, lng: to.lng });
+    const actual = departureInfo(to.ref, { afterMin: readyMin, bus: !!to.bus, lat: to.lat, lng: to.lng,
+                                      towards: to.towards, fromIdx: to.fromIdx, toIdx: to.toIdx,
+                                     toLat: to.toLat, toLng: to.toLng });
     return Object.assign(out, {
       verdict: 'risky', capped: true, slackMin: slack,
       departMin: (actual.exact && actual.next != null) ? actual.next : aim.next,
@@ -396,10 +543,56 @@ function checkTransfer(arriveMin, from, to, opts) {
   });
 }
 
+/* ---- a leg's arrival, from the operator rather than from a speed assumption ---------------
+   Returns null whenever the answer would be a guess — no timetable at either end, no direction
+   that carries this traveller, a headway too tight to disambiguate, or sequences that simply do
+   not agree. Null is the normal case for most of the network and is not a failure: the caller
+   keeps its estimate and the journey stays labelled as estimated.
+
+   hintMin is the independent physical estimate (distance and commercial speed) that pins which
+   of the aliased offsets is the real one. Without it this cannot be done safely at all. */
+function legArrival(ref, fromPt, toPt, dirOpts, boardMin, hintMin) {
+  if (!(hintMin > 0)) return null;
+  const A = miStationFor(ref, fromPt.lat, fromPt.lng);
+  const B = miStationFor(ref, toPt.lat, toPt.lng);
+  if (!A || !B || A[0] === B[0]) return null;
+  if (!ttHas(A[0]) || !ttHas(B[0])) return null;
+  const ctx = dirCtxOf(ref, Object.assign({}, dirOpts, {
+    fromLat: fromPt.lat, fromLng: fromPt.lng, toLat: toPt.lat, toLng: toPt.lng }));
+
+  /* The departure sequence at each end for the direction this traveller is going. At a TERMINUS
+     there is no such sequence in the arriving direction — an operator publishes departures out
+     of a terminus, never arrivals into it — so a leg that ends at one declines here. That is a
+     property of the published data, not a gap to paper over. */
+  const seqFor = (st) => {
+    for (const dirId of TT_BY_STATION[st[0]]) {
+      if (!dirServes(st[0], dirId, ctx)) continue;
+      const times = TT_STORE[ttKey(st[0], dirId)];
+      if (times && times.length) return times;
+    }
+    return null;
+  };
+  const ta = seqFor(A), tb = seqFor(B);
+  if (!ta || !tb) return null;
+
+  /* The window must be narrower than one headway or the aliases are indistinguishable. If the
+     line is frequent enough that this leaves no usable window, decline. */
+  const hw = medianGap(ta) || medianGap(tb) || 5;
+  const tol = Math.min(hw * 0.45, Math.max(1.5, hintMin * 0.35));
+  if (!(tol >= 0.75)) return null;
+
+  const al = alignOffset(ta, tb, hintMin, tol);
+  if (!al) return null;
+  return { arrivalMin: boardMin + al.offset, runMin: al.offset,
+           support: al.support, headwayMin: hw };
+}
+
 /* If a connection cannot be made, the useful answer is the one that can. Walks the exact
    departures forward until one clears the platform-ready minute. */
 function nextFeasibleDeparture(readyMin, to) {
-  const dep = departureInfo(to.ref, { afterMin: readyMin, bus: !!to.bus, lat: to.lat, lng: to.lng });
+  const dep = departureInfo(to.ref, { afterMin: readyMin, bus: !!to.bus, lat: to.lat, lng: to.lng,
+                                      towards: to.towards, fromIdx: to.fromIdx, toIdx: to.toIdx,
+                                     toLat: to.toLat, toLng: to.toLng });
   return (dep.exact && dep.next != null) ? dep.next : null;
 }
 
@@ -413,29 +606,55 @@ function nextFeasibleDeparture(readyMin, to) {
    rather than opening a second path to the same API. */
 async function warmTimetables(points, timeoutMs) {
   if (typeof miPost !== 'function' || typeof MI_STATIONS === 'undefined') return 0;
-  const deadline = Date.now() + (timeoutMs || 6000);
+  const deadline = Date.now() + (timeoutMs || 8000);
   let added = 0;
+
+  /* Distinct stations only. A journey names its boarding and alighting points separately but
+     they are frequently the same interchange, and every leg of a two-change trip would
+     otherwise re-ask for a station already held. */
+  const want = [];
+  const seen = new Set();
   for (const p of (points || [])) {
-    if (Date.now() > deadline) break;
     if (!p || p.bus || p.lat == null) continue;
     const st = miStationFor(p.ref, p.lat, p.lng);
-    if (!st || ttHas(st[0])) continue;                   // unknown to the operator, or already held
+    if (!st || ttHas(st[0]) || seen.has(st[0])) continue;
+    seen.add(st[0]); want.push(st);
+  }
+  if (!want.length) return 0;
+
+  const one = async (st) => {
+    if (Date.now() > deadline) return;
     try {
       const dkey = 'd' + st[1] + '_' + st[0];
       if (!miDirCache[dkey]) {
         miDirCache[dkey] = ((await miPost('/GetDirectionsByLineIdAndStationId',
           { lineId: st[1], stationId: st[0] })).Data) || [];
       }
-      for (const d of miDirCache[dkey]) {
-        if (Date.now() > deadline) break;
+      // both directions at once: they are independent requests and waiting for one to finish
+      // before starting the other doubled the time a station took for no reason
+      await Promise.all((miDirCache[dkey] || []).map(async (d) => {
+        if (Date.now() > deadline) return;
         const tt = await miPost('/GetTimeTable',
           { boardingStationId: st[0], directionId: d.DirectionId });
         const row = (tt.Data && tt.Data[0]) || {};
         const ti = row.TimeInfos;
         const times = (Array.isArray(ti) ? (ti[0] && ti[0].Times) : (ti && ti.Times)) || [];
-        if (times.length) { ttPut(st[0], d.DirectionId, times); added++; }
-      }
+        if (times.length) { ttPut(st[0], d.DirectionId, times, d.DirectionName); added++; }
+      }));
     } catch (e) { /* one station's API hiccup must not cost the whole journey its timing */ }
-  }
+  };
+
+  /* Stations in parallel, bounded. Sequentially a four-station journey ran past the budget and
+     the alighting stations were the ones dropped — which is precisely the half that makes an
+     arrival exact, so trip matching almost never fired. Bounded rather than unbounded out of
+     courtesy to a public API this project does not pay for. */
+  const POOL = 4;
+  const queue = want.slice();
+  await Promise.all(Array.from({ length: Math.min(POOL, queue.length) }, async () => {
+    while (queue.length) {
+      if (Date.now() > deadline) return;
+      await one(queue.shift());
+    }
+  }));
   return added;
 }
