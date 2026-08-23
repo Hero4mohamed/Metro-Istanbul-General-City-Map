@@ -256,6 +256,12 @@ function buildItinerary(res){
   for(const s of cleaned) out.push(s);
   if(res.dWalk!=null && res.dWalk>0.5 && p.length) out.push({type:'walk', mins:res.dWalk, from:p[p.length-1].name, dest:true});
   return { steps:out, segs, total:res.total,
+           /* What the door-to-door journey costs including waiting. `total` stays travel plus
+              walking because that is what the headline has always meant; comparisons between
+              options use this instead, since waiting is most of the difference between a route
+              that runs now and one that does not. */
+           waitTotal: res.waitTotal || 0,
+           doorTotal: (res.doorTotal != null) ? res.doorTotal : res.total,
            transfers:cleaned.filter(s=>s.type==="transfer").length,
            stops:cleaned.filter(s=>s.type==="ride").reduce((a,s)=>a+s.stops,0) };
 }
@@ -358,8 +364,34 @@ let currentOpts=[], currentOptIdx=0;
 // build up to N distinct itineraries by penalising lines used in earlier options
 function routeOptions(o,d,maxOpts){
   const opts=[], sigs=new Set(), penalty=new Set();
+  /* One clock for the whole set. Each alternative must be judged against the same departure
+     moment or they are not comparable, and the wait cache is only sound within one anchor. */
+  clearWaitCache();
+  let t0 = searchStartMin();
+  /* "Arrive by 09:00" has to be SEARCHED near 09:00, not near now. Anchoring at the current
+     clock meant a plan made at 02:00 was costed against a shut network and came back as a
+     night-bus crawl, even though the traveller was asking about the morning.
+
+     Two passes: probe from the target to learn roughly how long the journey takes, then anchor
+     one journey-length earlier and search properly. The probe is one extra search and gets the
+     anchor close enough that the waits it charges are the ones the traveller will meet. */
+  if(planWhen && planWhen.mode === 'arrive' && planWhen.min != null){
+    const probe = routeXY(o, d, null, planWhen.min);
+    const span = probe ? (probe.doorTotal != null ? probe.doorTotal : probe.total) : 45;
+    t0 = planWhen.min - Math.min(240, Math.max(5, span));
+  }
+  /* Alternatives are best-effort within a time budget. A daytime search costs about 15 ms, so
+     all eight run and the budget is never felt. In the small hours the same search costs
+     hundreds of milliseconds — waiting dominates every edge, so the distance heuristic cannot
+     prune and the frontier spreads across the city — and eight of them made a request take
+     three seconds to produce four variations on "wait until morning". The FIRST option is always
+     computed however long it takes; only the extras are rationed. */
+  const ALT_BUDGET_MS = 1200;   // measured: the pre-existing code spent ~1200 ms here anyway
+  const started = (typeof performance !== 'undefined' && performance.now) ? performance.now() : Date.now();
+  const elapsed = () => ((typeof performance !== 'undefined' && performance.now) ? performance.now() : Date.now()) - started;
   for(let k=0; k<maxOpts+4 && opts.length<maxOpts; k++){
-    const res=routeXY(o,d, penalty.size?penalty:null);
+    if(opts.length >= 1 && elapsed() > ALT_BUDGET_MS) break;
+    const res=routeXY(o,d, penalty.size?penalty:null, t0);
     if(!res) break;
     const it=buildItinerary(res);
     const rides=it.steps.filter(s=>s.type==='ride');
@@ -368,9 +400,11 @@ function routeOptions(o,d,maxOpts){
     if(!rides.length) break;
     rides.forEach(s=> penalty.add(s.ref));         // steer the next search onto other lines
   }
-  // drop unreasonable detours (>2.2× the fastest) so alternatives stay useful
-  if(opts.length>1){ const best=opts[0].it.total;
-    return opts.filter((o,i)=> i===0 || o.it.total<=best*2.2); }
+  // drop unreasonable detours (>2.2× the fastest) so alternatives stay useful — measured
+  // door-to-door, or a route whose whole cost is an overnight wait survives the filter
+  if(opts.length>1){ const dt=x=>(x.it.doorTotal!=null?x.it.doorTotal:x.it.total);
+    const best=dt(opts[0]);
+    return opts.filter((o,i)=> i===0 || dt(o)<=best*2.2); }
   return opts;
 }
 const optLines = it => it.steps.filter(s=>s.type==='ride').map(s=> s.bus?('🚌'+s.ref):s.ref).join(' › ') || 'Walk';
@@ -557,6 +591,12 @@ function timetableHTML(it){
      that first, and quote the departure the traveller would actually catch. */
   const firstRide = p.rows.find(r => r.s.type === 'ride');
   const longWait = firstRide && firstRide.wait >= 60;
+  /* The gap is not always at the start. Planning at 23:30 can produce a journey that boards
+     immediately and then waits all night for a line that shuts before you reach it — the total
+     said "~365 min waiting" without ever saying which leg, or why. Name it. */
+  let stuckRide = null;
+  if(!longWait) for(const r of p.rows)
+    if(r.s.type === 'ride' && r.wait >= 60 && (!stuckRide || r.wait > stuckRide.wait)) stuckRide = r;
 
   let html = '<div class="tt-row">' +
     '<span>' + svgEsc(t('ttDepart')) + ' <b>' + fmtMinOfDay(longWait ? firstRide.board : p.start) + '</b></span>' +
@@ -566,6 +606,8 @@ function timetableHTML(it){
     '<span class="tt-est tt-conf-' + svgEsc(c.level) + '">' + svgEsc(basis) + '</span></div>';
   if(longWait) html += '<div class="tt-row tt-warn">⚠ ' +
     svgEsc(t('ttFirstService').replace('{t}', fmtMinOfDay(firstRide.board))) + '</div>';
+  else if(stuckRide) html += '<div class="tt-row tt-warn">⚠ ' +
+    svgEsc(t('ttWaitsFor').replace('{l}', stuckRide.s.ref).replace('{t}', fmtMinOfDay(stuckRide.board))) + '</div>';
   if(p.missedConnections) html += '<div class="tt-row tt-warn">⚠ ' + svgEsc(t('ttMissed')) + '</div>';
   const shut = [];
   p.rows.forEach(r => {

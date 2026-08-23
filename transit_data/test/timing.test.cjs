@@ -252,6 +252,76 @@ test('a journey through a shut line does not claim timetable-grade confidence', 
     "a closed-line branch is claiming high confidence again");
 });
 
+/* --- time-dependent routing -----------------------------------------------------------
+   The search used to charge half a headway for every line at every hour, so at 02:00 a route
+   that could not move until 06:00 scored the same as one running right now — and, being
+   shorter once moving, outranked it. These pin the mechanism that fixed it. */
+test('the search charges a wait that depends on the clock', () => {
+  const src = H.appScript();
+  assert.ok(/function waitAt\(ref, isBus, atMin, refId\)/.test(src),
+    'waitAt no longer takes a time — the search would be time-independent again');
+  assert.ok(/nd \+= XFER_PREF \+ waitAt\(vm\.ref, vm\.kind==='bus', t0 \+ du, vm\.refId\)/.test(src),
+    'a change no longer costs a time-dependent wait');
+  /* The FIRST boarding must cost a wait too. Charging only at changes made starting a journey
+     free, which is where the ranking bug bit hardest. */
+  assert.ok(/w \+= waitAt\(nodeMeta\[k\]\.ref, nodeMeta\[k\]\.kind==='bus', t0 \+ w, nodeMeta\[k\]\.refId\)/.test(src),
+    'the first boarding is free again, so a route starting on a shut line costs nothing to begin');
+});
+
+test('a suspended line is excluded from routing, not merely warned about', () => {
+  const src = H.appScript();
+  assert.ok(/function suspendedRefs/.test(src), 'suspendedRefs is gone');
+  assert.ok(/susp && susp\.size && susp\.has\(m\.ref\)/.test(src),
+    'suspended lines are no longer blocked — the planner can route onto a line that is not running');
+  // it must respect an expiry, or a line stays "suspended" forever after the works finish
+  assert.ok(/if\(d\.until && Date\.parse\(d\.until \+ 'T23:59:59'\) < Date\.now\(\)\) continue;/.test(src),
+    'an expired suspension no longer releases the line');
+});
+
+test('ranking compares door-to-door time, not travel time alone', () => {
+  const src = H.appScript();
+  assert.ok(/doorTotal: realTotal \+ waitTotal/.test(src), 'the router no longer reports a door-to-door total');
+  assert.ok(/const dt = x => \(x\.it\.doorTotal != null \? x\.it\.doorTotal : x\.it\.total\);/.test(src),
+    'the alternatives sort no longer uses the door-to-door figure');
+  // and the headline keeps its old meaning, or the two disagree on screen
+  assert.ok(/total:realTotal, waitTotal, doorTotal/.test(src),
+    'travel time and waiting are no longer reported separately');
+});
+
+test('"arrive by" searches near the target, not near now', () => {
+  const src = H.appScript();
+  /* Anchoring an arrival request at the current clock costed the journey against whatever is
+     running NOW. Asked at 02:30 for a 09:00 arrival that produced a six-leg night-bus crawl
+     instead of the morning metro. Probe from the target, then anchor a journey-length earlier. */
+  assert.ok(/planWhen\.mode === 'arrive' && planWhen\.min != null/.test(src),
+    'the arrive-by branch is gone — an arrival request would be searched at the wrong hour');
+  assert.ok(/t0 = planWhen\.min - Math\.min\(240, Math\.max\(5, span\)\)/.test(src),
+    'the arrive-by anchor no longer steps back by the journey length');
+  // and the probe must run at the TARGET, or the span it measures is itself mis-timed
+  assert.ok(/const probe = routeXY\(o, d, null, planWhen\.min\);/.test(src),
+    'the arrive-by probe no longer runs at the requested arrival time');
+});
+
+test('the search is guided but still optimal', () => {
+  const src = H.appScript();
+  /* A* with an admissible heuristic. The speed it divides by must never be lower than a real
+     mode's — underestimating the remaining travel time is what keeps the heuristic admissible,
+     and an admissible heuristic is what keeps the answer optimal.
+
+     It was written as a literal 100 km/h, which held for metro and Marmaray and was quietly
+     wrong for intercity rail at 200. Deriving it from KIND means a city that adds a faster mode
+     cannot invalidate the search by accident, so this checks the DERIVATION survives rather
+     than checking a number. */
+  assert.ok(/const FASTEST_KMH = \(\(\) => \{/.test(src),
+    'the A* heuristic speed is gone or is no longer derived');
+  assert.ok(/const s = KIND\[l\.kind\] && KIND\[l\.kind\]\.speed; if\(s > m\) m = s;/.test(src),
+    'the heuristic speed no longer reads the network’s own mode speeds — a literal here goes stale silently');
+  assert.ok(!/const FASTEST_KMH = \d/.test(src),
+    'the heuristic speed is hard-coded again');
+  // and it must be used as a DIVISOR of distance, or it is not a time at all
+  assert.ok(/\/1000\/FASTEST_KMH\*60/.test(src), 'the heuristic no longer converts distance to minutes');
+});
+
 test('no reliability score is derived from delay history the project does not hold', () => {
   const src = H.appScript();
   assert.ok(/basis: 'slack'/.test(src), "checkTransfer no longer records what its verdict is based on");

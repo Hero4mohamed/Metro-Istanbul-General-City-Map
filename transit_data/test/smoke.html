@@ -221,21 +221,34 @@ const CHECKS = [
   {
     name: 'bus geometry is deferred, then actually arrives',
     why: 'Road geometry is the larger half of the bus payload and is now fetched only when a route is drawn. Two ways that can go wrong: it loads eagerly again (no saving), or it never loads and routes silently draw as straight stop-to-stop lines.',
-    run: async (w, d) => {
-      const fetched = () => w.performance.getEntriesByType('resource')
-        .filter(e => /bus-geom-/.test(e.name)).length;
+    /* Runs in its OWN frame. It used to share the suite's, and asserted that nothing had
+       fetched geometry yet — which quietly depended on no earlier test having drawn a bus
+       route. Once the planner became time-dependent it started returning night-bus routes in
+       the small hours, those legitimately fetch geometry, and this failed for a reason that had
+       nothing to do with the deferral. A precondition about boot has to be measured on a boot. */
+    run: async () => {
+      const frame = document.createElement('iframe');
+      frame.title = 'bus geometry deferral';
+      frame.style.cssText = 'position:fixed;left:-10000px;top:0;width:900px;height:700px;border:0';
+      document.body.appendChild(frame);
+      try {
+        await new Promise(res => { frame.onload = () => res(); frame.src = APP_URL + '&geom=' + Date.now(); });
+        const bw = frame.contentWindow, bd = frame.contentDocument;
+        const fetched = () => bw.performance.getEntriesByType('resource')
+          .filter(e => /bus-geom-/.test(e.name)).length;
 
-      const busTab = [...d.querySelectorAll('#tabs button')].find(b => /bus/i.test(b.dataset.tab || ''));
-      if (!busTab) return { skip: 'this city has no bus tab' };
-      busTab.click();
-      const listed = await until(() => d.querySelectorAll('#busList .bus-row').length > 0, 15000);
-      if (!listed) return { skip: 'bus directory did not populate' };
-      if (fetched()) return 'geometry was fetched before any route was opened — the deferral is gone';
+        const busTab = [...bd.querySelectorAll('#tabs button')].find(b => /bus/i.test(b.dataset.tab || ''));
+        if (!busTab) return { skip: 'this city has no bus tab' };
+        busTab.click();
+        const listed = await until(() => bd.querySelectorAll('#busList .bus-row').length > 0, 15000);
+        if (!listed) return { skip: 'bus directory did not populate' };
+        if (fetched()) return 'geometry was fetched during boot — the deferral is gone';
 
-      const row = [...d.querySelectorAll('#busList .bus-row')][0];
-      row.click();
-      const arrived = await until(() => fetched() > 0, 15000);
-      if (!arrived) return 'a route was opened but geometry was never requested — routes will draw as straight lines';
+        const row = [...bd.querySelectorAll('#busList .bus-row')][0];
+        row.click();
+        const arrived = await until(() => fetched() > 0, 15000);
+        if (!arrived) return 'a route was opened but geometry was never requested — routes will draw as straight lines';
+      } finally { frame.remove(); }
     },
   },
   {

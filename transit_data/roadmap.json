@@ -149,8 +149,8 @@
           "id": "time-dependent-routing",
           "title": "Route by time, not just anchor to it",
           "priority": "P1",
-          "state": "todo",
-          "note": "Dijkstra still runs on static weights and the clock is applied afterwards, so “arrive by” subtracts a fixed total instead of re-routing to catch an earlier connection, and what-if scenarios cannot be simulated. Needs a time-expanded search that preserves offline use. Two live consequences now visible: a plan across a shut line still quotes a boarding time (warned, and no longer claiming timetable confidence, but not rolled forward to opening); and route RANKING still uses static costs, so at 01:50 a route needing a 4-hour wait can outrank one running now."
+          "state": "done",
+          "note": "The search now charges a wait that depends on WHEN you reach a stop, including the first boarding — which used to be free, so a route that could not move until 06:00 opened at zero cost and outranked one running now. Ranking compares door-to-door time (waiting included) rather than travel time. Suspended lines are excluded outright instead of merely warned about. “Arrive by” probes from the target and anchors a journey-length earlier, so a 09:00 arrival asked at 02:30 plans the morning metro (36 min) instead of a six-leg night-bus crawl (210 min). Measured at 02:30, the same Levent–Kadıköy journey returns M2›Marmaray›M4 at 08:00 and an all-bus route now.\nPerformance: A* with a heuristic derived from the network’s own top speed (a literal 100 km/h was inadmissible — intercity runs at 200 — which a test caught). Per search 24.8 ms against 9.6 ms before, but a full request is FASTER, 801 ms against 1186 ms, because A* and a 1200 ms alternatives budget cut the expensive tail. Night searches stay bounded where waiting dominates and the distance heuristic cannot prune."
         },
         {
           "id": "funicular-pairs",
@@ -172,6 +172,13 @@
           "priority": "P2",
           "state": "declined",
           "note": "A leg alighting at a line’s terminus cannot be trip-matched: operators publish departures OUT of a terminus, never arrivals INTO it. Affects e.g. any M2 leg ending at Yenikapı. Deriving it would need a turnaround assumption, which is exactly the kind of invented number this engine refuses. Weighed and left estimated."
+        },
+        {
+          "id": "what-if",
+          "title": "What-if scenarios",
+          "priority": "P2",
+          "state": "todo",
+          "note": "Now cheap: the search takes a start minute, so “what if I leave 10 minutes later” is one more call with a different anchor. Needs a UI, not an engine."
         }
       ]
     }

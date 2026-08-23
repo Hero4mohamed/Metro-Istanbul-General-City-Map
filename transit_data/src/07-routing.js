@@ -375,21 +375,146 @@ async function geocode(q){
   }catch(e){ clearTimeout(timer); GEO_CACHE.set(key, []); return []; }   // offline / blocked / timeout → local only
 }
 let WALK = 80;        // metres / minute (adjustable via Settings → Walking pace)
+/* The fastest thing on THIS city's network, derived rather than assumed. The A* heuristic
+   below divides by it, so it must never be lower than a mode's real speed: underestimating the
+   remaining travel time is what keeps the heuristic admissible, and an admissible heuristic is
+   what keeps the route optimal. It was hard-coded to 100 km/h, which held for metro and
+   Marmaray and quietly broke for intercity rail at 200. Reading it off KIND means a city that
+   adds a faster mode cannot silently invalidate the search. */
+const FASTEST_KMH = (() => { let m = 60;
+  for(const l of (typeof liveLines !== 'undefined' ? liveLines : []))
+    { const s = KIND[l.kind] && KIND[l.kind].speed; if(s > m) m = s; }
+  return m * 1.05;                                // a little headroom, so equality never rounds the wrong way
+})();
 const ACCESS = 1100;  // max access-walk to the first/last stop (m)
 // route between two arbitrary points (or selected stops): walk to nearby stops → Dijkstra → walk out.
 // penalty = optional Set of line refs to discourage boarding (used to surface alternative routes).
 // expected wait when boarding a line = half its headway, capped so a rare service doesn't
 // dominate the search. Cached per ref (headways are static); cleared when the lazy bus
 // schedules arrive so bus waits stop using the fallback.
-const HW_CACHE = {};
-function waitFor(ref, isBus){
-  if(ref in HW_CACHE) return HW_CACHE[ref];
-  let hw;
-  if(isBus) hw = (typeof busHeadway==='function' && busHeadway(ref)) || 20;
-  else { const lt = lineTiming(ref); hw = (lt && lt.hwMin) || 10; }
-  return HW_CACHE[ref] = Math.min(12, hw/2);
+/* Waiting, as the SEARCH sees it — deliberately line-level, not station-level.
+
+   82% of this graph's 780,000 edges are boardings: every bus line owns its own node at every
+   stop it serves, so a busy street is a small clique. Asking the full departure oracle per
+   relaxation would mean roughly 640,000 station lookups per search, and a search runs eight
+   times per request to build the alternatives. The search only needs enough to RANK — does this
+   line run at this hour, and how long is a typical wait for it. The exact per-station departure
+   is applied afterwards by itinPlan, which deals in a handful of legs rather than a whole graph.
+
+   Time-dependent, which the old version was not: it charged half a headway for every line at
+   every hour, so at 01:50 a route needing a four-hour wait for the first morning bus scored the
+   same as one running right now, and duly outranked it. */
+const WAIT_HORIZON = 360;        // 6 h. Past this a journey is really "tomorrow", and modelling
+                                 // the exact overnight gap only distorts the ranking.
+/* Every node carries a numeric refId so the per-line facts below can be reached by array index
+   rather than by hashing a string on each of a search's ~50,000 relaxations. */
+let _refIds = null, _refCount = 0, _refsBuiltWithBuses = null;
+const _waitFacts = [];   // per refId; cleared whenever the ids are rebuilt or a new request starts
+function ensureRefIds(){
+  const busesIn = (typeof busReady !== 'undefined') ? busReady : false;
+  if(_refIds && _refsBuiltWithBuses === busesIn) return;
+  _refIds = Object.create(null); _refCount = 0;
+  for(const k in nodeMeta){
+    const m = nodeMeta[k];
+    if(!m || !m.ref) continue;
+    // bus and rail are kept apart: the same ref string can name both, and they do not share a timetable
+    const key = (m.kind === 'bus' ? 'b:' : 'r:') + m.ref;
+    let id = _refIds[key];
+    if(id === undefined) id = _refIds[key] = _refCount++;
+    m.refId = id;
+  }
+  _refsBuiltWithBuses = busesIn;
+  _waitFacts.length = 0;
 }
-function routeXY(o, d, penalty){
+function clearWaitCache(){ ensureRefIds(); _waitFacts.length = 0; }
+/* A line's service window and its typical wait, resolved once per line.
+
+   The bucketed table above was solving the wrong problem. Within its service hours a line's
+   expected wait does not vary with the clock at all — it is half the published headway, whatever
+   the time. The ONLY time-dependence that matters for ranking is whether the line is running
+   yet, which is a pair of comparisons. Recomputing that per ten-minute bucket meant thousands
+   of oracle calls on a night-time search, which is why 03:00 cost 394 ms against 65 ms at 09:00.
+
+   The headway and the service window still come from the same places the timeline uses —
+   lineHours() for rail, the operator's own first/last for a bus — so the search and the
+   timeline cannot drift apart about when a line runs. */
+function waitFacts(ref, isBus, refId){
+  const hit = _waitFacts[refId];
+  if(hit) return hit;
+  const h = lineHours(ref);
+  let start = h.start, end = h.end, hw = null;
+  if(isBus && typeof BUS_SCHED !== 'undefined' && BUS_SCHED[ref]){
+    // the operator's own first/last is better than any generic hours string
+    const day = depDayType();
+    let bestFirst = null, bestLast = null;
+    for(const dir of BUS_SCHED[ref]){
+      const col = dir && dir[day];
+      if(!col || !col.first) continue;
+      const f = hhmmToMin(col.first), l = hhmmToMin(col.last);
+      if(f != null && (bestFirst == null || f < bestFirst)) bestFirst = f;
+      if(l != null && (bestLast == null || l > bestLast)) bestLast = l;
+      if(col.hw && (hw == null || col.hw < hw)) hw = col.hw;
+    }
+    if(bestFirst != null){ start = bestFirst; end = (bestLast != null ? bestLast : null); }
+  }
+  if(hw == null) hw = (isBus && typeof busHeadway === 'function' && busHeadway(ref)) || (lineTiming(ref).hwMin || 10);
+  return _waitFacts[refId] = { always: h.always, start, end, expWait: expectedWaitFor(hw) };
+}
+function waitAt(ref, isBus, atMin, refId){
+  const f = _waitFacts[refId] || waitFacts(ref, isBus, refId);
+  if(f.always || f.start == null) return f.expWait;
+  const now = ((atMin % 1440) + 1440) % 1440;
+  const end = (f.end == null) ? f.start : f.end;
+  // service windows may run past midnight, which is why this is not a simple range test
+  const running = (f.start <= end) ? (now >= f.start && now < end) : (now >= f.start || now < end);
+  if(running) return f.expWait;
+  let until = f.start - now;
+  if(until < 0) until += 1440;
+  return Math.min(WAIT_HORIZON, until);
+}
+/* Lines a major disruption has taken out of service. Routing someone onto a suspended line is
+   worse than telling them there is no route: the plan looks ordinary and cannot be travelled.
+   Scope and severity are the operator's own, and an expired `until` releases the line. */
+/* Which nodes this search may not use, precomputed ONTO the node objects.
+
+   Written as a predicate first, and that cost six times the whole search: `blocked(e.to)` ran
+   on all 780,000 relaxations, each one a nodeMeta hash lookup plus a Set.has. Marking the nodes
+   once — 71,000 property writes — turns the inner loop into a boolean read. The signature guard
+   means the eight searches behind one request share the work, since only the line penalty
+   differs between them. */
+let _blkSig = null;
+function markBlocked(avoid, noLine, susp){
+  const sig = (avoid ? [...avoid].sort().join(',') : '') + '|' +
+              (noLine ? [...noLine].sort().join(',') : '') + '|' +
+              (susp ? [...susp].sort().join(',') : '');
+  if(sig === _blkSig) return sig !== '||';
+  for(const k in nodeMeta){
+    const m = nodeMeta[k];
+    m._blk = !!((avoid && avoid.has(nodeMode(k))) ||
+                (susp && susp.size && susp.has(m.ref)) ||
+                (noLine && noLine.has(m.ref)));
+  }
+  _blkSig = sig;
+  return sig !== '||';
+}
+function suspendedRefs(){
+  const out = new Set();
+  for(const d of (DISRUPTIONS || [])){
+    if(d.scope !== 'line' || d.severity !== 'major') continue;
+    if(d.until && Date.parse(d.until + 'T23:59:59') < Date.now()) continue;
+    if(d.ref) out.add(d.ref);
+  }
+  return out;
+}
+// when a search is anchored: the clock for "now", or the departure the traveller chose
+function searchStartMin(){
+  try{
+    if(typeof planWhen !== 'undefined' && planWhen && planWhen.mode === 'depart' && planWhen.min != null)
+      return planWhen.min;
+  }catch(e){}
+  return nowIstanbulMin();
+}
+function routeXY(o, d, penalty, startMin){
   const srcs = nearbyNodes(o.lat,o.lng,ACCESS,12);
   const dArr = nearbyNodes(d.lat,d.lng,ACCESS,12);
   if(!srcs.length || !dArr.length) return null;
@@ -397,11 +522,11 @@ function routeXY(o, d, penalty){
   const avoid = avoidModes.size ? avoidModes : null;             // Settings → Avoid ferries/buses
   // a mode switched off for this trip, or a specific line the traveller chose to avoid
   const noLine = tripAvoidLines.size ? tripAvoidLines : null;
-  const blocked = (avoid || noLine)
-    ? (k=>{ const m=nodeMeta[k]; if(!m) return false;
-            if(avoid && avoid.has(nodeMode(k))) return true;
-            return !!(noLine && noLine.has(m.ref)); })
-    : (()=>false);
+  ensureRefIds();
+  const susp = suspendedRefs();
+  const t0 = (startMin != null) ? startMin : searchStartMin();
+  const anyBlocked = markBlocked(avoid, noLine, susp);
+  const blocked = anyBlocked ? (k=>{ const m=nodeMeta[k]; return !!(m && m._blk); }) : (()=>false);
   // Settings → Prefer step-free: bias away from boarding/alighting/transferring at a
   // station we KNOW has no elevator (stepFree===false). A soft penalty, never a block.
   const SF_PEN = 10;
@@ -415,34 +540,66 @@ function routeXY(o, d, penalty){
   const XFER_PREF = routePref==='easy' ? 20 : 0;
   const dsts = new Map(); dArr.forEach(([k,dist])=>{ if(blocked(k)) return; let w=dist/WALK; if(sfBad && sfBad(nodeMeta[k].name)) w+=SF_PEN; dsts.set(k, w); });
   if(!dsts.size) return null;
+  /* A*, not plain Dijkstra. The heuristic is the straight-line distance to the destination at
+     the fastest speed anything on this network travels, so it can never overestimate and the
+     result stays optimal — but it points the search at the destination instead of growing a
+     circle around the origin.
+
+     It matters most at night. Once waiting dominates, every frontier node is expensive and a
+     blind search expands most of the city before it reaches ANY candidate, which is what took a
+     02:20 request to three and a half seconds. Reaching a candidate early gives `best` a real
+     value, and `best` is what prunes everything else. */
+  const hOf = k => { const m=nodeMeta[k];
+    return m ? metersBetween([m.lat,m.lng],[d.lat,d.lng])/1000/FASTEST_KMH*60 : 0; };
   const dist={}, prev={}, done={}, h=new MinHeap();
   srcs.forEach(([k,mm])=>{ if(blocked(k)) return; let w=mm/WALK; if(pen && pen.has(nodeMeta[k].ref)) w+=45;   // discourage starting on a used line
     if(sfBad && sfBad(nodeMeta[k].name)) w+=SF_PEN;
-    if(dist[k]===undefined||w<dist[k]){ dist[k]=w; prev[k]=null; h.push(k,w); } });
+    /* The FIRST boarding costs a wait too. Charging it only at changes made starting a journey
+       free, which is where the ranking bug bit hardest: at 01:50 a route beginning on a line
+       that does not run until 06:00 opened at zero cost and won. */
+    w += waitAt(nodeMeta[k].ref, nodeMeta[k].kind==='bus', t0 + w, nodeMeta[k].refId);
+    if(dist[k]===undefined||w<dist[k]){ dist[k]=w; prev[k]=null; h.push(k, w + hOf(k)); } });
   let best=Infinity, bestEnd=null;
-  while(true){ const top=h.pop(); if(!top) break; const du=top[0], u=top[1];
-    if(done[u]) continue; done[u]=true; if(du>best) break;
+  while(true){ const top=h.pop(); if(!top) break; const u=top[1];
+    if(done[u]) continue; done[u]=true;
+    const du=dist[u];
+    if(top[0]>best) break;                       // nothing still queued can beat the best found
     if(dsts.has(u)){ const tot=du+dsts.get(u); if(tot<best){ best=tot; bestEnd=u; } }
-    const adj=G[u]||[]; for(const e of adj){ if(done[e.to] || blocked(e.to)) continue; let nd=du+e.w;
-      const vm=nodeMeta[e.to], um=nodeMeta[u];
+    const adj=G[u]||[]; const um=nodeMeta[u];
+    for(const e of adj){ if(done[e.to]) continue;
+      /* One nodeMeta lookup per edge. It used to be two — once inside blocked(), once here —
+         and at 780,000 relaxations a redundant hash lookup is not a rounding error. */
+      const vm=nodeMeta[e.to];
+      if(anyBlocked && vm && vm._blk) continue;
+      let nd=du+e.w;
       if(vm.ref!==um.ref){                       // this edge is a CHANGE of vehicle
-        nd += XFER_PREF + waitFor(vm.ref, vm.kind==='bus');
+        // the wait depends on WHEN you get here, which is what makes the search time-dependent
+        nd += XFER_PREF + waitAt(vm.ref, vm.kind==='bus', t0 + du, vm.refId);
         if(pen && pen.has(vm.ref)) nd+=45;       // discourage re-boarding a line used by a previous option
       }
       if(sfBad && vm.ref!==um.ref && sfBad(vm.name)) nd+=SF_PEN;  // penalise transferring at a non-step-free station
-      if(dist[e.to]===undefined||nd<dist[e.to]){ dist[e.to]=nd; prev[e.to]=u; h.push(e.to,nd); } }
+      if(dist[e.to]===undefined||nd<dist[e.to]){ dist[e.to]=nd; prev[e.to]=u; h.push(e.to, nd + hOf(e.to)); } }
   }
   if(bestEnd===null) return null;
   const path=[]; let cur=bestEnd; while(cur!=null){ path.unshift(cur); cur=prev[cur]; }
   const first=nodeMeta[path[0]], lastN=nodeMeta[bestEnd];
-  // recompute real total without the synthetic penalty so ETA stays truthful
-  let realTotal = metersBetween([o.lat,o.lng],[first.lat,first.lng])/WALK + metersBetween([lastN.lat,lastN.lng],[d.lat,d.lng])/WALK;
+  /* Re-sum the real graph weights, dropping the synthetic preference penalties so the quoted
+     journey time stays truthful. Waiting is accumulated SEPARATELY: `total` keeps its long
+     standing meaning of travel plus walking, which is what the headline shows, while
+     `waitTotal` carries what the clock costs. Ranking uses their sum — a route that is quick
+     once you are moving but starts with a four-hour wait is not a good route. */
+  const oWalk = metersBetween([o.lat,o.lng],[first.lat,first.lng])/WALK;
+  const dWalk = metersBetween([lastN.lat,lastN.lng],[d.lat,d.lng])/WALK;
+  let realTotal = oWalk + dWalk;
+  let waitTotal = waitAt(first.ref, first.kind==='bus', t0 + oWalk, first.refId);
   for(let i=1;i<path.length;i++){ const a=path[i-1], b=path[i]; const adj=G[a]||[]; let w=Infinity;
-    for(const e of adj) if(e.to===b && e.w<w) w=e.w; if(w<Infinity) realTotal+=w; }
-  return { path, total:realTotal,
-           oWalk: metersBetween([o.lat,o.lng],[first.lat,first.lng])/WALK,
-           dWalk: metersBetween([lastN.lat,lastN.lng],[d.lat,d.lng])/WALK,
-           origin:o, dest:d };
+    for(const e of adj) if(e.to===b && e.w<w) w=e.w; if(w<Infinity) realTotal+=w;
+    const am=nodeMeta[a], bm=nodeMeta[b];
+    if(am && bm && bm.ref!==am.ref)
+      waitTotal += waitAt(bm.ref, bm.kind==='bus', t0 + realTotal + waitTotal, bm.refId);
+  }
+  return { path, total:realTotal, waitTotal, doorTotal: realTotal + waitTotal, startMin: t0,
+           oWalk, dWalk, origin:o, dest:d };
 }
 // other bus lines that also connect a leg's boarding & alighting stops (direction-agnostic)
 function siblingBuses(b, a, exclude){

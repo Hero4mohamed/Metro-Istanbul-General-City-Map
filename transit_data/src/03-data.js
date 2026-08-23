@@ -109,13 +109,38 @@ const LINE_TIMING_IST = {
 };
 const LINE_TIMING = CITY.timing || LINE_TIMING_IST;   // each city ships its own published timings
 const HW_FALLBACK = { subway:8, marmaray:10, suburban:20, tram:10, funicular:6, cable:8, metrobus:3, ferry:25 };
+/* Memoised. These are static per line, and the time-dependent router asks for them inside a
+   loop that relaxes hundreds of thousands of edges — rebuilding an object and re-formatting a
+   frequency string each time cost more than the search itself. */
+let _lineTimingMemo = Object.create(null);
 function lineTiming(ref){
+  const hit = _lineTimingMemo[ref];
+  if(hit) return hit;
   const t = HAS.lineTiming ? LINE_TIMING[ref] : null, kind = lineByRef[ref] && lineByRef[ref].kind;
   // a line with one published gap (Kocaeli's ferries) reads "every 81 min", not "every 81–81 min"
-  if(t) return { spd:t.spd, hwMin:(t.peak+t.off)/2, hours:t.hours||'06:00 – 00:00',
+  if(t) return _lineTimingMemo[ref] = { spd:t.spd, hwMin:(t.peak+t.off)/2, hours:t.hours||'06:00 – 00:00',
                  freq:`every ${t.peak===t.off ? t.peak : t.peak+'–'+t.off} min` };
   const s = SCHEDULE[kind] || SCHEDULE.subway;
-  return { spd:(KIND[kind]&&KIND[kind].speed)||40, hwMin:HW_FALLBACK[kind]||10, hours:s.hours, freq:s.freq };
+  return _lineTimingMemo[ref] = { spd:(KIND[kind]&&KIND[kind].speed)||40, hwMin:HW_FALLBACK[kind]||10, hours:s.hours, freq:s.freq };
+}
+/* The parsed form of a line's operating hours, and whether a disruption has suspended it.
+   Parsing "06:00 – 00:00" with a regex and re-running Date.parse over the disruption list on
+   every call made lineClosedAt the single most expensive function in the router. Invalidated
+   by clearTimingMemo() when the disruption feed refreshes. */
+let _lineHoursMemo = Object.create(null);
+function clearTimingMemo(){ _lineTimingMemo = Object.create(null); _lineHoursMemo = Object.create(null); }
+function lineHours(ref){
+  const hit = _lineHoursMemo[ref];
+  if(hit) return hit;
+  const d=(DISRUPTIONS||[]).find(x=> x.ref===ref && x.scope==='line' && x.severity==='major'
+        && (!x.until || Date.parse(x.until+'T23:59:59')>=Date.now()));
+  const h=(lineTiming(ref).hours)||'';
+  const f = { susp:d||null, hours:h, always:/24/.test(h), start:null, end:null, opens:null };
+  if(!f.always){
+    const m=h.match(/(\d{1,2}):(\d{2})\s*[–—-]\s*(\d{1,2}):(\d{2})/);
+    if(m){ f.start=+m[1]*60+ +m[2]; f.end=+m[3]*60+ +m[4]; f.opens=m[1]+':'+m[2]; }
+  }
+  return _lineHoursMemo[ref] = f;
 }
 /* ---- is this line actually running right now? Two reasons it may not be:
    (a) suspended by an active line-scope MAJOR disruption (e.g. B2 engineering works);
@@ -124,17 +149,12 @@ function lineTiming(ref){
 // Same check at an ARBITRARY minute-of-day, so the planner can ask "will this line be
 // running when I actually board it?" rather than only "is it running right now?".
 function lineClosedAt(ref, atMin){
-  const d=(DISRUPTIONS||[]).find(x=> x.ref===ref && x.scope==='line' && x.severity==='major'
-        && (!x.until || Date.parse(x.until+'T23:59:59')>=Date.now()));
-  if(d) return { why:'susp', d };
-  const h=(lineTiming(ref).hours)||'';
-  if(/24/.test(h)) return null;                       // 24-hour service (Metrobüs)
-  const m=h.match(/(\d{1,2}):(\d{2})\s*[–—-]\s*(\d{1,2}):(\d{2})/);
-  if(!m) return null;                                 // unparseable → assume open
-  const start=+m[1]*60+ +m[2], end=+m[3]*60+ +m[4];
+  const f = lineHours(ref);
+  if(f.susp) return { why:'susp', d:f.susp };
+  if(f.always || f.start==null) return null;          // 24-hour service, or unparseable → open
   const now=((Math.round(atMin)%1440)+1440)%1440;     // planner times can run past midnight
-  const open = start<=end ? (now>=start && now<end) : (now>=start || now<end);   // spans midnight
-  return open ? null : { why:'hours', hours:h, opens:m[1]+':'+m[2] };
+  const open = f.start<=f.end ? (now>=f.start && now<f.end) : (now>=f.start || now<f.end);   // spans midnight
+  return open ? null : { why:'hours', hours:f.hours, opens:f.opens };
 }
 function lineClosedNow(ref){ return lineClosedAt(ref, nowIstanbulMin()); }
 let closedCache={};                                    // ref -> closure info (checked per frame → cached)

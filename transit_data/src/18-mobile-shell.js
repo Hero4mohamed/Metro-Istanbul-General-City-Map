@@ -172,7 +172,9 @@ async function loadBusData(){
     const d = await r.json();
     BUS_GRAPH = d.graph || [];  BUS_SCHED = d.sched || {};   // geometry loads on first route draw
     // graph integration builds ~70k nodes — run it off the critical path
-    const go = ()=>{ integrateBuses(); for(const k in HW_CACHE) delete HW_CACHE[k]; busReady = true; busReadyResolve(); };
+    /* Bus nodes have just joined the graph, so every cached wait is stale — and the refIds the
+       search indexes them by no longer cover the new nodes. clearWaitCache() rebuilds both. */
+    const go = ()=>{ integrateBuses(); busReady = true; clearWaitCache(); busReadyResolve(); };
     if('requestIdleCallback' in window) requestIdleCallback(go, { timeout: 4000 });
     else setTimeout(go, 200);
   }catch(e){

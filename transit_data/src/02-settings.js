@@ -288,10 +288,14 @@ function optFare(o){ try{ return estimateFare(o.it).tl; }catch(e){ return 0; } }
 function setOptSort(v){ optSort=v; sortOptsByPref(); renderOptChips(); selectOption(0); }
 function sortOptsByPref(){
   if(!currentOpts || !currentOpts.length) return;
-  if(optSort==='time')         currentOpts.sort((a,b)=> a.it.total-b.it.total);
-  else if(optSort==='changes') currentOpts.sort((a,b)=> (a.it.transfers-b.it.transfers) || (a.it.total-b.it.total));
-  else if(optSort==='walk')    currentOpts.sort((a,b)=> (optWalkMin(a)-optWalkMin(b)) || (a.it.total-b.it.total));
-  else if(optSort==='fare')    currentOpts.sort((a,b)=> (optFare(a)-optFare(b)) || (a.it.total-b.it.total));
+  /* Compare on the DOOR-TO-DOOR time, waiting included. Sorting on travel-only made a route
+     that is quick once you are aboard beat one you can actually catch — most visibly at night,
+     when the fastest ride is on a line that has not started running. */
+  const dt = x => (x.it.doorTotal != null ? x.it.doorTotal : x.it.total);
+  if(optSort==='time')         currentOpts.sort((a,b)=> dt(a)-dt(b));
+  else if(optSort==='changes') currentOpts.sort((a,b)=> (a.it.transfers-b.it.transfers) || (dt(a)-dt(b)));
+  else if(optSort==='walk')    currentOpts.sort((a,b)=> (optWalkMin(a)-optWalkMin(b)) || (dt(a)-dt(b)));
+  else if(optSort==='fare')    currentOpts.sort((a,b)=> (optFare(a)-optFare(b)) || (dt(a)-dt(b)));
   else if(routePref==='easy')  currentOpts.sort((a,b)=> (a.it.transfers-b.it.transfers) || (a.it.total-b.it.total));
   else                         currentOpts.sort((a,b)=> (a.it.total-b.it.total) || (a.it.transfers-b.it.transfers));
   currentOptIdx=0;

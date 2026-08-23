@@ -126,6 +126,48 @@ test('no call to an undefined global', () => {
   assert.deepStrictEqual(missing, [], 'called but never defined: ' + missing.join(', '));
 });
 
+/* A reference to a deleted VARIABLE is exactly as fatal as a call to a deleted function, and
+   the check above only looked for calls. Deleting HW_CACHE while refactoring the router left
+   `for(const k in HW_CACHE)` behind in the bus-loading path; the suite stayed green and the
+   browser threw a ReferenceError the moment the lazy bus data landed — killing bus routing on
+   every visit. Only SCREAMING_CASE names are checked: this project uses that convention for
+   module-level data tables, which are the ones that get renamed and left dangling, and
+   restricting it that way keeps the check free of false positives. */
+test('no reference to an undefined shared data table', () => {
+  /* codeOnly() keeps `${…}` interpolations, because they ARE code — but a string literal
+     nested inside one survives with them, and `'date TBC'` then reads as a reference to a
+     table called TBC. Strip quoted runs as well; nothing inside quotes can be a reference. */
+  const s = H.codeOnly(H.appScript())
+    .replace(/'(?:[^'\\\n]|\\.)*'/g, "''")
+    .replace(/"(?:[^"\\\n]|\\.)*"/g, '""');
+  const declared = new Set();
+  for (const m of s.matchAll(/\bfunction\s+([A-Z][A-Z0-9_]{2,})\b/g)) declared.add(m[1]);
+  /* One statement can declare several names — `const GAP=46, PADX=30, TY=64;` — and reading
+     only the first turns every later one into a false alarm. Take the whole declaration list
+     and pick out each name that begins a declarator. */
+  for (const m of s.matchAll(/\b(?:const|let|var)\s+([^;\n]+)/g)) {
+    for (const part of m[1].split(',')) {
+      const name = /^\s*([A-Z][A-Z0-9_]{2,})\s*(?:=|$)/.exec(part);
+      if (name) declared.add(name[1]);
+    }
+  }
+  // build-time tokens are injected as `const X = {...}` too, so the same scan covers them
+  const used = new Set();
+  for (const m of s.matchAll(/(?<![.\w$])([A-Z][A-Z0-9_]{2,})(?![\w$])/g)) used.add(m[1]);
+
+  const KNOWN = new Set(['NaN', 'Infinity', 'JSON', 'Math', 'Object', 'Array', 'String', 'Number',
+    'Boolean', 'Date', 'RegExp', 'Error', 'Map', 'Set', 'WeakMap', 'WeakSet', 'Promise', 'Symbol',
+    'Intl', 'URL', 'Blob', 'FormData', 'Headers', 'Request', 'Response', 'AbortController',
+    'TextEncoder', 'TextDecoder', 'Uint8Array', 'Int16Array', 'Int32Array', 'Float32Array',
+    'Float64Array', 'ArrayBuffer', 'DataView', 'Function', 'Proxy', 'Reflect', 'BigInt',
+    'DOMParser', 'XMLHttpRequest', 'WebSocket', 'Worker', 'Notification', 'Image', 'Audio',
+    'CustomEvent', 'Event', 'KeyboardEvent', 'MouseEvent', 'L', 'GET', 'POST', 'PUT', 'DELETE',
+    'UTC', 'ID', 'URI', 'HTML', 'CSS', 'API', 'OK']);
+  const missing = [...used].filter(n => !declared.has(n) && !KNOWN.has(n)).sort();
+  assert.deepStrictEqual(missing, [],
+    'referenced but never defined: ' + missing.join(', '));
+});
+
 /* --- 6. Supply chain and secrets ---------------------------------------------------- */
 test('every CDN resource is integrity-pinned', () => {
   // Both the stylesheet and the script come from unpkg; checking only one leaves the other

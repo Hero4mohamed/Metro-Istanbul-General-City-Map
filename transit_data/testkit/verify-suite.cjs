@@ -221,6 +221,55 @@ const MUTATIONS = [
     apply: h => h.replace('if (!ta || !tb) return null;', 'if (!ta && !tb) return null;'),
   },
   {
+    /* The exact defect this guard was added for: HW_CACHE was deleted during the router
+       refactor and a `for(const k in HW_CACHE)` survived in the bus-loading path. Every static
+       test stayed green and the browser threw the moment the lazy bus data landed. */
+    name: 'reference a shared table that was deleted in a refactor',
+    expect: 'no reference to an undefined shared data table',
+    apply: h => h.replace('const go = ()=>{ integrateBuses(); busReady = true; clearWaitCache(); busReadyResolve(); };',
+                          'const go = ()=>{ integrateBuses(); for(const k in HW_CACHE) delete HW_CACHE[k]; busReady = true; busReadyResolve(); };'),
+  },
+  {
+    /* --- time-dependent routing. The original defect: the same wait at every hour, so a route
+       that could not move until morning outranked one running now. */
+    name: 'charge the same wait whatever the hour',
+    expect: 'the search charges a wait that depends on the clock',
+    apply: h => h.replace("nd += XFER_PREF + waitAt(vm.ref, vm.kind==='bus', t0 + du, vm.refId);",
+                          "nd += XFER_PREF + waitAt(vm.ref, vm.kind==='bus', 9*60, vm.refId);"),
+  },
+  {
+    name: 'make the first boarding free again',
+    expect: 'the search charges a wait that depends on the clock',
+    apply: h => h.replace("    w += waitAt(nodeMeta[k].ref, nodeMeta[k].kind==='bus', t0 + w, nodeMeta[k].refId);", ''),
+  },
+  {
+    name: 'route onto a line a major disruption has suspended',
+    expect: 'a suspended line is excluded from routing, not merely warned about',
+    apply: h => h.replace('(susp && susp.size && susp.has(m.ref)) ||', '(false) ||'),
+  },
+  {
+    name: 'leave a line suspended forever after the works finish',
+    expect: 'a suspended line is excluded from routing, not merely warned about',
+    apply: h => h.replace("if(d.until && Date.parse(d.until + 'T23:59:59') < Date.now()) continue;", ''),
+  },
+  {
+    name: 'search an "arrive by" request at the current clock',
+    expect: '"arrive by" searches near the target, not near now',
+    apply: h => h.replace('t0 = planWhen.min - Math.min(240, Math.max(5, span));', 't0 = searchStartMin();'),
+  },
+  {
+    name: 'rank alternatives on travel time and ignore the waiting',
+    expect: 'ranking compares door-to-door time, not travel time alone',
+    apply: h => h.replace('const dt = x => (x.it.doorTotal != null ? x.it.doorTotal : x.it.total);',
+                          'const dt = x => x.it.total;'),
+  },
+  {
+    // an inadmissible heuristic silently returns non-optimal routes — no error, just worse answers
+    name: 'hard-code an A* speed slower than the fastest mode',
+    expect: 'the search is guided but still optimal',
+    apply: h => h.replace(/const FASTEST_KMH = \(\(\) => \{[\s\S]*?\}\)\(\);/, 'const FASTEST_KMH = 100;'),
+  },
+  {
     name: 'rate a shut line as a high-confidence departure',
     expect: 'a journey through a shut line does not claim timetable-grade confidence',
     apply: h => h.replace(
