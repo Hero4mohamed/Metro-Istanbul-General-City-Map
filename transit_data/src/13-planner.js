@@ -468,6 +468,23 @@ function drawItin(res, it, allPts, legs){
    operating hours at the moment you would actually board it. It is labelled an estimate
    because it is one: the only exact times this app holds are bus first/last/headway. ===== */
 let planWhen = { mode:'now', min:null };
+/* The one way to change when a journey is planned for. The segmented control used to set
+   planWhen directly, which meant anything else that wanted to plan for a different time — the
+   assistant answering "how do I get there by nine" — would move the engine without moving the
+   buttons, and the panel would then describe a journey the controls denied. */
+function setPlanWhen(mode, min){
+  planWhen.mode = mode;
+  planWhen.min = (mode === 'now') ? null : min;
+  const seg = document.getElementById('whenSeg'), inp = document.getElementById('whenTime');
+  if(seg) [...seg.children].forEach(b =>
+    b.classList.toggle('active', b.getAttribute && b.getAttribute('data-when') === mode));
+  if(inp){
+    inp.disabled = (mode === 'now');
+    if(mode !== 'now' && min != null)
+      inp.value = String(Math.floor((((min % 1440) + 1440) % 1440) / 60)).padStart(2,'0') + ':' +
+                  String(((min % 60) + 60) % 60).padStart(2,'0');
+  }
+}
 function fmtMinOfDay(m){
   m = Math.round(((m % 1440) + 1440) % 1440);
   const h = Math.floor(m / 60), mm = m % 60;

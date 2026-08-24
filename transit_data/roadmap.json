@@ -163,8 +163,8 @@
           "id": "ai-transport-tools",
           "title": "Expose the engine to the assistant as tools",
           "priority": "P1",
-          "state": "todo",
-          "note": "The deterministic engine now exists; the assistant should call check_transfer / next_departures rather than reasoning about times itself. The brief is explicit that an LLM must never do routing arithmetic from memory."
+          "state": "done",
+          "note": "The model no longer reasons about times. plan_route returns per-leg detail — where each departure came from, whether the run time was read off a timetable, the change verdict with minutes to spare — and three new tools expose the engine directly: next_departures (real clock times where published, an honest frequency estimate where not), check_transfer (measured walk + interchange buffer vs the real next departure), and what_if_later. The system prompt now forbids transport arithmetic outright and tells the model to word a timetabled departure differently from an expectation. transportTool() publishes the surface by name so it can be tested — it was sealed in the assistant’s closure, and an engine API nothing can call is not one."
         },
         {
           "id": "terminus-arrivals",
@@ -177,8 +177,8 @@
           "id": "what-if",
           "title": "What-if scenarios",
           "priority": "P2",
-          "state": "todo",
-          "note": "Now cheap: the search takes a start minute, so “what if I leave 10 minutes later” is one more call with a different anchor. Needs a UI, not an engine."
+          "state": "done",
+          "note": "Delivered as the what_if_later tool rather than a UI control. Measured Levent–Kadıköy: leaving 20 minutes EARLIER arrives 25 minutes earlier, because the waiting drops from 16 to 11 — the cost of a delay is not the delay, which is the point the brief makes. A panel control for it is still open."
         },
         {
           "id": "f2-stations",

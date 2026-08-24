@@ -287,6 +287,30 @@ const MUTATIONS = [
                           "if((line.kind === 'funicular' || line.kind === 'cable') && line.paired !== false"),
   },
   {
+    /* --- the LLM/engine boundary. Each of these lets the model answer from its own reasoning
+       instead of from a computed result, which produces a plausible answer nothing can check. */
+    name: 'let the model do the transport arithmetic itself',
+    expect: 'the assistant is told not to do transport arithmetic itself',
+    apply: h => h.replace('You do not do transport arithmetic.', 'Work out the timings yourself.'),
+  },
+  {
+    // advertising a tool that is not implemented: the model calls it, gets "unknown tool", and
+    // falls back to guessing — the failure looks like the app's, so nothing flags it
+    name: 'offer the model a tool that is not implemented',
+    expect: 'every transport tool the model is offered actually exists',
+    apply: h => h.replace('{ name:"next_departures"', '{ name:"predict_delay", description:"x", input_schema:{type:"object",properties:{}} },\n    { name:"next_departures"'),
+  },
+  {
+    name: 'seal the tool surface back inside the assistant closure',
+    expect: 'the deterministic tool surface is reachable by name',
+    apply: h => h.replace('_transportToolRunner = (name, a) => runAiTool(name, a);', ''),
+  },
+  {
+    name: 'hand the model a journey with no indication of where its times came from',
+    expect: 'a journey handed to the model says where each leg’s time came from',
+    apply: h => h.replace(/departure_is_exact: !!\(r\.dep && r\.dep\.exact\),/, ''),
+  },
+  {
     name: 'rate a shut line as a high-confidence departure',
     expect: 'a journey through a shut line does not claim timetable-grade confidence',
     apply: h => h.replace(

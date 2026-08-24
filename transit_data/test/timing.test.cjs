@@ -213,6 +213,67 @@ test('the counterbalance is not applied to modes it was not established for', ()
     'the note explaining why cable cars keep the generic model has gone');
 });
 
+/* --- the assistant's tool surface -------------------------------------------------------
+   The brief's central architectural rule: the model understands the question and explains the
+   answer, but every minute, wait, verdict and feasibility comes from the deterministic engine.
+   A language model asked to add a walk to a departure will produce something plausible and
+   occasionally wrong, and nothing downstream can tell which. These checks are about keeping
+   that boundary where it is. */
+test('the assistant is told not to do transport arithmetic itself', () => {
+  const src = H.appScript();
+  assert.ok(/You do not do transport arithmetic/.test(src),
+    'the rule forbidding the model from computing times itself has been removed from the system prompt');
+  assert.ok(/never dress an expectation up as a specific vehicle/i.test(src),
+    'the instruction separating a timetabled departure from a frequency estimate has gone');
+});
+
+test('every transport tool the model is offered actually exists', () => {
+  const src = H.appScript();
+  const block = /const AI_TOOLS = \[([\s\S]*?)\n  \];/.exec(src);
+  assert.ok(block, 'AI_TOOLS not found');
+  const declared = [...block[1].matchAll(/\{\s*name:"([a-z_]+)"/g)].map(m => m[1]);
+  assert.ok(declared.length >= 12, 'implausibly few tools declared: ' + declared.length);
+  /* A tool the model can see but the runner cannot handle falls through to "unknown tool" —
+     which the model reads as a failure of the app, not of its own request, and works around by
+     guessing. Every advertised name must be implemented. */
+  const handled = new Set([...src.matchAll(/name === "([a-z_]+)"/g)].map(m => m[1]));
+  const missing = declared.filter(n => !handled.has(n));
+  assert.deepStrictEqual(missing, [], 'declared to the model but not implemented: ' + missing.join(', '));
+});
+
+test('the deterministic tool surface is reachable by name', () => {
+  const src = H.appScript();
+  /* The tools live in the assistant's closure, where the question loop is. An engine API that
+     nothing outside that closure can call cannot be tested and cannot be reused — the browser
+     suite drives it through this entry point. */
+  assert.ok(/function transportTool\(name, args\)/.test(src),
+    'the published tool entry point is gone — the engine surface is sealed inside a closure again');
+  assert.ok(/_transportToolRunner = \(name, a\) => runAiTool\(name, a\)/.test(src),
+    'the tool runner is no longer published');
+});
+
+test('a journey handed to the model says where each leg’s time came from', () => {
+  const src = H.appScript();
+  /* Scoped to the function that BUILDS the summary. Checking the whole script found these
+     names in the system prompt, which talks about them — so deleting a field from the payload
+     while the prompt still instructed the model to read it left the test green and the model
+     looking for something that was no longer there. */
+  const fn = /function planSummaryFor\(it\)\{([\s\S]*?)\n  \}/.exec(src);
+  assert.ok(fn, 'the shared journey shape is gone');
+  for (const field of ['departure_source', 'departure_is_exact', 'run_time_from_timetable',
+                       'confidence', 'legs_from_timetable', 'missed_connections']) {
+    assert.ok(new RegExp(field).test(fn[1]),
+      'plan summaries no longer report ' + field + ' — the model cannot tell a timetabled departure from an estimate');
+  }
+  // anything the prompt tells the model to read must actually be produced
+  for (const m of src.matchAll(/When a leg says (\w+)/g))
+    assert.ok(new RegExp(m[1]).test(fn[1]),
+      'the system prompt tells the model to read ' + m[1] + ', but plan summaries no longer contain it');
+  // and the transfer detail must keep saying what it is NOT based on
+  assert.ok(/no delay history is published/.test(src),
+    'the tool output no longer states that its verdicts exclude delay history, which invites the model to imply reliability data exists');
+});
+
 /* --- refusals -------------------------------------------------------------------------- */
 /* The engine's most valuable behaviour is declining to answer. These check the refusals are
    still wired into the shipped page, because each one is a single branch away from becoming a

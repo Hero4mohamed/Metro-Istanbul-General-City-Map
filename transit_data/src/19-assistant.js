@@ -269,6 +269,17 @@ function aiSay(html, who){
   log.appendChild(d); log.scrollTop = log.scrollHeight; return d;
 }
 let aiAsk = async function(){};
+/* The transport tools are the deterministic engine's public surface — the brief's central rule
+   is that the model calls them rather than doing transport arithmetic itself. They live inside
+   the assistant's closure because that is where the question-answering loop is, but an API that
+   nothing outside that closure can reach is not an API: it cannot be tested, and it cannot be
+   reused by anything else that needs a computed answer. Published here by name. */
+let _transportToolRunner = null;
+function transportTool(name, args){
+  if(!_transportToolRunner)
+    return Promise.resolve({ error:"the assistant is not initialised on this page" });
+  return _transportToolRunner(name, args || {});
+}
 (function(){
   const orb = document.getElementById("aiOrb"), pan = document.getElementById("aiPanel"),
         inp = document.getElementById("aiIn"), snd = document.getElementById("aiSend"),
@@ -346,6 +357,11 @@ let aiAsk = async function(){};
       const tm = lineTiming(ref);
       out.service_hours = tm.hours; out.frequency = tm.freq;
       out.hours_note = "published operating window for the line, not a per-station timetable";
+      /* A funicular runs as a counterbalanced pair, which is why its wait is a cycle rather
+         than a queue of vehicles — worth being able to explain when someone asks how it works
+         or why two cars appear to move against each other on the map. */
+      if(ln.kind === 'funicular' && ln.paired !== false)
+        out.vehicles = "two counterbalanced cars on one rope: as one climbs the other descends, and they meet in the middle";
       const c = lineClosedAt(ref, nowIstanbulMin());
       out.running_now = !c;
       if(c) out.not_running_because = c.why === "susp" ? "suspended by a service alert"
@@ -376,8 +392,19 @@ let aiAsk = async function(){};
       input_schema:{ type:"object", properties:{ category:{type:"string"}, place:{type:"string", description:"omit to use the map centre or the user location"} }, required:["category"] } },
     { name:"nearest_stops", description:"Nearest transit stops to a place, with the lines serving each and the walk in minutes.",
       input_schema:{ type:"object", properties:{ place:{type:"string"} }, required:["place"] } },
-    { name:"plan_route", description:"Plan a journey between two places and draw it on the map. Returns duration, transfers, lines and clock times.",
-      input_schema:{ type:"object", properties:{ from:{type:"string"}, to:{type:"string"} }, required:["from","to"] } },
+    { name:"plan_route", description:"Plan a journey between two places and draw it on the map. Returns clock times, travel and waiting minutes, transfers, and PER LEG: where each departure time came from (a published timetable, an operator frequency, or an assumption), whether the change onto it is comfortable or tight, and how many minutes there are to spare. Use depart_at or arrive_by for a specific time; omit both for now.",
+      input_schema:{ type:"object", properties:{ from:{type:"string"}, to:{type:"string"},
+        depart_at:{type:"string", description:"HH:MM, 24-hour, in this city's local time"},
+        arrive_by:{type:"string", description:"HH:MM, 24-hour — the journey is planned backwards from it"} }, required:["from","to"] } },
+    { name:"next_departures", description:"When the next vehicle on a line leaves, and how well that is known. Where the operator publishes a timetable for that stop this gives the actual clock times; otherwise it gives the expected wait for the line's published frequency and says so. Also reports a line that is shut or has finished for the day.",
+      input_schema:{ type:"object", properties:{ line:{type:"string"},
+        place:{type:"string", description:"the station or stop; omit for the line in general"} }, required:["line"] } },
+    { name:"check_transfer", description:"Whether a change between two lines at a station actually works: the measured walk, the interchange buffer, when you can be on the platform, the next departure, and the minutes to spare. Verdicts are safe, ok, tight, risky, infeasible — or 'frequency' when the onward line publishes no timetable, in which case there is no specific departure to catch or miss.",
+      input_schema:{ type:"object", properties:{ from_line:{type:"string"}, to_line:{type:"string"},
+        station:{type:"string"}, arriving_at:{type:"string", description:"HH:MM; omit for now"} },
+        required:["from_line","to_line","station"] } },
+    { name:"what_if_later", description:"Re-time the journey already planned, leaving a given number of minutes later or earlier (use a negative number for earlier). Returns the new departure and arrival and how much later you would actually arrive — which is often not the same as the delay, because the waits fall differently.",
+      input_schema:{ type:"object", properties:{ minutes_later:{type:"number"} }, required:["minutes_later"] } },
     { name:"bus_routes_at", description:"Bus routes serving a stop.",
       input_schema:{ type:"object", properties:{ place:{type:"string"} }, required:["place"] } },
     { name:"fare_info", description:"Current published fares for this city.",
@@ -438,6 +465,67 @@ let aiAsk = async function(){};
     return h;
   }
 
+  /* --- shared shapes for the transport tools -------------------------------------------
+     Everything below returns COMPUTED values. The division the brief insists on is that the
+     model understands the question and explains the answer, while every minute, wait, verdict
+     and feasibility comes from the deterministic engine — so these helpers exist to make sure
+     two tools describing the same journey cannot describe it differently. */
+
+  // "M2", "m2", "500 T" → the ref this city actually uses, or null
+  function normaliseRef(s){
+    if(!s) return null;
+    const want = String(s).toUpperCase().replace(/\s+/g,'');
+    for(const l of NETWORK) if(String(l.ref).toUpperCase().replace(/\s+/g,'') === want) return l.ref;
+    for(const b of BUS_DIR) if(String(b.ref).toUpperCase().replace(/\s+/g,'') === want) return b.ref;
+    return findRef(String(s));
+  }
+  // "09:30" / "9:30" → minutes since midnight, or null
+  function parseClock(s){
+    const m = /^(\d{1,2}):(\d{2})$/.exec(String(s || '').trim());
+    if(!m) return null;
+    const h = +m[1], mm = +m[2];
+    return (mm < 60) ? h * 60 + mm : null;
+  }
+  function parseWhenArg(a){
+    const dep = parseClock(a && a.depart_at), arr = parseClock(a && a.arrive_by);
+    if(arr != null) return { mode:'arrive', min:arr };
+    if(dep != null) return { mode:'depart', min:dep };
+    return null;
+  }
+  /* One description of a planned journey, used by every tool that returns one. Each leg says
+     where its time CAME FROM, so the model can tell "the 19:58" from "about every six minutes"
+     instead of presenting both as facts of the same kind. */
+  function planSummaryFor(it){
+    const p = itinPlan(it, plannedStart(it));
+    const legs = p.rows.filter(r => r.s.type === 'ride').map(r => {
+      const leg = { line:r.s.ref, is_bus:!!r.s.bus, from:r.s.from, to:r.s.to, stops:r.s.stops,
+                    board:fmtMinOfDay(r.board), alight:fmtMinOfDay(r.off),
+                    wait_minutes:Math.round(r.wait),
+                    departure_source: r.dep ? r.dep.source : null,
+                    departure_is_exact: !!(r.dep && r.dep.exact),
+                    run_time_from_timetable: !!r.arrivalExact };
+      if(r.xfer) leg.change_onto_this = {
+        verdict: r.xfer.verdict, walk_metres: r.xfer.walkM,
+        buffer_minutes: Math.round(r.xfer.bufferMin),
+        lines_at_interchange: r.xfer.lines,
+        minutes_to_spare: r.xfer.slackMin != null ? Math.round(r.xfer.slackMin) : null,
+        basis: "timetable and measured walk only; no delay history is published"
+      };
+      return leg;
+    });
+    const firstRide = p.rows.find(r => r.s.type === 'ride');
+    return { depart:fmtMinOfDay(p.start), arrive:fmtMinOfDay(p.end),
+             travel_minutes:Math.round(p.travelMin), waiting_minutes:Math.round(p.wait),
+             transfers:it.transfers, lines:legs.map(l=>l.line),
+             confidence:p.conf.level, legs_from_timetable:p.conf.exactLegs, legs_total:p.conf.legs,
+             missed_connections:p.missedConnections,
+             not_running_yet: (firstRide && firstRide.wait >= 60)
+               ? { first_departure: fmtMinOfDay(firstRide.board), line: firstRide.s.ref } : undefined,
+             legs };
+  }
+
+  // published so the tool surface can be called and tested from outside this closure
+  _transportToolRunner = (name, a) => runAiTool(name, a);
   async function runAiTool(name, a){
     a = a || {};
     if(name === "search_place"){
@@ -466,14 +554,107 @@ let aiAsk = async function(){};
     if(name === "plan_route"){
       const o = await resolve(a.from), d = await resolve(a.to);
       if(!o || !d) return { error:"could not resolve " + (!o ? a.from : a.to) };
+      // honour a requested departure or arrival, and move the panel's own controls with it
+      const when = parseWhenArg(a);
+      if(when) setPlanWhen(when.mode, when.min); else setPlanWhen('now', null);
       setPoint("O", o); setPoint("D", d); setTab("active");
       const btn = document.getElementById("route"); if(btn) btn.click();
       await new Promise(r=>setTimeout(r, 2600));
       if(!goCurrent) return { planned:false, note:"no route found between those points" };
-      const it = goCurrent.it, pl = itinPlan(it, plannedStart(it));
-      return { planned:true, from:o.name, to:d.name, minutes:Math.round(it.total),
-               transfers:it.transfers, lines:(it.steps||[]).filter(x=>x.type==="ride").map(x=>x.ref),
-               depart:fmtMinOfDay(pl.start), arrive:fmtMinOfDay(pl.end) };
+      return Object.assign({ planned:true, from:o.name, to:d.name }, planSummaryFor(goCurrent.it));
+    }
+    if(name === "next_departures"){
+      const ref = normaliseRef(a.line);
+      if(!ref) return { error:"no line called " + a.line + " in this city" };
+      const at = a.place ? await resolve(a.place) : null;
+      if(a.place && !at) return { error:"could not resolve " + a.place };
+      const isBus = !lineByRef[ref];
+      /* Asked about a SPECIFIC stop, so fetch that stop's published timetable before answering.
+         Elsewhere the engine answers instantly and upgrades later, because a map must not wait
+         on the network — but here the question is precisely "when is the next one from here",
+         and returning a frequency estimate while the exact times sit one request away would be
+         answering a worse question than the one asked. */
+      if(at && !isBus) await warmTimetables([{ ref, lat:at.lat, lng:at.lng }], 6000);
+      const dep = departureInfo(ref, { afterMin: nowIstanbulMin(), bus: isBus,
+                                       lat: at ? at.lat : null, lng: at ? at.lng : null });
+      const out = { line:ref, at: at ? at.name : null, source: dep.source,
+                    confidence: dep.confidence, is_exact: !!dep.exact };
+      if(dep.reason === 'closed')
+        return Object.assign(out, { running:false,
+          why: dep.closed && dep.closed.why === 'susp' ? 'suspended by a service alert'
+                                                       : 'outside operating hours',
+          opens_at: dep.closed && dep.closed.opens || null });
+      if(dep.reason === 'after_last') return Object.assign(out, { running:false, why:'last service has gone for today' });
+      out.running = true;
+      out.wait_minutes = dep.waitMin != null ? Math.round(dep.waitMin) : null;
+      out.typical_interval_minutes = dep.headwayMin != null ? Math.round(dep.headwayMin) : null;
+      if(dep.exact && dep.next != null) out.next_departure = fmtMinOfDay(dep.next);
+      if(dep.times && dep.times.length){
+        const t0 = nowIstanbulMin();
+        out.following = dep.times.filter(v => v >= t0).slice(0, 4).map(fmtMinOfDay);
+      }
+      if(!dep.exact) out.note = "no timetable is published for this line here — the wait is the expected one for its frequency, not a specific departure";
+      return out;
+    }
+    if(name === "check_transfer"){
+      const fromRef = normaliseRef(a.from_line), toRef = normaliseRef(a.to_line);
+      if(!fromRef || !toRef) return { error:"no line called " + (normaliseRef(a.from_line) ? a.to_line : a.from_line) };
+      const st = await resolve(a.station);
+      if(!st) return { error:"could not resolve " + a.station };
+      const node = (ref) => {
+        for(const k of (nameNodes[fold(st.name)] || [])){ const m = nodeMeta[k];
+          if(m && m.ref === ref) return m; }
+        return null;
+      };
+      const A = node(fromRef), B = node(toRef);
+      if(!A || !B) return { error:(!A ? fromRef : toRef) + " does not serve " + st.name };
+      /* Fetch this station's published times for the onward line before judging the change.
+         Without it the answer depended on whether something else had happened to warm that
+         station earlier in the session: the same question returned an exact verdict once and a
+         frequency estimate the next time, which is worse than either answer on its own. */
+      if(lineByRef[toRef]) await warmTimetables([{ ref:toRef, lat:B.lat, lng:B.lng }], 6000);
+      const at = parseClock(a.arriving_at);
+      const r = checkTransfer(at != null ? at : nowIstanbulMin(),
+                              { lat:A.lat, lng:A.lng, name:st.name },
+                              { lat:B.lat, lng:B.lng, ref:toRef, bus:!lineByRef[toRef], name:st.name },
+                              { arrivalExact:false });
+      /* A negative slack means the departure you would AIM for goes before you can reach the
+         platform, and `departMin` is then the following one you actually catch. Reporting both
+         as "next_departure" and "minutes_to_spare: -1" invited the reader to subtract one from
+         the other, which is nonsense — they describe two different vehicles. Say which is which. */
+      const short = (r.slackMin != null && r.slackMin < 0);
+      const out = { station:st.name, from_line:fromRef, to_line:toRef,
+               arriving_at: fmtMinOfDay(at != null ? at : nowIstanbulMin()),
+               walk_metres: r.walkM, buffer_minutes: Math.round(r.bufferMin),
+               lines_at_interchange: r.lines,
+               on_platform_by: fmtMinOfDay(r.readyMin),
+               next_departure: r.departMin != null ? fmtMinOfDay(r.departMin) : null,
+               minutes_to_spare: short ? null : (r.slackMin != null ? Math.round(r.slackMin) : null),
+               verdict: r.verdict, source: r.source,
+               basis: "the published timetable and the measured walk only — no delay history is published for these lines" };
+      if(r.verdict === 'frequency')
+        out.note = "no timetable is published for " + toRef + " here, so there is no specific departure to catch or miss; expect about " +
+                   (r.waitMin != null ? Math.round(r.waitMin) : '?') + " minutes";
+      else if(short)
+        out.note = "the departure you would aim for leaves about " + Math.abs(Math.round(r.slackMin)) +
+                   " minute(s) before you could reach the platform, so next_departure is the FOLLOWING one" +
+                   (r.arrivalExact ? "" : ". The arrival time is an estimate, so this is reported as a very tight change rather than a definite miss");
+      return out;
+    }
+    if(name === "what_if_later"){
+      if(!goCurrent) return { error:"plan a route first — there is nothing to shift" };
+      const shift = Math.round(Number(a.minutes_later));
+      if(!isFinite(shift)) return { error:"minutes_later must be a number" };
+      const base = plannedStart(goCurrent.it);
+      const before = itinPlan(goCurrent.it, base);
+      const after  = itinPlan(goCurrent.it, base + shift);
+      return { shifted_by_minutes: shift,
+               before: { depart: fmtMinOfDay(before.start), arrive: fmtMinOfDay(before.end),
+                         waiting_minutes: Math.round(before.wait) },
+               after:  { depart: fmtMinOfDay(after.start),  arrive: fmtMinOfDay(after.end),
+                         waiting_minutes: Math.round(after.wait) },
+               arrives_later_by_minutes: Math.round(after.end - before.end),
+               note: "the same route re-timed; leaving later can cost more or less than the delay itself, because the waits fall differently" };
     }
     if(name === "bus_routes_at"){
       const p = await resolve(a.place);
@@ -558,6 +739,20 @@ let aiAsk = async function(){};
       "a place, a fare, a departure, a duration, a service alert — must come from a tool call. Never",
       "state one from memory or guess it, and never round a tool's number into a different one.",
       "If a tool returns nothing, say plainly that you could not find it and suggest what would help.",
+      "",
+      "You do not do transport arithmetic. Never add a walk to a departure, work out whether a change",
+      "can be made, convert a frequency into a waiting time, or shift a journey to a different hour in",
+      "your head — call plan_route, next_departures, check_transfer or what_if_later and read out what",
+      "comes back. The engine knows which lines publish real timetables and which only publish a",
+      "frequency; you cannot tell from a line's name, and guessing produces a confident answer that",
+      "happens to be wrong.",
+      "",
+      "Carry that distinction into your wording. When a leg says departure_is_exact, name the departure:",
+      "\"the 19:58\". When it does not, say what it is — \"about every six minutes, so roughly three",
+      "minutes' wait\" — and never dress an expectation up as a specific vehicle. A change with a",
+      "verdict of tight or risky is worth mentioning with the minutes to spare; a verdict of",
+      "'frequency' means no timetable exists for that line there, so there is no train to miss and you",
+      "should not imply one. If a journey reports missed_connections or not_running_yet, lead with it.",
       "",
       "Reach for tools freely; several in one turn is normal. city_info for anything involving today,",
       "now or the time. line_info for a specific line, including first and last departures — for buses",
@@ -951,17 +1146,15 @@ function refreshAiKeyRow(){
   const reflow = () => { if(goCurrent) showItinerary(goCurrent.res, goCurrent.it); };
   seg.addEventListener('click', e => {
     const b = e.target.closest('button[data-when]'); if(!b) return;
-    planWhen.mode = b.getAttribute('data-when');
-    [...seg.children].forEach(x => x.classList.toggle('active', x === b));
-    inp.disabled = planWhen.mode === 'now';
-    if(planWhen.mode !== 'now' && !inp.value){
+    const mode = b.getAttribute('data-when');
+    if(mode !== 'now' && !inp.value){
       // default to half an hour out, rounded to 5 — a usable starting point, not 00:00
       const m = Math.ceil((nowIstanbulMin() + 30) / 5) * 5;
       inp.value = String(Math.floor((m % 1440) / 60)).padStart(2,'0') + ':' +
                   String(m % 60).padStart(2,'0');
     }
     const p = (inp.value || '').split(':');
-    planWhen.min = p.length === 2 ? (+p[0] * 60 + +p[1]) : null;
+    setPlanWhen(mode, p.length === 2 ? (+p[0] * 60 + +p[1]) : null);
     reflow();
   });
   inp.addEventListener('change', () => {
