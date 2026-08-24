@@ -135,8 +135,13 @@ function openLine(line){
   document.getElementById('lpSw').style.color = line.color;
   document.getElementById('lpRef').textContent = (line.partOf || line.ref) + (live ? '' : ' ◇');
   document.getElementById('lpName').textContent = official;
+  /* Say that a funicular is a counterbalanced pair. It explains what the map is showing — two
+     cars always moving against each other, meeting in the middle — and why the wait is a cycle
+     rather than a queue of vehicles. It is a property of the mode, not a measurement. */
+  const paired = live && line.kind === 'funicular' && line.paired !== false;
   document.getElementById('lpKind').textContent =
-    kindLabel(line.kind) + (line.branch ? ' · '+t('shuttleSpur') : '') + (live ? '' : ' · ' + transStatus(line.status||'Planned'));
+    kindLabel(line.kind) + (paired ? ' · '+t('pairedCars') : '')
+    + (line.branch ? ' · '+t('shuttleSpur') : '') + (live ? '' : ' · ' + transStatus(line.status||'Planned'));
   const conns = [];
   if(live) line.stations.forEach((st,idx) => {
     const cl = clusterFor(line.ref, idx);

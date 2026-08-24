@@ -245,6 +245,17 @@ const CHECKS = [
         if (fetched()) return 'geometry was fetched during boot — the deferral is gone';
 
         const row = [...bd.querySelectorAll('#busList .bus-row')][0];
+        /* The list renders from the directory, which ships in the page; the ROUTING GRAPH
+           arrives later in the lazy bus payload. Clicking before it lands means selectBus finds
+           no directions and falls through to the Overpass path, which never asks for baked
+           geometry — so the test failed for a reason unrelated to the deferral it exists to
+           check. Wait for the graph to know this line before clicking it. */
+        const ref = row.dataset.ref;
+        const graphed = await until(() => {
+          try { return bw.busDirs(ref).length > 0; } catch (e) { return false; }
+        }, 20000);
+        if (!graphed) return { skip: 'the lazy bus graph did not arrive in time' };
+
         row.click();
         const arrived = await until(() => fetched() > 0, 15000);
         if (!arrived) return 'a route was opened but geometry was never requested — routes will draw as straight lines';
@@ -269,6 +280,80 @@ const CHECKS = [
       const readingTurkish = (d.documentElement.lang || 'en') === 'tr';
       if (!readingTurkish && !/ann-tr/.test(tag)) return 'Turkish shown with nothing to explain it';
       if (readingTurkish && tag) return 'labelled the Turkish original for a Turkish reader';
+    },
+  },
+  {
+    name: 'a funicular’s two cars stay rope-linked',
+    why: 'A funicular’s cars hang from one rope over a drum: one descends because the other climbs, so their positions always sum to the track length and they reach opposite ends together. Simulated as independent shuttles they drifted apart within a minute and could sit at the same station at once — which the machinery physically forbids, and which showed on the map as two cars crossing the same platform.',
+    run: async (w) => {
+      /* Driven directly rather than watched. requestAnimationFrame is throttled in a hidden
+         document, so waiting on the animation would be testing the browser's power saving
+         rather than the model. State is read through simCars(): `trains` is a top-level const
+         and so is not a window property, and this page's CSP rightly forbids eval. */
+      if (typeof w.simCars !== 'function' || typeof w.updateTrains !== 'function')
+        return 'the simulation exposes no vehicle state to inspect';
+      /* Funiculars are found by MODE, never by looking for cars that are already paired. The
+         first version searched for `paired` cars, so deleting the pairing left it with nothing
+         to examine and it skipped — reporting success in the exact case it exists to catch. */
+      const all = w.simCars();
+      const funis = [...new Set(all.filter(c => c.kind === 'funicular').map(c => c.ref))];
+      if (!funis.length) return { skip: 'this city has no funicular' };
+
+      const unpaired = funis.filter(ref => !all.some(c => c.ref === ref && c.paired));
+      if (unpaired.length) return unpaired.join(', ') +
+        ' run as independent shuttles — a funicular’s cars are counterbalanced on one rope';
+
+      const report = {};
+      for (const ref of funis) {
+        const first = w.simCars(ref);
+        if (first.length !== 2) { report[ref] = { cars: first.length }; continue; }
+        const span = first[0].pairSpan;
+        let drift = 0, sameEnd = false, crossed = false, dirsOpposed = true;
+        let reversals = 0, dwellTogether = 0, prevDir = first[0].dir;
+        let loA = Infinity, hiA = -Infinity, loB = Infinity, hiB = -Infinity;
+        const mid = span / 2;
+        let prevDiff = first[0].s - first[1].s;
+        for (let i = 0; i < 400; i++) {
+          w.updateTrains(0.5);
+          const [a, b] = w.simCars(ref);
+          drift = Math.max(drift, Math.abs((a.s + b.s) - span));
+          /* Crossing is detected by the SIGN of (a - b) flipping, not by the pair coming within
+             a few metres. They close on each other at twice the line speed — about 21 m per
+             simulated step here — so a proximity window is a coin toss: F1 happened to land
+             inside it and F2 stepped straight over. A sign change cannot be stepped over. */
+          const diff = a.s - b.s;
+          if (diff !== 0 && prevDiff !== 0 && Math.sign(diff) !== Math.sign(prevDiff)) crossed = true;
+          prevDiff = diff;
+          /* Together AND away from the middle. Two counterbalanced cars MUST meet at the
+             midpoint every cycle — that is what the passing loop is for — so "close together"
+             alone flags the one thing the design guarantees. The fault being checked for is
+             both cars at the same TERMINUS, which is what independent shuttles produced. */
+          if (Math.abs(diff) < 5 && Math.abs(a.s - mid) > span * 0.2) sameEnd = true;
+          if (a.dir === b.dir) dirsOpposed = false;
+          if (a.dir !== prevDir) { reversals++; prevDir = a.dir; }
+          if (a.state === 'dwell' && b.state === 'dwell') dwellTogether++;
+          loA = Math.min(loA, a.s); hiA = Math.max(hiA, a.s);
+          loB = Math.min(loB, b.s); hiB = Math.max(hiB, b.s);
+        }
+        report[ref] = { drift, sameEnd, crossed, dirsOpposed, reversals, dwellTogether,
+                        aTravel: hiA - loA, bTravel: hiB - loB, span };
+      }
+
+      for (const ref of funis) {
+        const r = report[ref];
+        if (r.cars !== undefined) return ref + ' has ' + r.cars + ' cars — a counterbalanced funicular has exactly two';
+        // the constraint itself: positions must sum to the span, always
+        if (r.drift > 0.01) return ref + ' drifted ' + r.drift.toFixed(2) + ' m out of counterbalance — the cars are moving independently again';
+        if (r.sameEnd) return ref + ' put both cars at the same terminus, which the rope makes impossible';
+        if (!r.dirsOpposed) return ref + ' had both cars travelling the same way';
+        // they must MEET in the middle — if they never pass, they are not counterbalanced
+        if (!r.crossed) return ref + ' never passed its partner at the midpoint, so the cars are not moving against each other';
+        // and it must actually be running, or a frozen pair would satisfy every check above
+        if (r.reversals < 2) return ref + ' never reversed — the pair is stationary, so the checks above prove nothing';
+        if (r.dwellTogether < 1) return ref + ' never dwelt at an end with both cars stopped together';
+        if (r.aTravel < r.span * 0.5 || r.bTravel < r.span * 0.5)
+          return ref + ' only covered part of its track (' + Math.round(r.aTravel) + ' m of ' + Math.round(r.span) + ' m)';
+      }
     },
   },
   {

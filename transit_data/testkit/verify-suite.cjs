@@ -270,6 +270,23 @@ const MUTATIONS = [
     apply: h => h.replace(/const FASTEST_KMH = \(\(\) => \{[\s\S]*?\}\)\(\);/, 'const FASTEST_KMH = 100;'),
   },
   {
+    // the original defect: two cars on one rope, simulated as if they were unrelated
+    name: 'simulate a funicular as two independent shuttles',
+    expect: 'a funicular is modelled as a counterbalanced pair',
+    apply: h => h.replace("if(line.kind === 'funicular' && line.paired !== false", "if(false && line.paired !== false"),
+  },
+  {
+    name: 'let the normal loop move the derived car as well',
+    expect: 'a funicular is modelled as a counterbalanced pair',
+    apply: h => h.replace('if(tr.mirrorOf) continue;                 // derived from its partner in the second pass', ''),
+  },
+  {
+    name: 'pair the aerial cable cars on a guess',
+    expect: 'the counterbalance is not applied to modes it was not established for',
+    apply: h => h.replace("if(line.kind === 'funicular' && line.paired !== false",
+                          "if((line.kind === 'funicular' || line.kind === 'cable') && line.paired !== false"),
+  },
+  {
     name: 'rate a shut line as a high-confidence departure',
     expect: 'a journey through a shut line does not claim timetable-grade confidence',
     apply: h => h.replace(

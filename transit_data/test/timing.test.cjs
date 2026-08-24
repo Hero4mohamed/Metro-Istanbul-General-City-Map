@@ -178,6 +178,41 @@ test('the typical gap ignores the overnight hole at the ends of a timetable', ()
   assert.strictEqual(medianGap(null), null);
 });
 
+/* --- vehicle model ----------------------------------------------------------------------
+   A funicular's cars hang from one rope over a drum: one descends because the other climbs.
+   Simulated as independent shuttles they drifted apart and could reach the same terminus at
+   once. The browser suite proves the invariant holds while the model runs; these check the
+   mechanism that makes it structurally impossible to break, and the reasoning about which
+   modes it may be applied to. */
+test('a funicular is modelled as a counterbalanced pair', () => {
+  const src = H.appScript();
+  assert.ok(/function spawnCounterbalanced/.test(src), 'the counterbalanced spawn is gone');
+  assert.ok(/if\(line\.kind === 'funicular'/.test(src),
+    'funiculars no longer get the paired model — their cars would drift apart again');
+  /* The second car is DERIVED from its partner every frame rather than simulated beside it.
+     That is the whole point: with one state and a view of it, drift is not unlikely, it is
+     unrepresentable. Two independent integrations would drift however carefully they started. */
+  assert.ok(/tr\.s = tr\.pairSpan - a\.s;/.test(src),
+    'the partner car is no longer derived from the lead — it is being simulated separately again');
+  assert.ok(/if\(tr\.mirrorOf\) continue;/.test(src),
+    'the derived car is being integrated by the normal loop as well, which would double-move it');
+});
+
+test('the counterbalance is not applied to modes it was not established for', () => {
+  const src = H.appScript();
+  /* TF1/TF2 are aerial cable cars. Nothing this project ships says whether they are two-cabin
+     reversible systems or continuous gondolas, so pairing them would swap one fiction for
+     another. If that ever changes it should change with data, not by widening a condition. */
+  // read the actual guard that reaches spawnCounterbalanced, rather than hoping a pattern
+  // happens to span however it is formatted
+  const guard = /(if\s*\([^\n]*\)\s*\{)\s*\n\s*trains\.push\(\.\.\.spawnCounterbalanced/.exec(src);
+  assert.ok(guard, 'the condition that selects the counterbalanced model was not found');
+  assert.ok(!/'cable'/.test(guard[1]),
+    'cable cars are being paired, but the project holds nothing saying they are reversible two-cabin systems: ' + guard[1]);
+  assert.ok(/aerial cable cars/i.test(src),
+    'the note explaining why cable cars keep the generic model has gone');
+});
+
 /* --- refusals -------------------------------------------------------------------------- */
 /* The engine's most valuable behaviour is declining to answer. These check the refusals are
    still wired into the shipped page, because each one is a single branch away from becoming a

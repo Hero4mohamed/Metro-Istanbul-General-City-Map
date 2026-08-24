@@ -156,8 +156,8 @@
           "id": "funicular-pairs",
           "title": "Model rope-linked vehicles as a synchronised pair",
           "priority": "P1",
-          "state": "todo",
-          "note": "Measured: F1’s two cars sit at 0.05 and 0.53 along the track moving independently. A rope-linked pair must satisfy posA + posB = 1, so they drift and can both reach the same end — physically impossible. Affects F1-F4 and TF1/TF2."
+          "state": "done",
+          "note": "F1–F4 are now modelled as counterbalanced pairs: one car is simulated, the other is DERIVED from it every frame, so drift is unrepresentable rather than merely unlikely. Measured over 400 steps the positions sum to the span with 0.00016 m error, the cars reverse and dwell together, each covers the full track, and they cross at the midpoint — which is the passing loop, and which an earlier version of the test wrongly flagged as a fault. TF1/TF2 are deliberately NOT paired: they are aerial cable cars and nothing shipped says whether they are two-cabin reversible systems or continuous gondolas, so pairing them would swap one fiction for another. New simCars() exposes vehicle state, because trains is a top-level const (not on window) and the CSP rightly forbids eval."
         },
         {
           "id": "ai-transport-tools",
@@ -179,6 +179,13 @@
           "priority": "P2",
           "state": "todo",
           "note": "Now cheap: the search takes a start minute, so “what if I leave 10 minutes later” is one more call with a different anchor. Needs a UI, not an engine."
+        },
+        {
+          "id": "f2-stations",
+          "title": "F2 (Tünel) ships no station names",
+          "priority": "P2",
+          "state": "todo",
+          "note": "F2 has geometry and endpoints (_stops [0, 609]) but stations:[] — so the line panel and the planner cannot name Karıköy or Beyoğlu on it. Data gap in the OSM extract, not a simulation fault; found while modelling the funicular pairs."
         }
       ]
     }
