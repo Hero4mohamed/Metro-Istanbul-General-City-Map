@@ -188,6 +188,46 @@
           "note": "F2 has geometry and endpoints (_stops [0, 609]) but stations:[] — so the line panel and the planner cannot name Karıköy or Beyoğlu on it. Data gap in the OSM extract, not a simulation fault; found while modelling the funicular pairs."
         }
       ]
+    },
+    {
+      "phase": "5 — Design system",
+      "items": [
+        {
+          "id": "token-extraction-inks",
+          "title": "Extract the semantic inks",
+          "priority": "P0",
+          "state": "done",
+          "note": "Seven semantic inks (ok / warn / danger / gold / violet / sky / crimson), each defined for both themes, replacing 51 colour literals across the stylesheet and removing 15 body.light overrides that existed only to repeat one decision per component. Verified with a CSS-rule differ that resolves every rule under all four theme combinations and normalises both sides through the browser’s own serialiser: 6,438 declarations compared, and the only changes were the intended ones. Coverage 15% → 20%; body.light rules 26 → 10."
+        },
+        {
+          "id": "light-ink-contrast",
+          "title": "Light-mode inks were unreadable, and now are not",
+          "priority": "P0",
+          "state": "done",
+          "note": "Found by measuring, not by looking: components that never got a body.light override painted a dark-theme ink on the light surface. All seven inks failed WCAG AA against #E9EEF5 (1.17–2.18). With the tokens they measure 4.31–6.40 and six of seven now pass. This was a real legibility defect, fixed as a by-product."
+        },
+        {
+          "id": "gold-ink-aa",
+          "title": "--gold-ink still misses AA at 4.31",
+          "priority": "P2",
+          "state": "todo",
+          "note": "#B45309 on #E9EEF5 measures 4.31 against a 4.5 threshold. Pre-existing — it was already the light override value — so it was left alone rather than silently darkened, because changing it is a design decision and not part of a refactor. ~#9A4708 would clear it."
+        },
+        {
+          "id": "token-extraction-surfaces",
+          "title": "Extract the remaining surfaces and rgba tints",
+          "priority": "P1",
+          "state": "todo",
+          "note": "287 colour values still sit inside rules, most of them rgba() tints paired with an ink that IS now a token (e.g. rgba(251,191,36,.15) behind var(--gold-ink)). Those pairs should become a single token each so a second experience restates one value, not two. The 31 white inks on coloured chips want an --on-accent token."
+        },
+        {
+          "id": "experience-b",
+          "title": "Design and build Experience B",
+          "priority": "P1",
+          "state": "todo",
+          "note": "Blocked on the surfaces above rather than on visual work. The mechanism is proven: body.calm already restyles the app by redeclaring tokens alone."
+        }
+      ]
     }
   ]
 }

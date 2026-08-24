@@ -311,6 +311,20 @@ const MUTATIONS = [
     apply: h => h.replace(/departure_is_exact: !!\(r\.dep && r\.dep\.exact\),/, ''),
   },
   {
+    /* --- design tokens. The extraction is only durable if re-hardcoding is caught: one new
+       rule with a literal green quietly re-creates the split it removed. */
+    name: 'write a tokenised colour back out as a literal',
+    expect: 'no rule re-hardcodes a colour that has a semantic token',
+    apply: h => h.replace('.st-fare{', '.st-fare{color:#067A54;'),
+  },
+  {
+    // a token with no light value falls back to the dark one — a dark ink on a light surface,
+    // which is exactly the defect the extraction fixed
+    name: 'define a semantic ink for the dark theme only',
+    expect: 'every semantic ink is defined for both themes',
+    apply: h => h.replace(/--violet-ink:#7C3AED;\s*/, ''),
+  },
+  {
     name: 'rate a shut line as a high-confidence departure',
     expect: 'a journey through a shut line does not claim timetable-grade confidence',
     apply: h => h.replace(

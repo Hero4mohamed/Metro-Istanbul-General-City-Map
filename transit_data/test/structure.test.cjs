@@ -221,3 +221,76 @@ test('the shipped script is exactly the concatenated source', () => {
   assert.ok(shipped.length >= assembled.length - 200,
     'the shipped script is shorter than its source — a file is not being concatenated');
 });
+
+/* --- 7. Design tokens ----------------------------------------------------------------
+ * A second visual experience is only possible if the palette lives in one place. It did not:
+ * the same "positive" green was written out as a literal in the fare chip, the open-now badge,
+ * the step-free badge, the active tab and the mobile nav, each with a second copy under
+ * body.light — and components that never got that second copy rendered a pale dark-theme ink on
+ * a light background, every one of them below the WCAG AA contrast threshold.
+ *
+ * These guard the extraction rather than the appearance: a new rule that writes one of these
+ * inks as a literal re-creates exactly the problem that was just removed, and nothing else in
+ * the suite would notice.
+ */
+const SEMANTIC_INKS = {
+  '#7CF0BE': '--ok-ink',      '#067A54': '--ok-ink',
+  '#F5A623': '--warn-ink',    '#7A5200': '--warn-ink',
+  '#F08287': '--danger-ink',  '#A32227': '--danger-ink',
+  '#FCD97C': '--gold-ink',    '#B45309': '--gold-ink',
+  '#DDB9FF': '--violet-ink',  '#7C3AED': '--violet-ink',
+  '#0369A1': '--sky-ink',
+  '#FF9AA6': '--crimson-ink', '#B4121F': '--crimson-ink',
+};
+
+function styleBlock() {
+  const m = /<style>([\s\S]*?)<\/style>/.exec(H.html());
+  assert.ok(m, 'no <style> block in the shipped page');
+  return m[1];
+}
+
+test('no rule re-hardcodes a colour that has a semantic token', () => {
+  const css = styleBlock();
+  const offenders = [];
+  css.split('\n').forEach((ln, i) => {
+    if (/--[a-z0-9-]+\s*:/.test(ln)) return;              // the token definitions themselves
+    if (/conic-gradient|linear-gradient|radial-gradient/.test(ln)) return;  // brand artwork, deliberately literal
+    for (const lit in SEMANTIC_INKS) {
+      if (new RegExp(lit, 'i').test(ln))
+        offenders.push('line ' + (i + 1) + ': ' + lit + ' should be var(' + SEMANTIC_INKS[lit] + ') — ' + ln.trim().slice(0, 70));
+    }
+  });
+  assert.deepStrictEqual(offenders, [],
+    'colour literals that already have a token:\n  ' + offenders.join('\n  '));
+});
+
+test('every semantic ink is defined for both themes', () => {
+  const css = styleBlock();
+  const inks = [...new Set(Object.values(SEMANTIC_INKS))];
+  const root = /:root\{([\s\S]*?)\n  \}/.exec(css);
+  const light = /body\.light\{([\s\S]*?)\n  \}/.exec(css);
+  assert.ok(root && light, 'the :root or body.light token block could not be found');
+  const missing = [];
+  for (const ink of inks) {
+    if (!new RegExp(ink + '\s*:').test(root[1])) missing.push(ink + ' (dark)');
+    /* A token with no light value silently falls back to the dark one, which is precisely the
+       defect this replaced — an ink meant for a dark surface, painted on a light one. */
+    if (!new RegExp(ink + '\s*:').test(light[1])) missing.push(ink + ' (light)');
+  }
+  assert.deepStrictEqual(missing, [], 'semantic inks missing a definition: ' + missing.join(', '));
+});
+
+test('token coverage of the stylesheet does not regress', () => {
+  const css = styleBlock();
+  let defining = 0, inRules = 0;
+  for (const ln of css.split('\n')) {
+    const n = (ln.match(/#[0-9a-fA-F]{3,6}\b/g) || []).length + (ln.match(/rgba?\(/g) || []).length;
+    if (/--[a-z0-9-]+\s*:/.test(ln)) defining += n; else inRules += n;
+  }
+  const pct = Math.round(100 * defining / (defining + inRules));
+  /* A ratchet, not a target. It started at 15%; the floor exists so that adding a screenful of
+     new literals cannot quietly undo the extraction. Raise it when the number genuinely rises. */
+  assert.ok(pct >= 18,
+    'token coverage fell to ' + pct + '% (' + defining + ' defining vs ' + inRules +
+    ' inside rules) — new colour literals are being added faster than they are tokenised');
+});
