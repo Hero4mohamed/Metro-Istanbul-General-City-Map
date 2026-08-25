@@ -284,13 +284,15 @@ test('token coverage of the stylesheet does not regress', () => {
   const css = styleBlock();
   let defining = 0, inRules = 0;
   for (const ln of css.split('\n')) {
-    const n = (ln.match(/#[0-9a-fA-F]{3,6}\b/g) || []).length + (ln.match(/rgba?\(/g) || []).length;
+    /* rgba(var(--gold-rgb),.15) is tokenised, not a literal. Counting it as one made the
+       measure punish exactly the refactor it exists to encourage. */
+    const n = (ln.match(/#[0-9a-fA-F]{3,6}\b/g) || []).length + (ln.match(/rgba?\((?!var)/g) || []).length;
     if (/--[a-z0-9-]+\s*:/.test(ln)) defining += n; else inRules += n;
   }
   const pct = Math.round(100 * defining / (defining + inRules));
   /* A ratchet, not a target. It started at 15%; the floor exists so that adding a screenful of
      new literals cannot quietly undo the extraction. Raise it when the number genuinely rises. */
-  assert.ok(pct >= 18,
+  assert.ok(pct >= 24,
     'token coverage fell to ' + pct + '% (' + defining + ' defining vs ' + inRules +
     ' inside rules) — new colour literals are being added faster than they are tokenised');
 });
