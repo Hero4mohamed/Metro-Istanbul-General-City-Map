@@ -211,21 +211,28 @@
           "title": "--gold-ink still misses AA at 4.31",
           "priority": "P2",
           "state": "todo",
-          "note": "#B45309 on #E9EEF5 measures 4.31 against a 4.5 threshold. Pre-existing — it was already the light override value — so it was left alone rather than silently darkened, because changing it is a design decision and not part of a refactor. ~#9A4708 would clear it."
+          "note": "#B45309 on #E9EEF5 measures 4.31 against a 4.5 threshold. Pre-existing — it was already the light override value — so it was left alone rather than silently darkened, because changing it is a design decision and not part of a refactor. ~#9A4708 would clear it. Paper does clear it (6.43); the default light theme is untouched."
         },
         {
           "id": "token-extraction-surfaces",
           "title": "Extract the remaining surfaces and rgba tints",
           "priority": "P1",
-          "state": "todo",
-          "note": "287 colour values still sit inside rules, most of them rgba() tints paired with an ink that IS now a token (e.g. rgba(251,191,36,.15) behind var(--gold-ink)). Those pairs should become a single token each so a second experience restates one value, not two. The 31 white inks on coloured chips want an --on-accent token."
+          "state": "done",
+          "note": "87 rgba tints collapsed onto seven hue triplets (--ok-rgb … --crimson-rgb), used as rgba(var(--gold-rgb),.15). A bare triplet rather than a colour because CSS cannot change the alpha of a colour a variable already holds. Coverage 20% → 26%, var(--) uses 653 → 776. --on-accent deliberately NOT added: only 6 of 20 color:#fff rules sit on a fill declared in the same rule; the rest sit on runtime line colours, where the name would be untrue."
         },
         {
           "id": "experience-b",
-          "title": "Design and build Experience B",
+          "title": "Experience B — “Paper”",
           "priority": "P1",
+          "state": "done",
+          "note": "Light-first, editorial, flat. Opaque cards instead of translucent glass (backdrop-filter off), 6px radii instead of 18, hairline rules instead of a 12-layer bloom, warm stock (#F5F2EB) instead of blue-black, and the map’s drawn glow switched off entirely across all 88 layers — its argument is that the map is a document, and a document does not glow. A dark variant that was merely rounder and warmer was weighed first and dropped for overlapping Neon and Calm. Every Paper tier clears WCAG AA in both themes, including --gold-ink at 6.43 against the default light theme’s 4.31. Selectable in Settings, persisted, restored on cold boot."
+        },
+        {
+          "id": "experience-b-layout",
+          "title": "Paper: layout and density, not just surface",
+          "priority": "P2",
           "state": "todo",
-          "note": "Blocked on the surfaces above rather than on visual work. The mechanism is proven: body.calm already restyles the app by redeclaring tokens alone."
+          "note": "Paper restates palette, shape, elevation and type scale. It does NOT yet restate layout — panel placement, the bottom-sheet behaviour on mobile, or information density per card. Those live in ~200 structural rules that are not tokenised; doing it well needs spacing/radius tokens first, the same way colour needed ink tokens."
         }
       ]
     }

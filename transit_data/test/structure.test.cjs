@@ -296,3 +296,100 @@ test('token coverage of the stylesheet does not regress', () => {
     'token coverage fell to ' + pct + '% (' + defining + ' defining vs ' + inRules +
     ' inside rules) — new colour literals are being added faster than they are tokenised');
 });
+
+/* --- 8. Visual experiences -----------------------------------------------------------
+ * A second experience is only worth having if it is a different argument, not a different
+ * palette. "Paper" states that the map is a document: opaque cards instead of translucent
+ * glass, hairline rules instead of bloom, small radii, and near-monochrome chrome so the line
+ * colours carry the meaning. Its whole claim is readability, so that claim is enforced here
+ * rather than asserted in a comment.
+ */
+function tokenBlock(css, selector) {
+  const m = new RegExp(selector.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '\\{([\\s\\S]*?)\\n  \\}').exec(css);
+  assert.ok(m, 'token block not found: ' + selector);
+  const out = {};
+  for (const d of m[1].matchAll(/(--[a-z0-9-]+)\s*:\s*([^;]+);/g)) out[d[1]] = d[2].trim();
+  return out;
+}
+const srgb = (h) => { h = h.replace('#', '').trim(); return [0, 2, 4].map(i => parseInt(h.substr(i, 2), 16)); };
+const relLum = ([r, g, b]) => { const f = v => { v /= 255; return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4); };
+  return 0.2126 * f(r) + 0.7152 * f(g) + 0.0722 * f(b); };
+const contrast = (a, b) => { const L1 = relLum(a), L2 = relLum(b);
+  return (Math.max(L1, L2) + 0.05) / (Math.min(L1, L2) + 0.05); };
+
+test('every declared experience has a stylesheet and a control', () => {
+  const script = H.appScript(), html = H.html();
+  const m = /const UI_STYLES = \[([^\]]+)\]/.exec(script);
+  assert.ok(m, 'UI_STYLES is gone — the experiences are no longer enumerated');
+  const styles = [...m[1].matchAll(/'([a-z]+)'/g)].map(x => x[1]);
+  assert.ok(styles.includes('neon'), 'the default experience is missing from the list');
+  const css = H.appStyle();
+  const missing = [];
+  for (const s of styles) {
+    if (s !== 'neon' && !new RegExp('body\.' + s + '\{').test(css)) missing.push(s + ' (no token block)');
+    // an experience nobody can select is an experience nobody has
+    if (html.indexOf('data-uis="' + s + '"') < 0) missing.push(s + ' (no control)');
+  }
+  assert.deepStrictEqual(missing, [], 'declared but not deliverable: ' + missing.join(', '));
+});
+
+test('Paper restates the whole palette, not part of it', () => {
+  const css = H.appStyle();
+  const base = tokenBlock(css, ':root');
+  const dark = tokenBlock(css, 'body.paper');
+  const light = tokenBlock(css, 'body.paper.light');
+  /* A token the experience does not restate silently inherits the default's — which is how a
+     "new" palette ends up with the old neon green in it. Every colour token that :root defines
+     must be answered by the dark variant. */
+  const colourish = Object.keys(base).filter(k => /^(--(?:ok|warn|danger|gold|violet|sky|crimson)-(?:ink|rgb)|--accent|--accent-2|--text|--muted|--dim|--panel|--obsidian|--stroke|--stroke-2|--surface|--surface-2|--track|--ring|--btn-ink|--grad-accent|--gold)$/.test(k));
+  const unanswered = colourish.filter(k => !(k in dark));
+  assert.deepStrictEqual(unanswered, [],
+    'Paper inherits these from the default palette instead of restating them: ' + unanswered.join(', '));
+  assert.ok(Object.keys(light).length >= 15, 'the Paper light variant is too thin to be a palette');
+});
+
+test('Paper meets AA on its own surface, in both themes', () => {
+  const css = H.appStyle();
+  for (const [label, sel] of [['dark', 'body.paper'], ['light', 'body.paper.light']]) {
+    const t = tokenBlock(css, sel);
+    const bg = srgb(t['--obsidian']);
+    const fails = [];
+    for (const k of Object.keys(t)) {
+      /* --btn-ink is deliberately excluded: it is the ink ON a button's accent fill, not on the
+         page, so measuring it against the surface asks the wrong question — it scored 1.04
+         because near-black on near-black is exactly what it should be behind an accent. It is
+         checked against --accent below instead. */
+      if (k === '--btn-ink') continue;
+      if (!/-ink$|^--text$|^--muted$|^--dim$|^--accent$/.test(k)) continue;
+      if (!/^#[0-9a-fA-F]{6}$/.test(t[k])) continue;
+      const r = contrast(srgb(t[k]), bg);
+      if (r < 4.5) fails.push(k + ' ' + r.toFixed(2) + ' on ' + t['--obsidian']);
+    }
+    // the button ink has to be readable on the accent it sits on
+    if (/^#[0-9a-fA-F]{6}$/.test(t['--btn-ink'] || '') && /^#[0-9a-fA-F]{6}$/.test(t['--accent'] || '')) {
+      const r = contrast(srgb(t['--btn-ink']), srgb(t['--accent']));
+      if (r < 4.5) fails.push('--btn-ink ' + r.toFixed(2) + ' on --accent ' + t['--accent']);
+    }
+    /* The point of this variant is that it can be read. The default light theme ships
+       --gold-ink at 4.31; a palette written from scratch has no excuse for shipping a tier
+       under the threshold. */
+    assert.deepStrictEqual(fails, [], 'Paper ' + label + ' has tiers below WCAG AA: ' + fails.join(', '));
+  }
+});
+
+test('Paper is a structural change, not only a palette', () => {
+  const css = H.appStyle();
+  /* Whole rules, not matching LINES. A multi-line selector puts the declarations on later
+     lines, so a line filter looking for "body.paper" never saw backdrop-filter:none at all and
+     reported it missing while it sat two lines below. */
+  const rules = (css.match(/body\.paper[^{]*\{[^}]*\}/g) || [])
+    .filter(r => !/^\s*body\.paper(\.light)?\s*\{/.test(r))     // the token blocks are not structure
+    .join('\n');
+  /* If this ever reduces to token declarations alone, Paper has become the thing the brief
+     explicitly rules out: blue changed to purple. */
+  assert.ok(/backdrop-filter\s*:\s*none/.test(rules),
+    'Paper no longer turns off the glass — its central claim is opaque cards over the map');
+  assert.ok(/border-radius\s*:\s*[0-6]px/.test(rules), 'Paper no longer flattens the corner radius');
+  assert.ok(rules.split('\n').length >= 12,
+    'Paper has shrunk to a palette swap; it is meant to restate shape and elevation too');
+});

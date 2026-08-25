@@ -325,6 +325,30 @@ const MUTATIONS = [
     apply: h => h.replace(/--violet-ink:#7C3AED;\s*/, ''),
   },
   {
+    /* --- the second experience. Each of these is a way for Paper to decay back into the thing
+       the brief rules out: a palette swap wearing a new name. */
+    name: 'let Paper inherit part of the default palette',
+    expect: 'Paper restates the whole palette, not part of it',
+    apply: h => h.replace(/--violet-ink:#C9B4EC;\s*/, ''),
+  },
+  {
+    name: 'ship a Paper tier below the contrast threshold',
+    expect: 'Paper meets AA on its own surface, in both themes',
+    apply: h => h.replace('--dim:#898172;', '--dim:#6A6357;'),
+  },
+  {
+    // the glass is the default's central visual idea; keeping it makes Paper a recolour
+    name: 'put the glass back into Paper',
+    expect: 'Paper is a structural change, not only a palette',
+    apply: h => h.replace('backdrop-filter:none;-webkit-backdrop-filter:none;', ''),
+  },
+  {
+    name: 'offer an experience with no stylesheet behind it',
+    expect: 'every declared experience has a stylesheet and a control',
+    apply: h => h.replace("const UI_STYLES = ['neon', 'calm', 'paper']",
+                          "const UI_STYLES = ['neon', 'calm', 'paper', 'halo']"),
+  },
+  {
     name: 'rate a shut line as a high-confidence departure',
     expect: 'a journey through a shut line does not claim timetable-grade confidence',
     apply: h => h.replace(

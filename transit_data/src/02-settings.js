@@ -321,15 +321,24 @@ function applyDisplayPrefs(){
   document.body.classList.toggle('reduce-motion', reduceMotionPref);
   document.body.classList.toggle('high-contrast', highContrastPref);
 }
-let uiStyle = (function(){ try{ const v=localStorage.getItem('irn_uistyle'); return v==='calm'?'calm':'neon'; }catch(e){ return 'neon'; } })();
+/* The visual experiences. Each is a body class that restates the design tokens and, where it
+   is making a different argument rather than a different palette, a small set of structural
+   rules. Kept as a list so adding one is a data change, not a new branch in every consumer. */
+const UI_STYLES = ['neon', 'calm', 'paper'];
+let uiStyle = (function(){ try{ const v=localStorage.getItem('irn_uistyle');
+  return UI_STYLES.indexOf(v) >= 0 ? v : 'neon'; }catch(e){ return 'neon'; } })();
 function setUiStyle(v, save){
-  uiStyle = v==='calm' ? 'calm' : 'neon';
-  document.body.classList.toggle('calm', uiStyle==='calm');
+  uiStyle = UI_STYLES.indexOf(v) >= 0 ? v : 'neon';
+  for(const s of UI_STYLES) if(s !== 'neon') document.body.classList.toggle(s, uiStyle === s);
   if(save){ try{ localStorage.setItem('irn_uistyle', uiStyle); }catch(e){} }
   document.querySelectorAll('#styleSeg button').forEach(b=> b.classList.toggle('active', b.dataset.uis===uiStyle));
-  // the map's line glow is drawn, not styled — thin it out so the map matches the calmer chrome
+  /* The map's line glow is DRAWN, not styled, so no stylesheet can reach it — each experience
+     has to say how much of it it wants. Neon keeps the full bloom, Calm thins it to a hint,
+     and Paper removes it: its whole argument is that the map is a document, and a document
+     does not glow. */
   if(typeof linePolys!=='undefined'){
-    linePolys.forEach(o=>{ if(o.glow) o.pl.setStyle({ opacity: uiStyle==='calm' ? 0.07 : o.baseOp }); });
+    const op = uiStyle==='calm' ? 0.07 : (uiStyle==='paper' ? 0 : null);
+    linePolys.forEach(o=>{ if(o.glow) o.pl.setStyle({ opacity: op == null ? o.baseOp : op }); });
   }
 }
 function setTextSize(s){ textSize=s==='large'?'large':'normal'; try{localStorage.setItem('irn_textsize',textSize);}catch(e){}
