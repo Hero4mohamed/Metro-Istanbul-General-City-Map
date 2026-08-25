@@ -229,10 +229,24 @@
         },
         {
           "id": "experience-b-layout",
-          "title": "Paper: layout and density, not just surface",
+          "title": "Paper: layout and density",
           "priority": "P2",
+          "state": "done",
+          "note": "The small-print ramp is now a token: 143 font-size declarations sat on eight tiers between 7.5 and 10.5 px, and Paper restates all eight in one place (9–12 px). Row padding, card padding, gaps and control padding restated per component, following the grain the codebase already uses for large-text. A bus row goes 30 → 53 px tall and its text 10.5 → 12 px. Also tokenised the two radii that are genuinely uniform (--r-pill ×29, --r-round ×16), which is what lets Paper square off the controls while keeping dots and avatars round."
+        },
+        {
+          "id": "padding-not-a-scale",
+          "title": "Padding is deliberately NOT tokenised",
+          "priority": "P3",
+          "state": "declined",
+          "note": "157 declarations across 96 distinct values. That is per-component tuning, not a scale that was tokenised badly — snapping it onto four steps would redesign the default while claiming to extract it. Recorded so it is not attempted again as if it were an oversight."
+        },
+        {
+          "id": "touch-targets",
+          "title": "Touch targets below the 44 px floor",
+          "priority": "P1",
           "state": "todo",
-          "note": "Paper restates palette, shape, elevation and type scale. It does NOT yet restate layout — panel placement, the bottom-sheet behaviour on mobile, or information density per card. Those live in ~200 structural rules that are not tokenised; doing it well needs spacing/radius tokens first, the same way colour needed ink tokens."
+          "note": "Measured at 375×812: the smallest interactive target is 11 px and over 100 sit under 30 px, in BOTH skins. Pre-existing and not introduced by Paper, which marginally improves it (104 vs 109). Fixing it changes the default UI, so it is its own piece of work rather than a side effect of a skin."
         }
       ]
     }

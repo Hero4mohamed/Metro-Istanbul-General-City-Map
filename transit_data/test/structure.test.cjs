@@ -304,11 +304,18 @@ test('token coverage of the stylesheet does not regress', () => {
  * colours carry the meaning. Its whole claim is readability, so that claim is enforced here
  * rather than asserted in a comment.
  */
+/* Merges EVERY block with this selector. An experience may declare its tokens in more than one
+   place — Paper states its palette next to the colour reasoning and its type ramp next to the
+   density reasoning — and reading only the first block reported the second half as missing. */
 function tokenBlock(css, selector) {
-  const m = new RegExp(selector.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '\\{([\\s\\S]*?)\\n  \\}').exec(css);
-  assert.ok(m, 'token block not found: ' + selector);
+  const re = new RegExp(selector.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '\\{([\\s\\S]*?)\\n  \\}', 'g');
   const out = {};
-  for (const d of m[1].matchAll(/(--[a-z0-9-]+)\s*:\s*([^;]+);/g)) out[d[1]] = d[2].trim();
+  let m, found = false;
+  while ((m = re.exec(css)) !== null) {
+    found = true;
+    for (const d of m[1].matchAll(/(--[a-z0-9-]+)\s*:\s*([^;]+);/g)) out[d[1]] = d[2].trim();
+  }
+  assert.ok(found, 'token block not found: ' + selector);
   return out;
 }
 const srgb = (h) => { h = h.replace('#', '').trim(); return [0, 2, 4].map(i => parseInt(h.substr(i, 2), 16)); };
@@ -392,4 +399,72 @@ test('Paper is a structural change, not only a palette', () => {
   assert.ok(/border-radius\s*:\s*[0-6]px/.test(rules), 'Paper no longer flattens the corner radius');
   assert.ok(rules.split('\n').length >= 12,
     'Paper has shrunk to a palette swap; it is meant to restate shape and elevation too');
+});
+
+/* --- 9. The size ramp -----------------------------------------------------------------
+ * 143 font-size declarations sat on eight tiers between 7.5 and 10.5 px. That is a scale, so
+ * it became one. Padding deliberately did not: it runs to 96 distinct values across 157
+ * declarations, which is per-component tuning, and snapping it onto four steps would have
+ * redesigned the default while claiming to extract it.
+ *
+ * The ramp's value is that ONE restatement reaches all 143 — which is also its risk, since a
+ * typo in a tier resizes a third of the interface at once.
+ */
+const FS_RAMP = { '--fs-1': '7.5px', '--fs-2': '7.8px', '--fs-3': '8px', '--fs-4': '8.5px',
+                  '--fs-5': '9px', '--fs-6': '9.5px', '--fs-7': '10px', '--fs-8': '10.5px' };
+
+test('the size ramp still holds the values it replaced', () => {
+  const root = tokenBlock(H.appStyle(), ':root');
+  const wrong = [];
+  for (const k in FS_RAMP) {
+    if (root[k] !== FS_RAMP[k]) wrong.push(k + ' is ' + (root[k] || '(missing)') + ', was ' + FS_RAMP[k]);
+  }
+  assert.deepStrictEqual(wrong, [],
+    'the default type scale has moved — 143 declarations changed size: ' + wrong.join(', '));
+});
+
+test('no rule hard-codes a size the ramp already covers', () => {
+  const css = H.appStyle();
+  const sizes = new Set(Object.values(FS_RAMP));
+  const offenders = [];
+  css.split('\n').forEach((ln, i) => {
+    // an experience restates the ramp by declaring the tokens; that is the mechanism, not a leak
+    if (/--fs-\d\s*:/.test(ln)) return;
+    if (/body\.(paper|calm|large-text)/.test(ln)) return;
+    for (const m of ln.matchAll(/font-size:\s*([0-9.]+px)/g))
+      if (sizes.has(m[1])) offenders.push('line ' + (i + 1) + ': ' + m[1] + ' — ' + ln.trim().slice(0, 60));
+  });
+  assert.deepStrictEqual(offenders, [],
+    'sizes written as literals that the ramp covers:\n  ' + offenders.join('\n  '));
+});
+
+test('Paper restates the whole ramp, upward', () => {
+  const css = H.appStyle();
+  const paper = tokenBlock(css, 'body.paper');
+  const px = v => parseFloat(String(v).replace('px', ''));
+  const missing = Object.keys(FS_RAMP).filter(k => !(k in paper));
+  /* A partly-restated ramp is worse than none: some tiers lift and others do not, so the type
+     hierarchy the default established quietly inverts. */
+  assert.deepStrictEqual(missing, [], 'Paper restates only part of the type scale: ' + missing.join(', '));
+  const shrunk = Object.keys(FS_RAMP).filter(k => px(paper[k]) < px(FS_RAMP[k]));
+  assert.deepStrictEqual(shrunk, [],
+    'Paper makes these tiers SMALLER than the default, which is the opposite of its claim: ' + shrunk.join(', '));
+  // and the ramp must stay ordered, or tier 8 stops being bigger than tier 1
+  const vals = Object.keys(FS_RAMP).map(k => px(paper[k]));
+  for (let i = 1; i < vals.length; i++)
+    assert.ok(vals[i] >= vals[i - 1], 'Paper’s ramp is not monotonic at --fs-' + (i + 1));
+});
+
+test('the uniform radii are tokens, not repeated literals', () => {
+  const css = H.appStyle();
+  const root = tokenBlock(css, ':root');
+  assert.strictEqual(root['--r-pill'], '99px', '--r-pill has moved from the value it replaced');
+  assert.strictEqual(root['--r-round'], '50%', '--r-round has moved from the value it replaced');
+  const leaks = [];
+  css.split('\n').forEach((ln, i) => {
+    if (/--r-(pill|round)\s*:/.test(ln)) return;
+    for (const m of ln.matchAll(/border-radius:\s*(99px|50%)\s*[;}]/g))
+      leaks.push('line ' + (i + 1) + ': ' + m[1]);
+  });
+  assert.deepStrictEqual(leaks, [], 'pill/circle radii written as literals again: ' + leaks.join(', '));
 });

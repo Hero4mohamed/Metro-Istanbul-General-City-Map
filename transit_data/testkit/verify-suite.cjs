@@ -349,6 +349,34 @@ const MUTATIONS = [
                           "const UI_STYLES = ['neon', 'calm', 'paper', 'halo']"),
   },
   {
+    /* --- the size ramp. One tier is 143 declarations, so a typo here resizes a third of the
+       interface and nothing else in the suite would notice. */
+    name: 'nudge a default type tier',
+    expect: 'the size ramp still holds the values it replaced',
+    apply: h => h.replace('--fs-5:9px;', '--fs-5:9.5px;'),
+  },
+  {
+    name: 'write a ramp size back out as a literal',
+    expect: 'no rule hard-codes a size the ramp already covers',
+    apply: h => h.replace('.ac-hint{', '.ac-hint{font-size:10.5px;'),
+  },
+  {
+    // a half-restated ramp inverts the hierarchy: some tiers lift, others do not
+    name: 'let Paper restate only part of the type scale',
+    expect: 'Paper restates the whole ramp, upward',
+    apply: h => h.replace(/--fs-7:11\.5px;\s*/, ''),
+  },
+  {
+    name: 'let Paper shrink a tier below the default',
+    expect: 'Paper restates the whole ramp, upward',
+    apply: h => h.replace('--fs-8:12px;', '--fs-8:9px;'),
+  },
+  {
+    name: 'write a pill radius back out as a literal',
+    expect: 'the uniform radii are tokens, not repeated literals',
+    apply: h => h.replace('.badge{', '.badge{border-radius:99px;'),
+  },
+  {
     name: 'rate a shut line as a high-confidence departure',
     expect: 'a journey through a shut line does not claim timetable-grade confidence',
     apply: h => h.replace(
