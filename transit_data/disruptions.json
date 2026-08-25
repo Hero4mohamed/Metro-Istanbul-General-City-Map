@@ -11,6 +11,19 @@
     "source": "manual"
   },
   {
+    "id": "m5-ekmek-y",
+    "ref": "M5",
+    "source": "metro.istanbul",
+    "scope": "segment",
+    "from": "Çekmeköy",
+    "to": "Meclis",
+    "severity": "partial",
+    "title": "Section affected",
+    "messageTr": "Teknik bir arıza nedeniyle seferler Üsküdar-Necip Fazıl ve Sarıgazi-Sultanbeyli istasyonları arasında yapılmaktadır.",
+    "message": "Due to a technical fault, trains Üsküdar-Necip Fazıl and operate between Sarıgazi and Sultanbeyli.",
+    "messageLang": "en"
+  },
+  {
     "id": "m7-mecidiyek-y",
     "ref": "M7",
     "source": "metro.istanbul",
