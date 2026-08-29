@@ -23,18 +23,5 @@
     "messageTr": "Onarım çalışması nedeniyle seferler Yıldız-Mecidiyeköy ve Nurtepe istasyonundan aktarmalı olarak Çağlayan-Mahmutbey istasyonları arasında yapılmaktadır.",
     "message": "Due to maintenance works, trains operate between Çağlayan and Mahmutbey, with a transfer at Yıldız-Mecidiyeköy and Nurtepe.",
     "messageLang": "en"
-  },
-  {
-    "id": "t1-apa-ehremini",
-    "ref": "T1",
-    "source": "metro.istanbul",
-    "scope": "segment",
-    "from": "Çapa-şehremini",
-    "to": "Topkapı",
-    "severity": "partial",
-    "title": "Section affected",
-    "messageTr": "Geçici bir süre için seferler Kabataş-Çapa ve Cevizlibağ-Bağcılar istasyonları arasında yapılmaktadır.",
-    "message": "Temporary bir süre for trains Kabataş-Çapa and operate between Cevizlibağ and Bağcılar.",
-    "messageLang": "en"
   }
 ]
