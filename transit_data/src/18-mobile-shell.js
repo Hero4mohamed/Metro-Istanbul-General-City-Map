@@ -190,7 +190,7 @@ async function loadLiveDisruptions(){
     const r = await fetch('transit_data/disruptions.json?t='+Date.now(), { cache:'no-store' });
     if(!r.ok) return;
     const data = await r.json();
-    if(Array.isArray(data)){ ensureEnglish(data); DISRUPTIONS = data; renderAnnouncements(); renderDisruptionMarkers(); refreshClosed(); checkDisruptionAlerts(); }
+    if(Array.isArray(data)){ ensureEnglish(data); DISRUPTIONS = data; applyDisruptionFeed(); checkDisruptionAlerts(); }
   }catch(e){ /* offline / file:// → keep the baked-in DISRUPTIONS */ }
 }
 // ---- city switcher: the city name in the title opens a picker. Changing city reloads with

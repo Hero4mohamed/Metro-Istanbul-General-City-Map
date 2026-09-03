@@ -23,6 +23,11 @@ const SUITES = fs.readdirSync(TESTS).filter(f => f.endsWith('.test.cjs')).map(f 
 
 const SRI_ON_SCRIPT = new RegExp('(<script[^>]+unpkg\\.com[^>]*?)\\s+integrity="[^"]*"');
 
+/* Anchor on ONE line. The sources carry mixed line endings, so index.html does too, and a
+   two-line anchor joined with \n silently fails to match — the mutation is then reported
+   SKIPPED rather than caught, which is how three checks here briefly proved nothing. Chain
+   .replace() calls when the edit spans lines. */
+
 const MUTATIONS = [
   {
     name: 'corrupt a statement (the "$&" splice that killed the whole app)',
@@ -250,7 +255,7 @@ const MUTATIONS = [
   {
     name: 'leave a line suspended forever after the works finish',
     expect: 'a suspended line is excluded from routing, not merely warned about',
-    apply: h => h.replace("if(d.until && Date.parse(d.until + 'T23:59:59') < Date.now()) continue;", ''),
+    apply: h => h.replace('    if(!disruptionActive(d)) continue;', ''),
   },
   {
     name: 'search an "arrive by" request at the current clock',
@@ -389,6 +394,71 @@ const MUTATIONS = [
     apply: h => h.replace("  return {t:'~'+Math.max(1, Math.round(sec/60))+' '+t('minUnit'), now:false};",
       '  const m=Math.floor(sec/60), s=Math.floor(sec%60);\n' +
       '  return {t:(m>0?m+"m ":"")+String(s).padStart(2,"0")+"s", now:false};'),
+  },
+  /* --- the disruption clock, and marking a line without replacing it --- */
+  {
+    name: 'let a finished works order keep the line shut (the B2 case)',
+    expect: 'a fault with an end date is over the moment that date is out',
+    apply: h => h.replace('  return end >= Date.now();', '  return true;'),
+  },
+  {
+    name: 'let a typo in the until date put a shut line back online',
+    expect: 'a fault with no end date, or an unreadable one, is never silently dropped',
+    apply: h => h.replace('  if(Number.isNaN(end)) return true;', '  if(Number.isNaN(end)) return false;'),
+  },
+  {
+    name: 'count ended faults in the announcements badge again',
+    expect: 'everything that shows a fault reads the same active list',
+    apply: h => h.replace('  const live = activeDisruptions();', '  const live = DISRUPTIONS;'),
+  },
+  {
+    name: 'hand the model the raw feed, ended faults included',
+    expect: 'everything that shows a fault reads the same active list',
+    apply: h => h.replace('      return { count:live.length,', '      return { count:(DISRUPTIONS||[]).length,')
+                  .replace('               alerts:live.map(d => ({ line:d.ref',
+                           '               alerts:(DISRUPTIONS||[]).map(d => ({ line:d.ref'),
+  },
+  {
+    name: 'stop noticing that a fault ended while the page is open',
+    expect: 'the fault set is re-derived while the page is open, and the memo cleared with it',
+    apply: h => h.replace('setInterval(()=>{ if(disrSignature() !== _disrSig) applyDisruptionFeed(); }, 30000);', ''),
+  },
+  {
+    name: 'leave the suspension memo stale when the feed changes',
+    expect: 'the fault set is re-derived while the page is open, and the memo cleared with it',
+    apply: h => h.replace('  clearTimingMemo();              // the suspension answer the router and the sim cache', ''),
+  },
+  {
+    name: 'fatten the marking back over the line it marks',
+    expect: 'the disruption marking is narrower than the line it marks',
+    apply: h => h.replace('  const sw   = Math.max(1.3, core * 0.5);', '  const sw   = Math.max(1.3, core * 1.8);'),
+  },
+  {
+    name: 'turn the soft wash back into a solid caution band',
+    expect: 'the disruption marking is narrower than the line it marks',
+    apply: h => h.replace('                              opacity:0.14, lineCap:', '                              opacity:0.95, lineCap:'),
+  },
+  {
+    name: 'bring back the red-cased yellow caution band',
+    expect: 'the opaque caution band does not come back',
+    apply: h => h.replace('color:col, weight:core+5,', "color:'#F5C518', weight:core+5,"),
+  },
+  {
+    name: 'clear a recovered line to no dash instead of its own',
+    expect: 'a suspended line is dashed, and gets its own dash back',
+    apply: h => h.replace('    const want = susp.has(o.ref) ? SUSP_DASH : o._normDash;',
+      '    const want = susp.has(o.ref) ? SUSP_DASH : null;'),
+  },
+  {
+    name: 'change the dash without repainting the canvas',
+    expect: 'a suspended line is dashed, and gets its own dash back',
+    apply: h => h.replace('    o.pl.redraw();          // canvas only repaints on its own when the weight changes', ''),
+  },
+  {
+    name: 'stripe a suspended line end to end as well as dashing it',
+    expect: 'a suspended line is dashed, and gets its own dash back',
+    apply: h => h.replace('    const bands = suspended ? [] : disruptionPaths(d).filter(c=>c && c.length>=2);',
+      '    const bands = disruptionPaths(d).filter(c=>c && c.length>=2);'),
   },
 ];
 

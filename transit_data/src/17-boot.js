@@ -79,31 +79,45 @@ function renderDisruptionMarkers(){
   disruptionLayer.clearLayers();
   const z = map.getZoom();
   const isz = Math.round(22 * Math.max(0.6, markerScale(z)));   // ⚠ shrinks a bit when zoomed out
-  DISRUPTIONS.forEach(d=>{
+  activeDisruptions().forEach(d=>{
     const col = SEV_COLOR[d.severity] || SEV_COLOR.major;
     const line = lineByRef[d.ref];
-    // "out of service" section — clean solid caution band: a red outline (casing) with a
-    // yellow infill and a thin dark centre-seam so it reads as a crisp boxed hazard line.
-    // Static, no dots / animation. The ⚠ signage plate marks the affected stations.
-    const bands = disruptionPaths(d).filter(c=>c && c.length>=2);
+    /* The affected stretch is MARKED, not replaced. The old overlay was a red-cased yellow
+       caution band 8.1px over a 3.5px line — 2.3x its width, fully opaque — so a disrupted B2
+       stopped being blue and started being an orange line that matched nothing in the legend.
+       You could see that something was wrong and no longer see what it was wrong on.
+       So: a soft wash to give the section presence at any zoom, and a dashed severity stripe
+       down the centre at half the line's width, leaving its own colour showing either side.
+       Dashed is already this map's word for "not in normal service" (planned lines use it).
+       Thin lines are hard to hit, so an invisible wide polyline carries the tooltip. */
+    /* A line suspended end to end is already dashed end to end (applyServiceStyling). Running a
+       stripe down the whole of it as well would double the ink and answer a question nobody
+       asked: "where" is the entire line. The stripe is for SECTIONS, where the extent is the
+       information; the dash is for whether the line is running at all. */
+    const suspended = d.scope === 'line' && d.severity === 'major';
+    const bands = suspended ? [] : disruptionPaths(d).filter(c=>c && c.length>=2);
     bands.forEach(coords=>{
+      const ls   = lineScale(z);
       const base = (line && KIND[line.kind] && KIND[line.kind].weight) || 4;
-      const gw = Math.max(3, (base+1.4) * lineScale(z));
-      const red    = L.polyline(coords, { renderer:hazardRenderer, color:'#D42A2A', weight:gw+3.4,
-                              opacity:0.97, lineCap:'round', lineJoin:'round', interactive:false });   // red outline
-      const yellow = L.polyline(coords, { renderer:hazardRenderer, color:'#F5C518', weight:gw,
-                              opacity:1, lineCap:'round', lineJoin:'round' });                          // yellow infill
-      const seam   = L.polyline(coords, { renderer:hazardRenderer, color:'#7a5c00', weight:Math.max(1,gw*0.18),
-                              opacity:0.55, lineCap:'round', lineJoin:'round', interactive:false });    // subtle centre seam
-      yellow.bindTooltip(disrTip(d), { sticky:true, className:'lt' });
-      yellow.on('click', ()=> openDisruption(d));
-      red.addTo(disruptionLayer); yellow.addTo(disruptionLayer); seam.addTo(disruptionLayer);
+      const core = Math.max(1.2, base * ls);                    // the line's own drawn width here
+      const sw   = Math.max(1.3, core * 0.5);                   // stripe: half of it, never hairline
+      const dash = Math.max(1.6, 2.4*ls).toFixed(1) + ',' + Math.max(2.2, 3.2*ls).toFixed(1);
+      const wash  = L.polyline(coords, { renderer:hazardRenderer, color:col, weight:core+5,
+                              opacity:0.14, lineCap:'round', lineJoin:'round', interactive:false });
+      const stripe= L.polyline(coords, { renderer:hazardRenderer, color:col, weight:sw,
+                              opacity:0.95, lineCap:'butt', lineJoin:'round',
+                              dashArray:dash, interactive:false });
+      const hit   = L.polyline(coords, { renderer:hazardRenderer, color:col,
+                              weight:Math.max(10, core+8), opacity:0, lineCap:'round' });
+      hit.bindTooltip(disrTip(d), { sticky:true, className:'lt' });
+      hit.on('click', ()=> openDisruption(d));
+      wash.addTo(disruptionLayer); stripe.addTo(disruptionLayer); hit.addTo(disruptionLayer);
     });
     // warning marker(s): fixed screen size, gently smaller when zoomed out
     disruptionPoints(d).forEach(p=>{
-      // A line-wide or sectional fault glows through its caution band. A fault we can only
-      // pin to a single station has no band, so it would sit there as a flat signpost while
-      // its neighbours pulse. Give it a halo instead — visible, without inventing a length.
+      // A line-wide or sectional fault is marked along its stripe. A fault we can only pin to
+      // a single station has no stripe, so it would sit there as a flat signpost with nothing
+      // around it. Give it a halo instead — visible, without inventing a length.
       if(!bands.length){
         L.circleMarker(p, { renderer:hazardRenderer, className:'disr-halo',
           radius:Math.max(10, isz*0.62), color:col, weight:2, opacity:.9,
@@ -118,8 +132,39 @@ function renderDisruptionMarkers(){
       mk.addTo(disruptionLayer);
     });
   });
+  applyServiceStyling();     // same refresh puts a suspended line's own styling back
 }
-map.on('zoomend', renderDisruptionMarkers);   // re-size grey overlays + warnings on zoom
+/* The stripe says WHERE a line is affected. This says WHETHER it is running at all: a line the
+   operator has suspended outright goes dashed — the map's own existing word for "not in normal
+   service", which is how it already draws lines that have not opened yet. Nothing is added to
+   the map and nothing is hidden, so it stays thin.
+
+   The original dash is remembered per polyline and put back verbatim, so when `until` passes or
+   the entry drops out of the feed the line returns to normal on the next refresh with no
+   residue. dashArray is the one style property nothing else writes: weight belongs to
+   applyZoomStyling, core opacity to the intercity dim and glow opacity to the experience
+   preference, and taking any of those would have started a fight over the same value.
+
+   Out-of-hours closures are deliberately NOT included. Service ending at midnight is the
+   timetable working, not a fault, and dashing the whole network every night would spend the
+   signal on nothing. */
+const SUSP_DASH = '3,6';
+function applyServiceStyling(){
+  if(typeof linePolys === 'undefined') return;
+  const susp = new Set();
+  activeDisruptions().forEach(d=>{
+    if(d.scope === 'line' && d.severity === 'major' && d.ref) susp.add(d.ref);
+  });
+  linePolys.forEach(o=>{
+    if(o.glow) return;                                        // the halo keeps its own styling
+    if(o._normDash === undefined) o._normDash = o.pl.options.dashArray || null;
+    const want = susp.has(o.ref) ? SUSP_DASH : o._normDash;
+    if((o.pl.options.dashArray || null) === (want || null)) return;
+    o.pl.setStyle({ dashArray: want });
+    o.pl.redraw();          // canvas only repaints on its own when the weight changes
+  });
+}
+map.on('zoomend', renderDisruptionMarkers);   // re-size overlays + warnings on zoom
 function untilText(d){
   if(!d.until) return '';
   const days = Math.ceil((Date.parse(d.until+'T23:59:59') - Date.now())/86400000);
@@ -147,8 +192,11 @@ function openOpening(o){
 }
 function renderAnnouncements(){
   const ops = upcomingOpenings();
-  document.getElementById('annCount').textContent = DISRUPTIONS.length + ops.length;
-  const rows = DISRUPTIONS.map(d=>{
+  // the same list the map marks: a fault whose `until` has passed is over, and a badge counting
+  // it kept sending people to an entry that read "ended" and to a line that was running fine
+  const live = activeDisruptions();
+  document.getElementById('annCount').textContent = live.length + ops.length;
+  const rows = live.map(d=>{
     const col = SEV_COLOR[d.severity] || SEV_COLOR.major;
     return `<div class="ann-item" data-id="${d.id}" style="border-left-color:${col};cursor:pointer">
       <div class="ann-row1">
@@ -172,12 +220,12 @@ function renderAnnouncements(){
       <div class="ann-until">🗓 ${t('opensOn')} ${o.disp}${rel?' · '+rel:''}</div></div>`;
   }).join('');
   const body = document.getElementById('annBody');
-  body.innerHTML = (DISRUPTIONS.length ? rows : `<div class="ann-none">${t('annNone')}</div>`)
+  body.innerHTML = (live.length ? rows : `<div class="ann-none">${t('annNone')}</div>`)
     + (opRows ? `<div class="ann-sub">🚈 ${t('openHdr')}</div>${opRows}<div class="ann-note">${t('openFoot')}</div>` : '')
     + `<div class="ann-foot">${t('annFoot')} <a href="https://www.metro.istanbul/SeferDurumlari/SeferDetaylari" target="_blank" rel="noopener">metro.istanbul ↗</a>
        · <a href="https://github.com/Hero4mohamed/Metro-Istanbul-General-City-Map/issues/new" target="_blank" rel="noopener">🐞 ${t('reportProblem')}</a></div>`;
   body.querySelectorAll('.ann-item[data-id]').forEach(el => el.addEventListener('click', ()=>{
-    const d = DISRUPTIONS.find(x=>x.id===el.dataset.id); if(d) openDisruption(d);
+    const d = live.find(x=>x.id===el.dataset.id); if(d) openDisruption(d);
   }));
   body.querySelectorAll('.ann-open').forEach(el => el.addEventListener('click', ()=>{
     const o = ops[+el.dataset.open]; if(o) openOpening(o);
@@ -185,4 +233,60 @@ function renderAnnouncements(){
 }
 document.getElementById('annHead').addEventListener('click', ()=>
   document.getElementById('announce').classList.toggle('collapsed'));
+
+/* ---- Putting the network back online -------------------------------------------------------
+   Faults end in two ways, and neither of them was reaching the map.
+
+   The feed is fetched once, at boot. An `until` date that passes while the page is open changed
+   nothing: the stripe, the dashed line and the announcement all outlived the fault, and a page
+   left open overnight kept showing a closure that had lifted hours earlier.
+
+   And lineHours() memoises whether a line is suspended. Its own comment says the memo is
+   "invalidated by clearTimingMemo() when the disruption feed refreshes" — but nothing ever
+   called clearTimingMemo, in either direction. The router, the arrivals board and the carriage
+   sim answered from the boot-time feed for the life of the tab: a new suspension was routed
+   straight through, and a lifted one stayed unroutable.
+
+   So derive the whole thing from one signature of the active set, on the cadence the closure
+   cache already runs at. No fetch, no clock arithmetic scattered around — when the set changes,
+   for whatever reason, everything that depends on it is rebuilt. */
+function disrSignature(){ return activeDisruptions().map(d => d.id+':'+d.scope+':'+d.severity).join('|'); }
+let _disrSig = disrSignature();
+function applyDisruptionFeed(){
+  _disrSig = disrSignature();
+  clearTimingMemo();              // the suspension answer the router and the sim cache
+  refreshClosed();
+  renderAnnouncements();
+  renderDisruptionMarkers();      // marking, warning pins, and the suspended line's own dash
+}
+setInterval(()=>{ if(disrSignature() !== _disrSig) applyDisruptionFeed(); }, 30000);
+
+/* Named entry points for the browser smoke suite, in the same spirit as simCars() and
+   busDirs(): the page's state lives in script-scoped const/let bindings, which are NOT
+   properties of window, and the CSP rules out eval — so anything a test needs to reach has to
+   be published on purpose. This one reports what is actually DRAWN, in pixels, because the
+   width of the marking relative to the line under it was the whole defect. Called with no ref
+   it names a line worth testing, so the suite does not hard-code one that may be withdrawn. */
+function disruptionProbe(ref){
+  if(!ref){
+    const l = (typeof liveLines !== 'undefined' ? liveLines : [])
+      .find(x => x.coords && x.coords.length > 1 && (x.stations||[]).length >= 3);
+    return l ? { ref:l.ref, from:l.stations[0].name, to:l.stations[l.stations.length-1].name } : null;
+  }
+  const core = linePolys.filter(p => p.ref === ref && !p.glow)[0];
+  const marks = [];
+  disruptionLayer.eachLayer(l => {
+    if(l.options && l.options.weight != null && l.options.opacity > 0.5) marks.push(l.options.weight);
+  });
+  return { lineWeight: core ? core.pl.options.weight : null,
+           lineDash:   core ? (core.pl.options.dashArray || null) : null,
+           marks, suspended:[...suspendedRefs()], active:activeDisruptions().map(d=>d.id) };
+}
+// Swap the feed and re-derive everything from it. Client-side only and gone on reload — the
+// same kind of hook updateTrains() already is, and the only way to test a fault the city is
+// not currently having.
+function setDisruptions(list){
+  if(Array.isArray(list)){ DISRUPTIONS = list; applyDisruptionFeed(); }
+  return DISRUPTIONS.length;
+}
 

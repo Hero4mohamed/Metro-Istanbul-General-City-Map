@@ -31,7 +31,7 @@ function updateFollowBtn(){
 // notify when a followed line is newly disrupted (called after each live-disruptions refresh)
 function checkDisruptionAlerts(silent){
   const active=new Set();
-  for(const d of (DISRUPTIONS||[])){ if(!d||!d.ref) continue; active.add(d.id);
+  for(const d of activeDisruptions()){ if(!d||!d.ref) continue; active.add(d.id);
     if(followedLines.has(d.ref) && !alertedIds.has(d.id)){
       alertedIds.add(d.id);
       // plain text here, so the "shown in Turkish" label is a prefix rather than a badge

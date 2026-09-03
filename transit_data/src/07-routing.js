@@ -501,7 +501,7 @@ function suspendedRefs(){
   const out = new Set();
   for(const d of (DISRUPTIONS || [])){
     if(d.scope !== 'line' || d.severity !== 'major') continue;
-    if(d.until && Date.parse(d.until + 'T23:59:59') < Date.now()) continue;
+    if(!disruptionActive(d)) continue;
     if(d.ref) out.add(d.ref);
   }
   return out;

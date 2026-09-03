@@ -379,7 +379,7 @@ function transportTool(name, args){
       if(!ln){ const bd = BUS_DIR.find(x => x.ref === ref);
                if(bd){ out.from = bd.from; out.to = bd.to; out.operator = bd.op || BUS_OPERATOR; } }
     }
-    const al = (DISRUPTIONS||[]).filter(x => x.ref === ref);
+    const al = activeDisruptions().filter(x => x.ref === ref);
     if(al.length) out.alerts = al.map(a => ({ severity:a.severity, title:a.title,
                                               detail:a.message, until:a.until || null }));
     if(!ln && !out.is_bus) return { ref, found:false };
@@ -710,8 +710,9 @@ function transportTool(name, args){
                accessibility_known: !!acc };
     }
     if(name === "service_alerts"){
-      return { count:(DISRUPTIONS||[]).length,
-               alerts:(DISRUPTIONS||[]).map(d => ({ line:d.ref, scope:d.scope, severity:d.severity,
+      const live = activeDisruptions();
+      return { count:live.length,
+               alerts:live.map(d => ({ line:d.ref, scope:d.scope, severity:d.severity,
                  title:d.title, detail:d.message, until:d.until || null })) };
     }
     if(name === "city_info"){
@@ -828,7 +829,7 @@ function transportTool(name, args){
        before the line-ref branch for that reason. */
     if(/\b(disruption|disruptions|delay|delays|alert|alerts|closure|closed|suspended|outage|service status|running|works)\b/i.test(q) ||
        /(aksakl|arıza|ariza|gecikme|kapalı|kapali|çalışıyor mu|calisiyor mu|sefer var m|sorun var m)/i.test(q)){
-      const all = DISRUPTIONS || [];
+      const all = activeDisruptions();
       const ref = findRef(q);
       const mine = ref ? all.filter(d => String(d.ref).toUpperCase() === ref.toUpperCase()) : all;
       if(!mine.length){
