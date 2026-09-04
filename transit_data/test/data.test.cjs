@@ -28,16 +28,70 @@ test('every translation key the app asks for exists in English', () => {
   assert.deepStrictEqual(missing, [], 'asked for but absent from English: ' + missing.join(', '));
 });
 
-test('Turkish covers the keys English defines', () => {
+/* Every language, not just the two the tests used to watch.
+   ar and fr were treated as optional here — "they legitimately fall back to English" — and
+   under that exemption they drifted 101 keys behind, so about a fifth of the interface came
+   out in English for a reader who had chosen Arabic or French: the whole trip-planner
+   interchange vocabulary, the whole assistant, provenance and diagnostics. A fallback is a
+   safety net for the moment between adding a key and translating it, not a resting state. */
+test('every language covers the keys English defines', () => {
   const d = H.i18n();
-  assert.ok(d.tr && d.tr.size > 50, 'Turkish dictionary not found');
-  // ar/fr legitimately fall back to English; Turkish is a primary language of this product,
-  // so a gap there is a real hole rather than a graceful default.
-  const missing = [...d.en].filter(k => !d.tr.has(k)).sort();
-  assert.ok(missing.length <= 12,
-    'Turkish is missing ' + missing.length + ' keys: ' + missing.slice(0, 20).join(', '));
+  const gaps = [];
+  for (const lang of ['tr', 'ar', 'fr']) {
+    assert.ok(d[lang] && d[lang].size > 50, lang + ' dictionary not found or implausibly small');
+    const missing = [...d.en].filter(k => !d[lang].has(k)).sort();
+    if (missing.length)
+      gaps.push(lang + ' is missing ' + missing.length + ' key(s): ' + missing.slice(0, 8).join(', '));
+  }
+  assert.deepStrictEqual(gaps, [], gaps.join(' | '));
 });
 
+/* Placeholders are substituted with a plain .replace(), so they are part of the contract of the
+   string and not decoration. A translation that drops {n} prints a sentence with the number
+   silently missing ("about every  min"); one that renames it prints the braces raw. Neither
+   looks like a translation bug from the outside, which is what makes it worth a check. */
+test('a translated string keeps every placeholder its English original has', () => {
+  const V = H.i18nValues();
+  const marks = s => (String(s).match(/\{[A-Za-z]+\}/g) || []).sort().join(',');
+  const bad = [];
+  for (const lang of ['tr', 'ar', 'fr']) {
+    for (const k of Object.keys(V.en)) {
+      if (V[lang][k] === undefined) continue;         // absence is the previous test's business
+      if (marks(V[lang][k]) !== marks(V.en[k]))
+        bad.push(lang + '.' + k + ': en has [' + marks(V.en[k]) + '], ' +
+                 lang + ' has [' + marks(V[lang][k]) + ']');
+    }
+  }
+  assert.deepStrictEqual(bad, [], bad.join(' | '));
+});
+
+/* A dictionary entry that is still the English string is a translation nobody did. Latin script
+   in the Arabic dictionary is normal — brand names, line codes, "OpenStreetMap" — so the test
+   is not "contains Latin" but "contains no Arabic at all while the English says something a
+   language would translate". Short entries are exempt: "M2", "km", "±" are the same everywhere. */
+test('the Arabic dictionary is in Arabic', () => {
+  const V = H.i18nValues();
+  const ARABIC = /[؀-ۿ]/;
+  const untranslated = Object.keys(V.en).filter(k => {
+    const ar = V.ar[k], en = V.en[k];
+    if (typeof ar !== 'string' || typeof en !== 'string') return false;
+    if (!/[A-Za-z]{4}/.test(en)) return false;        // not a word anyone would translate
+    return !ARABIC.test(ar);
+  });
+  assert.deepStrictEqual(untranslated, [],
+    untranslated.length + ' Arabic entries carry no Arabic: ' + untranslated.slice(0, 10).join(', '));
+});
+
+/* Arabic reads right to left. applyI18n set documentElement.lang and nothing else, so an Arabic
+   reader got Arabic sentences in an English layout — and, worse, the bidi algorithm takes its
+   base direction from exactly this attribute, so mixed runs like "M2 إلى Kadıköy" came out with
+   their parts in the wrong order. The behaviour is checked in the browser suite, where there is
+   a document to set it on; this only catches the line being deleted. */
+test('the page sets a text direction, not just a language', () => {
+  const script = H.codeOnly(H.appScript());
+  assert.ok(/documentElement\s*\.\s*dir\s*=/.test(script),
+    'nothing in the shipped page ever sets document direction — Arabic will render left-to-right');
+});
 /* --- network geometry --------------------------------------------------------------
    A bounding box does not respect a city boundary. İzmir's box covers Manisa, and an OSM
    pull once put 22 Manisa co-operative routes into İzmir's bus directory. Coordinates that

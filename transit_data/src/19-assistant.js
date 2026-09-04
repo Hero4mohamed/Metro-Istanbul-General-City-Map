@@ -1048,7 +1048,7 @@ function renderProvenance(){
               : m.kind === 'community' ? 'pv-warn' : m.kind === 'scraped' ? 'pv-warn' : 'pv-dim';
     return '<div class="pv-row">' +
       '<span class="pv-k ' + cls + '">' + svgEsc(t('provKind_' + m.kind) || m.kind) + '</span>' +
-      '<span class="pv-t"><b>' + svgEsc(m.covers || file) + '</b>' +
+      '<span class="pv-t"><b>' + svgEsc(m['covers_' + lang] || m.covers || file) + '</b>' +
       '<span class="pv-s">' + svgEsc(m.source) + '</span></span>' +
       '<span class="pv-a">' + svgEsc(ageText(m.updated)) + '</span></div>';
   }).join('');

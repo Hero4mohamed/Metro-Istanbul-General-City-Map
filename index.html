@@ -6,7 +6,7 @@
 <!-- Substituted by build.cjs, which hashes the inline script from the final bytes. Pages
      cannot set headers, so this ships as meta; frame-ancestors and report-uri are
      unavailable that way. -->
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-uf36HmQMr4YFd7J8SERFS1z1h/XOBk+vlQNtzu7xgCw=' https://unpkg.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://unpkg.com; font-src https://fonts.gstatic.com data:; img-src 'self' data: blob: https://*.basemaps.cartocdn.com https://server.arcgisonline.com; connect-src 'self' https://*.basemaps.cartocdn.com https://server.arcgisonline.com https://photon.komoot.io https://overpass-api.de https://api.ibb.gov.tr https://api.open-meteo.com https://routing.openstreetmap.de https://api.anthropic.com; worker-src 'self'; manifest-src 'self'; base-uri 'self'; form-action 'none'; object-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-IJI/OqC/b68KDHsPLgSNFDMu9Zkj9x535W3VUlIl52U=' https://unpkg.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://unpkg.com; font-src https://fonts.gstatic.com data:; img-src 'self' data: blob: https://*.basemaps.cartocdn.com https://server.arcgisonline.com; connect-src 'self' https://*.basemaps.cartocdn.com https://server.arcgisonline.com https://photon.komoot.io https://overpass-api.de https://api.ibb.gov.tr https://api.open-meteo.com https://routing.openstreetmap.de https://api.anthropic.com; worker-src 'self'; manifest-src 'self'; base-uri 'self'; form-action 'none'; object-src 'none'">
 <title>İSTANBUL RAY-NET · Live Rail Network Map &amp; Simulation</title>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
       integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
@@ -684,7 +684,18 @@
      printed in the operator’s own words, and says so rather than pretending to be a translation */
   .ann-tr{display:inline-block;font-size:var(--fs-4);font-weight:800;letter-spacing:.4px;text-transform:uppercase;
     padding:1px 6px;border-radius:var(--r-pill);border:1px solid var(--stroke);color:var(--dim);
-    background:var(--surface-2);vertical-align:1px;margin-right:2px;white-space:nowrap;cursor:help;}
+    background:var(--surface-2);vertical-align:1px;margin-inline-end:2px;white-space:nowrap;cursor:help;}
+  /* --- right to left ------------------------------------------------------------------
+     Arabic sets dir=rtl on the document, which is what its prose needs. The side effect is
+     that the bidi algorithm reorders a run of Latin text around any neutral character in
+     it, so the masthead "İSTANBUL · RAY-NET" came out as "RAY-NET · İSTANBUL" and the bus
+     operator tag " · İETT" jumped its separator. These are names, not sentences: they are
+     isolated so they keep their own direction whatever surrounds them. Physical left:/right:
+     rules are not affected by dir at all, so the map furniture needs no counterpart here. */
+  [dir="rtl"] .topbar h1,
+  [dir="rtl"] #busOpLabel{direction:ltr;unicode-bidi:isolate;}
+  [dir="rtl"] .topbar h1{justify-content:flex-end;}
+
   .ann-item .ann-tx small{display:block;color:var(--muted);font-size:var(--fs-6);margin-top:1px;}
   .ann-foot{font-size:var(--fs-5);color:var(--dim);padding-top:4px;border-top:1px solid var(--stroke);margin-top:2px;line-height:1.55;}
   .ann-foot a{color:var(--accent);text-decoration:none;}
@@ -1829,7 +1840,7 @@
 
    The report carries the fault, the build, the city, the language and the browser. It never
    carries location, saved places, trip history or the API key. ===== */
-const BUILD = "20260903090851";
+const BUILD = "20260904104936";
 const DIAG_MAX = 20;
 let DIAG = [];
 try { DIAG = JSON.parse(localStorage.getItem("irn_diag") || "[]"); } catch (e) { DIAG = []; }
@@ -1971,7 +1982,7 @@ const I18N = {
     annNone:"✓ No reported disruptions — network running normally.",
     annFoot:"Reported service faults &amp; closures. Live official status:",
     trOnlyTag:"Turkish original",
-    trOnlyWhy:"The operator wrote this in wording our English rules do not cover, so the official Turkish is shown unchanged rather than half-translated.",
+    trOnlyWhy:"The operator wrote this in wording our translation rules do not cover, so the official Turkish is shown unchanged rather than half-translated.",
     until:"until", daysLeft:"days left", endsToday:"ends today", ended:"ended",
     openHdr:"Coming soon", openTtl:"New line opening", opensOn:"Opens", openSoon:"SOON",
     inMonths:"in ~{n} mo", inWeeks:"in ~{n} wk", inDays:"in {n} d", kmU:"km", stnU:"stations",
@@ -2030,6 +2041,7 @@ const I18N = {
     loadingGeom:"Loading route geometry…", routeDrawn:"route drawn", needNet:"Could not fetch route (needs internet).",
     kind_metro:"Metro", kind_tram:"Tram", kind_ferry:"Ferry", kind_funicular:"Funicular",
     kind_marmaray:"Marmaray", kind_suburban:"Suburban", kind_metrobus:"Metrobüs (BRT)", kind_cable:"Cable car",
+    kind_subway:"Metro", kind_bus:"Bus", toggleGroup:"toggle",
     pairedCars:"two counterbalanced cars", shuttleSpur:"shuttle spur", interchangesWord:"interchanges", targetOpen:"target open", soonWord:"soon", stationsLower:"stations",
     st_construction:"Under construction", st_planned:"Planned", st_testing:"Under construction / testing", st_approx:"Approximate alignment",
     servedBy:"Served by {n} line(s).",
@@ -2144,7 +2156,7 @@ const I18N = {
     annNone:"✓ Bildirilen aksama yok — ağ normal çalışıyor.",
     annFoot:"Bildirilen servis arızaları ve kapanışları. Canlı resmi durum:",
     trOnlyTag:"Türkçe orijinal",
-    trOnlyWhy:"İşletmecinin ifadesi İngilizce çeviri kurallarımızın kapsamı dışında kaldığı için resmi Türkçe metin olduğu gibi gösteriliyor.",
+    trOnlyWhy:"İşletmecinin ifadesi çeviri kurallarımızın kapsamı dışında kaldığı için resmi Türkçe metin olduğu gibi gösteriliyor.",
     until:"şu tarihe kadar:", daysLeft:"gün kaldı", endsToday:"bugün bitiyor", ended:"sona erdi",
     openHdr:"Yakında açılıyor", openTtl:"Yeni hat açılışı", opensOn:"Açılış", openSoon:"YAKINDA",
     inMonths:"~{n} ay içinde", inWeeks:"~{n} hafta içinde", inDays:"{n} gün içinde", kmU:"km", stnU:"istasyon",
@@ -2203,6 +2215,7 @@ const I18N = {
     loadingGeom:"Güzergah çiziliyor…", routeDrawn:"güzergah çizildi", needNet:"Güzergah alınamadı (internet gerekli).",
     kind_metro:"Metro", kind_tram:"Tramvay", kind_ferry:"Vapur", kind_funicular:"Füniküler",
     kind_marmaray:"Marmaray", kind_suburban:"Banliyö", kind_metrobus:"Metrobüs", kind_cable:"Teleferik",
+    kind_subway:"Metro", kind_bus:"Otobüs", toggleGroup:"aç/kapa",
     pairedCars:"karşılıklı dengeli iki araç", shuttleSpur:"mekik hattı", interchangesWord:"aktarmalar", targetOpen:"hedef açılış", soonWord:"yakında", stationsLower:"istasyon",
     st_construction:"Yapım aşamasında", st_planned:"Planlanan", st_testing:"Yapım / test aşamasında", st_approx:"Yaklaşık güzergah",
     servedBy:"{n} hat hizmet veriyor.",
@@ -2324,6 +2337,7 @@ const I18N = {
     nextArr:"التالي", followingArr:"الذي يليه", noApproach:"لا عربات قادمة.", carrOff:"طبقة العربات معطّلة.",
     kind_metro:"مترو", kind_tram:"ترام", kind_ferry:"عبّارة", kind_funicular:"قطار جبلي مائل",
     kind_marmaray:"مرمراي", kind_suburban:"ضواحٍ", kind_metrobus:"متروبوس", kind_cable:"تلفريك",
+    kind_subway:"مترو", kind_bus:"حافلة", toggleGroup:"إظهار/إخفاء",
     shuttleSpur:"خط مكوكي", interchangesWord:"تحويلات", targetOpen:"الافتتاح المستهدف", soonWord:"قريبًا", stationsLower:"محطات",
     st_construction:"قيد الإنشاء", st_planned:"مخطَّط", st_testing:"قيد الإنشاء / الاختبار", st_approx:"مسار تقريبي",
     servedBy:"تخدمها {n} خط/خطوط.",
@@ -2363,7 +2377,71 @@ const I18N = {
     funStats:"أنت", passport:"جواز سفرك", linesRidden:"خطوط مركوبة", tripOne:"رحلة", tripMany:"رحلات",
     passportNote:"أكمل رحلة بزر ▶ ابدأ لتُضيء خطوطها. محفوظ على هذا الجهاز.",
     followLine:"تابع للتنبيهات", following:"متابَع · التنبيهات مفعّلة", timeToLeave:"حان وقت المغادرة",
-    reminderSet:"تم ضبط تذكير خلال {n} د", remindLeaveLabel:"🔔 ذكّرني بالمغادرة بعد" },
+    reminderSet:"تم ضبط تذكير خلال {n} د", remindLeaveLabel:"🔔 ذكّرني بالمغادرة بعد",
+    /* --- the 101 keys that used to fall through to English ------------------------------
+       t() falls back to English silently, so a missing key is invisible in review and very
+       visible to the reader: an Arabic panel with an English paragraph in the middle of it.
+       Register follows the dictionary above — تحويل for a change of line, محطة for a stop,
+       د for the minute, Latin digits to match LOCALE's ar-u-nu-latn. */
+    omniPh:"ابحث عن أي شيء — أماكن، مطاعم، مستشفيات…",
+    omniStops:"المحطات والمعالم", omniPlaces:"الأماكن", omniNear:"القريب مني",
+    omniNone:"لا نتائج. جرّب مكانًا أو حيًّا أو فئة مثل «مطاعم».",
+    omniOff:"غير متصل — تظهر المحطات والمعالم فقط.", omniLook:"جارٍ البحث…",
+    omniHint:"ابحث عن محطة أو معلم أو شارع أو حي — أو اختر فئة من الأعلى.",
+    whenNow:"الآن", whenDepart:"المغادرة", whenArrive:"الوصول", whenTimeT:"الوقت",
+    provLabel:"البيانات والمصادر",
+    provIntro:"من أين تأتي البيانات ومتى جرى تحديثها آخر مرة. بيانات المشغّل دقيقة؛ أما مصادر المجتمع والمستخلَصة من الويب فمُعلَّمة بذلك.",
+    provKind_operator:"المشغّل", provKind_official:"رسمي", provKind_community:"المجتمع",
+    provKind_scraped:"الويب", provKind_curated:"مُنسَّق",
+    provToday:"اليوم", provYesterday:"أمس", provDays:"قبل {n} يوم", provUnknown:"غير معروف",
+    diagLabel:"التشخيص", diagReport:"الإبلاغ عن مشكلة", diagCopy:"نسخ التقرير",
+    diagClear:"مسح", diagCopied:"تم النسخ",
+    diagNone:"لا أعطال مسجّلة على هذا الجهاز. لا يُرسل أي شيء تلقائيًا — الإبلاغ يفتح تقريرًا مُعبّأ مسبقًا يمكنك قراءته وتعديله أولًا.",
+    diagSome:"{n} عطل مسجّل على هذا الجهاز، آخرها: {m}. لا إرسال تلقائي. يتضمّن التقرير العطل والإصدار والمدينة واللغة والمتصفّح — ولا يتضمّن موقعك أو أماكنك المحفوظة أو مفتاحك.",
+    aiKeyLabel:"ذكاء المساعد (اختياري)", aiKeySave:"حفظ", aiKeyClear:"حذف",
+    aiKeyOn:"يُستخدم مفتاح Anthropic الخاص بك — يُحفظ في هذا المتصفّح فقط ويُرسل إلى Anthropic فقط. ويظل المساعد يجيب من بيانات هذه الخريطة.",
+    aiKeyOff:"اختياري. يعمل المساعد دون مفتاح من بيانات هذه الخريطة نفسها دون اتصال. الصق مفتاح Anthropic ليفهم صياغات أكثر حرية — ويبقى محفوظًا في هذا المتصفّح وحده.",
+    aiKeyFail:"تعذّر استخدام مفتاح الذكاء الاصطناعي — تتم الإجابة من بيانات الخريطة.",
+    busOsmNote:"الخطوط رسمها متطوّعو OpenStreetMap — لا توجد بيانات رسمية مفتوحة لهذه المدينة، لذا قد تكون التغطية ناقصة ولا تتوفّر مواعيد.",
+    lrToday:"اليوم ({d}) — أول وآخر رحلة:", lrEvery:"كل {n} د تقريبًا",
+    lrExact:"جدول المشغّل", lrHours:"ساعات التشغيل:",
+    lrWindow:"فترة تشغيل الخط المنشورة، وليست جدول مغادرات",
+    lrNoTimes:"لا يوجد جدول منشور لهذا الخط.",
+    lrWhich:"أي خط؟ اكتب رقمه أو اسمه — مثل «آخر رحلة M2» أو «son sefer 500T».",
+    ttDepart:"المغادرة", ttArrive:"الوصول", ttWait:"يشمل ~{n} د انتظارًا",
+    ttEst:"مُقدّر من وتيرة الرحلات المنشورة", ttShut:"لا يعمل في ذلك الوقت: {l}",
+    ttFirstService:"لا رحلات الآن — أول مغادرة في {t}.",
+    ttWaitsFor:"تنتظر هذه الرحلة الخط {l}، ولا رحلة له قبل {t}.",
+    ttConfHigh:"المواعيد من الجداول المنشورة",
+    ttConfMixed:"{n} من {m} مراحل من الجداول، والباقي مُقدّر",
+    ttMissed:"لا يمكن إدراك هذا التحويل في الوقت — تعتمد الخطة المغادرة التالية.",
+    xferSafe:"تحويل مريح", xferOk:"تحويل مناسب", xferTight:"تحويل ضيّق",
+    xferRisky:"تحويل ضيّق جدًا", xferMissed:"تحويل فائت", xferSlackMin:"{n} د للتحويل",
+    xferNoTt:"لا جدول لهذا الخط — توقّع {n} د تقريبًا",
+    xferWalkBuf:"{w} م سيرًا + {b} د في محطة تحويل بـ {l} خطوط",
+    xferNoHistory:"بناءً على الجدول ومسافة السير فقط — لا سجلّ تأخيرات منشور لهذا الخط.",
+    srcTimetable:"جدول منشور", srcOperator:"جدول المشغّل",
+    srcPublished:"وتيرة منشورة", srcDefault:"وتيرة مفترضة",
+    aiTitle:"اسأل الخريطة", aiPh:"أين آكل قرب Kadıköy؟", aiSend:"اسأل",
+    aiHello:"اسألني عن الأماكن أو الاتجاهات أو ما حولك. أجيب من بيانات هذه الخريطة ومن OpenStreetMap — ولا أختلق شيئًا.",
+    aiNoIdea:"لم أستطع ربط ذلك بمكان أو فئة أو مسار. جرّب «مطاعم قرب Taksim» أو «M2 إلى Kadıköy» أو «حافلات Levent».",
+    aiFound:"أقرب النتائج", aiRouting:"يجري حساب المسار — النتيجة في لوحة الرحلة.",
+    aiNeedTwo:"اذكر الطرفين، مثل «Taksim إلى Kadıköy».", aiNoPlace:"لم أجد",
+    aiStops:"أقرب المحطات", aiBusAt:"خطوط الحافلات هنا",
+    aiNoBus:"لا خطوط حافلات مسجّلة عند هذه المحطة.",
+    aiOffline:"أحتاج اتصالًا للبحث عن الأماكن. تظل المحطات والخطوط تعمل دون اتصال.",
+    aiAlertsNone:"لا اضطرابات مبلّغة حاليًا.", aiAlertsSome:"الاضطرابات المبلّغة",
+    aiAlertsLineOk:"لا اضطراب مبلّغ على هذا الخط.", aiAlertsUntil:"حتى",
+    aiAccStepFree:"بلا درجات", aiAccNot:"غير خالٍ من الدرجات",
+    aiAccUnknown:"لا بيانات إتاحة مسجّلة لهذه المحطة.",
+    aiAccCityOnly:"بيانات المصاعد والسلالم المتحركة منشورة لإسطنبول فقط.",
+    aiLinesAt:"الخطوط التي تخدم", aiLinesNone:"لا خطوط مسجّلة عند هذه المحطة.",
+    routeFrom:"مسار من", routeTo:"مسار إلى", nearHere:"ما القريب من هنا",
+    busLines:"خط", busLinesMany:"خطوط", showingFirst:"تُعرض أول",
+    noGeom:"لا يوجد رسم لمسار هذا الخط على الخريطة.", loadingGeom:"جارٍ تحميل مسار الخط…",
+    routeDrawn:"تم رسم المسار", needNet:"تعذّر جلب المسار (يتطلّب اتصالًا بالإنترنت).",
+    pairedCars:"عربتان متقابلتان متوازنتان",
+  },
   fr:{ liveNet:"Réseau de transport en direct", source:"source ↗", lines:"Lignes", stations:"Stations", carriages:"Rames",
     tabActive:"● Actif", tabVision:"◇ Vision", tabBus:"▤ Bus", tabWeather:"☀ Météo",
     baseMap:"Fond de carte", dark:"Sombre", streets:"Rues", satellite:"Satellite",
@@ -2445,6 +2523,7 @@ const I18N = {
     nextArr:"Prochain", followingArr:"Suivant", noApproach:"Aucune rame en approche.", carrOff:"Couche des rames désactivée.",
     kind_metro:"Métro", kind_tram:"Tramway", kind_ferry:"Ferry", kind_funicular:"Funiculaire",
     kind_marmaray:"Marmaray", kind_suburban:"Banlieue", kind_metrobus:"Métrobus (BRT)", kind_cable:"Téléphérique",
+    kind_subway:"Métro", kind_bus:"Bus", toggleGroup:"afficher/masquer",
     shuttleSpur:"navette", interchangesWord:"correspondances", targetOpen:"ouverture prévue", soonWord:"bientôt", stationsLower:"stations",
     st_construction:"En construction", st_planned:"Planifié", st_testing:"En construction / essais", st_approx:"Tracé approximatif",
     servedBy:"Desservie par {n} ligne(s).",
@@ -2484,7 +2563,73 @@ const I18N = {
     funStats:"Vous", passport:"Votre passeport de voyage", linesRidden:"lignes parcourues", tripOne:"trajet", tripMany:"trajets",
     passportNote:"Terminez un trajet avec ▶ Démarrer pour allumer ses lignes. Enregistré sur cet appareil.",
     followLine:"Suivre pour alertes", following:"Suivi · alertes activées", timeToLeave:"Il est temps de partir",
-    reminderSet:"Rappel réglé dans {n} min", remindLeaveLabel:"🔔 Me rappeler de partir dans" }
+    reminderSet:"Rappel réglé dans {n} min", remindLeaveLabel:"🔔 Me rappeler de partir dans",
+    /* --- the 101 keys that used to fall through to English ------------------------------
+       t() falls back to English silently, so a missing key is invisible in review and very
+       visible to the reader: a French panel with an English paragraph in the middle of it.
+       Register follows the dictionary above — correspondance for a change of line, rame for
+       a carriage, exploitant for the operator; typographic apostrophe and guillemets. */
+    omniPh:"Cherchez partout — lieux, restaurants, hôpitaux…",
+    omniStops:"Arrêts et lieux repères", omniPlaces:"Lieux", omniNear:"À proximité",
+    omniNone:"Aucun résultat. Essayez un lieu, un quartier ou une catégorie comme « restaurants ».",
+    omniOff:"Hors ligne — seuls les arrêts et les lieux repères s’affichent.", omniLook:"Recherche…",
+    omniHint:"Cherchez un arrêt, un lieu repère, une rue ou un quartier — ou choisissez une catégorie ci-dessus.",
+    whenNow:"Maintenant", whenDepart:"Départ", whenArrive:"Arrivée", whenTimeT:"Heure",
+    provLabel:"Données et sources",
+    provIntro:"D’où viennent les données et quand elles ont été actualisées. Les flux de l’exploitant sont exacts ; les sources communautaires et extraites du web sont signalées comme telles.",
+    provKind_operator:"exploitant", provKind_official:"officiel", provKind_community:"communauté",
+    provKind_scraped:"web", provKind_curated:"compilé",
+    provToday:"aujourd’hui", provYesterday:"hier", provDays:"il y a {n} jours", provUnknown:"inconnu",
+    diagLabel:"Diagnostic", diagReport:"Signaler un problème", diagCopy:"Copier le rapport",
+    diagClear:"Effacer", diagCopied:"Copié",
+    diagNone:"Aucune erreur enregistrée sur cet appareil. Rien n’est jamais envoyé automatiquement — le signalement ouvre un rapport prérempli que vous pouvez lire et modifier avant de l’envoyer.",
+    diagSome:"{n} erreur(s) enregistrée(s) sur cet appareil, la plus récente : {m}. Rien n’est envoyé automatiquement. Un rapport contient l’erreur, la version, la ville, la langue et le navigateur — jamais votre position, vos lieux enregistrés ni votre clé.",
+    aiKeyLabel:"IA de l’assistant (facultatif)", aiKeySave:"Enregistrer", aiKeyClear:"Effacer",
+    aiKeyOn:"Votre clé Anthropic est utilisée — conservée uniquement dans ce navigateur, envoyée uniquement à Anthropic. L’assistant répond toujours à partir des données de cette carte.",
+    aiKeyOff:"Facultatif. Sans clé, l’assistant fonctionne hors ligne à partir des données de cette carte. Collez une clé Anthropic pour qu’il comprenne des formulations plus libres — elle reste dans ce navigateur.",
+    aiKeyFail:"Votre clé IA n’a pas pu être utilisée — réponse à partir de la carte.",
+    busOsmNote:"Itinéraires cartographiés par la communauté OpenStreetMap — aucun flux ouvert officiel n’existe pour cette ville : la couverture peut être incomplète et aucun horaire n’est disponible.",
+    lrToday:"Aujourd’hui ({d}) — premier et dernier départ :", lrEvery:"environ toutes les {n} min",
+    lrExact:"horaires de l’exploitant", lrHours:"Heures de service :",
+    lrWindow:"plage de service publiée de la ligne, et non un tableau des départs",
+    lrNoTimes:"Aucun horaire publié pour cette ligne.",
+    lrWhich:"Quelle ligne ? Donnez son numéro ou son nom — par exemple « dernier départ M2 » ou « son sefer 500T ».",
+    ttDepart:"Départ", ttArrive:"Arrivée", ttWait:"dont ~{n} min d’attente",
+    ttEst:"estimé d’après les fréquences publiées", ttShut:"Ne circule pas à cette heure : {l}",
+    ttFirstService:"Aucun service actuellement — le premier départ est à {t}.",
+    ttWaitsFor:"Ce trajet attend la ligne {l}, qui ne circule pas avant {t}.",
+    ttConfHigh:"horaires issus des grilles publiées",
+    ttConfMixed:"{n} tronçons sur {m} d’après les horaires, le reste estimé",
+    ttMissed:"Cette correspondance ne peut pas être assurée à temps — ce plan prend le départ suivant.",
+    xferSafe:"correspondance confortable", xferOk:"correspondance correcte",
+    xferTight:"correspondance juste", xferRisky:"correspondance très juste",
+    xferMissed:"correspondance manquée", xferSlackMin:"{n} min pour la correspondance",
+    xferNoTt:"aucun horaire pour cette ligne — comptez environ {n} min",
+    xferWalkBuf:"{w} m à pied + {b} min dans un pôle d’échange à {l} lignes",
+    xferNoHistory:"Fondé uniquement sur l’horaire et le temps de marche — aucun historique de retards n’est publié pour cette ligne.",
+    srcTimetable:"horaire publié", srcOperator:"horaires de l’exploitant",
+    srcPublished:"fréquence publiée", srcDefault:"fréquence supposée",
+    aiTitle:"Interroger la carte", aiPh:"Où manger près de Kadıköy ?", aiSend:"Demander",
+    aiHello:"Demandez-moi des lieux, un itinéraire ou ce qu’il y a à proximité. Je réponds à partir des données de cette carte et d’OpenStreetMap — je n’invente rien.",
+    aiNoIdea:"Je n’ai pas pu rattacher cela à un lieu, une catégorie ou un itinéraire. Essayez « manger près de Taksim », « M2 vers Kadıköy » ou « bus à Levent ».",
+    aiFound:"Résultats les plus proches",
+    aiRouting:"Calcul de l’itinéraire en cours — le résultat est dans le panneau Trajet.",
+    aiNeedTwo:"Indiquez les deux extrémités, par ex. « Taksim vers Kadıköy ».",
+    aiNoPlace:"Je n’ai pas trouvé", aiStops:"Arrêts les plus proches", aiBusAt:"Lignes de bus ici",
+    aiNoBus:"Aucune ligne de bus enregistrée à cet arrêt.",
+    aiOffline:"J’ai besoin d’une connexion pour chercher des lieux. Les arrêts et les lignes fonctionnent hors ligne.",
+    aiAlertsNone:"Aucune perturbation signalée actuellement.", aiAlertsSome:"Perturbations signalées",
+    aiAlertsLineOk:"Aucune perturbation signalée sur cette ligne.", aiAlertsUntil:"jusqu’au",
+    aiAccStepFree:"Sans marches", aiAccNot:"Pas d’accès sans marches",
+    aiAccUnknown:"Aucune donnée d’accessibilité enregistrée pour cette station.",
+    aiAccCityOnly:"Les données d’ascenseurs et d’escaliers mécaniques ne sont publiées que pour İstanbul.",
+    aiLinesAt:"Lignes desservant", aiLinesNone:"Aucune ligne enregistrée à cet arrêt.",
+    routeFrom:"Itinéraire depuis", routeTo:"Itinéraire vers", nearHere:"Ce qu’il y a à proximité",
+    busLines:"ligne", busLinesMany:"lignes", showingFirst:"affichage des",
+    noGeom:"Aucun tracé cartographié pour cette ligne.", loadingGeom:"Chargement du tracé…",
+    routeDrawn:"tracé affiché", needNet:"Impossible de récupérer le tracé (connexion requise).",
+    pairedCars:"deux cabines à contrepoids",
+  }
 };
 const LOCALE = { en:'en-GB', tr:'tr-TR', ar:'ar-u-nu-latn', fr:'fr-FR' };   // ar: Latin digits to match the UI's numerals
 let lang = (function(){ try{ const s=localStorage.getItem('irn_lang'); if(I18N[s]) return s; }catch(e){}
@@ -2498,6 +2643,14 @@ function applyI18n(){
   document.querySelectorAll('[data-i18n-ph]').forEach(el=> el.placeholder = t(el.getAttribute('data-i18n-ph')));
   document.querySelectorAll('[data-i18n-title]').forEach(el=> el.title = t(el.getAttribute('data-i18n-title')));
   document.documentElement.lang = lang;
+  /* Arabic is read right to left. Setting lang without dir left every Arabic panel laid
+     out as English: the sentence ran the wrong way, and a mixed run like "M2 إلى Kadıköy"
+     put its parts in the wrong order because the bidi algorithm takes its base direction
+     from here. Physical left:/right: rules are unaffected by dir, so the map furniture
+     stays put; what flips is text flow, alignment and flex row order — which is what
+     should flip. The few places that needed holding still are in the [dir="rtl"] block
+     in the stylesheet. */
+  document.documentElement.dir = (lang === "ar") ? "rtl" : "ltr";
 }
 function setLang(l){
   if(!I18N[l]) return;
@@ -2511,6 +2664,11 @@ function setLang(l){
   try{ if(currentTab==='bus' && document.getElementById('busSearch')) renderBusList(document.getElementById('busSearch').value); }catch(e){}
   try{ if(currentOpts && currentOpts.length){ renderOptChips(); selectOption(currentOptIdx); } }catch(e){}
   try{ rebuildAdvRows(); }catch(e){}
+  /* Both of these render translated text and neither was on this list, so the mode chips and
+     the sources panel kept whatever language the page booted in until something else happened
+     to rebuild them. */
+  try{ renderModeChips(); }catch(e){}
+  try{ renderProvenance(); }catch(e){}
   try{ renderCardSeg(); }catch(e){}
   try{ if(wxData) renderWeather(); }catch(e){}
   try{ if(selected) openStation(selected); }catch(e){}
@@ -3148,102 +3306,267 @@ function kindLabel(kind){ const k=I18N[lang]['kind_'+kind]; return k!==undefined
 // ==TRANSLATOR-START== (this block is injected verbatim into the app by build.cjs so the
 // client can re-translate any disruption that still contains Turkish — single source of truth)
 // [İi] etc. because JS regex /i/ does ASCII case-folding only — Turkish İ/I aren't handled.
-const TR2EN_PHRASES = [
+/* One Turkish pattern, three destinations. The rules used to carry a single English string,
+   which quietly made English the only language a disruption could be read in: an Arabic or
+   French reader got the English translation, or the Turkish original, but never their own
+   language. The pattern list is the hard-won part — the ordering comments below are about
+   which Turkish form must be matched before which — so it stays exactly one list, and each
+   rule names what it produces in each language instead. */
+const TR_PHRASES = [
   // requests by authorities ("X'nin talebi doğrultusunda …")
-  [/^\s*(.+?)['’ʼ]?\s*n[iı]n\s+talebi\s+doğrultusunda[ ,]*/i, 'At the request of $1, '],
-  [/talebi\s+doğrultusunda/gi, 'per request'],
-  [/doğrultusunda/gi, 'in line with'],
+  /* Named before the generic request rule, because that one captures the whole authority as
+     one opaque group and leaves the word-level map to translate "Emniyeti" in place — which
+     is correct in English ("İstanbul Police") and backwards in Arabic and French, where the
+     institution leads and the city follows. */
+  [/^\s*(\S+)\s+[Ee]mniyeti(?:nin)?\s+talebi\s+doğrultusunda[ ,]*/i,
+    { en:'At the request of the $1 Police, ', ar:'بناءً على طلب مديرية أمن $1، ',
+      fr:'À la demande de la police de $1, ' }],
+  [/^\s*(.+?)['’ʼ]?\s*n[iı]n\s+talebi\s+doğrultusunda[ ,]*/i,
+    { en:'At the request of $1, ', ar:'بناءً على طلب $1، ', fr:'À la demande de $1, ' }],
+  [/talebi\s+doğrultusunda/gi, { en:'per request', ar:'بناءً على الطلب', fr:'à la demande' }],
+  [/doğrultusunda/gi,          { en:'in line with', ar:'وفقًا لـ', fr:'conformément à' }],
   // station/segment ride patterns (most specific first)
-  [/seferler(?:imiz)?\s+yapıl(?:a)?mamaktadır/gi, 'services cannot operate'],
-  [/([^\s,]+)\s*[-–]\s*([^\s,]+)\s+istasyonları\s+arasında\s+yapılmaktadır/gi, 'operate between $1 and $2'],
-  [/([^\s,]+)\s+ve\s+([^\s,]+)\s+[İi]stasyon(?:undan|larından)\s+aktarmalı\s+olarak/gi, 'with a transfer at $1 and $2,'],
-  [/([^\s,]+)\s+[İi]stasyon(?:undan|larından)\s+aktarmalı\s+olarak/gi, 'with a transfer at $1,'],
-  [/([^\s,]+)\s*[-–]\s*([^\s,]+)\s+istasyonları\s+arasında/gi, 'between $1 and $2'],
+  [/seferler(?:imiz)?\s+yapıl(?:a)?mamaktadır/gi,
+    { en:'services cannot operate', ar:'لا يمكن تسيير الرحلات', fr:'les trains ne peuvent pas circuler' }],
+  [/([^\s,]+)\s*[-–]\s*([^\s,]+)\s+istasyonları\s+arasında\s+yapılmaktadır/gi,
+    { en:'operate between $1 and $2', ar:'تسير بين $1 و$2', fr:'circulent entre $1 et $2' }],
+  [/([^\s,]+)\s+ve\s+([^\s,]+)\s+[İi]stasyon(?:undan|larından)\s+aktarmalı\s+olarak/gi,
+    { en:'with a transfer at $1 and $2,', ar:'مع تحويل في $1 و$2،', fr:'avec correspondance à $1 et $2,' }],
+  [/([^\s,]+)\s+[İi]stasyon(?:undan|larından)\s+aktarmalı\s+olarak/gi,
+    { en:'with a transfer at $1,', ar:'مع تحويل في $1،', fr:'avec correspondance à $1,' }],
+  [/([^\s,]+)\s*[-–]\s*([^\s,]+)\s+istasyonları\s+arasında/gi,
+    { en:'between $1 and $2', ar:'بين $1 و$2', fr:'entre $1 et $2' }],
   // reasons — lowercase so they read correctly mid-sentence (first letter re-capitalised at end)
-  [/planlı\s+bakım\s+(?:ve\s+onarım\s+)?çalış(?:ması|maları)?\s*(?:nedeniyle)?/gi, 'due to planned maintenance,'],
-  [/onarım\s+çalış(?:ması|maları)\s+nedeniyle/gi, 'due to maintenance works,'],
-  [/bakım\s+(?:ve\s+onarım\s+)?çalış(?:ması|maları)\s+nedeniyle/gi, 'due to maintenance works,'],
-  [/teknik\s+(?:bir\s+)?arıza\s+nedeniyle/gi, 'due to a technical fault,'],
-  [/sinyalizasyon\s+arızası\s+nedeniyle/gi, 'due to a signalling fault,'],
-  [/elektrik\s+kesintisi\s+nedeniyle/gi, 'due to a power outage,'],
-  [/olumsuz\s+hava\s+koşulları\s+nedeniyle/gi, 'due to adverse weather conditions,'],
-  [/hava\s+muhalefeti\s+(?:nedeniyle|sebebiyle)/gi, 'due to adverse weather,'],
-  [/hava\s+muhalefeti/gi, 'adverse weather'],
-  [/olumsuz\s+hava\s+(?:şartları|koşulları)/gi, 'adverse weather'],
-  [/hava\s+koşulları\s+nedeniyle/gi, 'due to weather conditions,'],
-  [/yoğunluk\s+nedeniyle/gi, 'due to congestion,'],
-  [/çalışmaları?\s+nedeniyle/gi, 'due to works,'],
-  [/(?:nedeniyle|sebebiyle|dolayısıyla)/gi, 'due to'],
+  [/planlı\s+bakım\s+(?:ve\s+onarım\s+)?çalış(?:ması|maları)?\s*(?:nedeniyle)?/gi,
+    { en:'due to planned maintenance,', ar:'بسبب أعمال صيانة مخطّطة،', fr:'en raison de travaux de maintenance programmés,' }],
+  [/onarım\s+çalış(?:ması|maları)\s+nedeniyle/gi,
+    { en:'due to maintenance works,', ar:'بسبب أعمال الإصلاح،', fr:'en raison de travaux de réparation,' }],
+  [/bakım\s+(?:ve\s+onarım\s+)?çalış(?:ması|maları)\s+nedeniyle/gi,
+    { en:'due to maintenance works,', ar:'بسبب أعمال الصيانة،', fr:'en raison de travaux d’entretien,' }],
+  [/teknik\s+(?:bir\s+)?arıza\s+nedeniyle/gi,
+    { en:'due to a technical fault,', ar:'بسبب عطل فني،', fr:'en raison d’une panne technique,' }],
+  [/sinyalizasyon\s+arızası\s+nedeniyle/gi,
+    { en:'due to a signalling fault,', ar:'بسبب عطل في نظام الإشارات،', fr:'en raison d’une panne de signalisation,' }],
+  [/elektrik\s+kesintisi\s+nedeniyle/gi,
+    { en:'due to a power outage,', ar:'بسبب انقطاع التيار الكهربائي،', fr:'en raison d’une coupure de courant,' }],
+  [/olumsuz\s+hava\s+koşulları\s+nedeniyle/gi,
+    { en:'due to adverse weather conditions,', ar:'بسبب سوء الأحوال الجوية،', fr:'en raison de conditions météorologiques défavorables,' }],
+  [/hava\s+muhalefeti\s+(?:nedeniyle|sebebiyle)/gi,
+    { en:'due to adverse weather,', ar:'بسبب سوء الأحوال الجوية،', fr:'en raison du mauvais temps,' }],
+  [/hava\s+muhalefeti/gi, { en:'adverse weather', ar:'سوء الأحوال الجوية', fr:'mauvais temps' }],
+  [/olumsuz\s+hava\s+(?:şartları|koşulları)/gi,
+    { en:'adverse weather', ar:'أحوال جوية سيئة', fr:'conditions météorologiques défavorables' }],
+  [/hava\s+koşulları\s+nedeniyle/gi,
+    { en:'due to weather conditions,', ar:'بسبب الأحوال الجوية،', fr:'en raison des conditions météorologiques,' }],
+  [/yoğunluk\s+nedeniyle/gi, { en:'due to congestion,', ar:'بسبب الازدحام،', fr:'en raison de l’affluence,' }],
+  /* "altyapı çalışmaları nedeniyle" reached the generic works rule below, which matched the
+     "çalışmaları nedeniyle" inside it and left "altyapı" stranded in Turkish — the B2 alert
+     shipped that way. Specific before generic, as everywhere else in this list. */
+  [/altyapı\s+çalış(?:ması|maları)\s+(?:nedeniyle|sebebiyle)/gi,
+    { en:'due to infrastructure works,', ar:'بسبب أعمال البنية التحتية،', fr:'en raison de travaux d’infrastructure,' }],
+  [/altyapı\s+çalış(?:ması|maları)/gi,
+    { en:'infrastructure works', ar:'أعمال البنية التحتية', fr:'travaux d’infrastructure' }],
+  [/çalışmaları?\s+nedeniyle/gi, { en:'due to works,', ar:'بسبب الأعمال،', fr:'en raison de travaux,' }],
+  [/(?:nedeniyle|sebebiyle|dolayısıyla)/gi, { en:'due to', ar:'بسبب', fr:'en raison de' }],
   // line/station nouns
-  [/[Tt]eleferik\s+[Hh]attı(?:mız)?/gi, 'cable car line'], [/[Ff]üniküler\s+[Hh]attı(?:mız)?/gi, 'funicular line'],
-  [/[Mm]etro\s+[Hh]attı(?:mız)?/gi, 'metro line'], [/[Tt]ramvay\s+[Hh]attı(?:mız)?/gi, 'tram line'],
-  [/[Bb]anliyö\s+[Hh]attı(?:mız)?/gi, 'suburban line'],
-  [/[Hh]attımız/gi, 'our line'], [/[Hh]attında/gi, 'on the line'], [/[Hh]attı/gi, 'line'],
-  [/[İi]stasyonumuzdan\b/gi, 'from our station'], [/[İi]stasyonumuzda\b/gi, 'at our station'],
-  [/[İi]stasyonumuz\b/gi, 'our station'],
+  [/[Tt]eleferik\s+[Hh]attı(?:mız)?/gi, { en:'cable car line', ar:'خط التلفريك', fr:'ligne de téléphérique' }],
+  [/[Ff]üniküler\s+[Hh]attı(?:mız)?/gi, { en:'funicular line', ar:'خط الفونيكولار', fr:'ligne de funiculaire' }],
+  [/[Mm]etro\s+[Hh]attı(?:mız)?/gi,     { en:'metro line', ar:'خط المترو', fr:'ligne de métro' }],
+  [/[Tt]ramvay\s+[Hh]attı(?:mız)?/gi,   { en:'tram line', ar:'خط الترام', fr:'ligne de tramway' }],
+  [/[Bb]anliyö\s+[Hh]attı(?:mız)?/gi,   { en:'suburban line', ar:'خط الضواحي', fr:'ligne de banlieue' }],
+  /* "B2 Halkalı–Bahçeşehir hattı" — Turkish and English both put the name before the noun,
+     Arabic and French put it after. Anchored to the start of the announcement and limited to
+     two tokens, which is the shape a line name actually takes ("B2 Halkalı–Bahçeşehir", "M2");
+     "hattı" as part of a longer phrase falls through to the generic rules below.
+     NOT \b after "hattı": JS word boundaries are ASCII-only, so ı/ş/ğ are already non-word
+     characters and \b never fires between one and a following space. The lookahead spells the
+     boundary out instead — with \b the rule matched nothing at all. */
+  [/^\s*(\S+(?:\s+\S+)?)\s+[Hh]attı(?![A-Za-zÇĞİIÖŞÜçğıöşü])/,
+    { en:'$1 line', ar:'خط $1', fr:'la ligne $1' }],
+  [/[Hh]attımız/gi, { en:'our line', ar:'خطنا', fr:'notre ligne' }],
+  [/[Hh]attında/gi, { en:'on the line', ar:'على الخط', fr:'sur la ligne' }],
+  [/[Hh]attı/gi,    { en:'line', ar:'خط', fr:'ligne' }],
+  [/[İi]stasyonumuzdan\b/gi, { en:'from our station', ar:'من محطتنا', fr:'depuis notre station' }],
+  [/[İi]stasyonumuzda\b/gi,  { en:'at our station', ar:'في محطتنا', fr:'à notre station' }],
+  // "Taksim istasyonumuz" — the name qualifies the noun, so it cannot simply be left in front
+  [/(\S+)\s+[İi]stasyonumuz\b/g,
+    { en:'our $1 station', ar:'محطتنا في $1', fr:'notre station $1' }],
+  [/[İi]stasyonumuz\b/gi,    { en:'our station', ar:'محطتنا', fr:'notre station' }],
   // status clauses
-  [/seferler(?:imiz)?\s+(?:geçici\s+(?:bir\s+)?süreyle\s+)?durdurul(?:muştur|du)/gi, 'services are temporarily suspended'],
-  [/seferler(?:imiz)?\s+normale\s+dön(?:müştür|dü)/gi, 'services have returned to normal'],
-  [/normale\s+dön(?:müştür|dü)/gi, 'has returned to normal'],
-  [/geçici\s+(?:olarak|(?:bir\s+)?süreyle)\s+hizmet\s+dışıdır/gi, 'is temporarily out of service'],
-  [/hizmet\s+dışına\s+alınmıştır/gi, 'has been taken out of service'],
-  [/hizmet\s+dışıdır/gi, 'is out of service'], [/hizmet\s+dışı/gi, 'out of service'],
-  [/hizmete\s+kapatılmıştır/gi, 'has been closed to service'],
-  [/hizmete\s+(?:yeniden\s+)?alınmıştır/gi, 'has been brought back into service'],
-  [/hizmet\s+ver(?:il)?memektedir/gi, 'is not in service'],
-  [/hizmet\s+vermeye\s+(?:yeniden\s+)?başlamıştır/gi, 'has resumed service'],
-  [/geçici\s+(?:olarak|(?:bir\s+)?süreyle)\s+kapatılmıştır/gi, 'has been temporarily closed'],
-  [/[İi]stasyon(?:u|umuz)?\s+kapalıdır/gi, 'station is closed'],
-  [/kapatılmıştır/gi, 'has been closed'], [/kapatılmış(?:tır)?/gi, 'closed'],
-  [/geçici\s+(?:bir\s+)?süreyle/gi, 'temporarily'], [/geçici\s+olarak/gi, 'temporarily'],
-  [/aktarmalı\s+olarak/gi, 'with a transfer,'],
-  [/seferler(?:imiz|ini|ine|i)?/gi, 'trains'],
-  [/istasyonları\s+arasında/gi, 'between the stations'],
-  [/arasında\s+yapılmaktadır/gi, 'operate between'], [/yapılmaktadır/gi, 'are operating'],
-  [/yapıl(?:a)?mamaktadır/gi, 'cannot operate'],
+  [/seferler(?:imiz)?\s+(?:geçici\s+(?:bir\s+)?süreyle\s+)?durdurul(?:muştur|du)/gi,
+    { en:'services are temporarily suspended', ar:'أُوقفت الرحلات مؤقتًا', fr:'les trains sont temporairement interrompus' }],
+  [/seferler(?:imiz)?\s+normale\s+dön(?:müştür|dü)/gi,
+    { en:'services have returned to normal', ar:'عادت الرحلات إلى طبيعتها', fr:'les trains circulent de nouveau normalement' }],
+  [/normale\s+dön(?:müştür|dü)/gi, { en:'has returned to normal', ar:'عاد إلى طبيعته', fr:'est revenu à la normale' }],
+  [/geçici\s+(?:olarak|(?:bir\s+)?süreyle)\s+hizmet\s+dışıdır/gi,
+    { en:'is temporarily out of service', ar:'خارج الخدمة مؤقتًا', fr:'est temporairement hors service' }],
+  [/hizmet\s+dışına\s+alınmıştır/gi, { en:'has been taken out of service', ar:'أُخرج من الخدمة', fr:'a été mis hors service' }],
+  [/hizmet\s+dışıdır/gi, { en:'is out of service', ar:'خارج الخدمة', fr:'est hors service' }],
+  [/hizmet\s+dışı/gi,    { en:'out of service', ar:'خارج الخدمة', fr:'hors service' }],
+  [/hizmete\s+kapatılmıştır/gi, { en:'has been closed to service', ar:'أُغلقت أمام الخدمة', fr:'a été fermée à l’exploitation' }],
+  [/hizmete\s+(?:yeniden\s+)?alınmıştır/gi,
+    { en:'has been brought back into service', ar:'أُعيد إلى الخدمة', fr:'a été remis en service' }],
+  [/hizmet\s+ver(?:il)?memektedir/gi, { en:'is not in service', ar:'لا يقدّم الخدمة', fr:'n’est pas en service' }],
+  [/hizmet\s+vermeye\s+(?:yeniden\s+)?başlamıştır/gi,
+    { en:'has resumed service', ar:'استأنف الخدمة', fr:'a repris le service' }],
+  [/geçici\s+(?:olarak|(?:bir\s+)?süreyle)\s+kapatılmıştır/gi,
+    { en:'has been temporarily closed', ar:'أُغلقت مؤقتًا', fr:'a été temporairement fermée' }],
+  /* "Kadıköy istasyonu kapalıdır" — again the name leads in Turkish and English and follows
+     in Arabic and French, and here the noun's gender governs the adjective too, so the whole
+     clause is spelled out rather than assembled from a noun rule and a separate "is closed". */
+  [/^\s*(\S+(?:\s+\S+)?)\s+[İi]stasyon(?:u|umuz)?\s+kapalıdır/,
+    { en:'$1 station is closed', ar:'محطة $1 مغلقة', fr:'La station $1 est fermée' }],
+  [/[İi]stasyon(?:u|umuz)?\s+kapalıdır/gi, { en:'station is closed', ar:'المحطة مغلقة', fr:'la station est fermée' }],
+  /* "çalışmamaktadır" contains "çalışma", so the generic noun rule further down would eat its
+     stem and strand "maktadır" — the same half-eaten-word failure the locative rules below
+     document. Negative and positive finite forms therefore come first. */
+  [/çalışmamaktadır/gi, { en:'is not operating', ar:'لا يعمل', fr:'ne circule pas' }],
+  [/çalışmaktadır/gi,   { en:'is operating', ar:'يعمل', fr:'circule' }],
+  [/kapatılmıştır/gi, { en:'has been closed', ar:'أُغلقت', fr:'a été fermée' }],
+  [/kapatılmış(?:tır)?/gi, { en:'closed', ar:'مغلق', fr:'fermé' }],
+  /* Only the "seferler …" form of this was spelled out, so an announcement about a LINE being
+     suspended split into a bare adverb and a bare verb and came out in Turkish order:
+     "temporarily has been suspended", "مؤقتًا أُوقف". Adverb placement differs per language,
+     so the clause is translated as a clause. */
+  [/geçici\s+(?:(?:bir\s+)?süreyle|olarak)\s+durdurul(?:muştur|du)/gi,
+    { en:'has been temporarily suspended', ar:'أُوقف مؤقتًا', fr:'est temporairement à l’arrêt' }],
+  [/geçici\s+(?:bir\s+)?süreyle/gi, { en:'temporarily', ar:'مؤقتًا', fr:'temporairement' }],
+  [/geçici\s+olarak/gi, { en:'temporarily', ar:'مؤقتًا', fr:'temporairement' }],
+  [/aktarmalı\s+olarak/gi, { en:'with a transfer,', ar:'مع تحويل،', fr:'avec correspondance,' }],
+  [/seferler(?:imiz|ini|ine|i)?/gi, { en:'trains', ar:'الرحلات', fr:'les trains' }],
+  [/istasyonları\s+arasında/gi, { en:'between the stations', ar:'بين المحطات', fr:'entre les stations' }],
+  [/arasında\s+yapılmaktadır/gi, { en:'operate between', ar:'تسير بين', fr:'circulent entre' }],
+  [/yapılmaktadır/gi, { en:'are operating', ar:'تسير', fr:'circulent' }],
+  [/yapıl(?:a)?mamaktadır/gi, { en:'cannot operate', ar:'لا يمكن تسييرها', fr:'ne peuvent pas circuler' }],
   /* The locative was missing, and the generic rules matched the "istasyonu" inside
      "istasyonunda" and left the "nda" stranded — real output was "Sanayi stationnda bir
      yolcunun…". A half-eaten word is worse than an untranslated one, so the inflected forms are
      spelled out FIRST (longest first, or the shorter stem consumes the stem and strands the
      suffix) and the general rules are \b-anchored: an inflection nobody listed now stays
      Turkish instead of becoming a non-word. */
-  [/istasyonlarından/gi, 'from the stations'], [/istasyonlarında/gi, 'at the stations'],
-  [/[İi]stasyon(?:umuz|u)?ndan\b/gi, 'from the station'], [/[İi]stasyondan\b/gi, 'from the station'],
-  [/[İi]stasyon(?:umuz|u)?nda\b/gi, 'at the station'], [/[İi]stasyonda\b/gi, 'at the station'],
-  [/istasyonları\b/gi, 'stations'],
-  [/[İi]stasyon(?:umuz|u)?\b/gi, 'station'],
-  [/aktarmalı/gi, 'with transfer'], [/arasında/gi, 'between'],
-  [/devam\s+etmektedir/gi, 'continues'], [/başlamıştır/gi, 'has started'],
-  [/kapalıdır/gi, 'is closed'], [/açıktır/gi, 'is open'],
-  [/[Oo]narım/gi, 'repair'], [/[Bb]akım/gi, 'maintenance'], [/arıza/gi, 'fault'],
-  [/çalışmaları/gi, 'works'], [/çalışması/gi, 'works'], [/çalışma/gi, 'work'],
-  [/vatandaşlarımız(?:ın|a|ı)?/gi, 'passengers'], [/yolcularımız(?:ın|a|ı)?/gi, 'passengers'],
-  [/(?:sayın\s+)?yolcular(?:ımız)?/gi, 'passengers'],
-  [/bilgi(?:lerinize|nize)\s+(?:saygıyla\s+)?sunulur/gi, 'for your information'],
-  [/durdurul(?:muştur|du)/gi, 'has been suspended'],
+  [/istasyonlarından/gi, { en:'from the stations', ar:'من المحطات', fr:'depuis les stations' }],
+  [/istasyonlarında/gi,  { en:'at the stations', ar:'في المحطات', fr:'aux stations' }],
+  [/[İi]stasyon(?:umuz|u)?ndan\b/gi, { en:'from the station', ar:'من المحطة', fr:'depuis la station' }],
+  [/[İi]stasyondan\b/gi, { en:'from the station', ar:'من المحطة', fr:'depuis la station' }],
+  [/[İi]stasyon(?:umuz|u)?nda\b/gi, { en:'at the station', ar:'في المحطة', fr:'à la station' }],
+  [/[İi]stasyonda\b/gi, { en:'at the station', ar:'في المحطة', fr:'à la station' }],
+  // \b would never fire here either — "istasyonları" ends in ı, which \b does not recognise
+  [/istasyonları(?![A-Za-zÇĞİIÖŞÜçğıöşü])/gi, { en:'stations', ar:'المحطات', fr:'stations' }],
+  [/[İi]stasyon(?:umuz|u)?\b/gi, { en:'station', ar:'محطة', fr:'station' }],
+  [/aktarmalı/gi, { en:'with transfer', ar:'مع تحويل', fr:'avec correspondance' }],
+  [/arasında/gi,  { en:'between', ar:'بين', fr:'entre' }],
+  [/devam\s+etmektedir/gi, { en:'continues', ar:'مستمر', fr:'se poursuit' }],
+  [/başlamıştır/gi, { en:'has started', ar:'بدأ', fr:'a commencé' }],
+  [/kapalıdır/gi, { en:'is closed', ar:'مغلق', fr:'est fermé' }],
+  [/açıktır/gi,   { en:'is open', ar:'مفتوح', fr:'est ouvert' }],
+  [/[Oo]narım/gi, { en:'repair', ar:'إصلاح', fr:'réparation' }],
+  [/[Bb]akım/gi,  { en:'maintenance', ar:'صيانة', fr:'entretien' }],
+  [/arıza/gi,     { en:'fault', ar:'عطل', fr:'panne' }],
+  [/çalışmaları/gi, { en:'works', ar:'أعمال', fr:'travaux' }],
+  [/çalışması/gi,   { en:'works', ar:'أعمال', fr:'travaux' }],
+  [/çalışma/gi,     { en:'work', ar:'عمل', fr:'travaux' }],
+  [/vatandaşlarımız(?:ın|a|ı)?/gi, { en:'passengers', ar:'الركاب', fr:'les voyageurs' }],
+  [/yolcularımız(?:ın|a|ı)?/gi,    { en:'passengers', ar:'الركاب', fr:'les voyageurs' }],
+  [/(?:sayın\s+)?yolcular(?:ımız)?/gi, { en:'passengers', ar:'الركاب الكرام', fr:'les voyageurs' }],
+  [/bilgi(?:lerinize|nize)\s+(?:saygıyla\s+)?sunulur/gi,
+    { en:'for your information', ar:'للعلم', fr:'pour information' }],
+  [/durdurul(?:muştur|du)/gi, { en:'has been suspended', ar:'أُوقف', fr:'a été suspendu' }],
 ];
 // whole-word cleanup for the odd straggler the phrase rules missed (base forms only)
-const TR2EN_WORDS = {
-  've':'and','ile':'with','için':'for','olarak':'as','ancak':'however','ayrıca':'also','ise':'while',
-  'teleferik':'cable car','füniküler':'funicular','metro':'metro','tramvay':'tram','vapur':'ferry','banliyö':'suburban',
-  'hat':'line','sefer':'service','seferler':'services','yön':'direction','yönünde':'toward','yönü':'direction',
-  'saatleri':'hours','saatlerinde':'hours','gün':'day','saat':'hour','dakika':'minutes','süreyle':'temporarily',
-  'geçici':'temporary','planlı':'planned','planlanan':'planned','kapalı':'closed','açık':'open','kapatıldı':'closed',
-  'yeniden':'again','normal':'normal','aksama':'disruption','arıza':'fault','bakım':'maintenance','onarım':'repair',
-  'çalışıyor':'operating','çalışmıyor':'not operating','durduruldu':'suspended','başladı':'started','bitti':'ended',
-  'emniyeti':'Police','emniyetinin':'Police','valiliği':'Governorship','belediyesi':'Municipality',
-  'talebi':'request','nedeni':'reason','güvenlik':'security','etkinlik':'event','maç':'match'
+const TR_WORDS = {
+  've':      { en:'and', ar:'و', fr:'et' },
+  'ile':     { en:'with', ar:'مع', fr:'avec' },
+  'için':    { en:'for', ar:'من أجل', fr:'pour' },
+  'olarak':  { en:'as', ar:'بصفة', fr:'en tant que' },
+  'ancak':   { en:'however', ar:'غير أن', fr:'toutefois' },
+  'ayrıca':  { en:'also', ar:'كذلك', fr:'également' },
+  'ise':     { en:'while', ar:'بينما', fr:'tandis que' },
+  'teleferik':{ en:'cable car', ar:'التلفريك', fr:'téléphérique' },
+  'füniküler':{ en:'funicular', ar:'الفونيكولار', fr:'funiculaire' },
+  'metro':   { en:'metro', ar:'المترو', fr:'métro' },
+  'tramvay': { en:'tram', ar:'الترام', fr:'tramway' },
+  'vapur':   { en:'ferry', ar:'العبّارة', fr:'ferry' },
+  'banliyö': { en:'suburban', ar:'الضواحي', fr:'banlieue' },
+  'hat':     { en:'line', ar:'خط', fr:'ligne' },
+  'sefer':   { en:'service', ar:'رحلة', fr:'circulation' },
+  'seferler':{ en:'services', ar:'الرحلات', fr:'circulations' },
+  'yön':     { en:'direction', ar:'اتجاه', fr:'sens' },
+  'yönünde': { en:'toward', ar:'باتجاه', fr:'en direction de' },
+  'yönü':    { en:'direction', ar:'اتجاه', fr:'sens' },
+  'saatleri':{ en:'hours', ar:'ساعات', fr:'heures' },
+  'saatlerinde':{ en:'hours', ar:'ساعات', fr:'heures' },
+  'gün':     { en:'day', ar:'يوم', fr:'jour' },
+  'saat':    { en:'hour', ar:'ساعة', fr:'heure' },
+  'dakika':  { en:'minutes', ar:'دقائق', fr:'minutes' },
+  'süreyle': { en:'temporarily', ar:'مؤقتًا', fr:'temporairement' },
+  'geçici':  { en:'temporary', ar:'مؤقت', fr:'temporaire' },
+  'planlı':  { en:'planned', ar:'مخطّط', fr:'programmé' },
+  'planlanan':{ en:'planned', ar:'مخطّط', fr:'programmé' },
+  'altyapı': { en:'infrastructure', ar:'البنية التحتية', fr:'infrastructure' },
+  'kapalı':  { en:'closed', ar:'مغلق', fr:'fermé' },
+  'açık':    { en:'open', ar:'مفتوح', fr:'ouvert' },
+  'kapatıldı':{ en:'closed', ar:'أُغلق', fr:'fermé' },
+  'yeniden': { en:'again', ar:'مجددًا', fr:'de nouveau' },
+  'normal':  { en:'normal', ar:'طبيعي', fr:'normal' },
+  'aksama':  { en:'disruption', ar:'اضطراب', fr:'perturbation' },
+  'arıza':   { en:'fault', ar:'عطل', fr:'panne' },
+  'bakım':   { en:'maintenance', ar:'صيانة', fr:'entretien' },
+  'onarım':  { en:'repair', ar:'إصلاح', fr:'réparation' },
+  'çalışıyor':{ en:'operating', ar:'يعمل', fr:'en service' },
+  'çalışmıyor':{ en:'not operating', ar:'لا يعمل', fr:'hors service' },
+  'durduruldu':{ en:'suspended', ar:'أُوقف', fr:'suspendu' },
+  'başladı': { en:'started', ar:'بدأ', fr:'a commencé' },
+  'bitti':   { en:'ended', ar:'انتهى', fr:'terminé' },
+  'emniyeti':{ en:'Police', ar:'مديرية الأمن', fr:'la Police' },
+  'emniyetinin':{ en:'Police', ar:'مديرية الأمن', fr:'la Police' },
+  'valiliği':{ en:'Governorship', ar:'الولاية', fr:'la Préfecture' },
+  'belediyesi':{ en:'Municipality', ar:'البلدية', fr:'la Municipalité' },
+  'talebi':  { en:'request', ar:'طلب', fr:'demande' },
+  'nedeni':  { en:'reason', ar:'سبب', fr:'motif' },
+  'güvenlik':{ en:'security', ar:'أمن', fr:'sécurité' },
+  'etkinlik':{ en:'event', ar:'فعالية', fr:'événement' },
+  'maç':     { en:'match', ar:'مباراة', fr:'match' }
 };
-function translateTR(text){
+const TR_TARGETS = ['en', 'ar', 'fr'];
+/* Turkish is verb-final and puts both the transfer clause and the reason before the thing
+   they qualify; none of the three destinations reads that way. Substitution alone therefore
+   produces grammatical words in Turkish order — "B2 Halkalı–Bahçeşehir line due to
+   infrastructure works, is not operating" — which is understandable but is not how any of
+   these languages writes it. These run last, on our own output, so each pattern is written
+   in the language it repairs rather than in Turkish. */
+const TR_REORDER = {
+  en: [
+    [/trains\s+with a transfer at (.+?),\s*operate between (.+?)[.\s]*$/i,
+     'trains operate between $2, with a transfer at $1.'],
+    /* subject + reason + predicate -> subject + predicate + reason. The reason phrase is
+       captured whole, prefix included, rather than reassembled: French elides ("en raison
+       d’une panne"), so a pattern that expected the uncontracted preposition matched nothing
+       and left the sentence in Turkish order. */
+    [/^\s*(?!due to)(.+?)\s+(due to [^,]*),\s*(.+?)[.\s]*$/i, '$1 $3 $2.']
+  ],
+  fr: [
+    [/les trains\s+avec correspondance à (.+?),\s*circulent entre (.+?)[.\s]*$/i,
+     'les trains circulent entre $2, avec correspondance à $1.'],
+    [/^\s*(?!en raison d)(.+?)\s+(en raison d(?:e|’|')[^,]*),\s*(.+?)[.\s]*$/i, '$1 $3 $2.']
+  ],
+  ar: [
+    [/الرحلات\s+مع تحويل في (.+?)،\s*تسير بين (.+?)[.\s]*$/,
+     'تسير الرحلات بين $2، مع تحويل في $1.'],
+    [/^\s*(?!بسبب)(.+?)\s+(بسبب [^،]*)،\s*(.+?)[.\s]*$/, '$1 $3 $2.']
+  ]
+};
+function translateTR(text, target){
+  const tgt = TR_TARGETS.indexOf(target) >= 0 ? target : 'en';
   let s=' '+text+' ';
-  for(const [re,rep] of TR2EN_PHRASES) s=s.replace(re,rep);
+  for(const [re,rep] of TR_PHRASES) s=s.replace(re, rep[tgt]);
   // whole-word stragglers (base forms only; station/line names pass through unchanged)
-  s=s.replace(/[A-Za-zÇĞİıÖŞÜçğöşü]+/g, w=>{ const k=w.toLocaleLowerCase('tr'); return TR2EN_WORDS[k]||w; });
-  // move the transfer clause to the end so it reads naturally in English
-  s=s.replace(/trains\s+with a transfer at (.+?),\s*operate between (.+?)[.\s]*$/i,
-              'trains operate between $2, with a transfer at $1.');
-  s=s.replace(/\s+,/g,',').replace(/,\s*,/g,',').replace(/\s{2,}/g,' ').replace(/\s+\./g,'.').trim();
-  s=s.charAt(0).toUpperCase()+s.slice(1);
+  s=s.replace(/[A-Za-zÇĞİıÖŞÜçğöşü]+/g, w=>{ const k=w.toLocaleLowerCase('tr');
+                                             return (TR_WORDS[k] && TR_WORDS[k][tgt]) || w; });
+  for(const [re,rep] of (TR_REORDER[tgt]||[])) s = s.replace(re, rep);
+  s=s.replace(/\s+([,،])/g,'$1').replace(/([,،])\s*[,،]/g,'$1').replace(/\s{2,}/g,' ').replace(/\s+\./g,'.').trim();
+  // Arabic is caseless; capitalising its first character is a no-op, but doing it only where
+  // it means something keeps the intent legible.
+  if(tgt !== 'ar') s=s.charAt(0).toUpperCase()+s.slice(1);
   if(s && !/[.!?]$/.test(s)) s+='.';
   return s;
 }
@@ -3265,41 +3588,60 @@ const hasResidualTurkish = s => TR_RESIDUAL.test(s||'');
    intihar / girişiminde / bulunması / işletmeye" is on the list.
 
    What matters is the PROPORTION, and it can be measured exactly rather than sniffed at:
-   every English word translateTR is capable of producing comes from the replacement side of
-   the two tables above. So a word in the output that is not in that vocabulary, and is not a
-   proper noun, is BY CONSTRUCTION source text that no rule matched. No language detection,
-   and no word list that has to be kept in step with the rules by hand. */
-const EN_EMITTED = (function(){
-  const set = new Set();
-  const add = str => String(str).toLowerCase().replace(/\$\d/g,' ').split(/[^a-z]+/)
-                      .forEach(w=>{ if(w) set.add(w); });
-  for(const rule of TR2EN_PHRASES) add(rule[1]);
-  for(const k in TR2EN_WORDS) add(TR2EN_WORDS[k]);
-  return set;
-})();
-// letter-initial, so dates and numbers are not words; digits allowed, so "M2"/"T1" stay whole
-const TR_TOKEN  = /[A-Za-zÇĞİIÖŞÜçğıöşü][A-Za-zÇĞİIÖŞÜçğıöşü0-9'’]*/g;
-const TR_CAPPED = /^[A-ZÇĞİIÖŞÜ]/;
+   every word translateTR is capable of producing comes from the replacement side of the two
+   tables above. So a word in the output that is not in that vocabulary, and is not a proper
+   noun, is BY CONSTRUCTION source text that no rule matched. No language detection, and no
+   word list that has to be kept in step with the rules by hand. */
+/* letter-initial, so dates and numbers are not words; digits allowed, so "M2"/"T1" stay whole.
+   Accented Latin is in the class for French and the Arabic block for Arabic — a tokeniser that
+   split "météorologiques" or skipped "الرحلات" would score those languages as untranslated. */
+const TR_TOKEN  = /[A-Za-zÀ-ÖØ-öø-ÿÇĞİIÖŞÜçğıöşü؀-ۿ][A-Za-zÀ-ÖØ-öø-ÿÇĞİIÖŞÜçğıöşü0-9'’؀-ۿ]*/g;
+const TR_CAPPED = /^[A-ZÀ-ÖØ-ÞÇĞİIÖŞÜ]/;
+const TR_ARABIC = /[؀-ۿ]/;
 
-/* Share of the classifiable words in `en` that are still Turkish, 0..1.
+const TR_EMITTED = (function(){
+  const out = {};
+  for(const tgt of TR_TARGETS){
+    const set = new Set();
+    const add = str => { for(const w of (String(str).replace(/\$\d/g,' ').match(TR_TOKEN)||[])){
+                           set.add(w.toLowerCase()); set.add(w.toLocaleLowerCase('tr')); } };
+    for(const rule of TR_PHRASES) add(rule[1][tgt]);
+    for(const k in TR_WORDS) add(TR_WORDS[k][tgt]);
+    for(const ro of (TR_REORDER[tgt]||[])) add(ro[1]);
+    out[tgt] = set;
+  }
+  return out;
+})();
+
+/* Share of the classifiable words in `out` that are still Turkish, 0..1.
    `names` are this alert's station and line names: they pass through untranslated BY DESIGN
    and must never count against coverage. Capitalised words are read as proper nouns and left
    out of the count entirely — including the first word, whose capital was put there by
    translateTR itself and so says nothing about what it is. Leaving a word out is the honest
    move where we cannot classify it: it neither excuses the rules nor condemns them. */
-function turkishShare(en, names){
+function turkishShare(out, names, target){
+  const tgt = TR_TARGETS.indexOf(target) >= 0 ? target : 'en';
   const known = new Set();
   for(const n of (names||[]))
     for(const w of (String(n).match(TR_TOKEN)||[])) known.add(w.toLocaleLowerCase('tr'));
-  let english=0, turkish=0;
-  for(const w of (String(en||'').match(TR_TOKEN)||[])){
+  let translated=0, turkish=0;
+  for(const w of (String(out||'').match(TR_TOKEN)||[])){
     const k = w.toLocaleLowerCase('tr');
     if(known.has(k)) continue;                  // a station or line name
-    if(EN_EMITTED.has(k)){ english++; continue; }
+
+
+    /* Arabic script in the output can only have come from our own replacement tables, so it
+       is translated by construction. This is not merely a shortcut for the vocabulary lookup
+       below: Arabic و is a proclitic and attaches to the word after it, so the tokeniser sees
+       "وMahmutbey" as ONE word — absent from the Arabic vocabulary, absent from the list of
+       station names, and not Latin-capitalised, so without this it is scored as source text
+       nobody translated. Every station named after a conjunction cost coverage. */
+    if(TR_ARABIC.test(w)){ translated++; continue; }
+    if(TR_EMITTED[tgt].has(k)){ translated++; continue; }
     if(TR_CAPPED.test(w)) continue;             // proper noun (or, on word one, unknowable)
     turkish++;                                  // source text no rule touched
   }
-  return (english+turkish) ? turkish/(english+turkish) : 0;
+  return (translated+turkish) ? turkish/(translated+turkish) : 0;
 }
 /* Past this share the hybrid is worse than either language, so the original ships instead.
    A quarter sits in a wide empty gap: the formulaic alerts the rules DO cover measure 0.00
@@ -3307,45 +3649,80 @@ function turkishShare(en, names){
 const TR_FALLBACK_SHARE = 0.25;
 
 /* The one decision the scraper and the app both make about an announcement.
-   It never invents English. Where the rules fall short it returns the CLEAN ORIGINAL, flagged
-   lang:'tr' so the UI can say so, instead of passing a half-translation off as a translation. */
-function bestEffortEnglish(tr, names){
+   It never invents a translation. Where the rules fall short it returns the CLEAN ORIGINAL,
+   flagged lang:'tr' so the UI can say so, instead of passing a half-translation off as one.
+   The judgement is made per destination language: the rules can cover an announcement well
+   enough in one language and not in another, and each reader is owed the honest answer for
+   the language they are actually reading. */
+function bestEffortTranslation(tr, names, target){
+  const tgt   = TR_TARGETS.indexOf(target) >= 0 ? target : 'en';
   const src   = String(tr||'').trim();
-  const en    = translateTR(src);
-  const share = turkishShare(en, names);
+  const out   = translateTR(src, tgt);
+  const share = turkishShare(out, names, tgt);
   return share > TR_FALLBACK_SHARE ? { text:src, lang:'tr', share:share }
-                                   : { text:en,  lang:'en', share:share };
+                                   : { text:out, lang:tgt, share:share };
 }
+// the English-only entry point the scraper and the older call sites use
+function bestEffortEnglish(tr, names){ return bestEffortTranslation(tr, names, 'en'); }
 // ==TRANSLATOR-END==
 // the names in an alert that are supposed to survive translation unchanged
 function disNames(d){ return [d.ref, d.from, d.to].concat(d.stations||[]).filter(Boolean); }
-function ensureEnglish(list){
+/* Normalise a freshly-arrived feed. This no longer produces the text — disText does that, per
+   reader, in the language they are actually reading — but it still settles the one thing that
+   belongs to the ENTRY rather than to the reader: whether a Turkish original exists to
+   translate from at all. A legacy entry that kept no original is promoted to one when what it
+   stores is visibly Turkish, so later readers get a real source instead of a frozen hybrid. */
+function ensureDisruptionText(list){
   for(const d of (list||[])){
     if(!d || !d.message) continue;
-    /* A hand-written entry and an LLM translation are both better English than these rules can
-       produce, and judging them by the rules’ own vocabulary would only mistake ordinary
-       English ("engineering works", "cancelled") for untranslated Turkish. Leave them alone. */
-    if(d.source==='manual' || d.translatedBy==='llm'){ if(!d.messageLang) d.messageLang='en'; continue; }
-    /* Everything else is machine output, so re-derive it from the authoritative original using
-       the DEPLOYED rules instead of trusting whatever the feed happens to store: the vocabulary
-       may have grown since it was written, and a hybrid baked in by an older build must not
-       outlive the fix for it. bestEffortEnglish hands back the untouched original — never a
-       guess — when the rules still fall short, and says which language that is in .lang. */
-    if(!d.messageTr){                                // legacy entry that kept no original
-      if(!hasResidualTurkish(d.message)){ if(!d.messageLang) d.messageLang='en'; continue; }
-      d.messageTr = d.message;
-    }
-    const best = bestEffortEnglish(d.messageTr, disNames(d));
-    d.message = best.text; d.messageLang = best.lang;
+    d._i18n = null;                                  // drop renderings memoised from older text
+    if(!d.messageTr && hasResidualTurkish(d.message)) d.messageTr = d.message;
+    if(!d.messageLang) d.messageLang = 'en';
   }
 }
+function ensureEnglish(list){ return ensureDisruptionText(list); }   // name kept for callers
 // localized disruption title + message (TR uses the original messageTr when present)
 function disTitle(d){ const k='ttl:'+(d.title||''); return I18N[lang][k]!==undefined ? I18N[lang][k] : (d.title||''); }
-function disMsg(d){ return (lang==='tr' && d.messageTr) ? d.messageTr : d.message; }
+/* The rules used to be run once, into English, and the result cached on the entry — which
+   quietly made English the only language a disruption could be read in: an Arabic or French
+   reader got the English translation, or the Turkish original, but never their own language.
+   So the translation is derived per reader instead, and memoised per language.
+
+   It is always derived from the authoritative Turkish rather than from whatever the feed
+   happens to store, for the same reason it was before: the deployed vocabulary may have grown
+   since the entry was written, and a hybrid baked in by an older build must not outlive the
+   fix for it. bestEffortTranslation hands back the untouched original — never a guess — when
+   the rules fall short in THIS language, and says which language that is in .lang. The
+   judgement is per language because the rules can cover an announcement in one and not
+   another, and each reader is owed the honest answer for the language they are reading. */
+function disText(d){
+  if(!d) return { text:'', lang:'en' };
+  if(lang === 'tr') return { text:d.messageTr || d.message || '', lang:'tr' };
+  if(!d._i18n) d._i18n = {};
+  if(d._i18n[lang]) return d._i18n[lang];
+  let r;
+  /* A hand-written entry and an LLM translation are both better English than these rules can
+     produce, and judging them by the rules’ own vocabulary would only mistake ordinary English
+     ("engineering works", "cancelled") for untranslated Turkish. In the other languages no
+     such hand-written version exists, so those go through the rules like any other entry. */
+  if(lang === 'en' && (d.source === 'manual' || d.translatedBy === 'llm')){
+    r = { text:d.message, lang:'en' };
+  } else if(d.messageTr && TR_TARGETS.indexOf(lang) >= 0){
+    const best = bestEffortTranslation(d.messageTr, disNames(d), lang);
+    r = { text:best.text, lang:best.lang };
+  } else {
+    r = { text:d.message || d.messageTr || '', lang:d.messageLang || 'en' };
+  }
+  d._i18n[lang] = r;
+  return r;
+}
+function disMsg(d){ return disText(d).text; }
 /* True when the reader is NOT reading Turkish but the text on screen is the Turkish original.
-   Untranslated is a fine outcome — inventing English we cannot vouch for is not — so the one
-   thing we owe the reader is to say which language they are looking at, and why. */
-function disUntranslated(d){ return lang!=='tr' && !!d && d.messageLang==='tr'; }
+   Untranslated is a fine outcome — inventing a translation we cannot vouch for is not — so the
+   one thing we owe the reader is to say which language they are looking at, and why. The test
+   is on the text actually chosen, not on a flag stored with the entry, because that choice is
+   now made per language. */
+function disUntranslated(d){ return lang !== 'tr' && !!d && disText(d).lang === 'tr'; }
 function disTrTag(d){
   return disUntranslated(d) ? '<span class="ann-tr" title="'+t('trOnlyWhy')+'">'+t('trOnlyTag')+'</span> ' : '';
 }
@@ -3422,7 +3799,7 @@ const ACCESS_RAW = HAS.access ? [{"name":"4.LEVENT","elevators":5,"escalators":2
 /* Where every shipped dataset came from and when, measured at build time. The app uses this
    to say what it knows and how well it knows it, rather than presenting a community-mapped
    route and an operator timetable with the same confidence. */
-const PROVENANCE = {"note":"Where every shipped dataset comes from and how far it can be trusted. build.cjs adds each file's real modification time, so freshness is measured rather than claimed. kind drives how the app words itself: 'operator' data may be stated plainly, 'community' and 'scraped' must be labelled.","kinds":{"operator":"Published by the transport operator. Exact; may be stated without qualification.","official":"Published by a public authority, but not the operator's own timetable.","community":"OpenStreetMap. Real, but coverage is uneven and there are no timetables — must be labelled.","scraped":"Read from a provider's web page with no open-data licence. Accurate when fetched, no guarantee of continuity.","curated":"Compiled by hand for this project from published sources. Subject to human error and to change."},"datasets":{"lines.json":{"kind":"community","source":"OpenStreetMap via Overpass","licence":"ODbL 1.0","covers":"İstanbul rail geometry and stations","present":true,"updated":"2026-07-16T14:54:42+03:00","updatedFrom":"commit"},"b2-line.json":{"kind":"community","source":"OpenStreetMap via Overpass","licence":"ODbL 1.0","covers":"B2 suburban line","present":true,"updated":"2026-07-20T16:49:38+03:00","updatedFrom":"commit"},"ferry-lines.json":{"kind":"community","source":"OpenStreetMap + hand-drawn Bosphorus shore lines","licence":"ODbL 1.0","covers":"İstanbul ferries; two shore routes have no OSM geometry and are approximated","present":true,"updated":"2026-07-20T22:07:41+03:00","updatedFrom":"commit"},"cable-lines.json":{"kind":"community","source":"OpenStreetMap via Overpass","licence":"ODbL 1.0","covers":"TF1/TF2 aerial cable cars","present":true,"updated":"2026-07-05T05:29:15+03:00","updatedFrom":"commit"},"planned-lines.json":{"kind":"curated","source":"metro.istanbul project pages","licence":"n/a","covers":"Lines under construction","present":true,"updated":"2026-06-23T00:10:50+03:00","updatedFrom":"commit"},"planned-manual.json":{"kind":"curated","source":"İBB announcements, hand-placed","licence":"n/a","covers":"In-planning lines with approximate alignments","present":true,"updated":"2026-06-23T00:10:50+03:00","updatedFrom":"commit"},"ankara-lines.json":{"kind":"community","source":"OpenStreetMap via Overpass","licence":"ODbL 1.0","covers":"EGO metro, Ankaray, Başkentray","present":true,"updated":"2026-07-31T04:36:15+03:00","updatedFrom":"commit"},"izmir-lines.json":{"kind":"community","source":"OpenStreetMap via Overpass","licence":"ODbL 1.0","covers":"İzmir Metro, İZBAN, trams","present":true,"updated":"2026-08-03T16:55:04+03:00","updatedFrom":"commit"},"bursa-lines.json":{"kind":"community","source":"OpenStreetMap via Overpass","licence":"ODbL 1.0","covers":"BursaRay and trams","present":true,"updated":"2026-07-30T02:25:56+03:00","updatedFrom":"commit"},"antalya-lines.json":{"kind":"community","source":"OpenStreetMap via Overpass","licence":"ODbL 1.0","covers":"AntRay tram lines","present":true,"updated":"2026-07-29T21:16:25+03:00","updatedFrom":"commit"},"kocaeli-lines.json":{"kind":"community","source":"OpenStreetMap via Overpass","licence":"ODbL 1.0","covers":"Akçaray trams and projects","present":true,"updated":"2026-08-05T14:12:06+03:00","updatedFrom":"commit"},"intercity-lines.json":{"kind":"curated","source":"TCDD Taşımacılık published routes","licence":"n/a","covers":"National rail, YHT and main line","present":true,"updated":"2026-07-22T21:30:59+03:00","updatedFrom":"commit"},"bus-directory.json":{"kind":"operator","source":"İETT line list","licence":"İBB Open Data terms","covers":"İstanbul bus routes; 40 rows are reconstructed from the GTFS graph because the line list omits them","present":true,"updated":"2026-06-23T00:10:50+03:00","updatedFrom":"commit"},"bus-graph.json":{"kind":"operator","source":"İETT GTFS","licence":"İBB Open Data terms","covers":"İstanbul bus stops in order","present":true,"updated":"2026-07-12T07:42:46+03:00","updatedFrom":"commit"},"bus-schedules.json":{"kind":"operator","source":"İETT GTFS","licence":"İBB Open Data terms","covers":"İstanbul bus first/last/headway per day type — exact","present":true,"updated":"2026-07-12T07:42:46+03:00","updatedFrom":"commit"},"bus-geom.json":{"kind":"operator","source":"İETT GTFS shapes","licence":"İBB Open Data terms","covers":"İstanbul bus road geometry","present":true,"updated":"2026-08-01T09:35:58+03:00","updatedFrom":"commit"},"kocaeli-bus-directory.json":{"kind":"scraped","source":"Kocaeli BB / UlaşımPark route pages","licence":"no open-data licence","covers":"Kocaeli bus routes","present":true,"updated":"2026-08-04T20:54:32+03:00","updatedFrom":"commit"},"kocaeli-bus-graph.json":{"kind":"scraped","source":"Kocaeli BB / UlaşımPark route pages","licence":"no open-data licence","covers":"Kocaeli bus stops in order","present":true,"updated":"2026-08-04T20:54:32+03:00","updatedFrom":"commit"},"kocaeli-bus-schedules.json":{"kind":"scraped","source":"Kocaeli BB / UlaşımPark route pages","licence":"no open-data licence","covers":"Kocaeli bus timetables","present":true,"updated":"2026-08-04T20:54:32+03:00","updatedFrom":"commit"},"ankara-bus-directory.json":{"kind":"community","source":"OpenStreetMap via Overpass","licence":"ODbL 1.0","covers":"264 EGO routes; coverage may be incomplete and there are NO timetables","present":true,"updated":"2026-08-14T23:45:42+03:00","updatedFrom":"commit"},"ankara-bus-graph.json":{"kind":"community","source":"OpenStreetMap via Overpass","licence":"ODbL 1.0","covers":"Ankara bus stops in order","present":true,"updated":"2026-08-14T23:45:42+03:00","updatedFrom":"commit"},"ankara-bus-schedules.json":{"kind":"community","source":"none — OSM has no timetables","licence":"n/a","covers":"Deliberately empty rather than invented","present":true,"updated":"2026-08-14T23:45:42+03:00","updatedFrom":"commit"},"disruptions.json":{"kind":"scraped","source":"metro.istanbul service status","licence":"no open-data licence","covers":"Live faults and closures; refreshed every 30 min","present":true,"updated":"2026-09-02T05:39:44Z","updatedFrom":"commit"},"accessibility.json":{"kind":"official","source":"İBB Open Data, enriched with OSM wheelchair tags","licence":"İBB Open Data terms + ODbL","covers":"Lift and escalator counts, step-free flags — İstanbul only","present":true,"updated":"2026-07-12T01:58:53+03:00","updatedFrom":"commit"},"mi-stations.json":{"kind":"official","source":"Metro İstanbul station registry","licence":"İBB Open Data terms","covers":"Official station ids used for exact departures","present":true,"updated":"2026-07-02T01:08:31+03:00","updatedFrom":"commit"},"attractions.json":{"kind":"curated","source":"Compiled for this project","licence":"n/a","covers":"İstanbul landmarks for the Explore layer","present":true,"updated":"2026-07-13T09:31:56+03:00","updatedFrom":"commit"},"openings.json":{"kind":"curated","source":"İBB projected opening dates","licence":"n/a","covers":"Announced targets, which slip","present":true,"updated":"2026-07-14T17:29:41+03:00","updatedFrom":"commit"},"card-images.json":{"kind":"curated","source":"Wikimedia Commons (public domain / Belbim)","licence":"see Commons per file","covers":"Fare card artwork","present":true,"updated":"2026-08-04T10:08:51+03:00","updatedFrom":"commit"},"cities.json":{"kind":"curated","source":"Operator tariffs and published figures","licence":"n/a","covers":"Per-city centre, bounds, fares, feature flags","present":true,"updated":"2026-08-22T17:47:29+03:00","updatedFrom":"commit"},"izmir-bus-directory.json":{"kind":"official","source":"İzmir Büyükşehir open data (ESHOT)","licence":"İzmir açık veri terms","covers":"441 ESHOT bus lines with endpoints","present":true,"updated":"2026-08-22T17:47:29+03:00","updatedFrom":"commit"},"izmir-bus-graph.json":{"kind":"official","source":"İzmir Büyükşehir open data (ESHOT)","licence":"İzmir açık veri terms","covers":"İzmir bus stops in order, derived by projecting stops onto each line’s published route geometry","present":true,"updated":"2026-08-22T17:47:29+03:00","updatedFrom":"commit"},"izmir-bus-schedules.json":{"kind":"official","source":"none — İzmir publishes no bus timetable","licence":"n/a","covers":"Deliberately empty rather than invented","present":true,"updated":"2026-08-14T23:45:42+03:00","updatedFrom":"commit"},"izmir-bus-geom.json":{"kind":"official","source":"İzmir Büyükşehir open data (ESHOT)","licence":"İzmir açık veri terms","covers":"İzmir bus road geometry, simplified to 12 m","present":true,"updated":"2026-08-22T17:47:29+03:00","updatedFrom":"commit"}}};
+const PROVENANCE = {"note":"Where every shipped dataset comes from and how far it can be trusted. build.cjs adds each file's real modification time, so freshness is measured rather than claimed. kind drives how the app words itself: 'operator' data may be stated plainly, 'community' and 'scraped' must be labelled.","kinds":{"operator":"Published by the transport operator. Exact; may be stated without qualification.","official":"Published by a public authority, but not the operator's own timetable.","community":"OpenStreetMap. Real, but coverage is uneven and there are no timetables — must be labelled.","scraped":"Read from a provider's web page with no open-data licence. Accurate when fetched, no guarantee of continuity.","curated":"Compiled by hand for this project from published sources. Subject to human error and to change."},"datasets":{"lines.json":{"kind":"community","source":"OpenStreetMap via Overpass","licence":"ODbL 1.0","covers":"İstanbul rail geometry and stations","covers_tr":"İstanbul raylı sistem geometrisi ve istasyonları","covers_ar":"هندسة شبكة السكك في إسطنبول ومحطاتها","covers_fr":"Géométrie et stations du réseau ferré d’İstanbul","present":true,"updated":"2026-07-16T14:54:42+03:00","updatedFrom":"commit"},"b2-line.json":{"kind":"community","source":"OpenStreetMap via Overpass","licence":"ODbL 1.0","covers":"B2 suburban line","covers_tr":"B2 banliyö hattı","covers_ar":"خط الضواحي B2","covers_fr":"Ligne de banlieue B2","present":true,"updated":"2026-07-20T16:49:38+03:00","updatedFrom":"commit"},"ferry-lines.json":{"kind":"community","source":"OpenStreetMap + hand-drawn Bosphorus shore lines","licence":"ODbL 1.0","covers":"İstanbul ferries; two shore routes have no OSM geometry and are approximated","covers_tr":"İstanbul vapurları; iki kıyı hattının OSM geometrisi yok, yaklaşık çizildi","covers_ar":"عبّارات إسطنبول؛ خطان ساحليان بلا هندسة في OpenStreetMap ورُسما تقريبيًا","covers_fr":"Ferries d’İstanbul ; deux lignes côtières sans géométrie OSM, tracées approximativement","present":true,"updated":"2026-07-20T22:07:41+03:00","updatedFrom":"commit"},"cable-lines.json":{"kind":"community","source":"OpenStreetMap via Overpass","licence":"ODbL 1.0","covers":"TF1/TF2 aerial cable cars","covers_tr":"TF1/TF2 teleferik hatları","covers_ar":"خطا التلفريك TF1/TF2","covers_fr":"Téléphériques TF1/TF2","present":true,"updated":"2026-07-05T05:29:15+03:00","updatedFrom":"commit"},"planned-lines.json":{"kind":"curated","source":"metro.istanbul project pages","licence":"n/a","covers":"Lines under construction","covers_tr":"Yapım aşamasındaki hatlar","covers_ar":"خطوط قيد الإنشاء","covers_fr":"Lignes en construction","present":true,"updated":"2026-06-23T00:10:50+03:00","updatedFrom":"commit"},"planned-manual.json":{"kind":"curated","source":"İBB announcements, hand-placed","licence":"n/a","covers":"In-planning lines with approximate alignments","covers_tr":"Planlama aşamasındaki hatlar, güzergâhlar yaklaşıktır","covers_ar":"خطوط قيد التخطيط بمسارات تقريبية","covers_fr":"Lignes en projet, tracés approximatifs","present":true,"updated":"2026-06-23T00:10:50+03:00","updatedFrom":"commit"},"ankara-lines.json":{"kind":"community","source":"OpenStreetMap via Overpass","licence":"ODbL 1.0","covers":"EGO metro, Ankaray, Başkentray","covers_tr":"EGO metrosu, Ankaray, Başkentray","covers_ar":"مترو EGO وAnkaray وBaşkentray","covers_fr":"Métro EGO, Ankaray, Başkentray","present":true,"updated":"2026-07-31T04:36:15+03:00","updatedFrom":"commit"},"izmir-lines.json":{"kind":"community","source":"OpenStreetMap via Overpass","licence":"ODbL 1.0","covers":"İzmir Metro, İZBAN, trams","covers_tr":"İzmir Metrosu, İZBAN, tramvaylar","covers_ar":"مترو İzmir وİZBAN والترام","covers_fr":"Métro d’İzmir, İZBAN, tramways","present":true,"updated":"2026-08-03T16:55:04+03:00","updatedFrom":"commit"},"bursa-lines.json":{"kind":"community","source":"OpenStreetMap via Overpass","licence":"ODbL 1.0","covers":"BursaRay and trams","covers_tr":"BursaRay ve tramvaylar","covers_ar":"BursaRay والترام","covers_fr":"BursaRay et tramways","present":true,"updated":"2026-07-30T02:25:56+03:00","updatedFrom":"commit"},"antalya-lines.json":{"kind":"community","source":"OpenStreetMap via Overpass","licence":"ODbL 1.0","covers":"AntRay tram lines","covers_tr":"AntRay tramvay hatları","covers_ar":"خطوط ترام AntRay","covers_fr":"Lignes de tramway AntRay","present":true,"updated":"2026-07-29T21:16:25+03:00","updatedFrom":"commit"},"kocaeli-lines.json":{"kind":"community","source":"OpenStreetMap via Overpass","licence":"ODbL 1.0","covers":"Akçaray trams and projects","covers_tr":"Akçaray tramvayları ve projeleri","covers_ar":"ترام Akçaray ومشاريعه","covers_fr":"Tramways Akçaray et projets","present":true,"updated":"2026-08-05T14:12:06+03:00","updatedFrom":"commit"},"intercity-lines.json":{"kind":"curated","source":"TCDD Taşımacılık published routes","licence":"n/a","covers":"National rail, YHT and main line","covers_tr":"Ulusal demiryolu, YHT ve ana hat","covers_ar":"السكك الوطنية وقطارات YHT السريعة والخط الرئيسي","covers_fr":"Réseau ferré national, YHT et ligne principale","present":true,"updated":"2026-07-22T21:30:59+03:00","updatedFrom":"commit"},"bus-directory.json":{"kind":"operator","source":"İETT line list","licence":"İBB Open Data terms","covers":"İstanbul bus routes; 40 rows are reconstructed from the GTFS graph because the line list omits them","covers_tr":"İstanbul otobüs güzergâhları; hat listesinde yer almayan 40 kayıt GTFS grafiğinden yeniden oluşturuldu","covers_ar":"خطوط حافلات إسطنبول؛ أُعيد بناء 40 سجلًا من رسم GTFS لأن قائمة الخطوط تغفلها","covers_fr":"Itinéraires de bus d’İstanbul ; 40 entrées reconstituées depuis le graphe GTFS, absentes de la liste des lignes","present":true,"updated":"2026-06-23T00:10:50+03:00","updatedFrom":"commit"},"bus-graph.json":{"kind":"operator","source":"İETT GTFS","licence":"İBB Open Data terms","covers":"İstanbul bus stops in order","covers_tr":"İstanbul otobüs durakları, sırasıyla","covers_ar":"مواقف حافلات إسطنبول بالترتيب","covers_fr":"Arrêts de bus d’İstanbul, dans l’ordre","present":true,"updated":"2026-07-12T07:42:46+03:00","updatedFrom":"commit"},"bus-schedules.json":{"kind":"operator","source":"İETT GTFS","licence":"İBB Open Data terms","covers":"İstanbul bus first/last/headway per day type — exact","covers_tr":"İstanbul otobüs ilk/son sefer ve sefer sıklığı, gün tipine göre — kesin","covers_ar":"أول وآخر رحلة ووتيرة حافلات إسطنبول حسب نوع اليوم — بيانات دقيقة","covers_fr":"Premier/dernier départ et fréquence des bus d’İstanbul par type de jour — exact","present":true,"updated":"2026-07-12T07:42:46+03:00","updatedFrom":"commit"},"bus-geom.json":{"kind":"operator","source":"İETT GTFS shapes","licence":"İBB Open Data terms","covers":"İstanbul bus road geometry","covers_tr":"İstanbul otobüs güzergâh geometrisi","covers_ar":"هندسة مسارات حافلات إسطنبول","covers_fr":"Tracé routier des bus d’İstanbul","present":true,"updated":"2026-08-01T09:35:58+03:00","updatedFrom":"commit"},"kocaeli-bus-directory.json":{"kind":"scraped","source":"Kocaeli BB / UlaşımPark route pages","licence":"no open-data licence","covers":"Kocaeli bus routes","covers_tr":"Kocaeli otobüs güzergâhları","covers_ar":"خطوط حافلات Kocaeli","covers_fr":"Itinéraires de bus de Kocaeli","present":true,"updated":"2026-08-04T20:54:32+03:00","updatedFrom":"commit"},"kocaeli-bus-graph.json":{"kind":"scraped","source":"Kocaeli BB / UlaşımPark route pages","licence":"no open-data licence","covers":"Kocaeli bus stops in order","covers_tr":"Kocaeli otobüs durakları, sırasıyla","covers_ar":"مواقف حافلات Kocaeli بالترتيب","covers_fr":"Arrêts de bus de Kocaeli, dans l’ordre","present":true,"updated":"2026-08-04T20:54:32+03:00","updatedFrom":"commit"},"kocaeli-bus-schedules.json":{"kind":"scraped","source":"Kocaeli BB / UlaşımPark route pages","licence":"no open-data licence","covers":"Kocaeli bus timetables","covers_tr":"Kocaeli otobüs tarifeleri","covers_ar":"جداول مواعيد حافلات Kocaeli","covers_fr":"Horaires des bus de Kocaeli","present":true,"updated":"2026-08-04T20:54:32+03:00","updatedFrom":"commit"},"ankara-bus-directory.json":{"kind":"community","source":"OpenStreetMap via Overpass","licence":"ODbL 1.0","covers":"264 EGO routes; coverage may be incomplete and there are NO timetables","covers_tr":"264 EGO güzergâhı; kapsam eksik olabilir ve tarife YOKTUR","covers_ar":"264 خط EGO؛ قد تكون التغطية ناقصة ولا تتوفّر جداول مواعيد إطلاقًا","covers_fr":"264 itinéraires EGO ; couverture possiblement incomplète, AUCUN horaire","present":true,"updated":"2026-08-14T23:45:42+03:00","updatedFrom":"commit"},"ankara-bus-graph.json":{"kind":"community","source":"OpenStreetMap via Overpass","licence":"ODbL 1.0","covers":"Ankara bus stops in order","covers_tr":"Ankara otobüs durakları, sırasıyla","covers_ar":"مواقف حافلات Ankara بالترتيب","covers_fr":"Arrêts de bus d’Ankara, dans l’ordre","present":true,"updated":"2026-08-14T23:45:42+03:00","updatedFrom":"commit"},"ankara-bus-schedules.json":{"kind":"community","source":"none — OSM has no timetables","licence":"n/a","covers":"Deliberately empty rather than invented","covers_tr":"Uydurmak yerine bilerek boş bırakıldı","covers_ar":"تُرك فارغًا عمدًا بدل اختلاق البيانات","covers_fr":"Volontairement vide plutôt qu’inventé","present":true,"updated":"2026-08-14T23:45:42+03:00","updatedFrom":"commit"},"disruptions.json":{"kind":"scraped","source":"metro.istanbul service status","licence":"no open-data licence","covers":"Live faults and closures; refreshed every 30 min","covers_tr":"Anlık arıza ve kapanmalar; 30 dakikada bir yenilenir","covers_ar":"الأعطال والإغلاقات المباشرة؛ تُحدَّث كل 30 دقيقة","covers_fr":"Pannes et fermetures en direct ; actualisé toutes les 30 min","present":true,"updated":"2026-09-02T05:39:44Z","updatedFrom":"commit"},"accessibility.json":{"kind":"official","source":"İBB Open Data, enriched with OSM wheelchair tags","licence":"İBB Open Data terms + ODbL","covers":"Lift and escalator counts, step-free flags — İstanbul only","covers_tr":"Asansör ve yürüyen merdiven sayıları, basamaksız erişim işaretleri — yalnızca İstanbul","covers_ar":"أعداد المصاعد والسلالم المتحركة ومؤشرات الوصول بلا درجات — إسطنبول فقط","covers_fr":"Nombre d’ascenseurs et d’escaliers mécaniques, accès sans marches — İstanbul uniquement","present":true,"updated":"2026-07-12T01:58:53+03:00","updatedFrom":"commit"},"mi-stations.json":{"kind":"official","source":"Metro İstanbul station registry","licence":"İBB Open Data terms","covers":"Official station ids used for exact departures","covers_tr":"Kesin sefer saatleri için kullanılan resmî istasyon kimlikleri","covers_ar":"معرّفات المحطات الرسمية المستخدَمة لمواعيد المغادرة الدقيقة","covers_fr":"Identifiants officiels de stations utilisés pour les départs exacts","present":true,"updated":"2026-07-02T01:08:31+03:00","updatedFrom":"commit"},"attractions.json":{"kind":"curated","source":"Compiled for this project","licence":"n/a","covers":"İstanbul landmarks for the Explore layer","covers_tr":"Keşfet katmanı için İstanbul simge yapıları","covers_ar":"معالم إسطنبول لطبقة الاستكشاف","covers_fr":"Lieux remarquables d’İstanbul pour la couche Explorer","present":true,"updated":"2026-07-13T09:31:56+03:00","updatedFrom":"commit"},"openings.json":{"kind":"curated","source":"İBB projected opening dates","licence":"n/a","covers":"Announced targets, which slip","covers_tr":"Açıklanan hedef tarihler; değişebilir","covers_ar":"المواعيد المعلنة، وهي عرضة للتأجيل","covers_fr":"Échéances annoncées, sujettes à report","present":true,"updated":"2026-07-14T17:29:41+03:00","updatedFrom":"commit"},"card-images.json":{"kind":"curated","source":"Wikimedia Commons (public domain / Belbim)","licence":"see Commons per file","covers":"Fare card artwork","covers_tr":"Bilet kartı görselleri","covers_ar":"صور بطاقات الأجرة","covers_fr":"Visuels des cartes de transport","present":true,"updated":"2026-08-04T10:08:51+03:00","updatedFrom":"commit"},"cities.json":{"kind":"curated","source":"Operator tariffs and published figures","licence":"n/a","covers":"Per-city centre, bounds, fares, feature flags","covers_tr":"Şehir bazında merkez, sınırlar, ücretler ve özellik ayarları","covers_ar":"مركز كل مدينة وحدودها وأجورها وخياراتها","covers_fr":"Centre, limites, tarifs et options par ville","present":true,"updated":"2026-08-22T17:47:29+03:00","updatedFrom":"commit"},"izmir-bus-directory.json":{"kind":"official","source":"İzmir Büyükşehir open data (ESHOT)","licence":"İzmir açık veri terms","covers":"441 ESHOT bus lines with endpoints","covers_tr":"Uç noktalarıyla birlikte 441 ESHOT otobüs hattı","covers_ar":"441 خط حافلات ESHOT مع نقاط بدايتها ونهايتها","covers_fr":"441 lignes de bus ESHOT avec leurs terminus","present":true,"updated":"2026-08-22T17:47:29+03:00","updatedFrom":"commit"},"izmir-bus-graph.json":{"kind":"official","source":"İzmir Büyükşehir open data (ESHOT)","licence":"İzmir açık veri terms","covers":"İzmir bus stops in order, derived by projecting stops onto each line’s published route geometry","covers_tr":"İzmir otobüs durakları, sırasıyla; duraklar her hattın yayımlanan güzergâh geometrisine izdüşürülerek elde edildi","covers_ar":"مواقف حافلات İzmir بالترتيب، مستنتجة بإسقاط المواقف على هندسة المسار المنشورة لكل خط","covers_fr":"Arrêts de bus d’İzmir, dans l’ordre, obtenus en projetant les arrêts sur le tracé publié de chaque ligne","present":true,"updated":"2026-08-22T17:47:29+03:00","updatedFrom":"commit"},"izmir-bus-schedules.json":{"kind":"official","source":"none — İzmir publishes no bus timetable","licence":"n/a","covers":"Deliberately empty rather than invented","covers_tr":"Uydurmak yerine bilerek boş bırakıldı","covers_ar":"تُرك فارغًا عمدًا بدل اختلاق البيانات","covers_fr":"Volontairement vide plutôt qu’inventé","present":true,"updated":"2026-08-14T23:45:42+03:00","updatedFrom":"commit"},"izmir-bus-geom.json":{"kind":"official","source":"İzmir Büyükşehir open data (ESHOT)","licence":"İzmir açık veri terms","covers":"İzmir bus road geometry, simplified to 12 m","covers_tr":"İzmir otobüs güzergâh geometrisi, 12 m’ye sadeleştirildi","covers_ar":"هندسة مسارات حافلات İzmir، مبسّطة إلى 12 م","covers_fr":"Tracé routier des bus d’İzmir, simplifié à 12 m","present":true,"updated":"2026-08-22T17:47:29+03:00","updatedFrom":"commit"}}};
 /* --- curated İstanbul landmarks for the "Explore" layer (real places; the app computes the
        nearest station + walk). {name,cat,lat,lng} --- */
 const ATTRACTIONS = CITY.attractions || [{"name":"Hagia Sophia","cat":"historic","lat":41.0086,"lng":28.9802},{"name":"Blue Mosque","cat":"mosque","lat":41.0054,"lng":28.9768},{"name":"Topkapı Palace","cat":"palace","lat":41.0115,"lng":28.9833},{"name":"Basilica Cistern","cat":"historic","lat":41.0084,"lng":28.9779},{"name":"Hippodrome (Sultanahmet Sq.)","cat":"historic","lat":41.006,"lng":28.9754},{"name":"Gülhane Park","cat":"park","lat":41.0134,"lng":28.9814},{"name":"Grand Bazaar","cat":"market","lat":41.0106,"lng":28.968},{"name":"Spice Bazaar","cat":"market","lat":41.0165,"lng":28.9705},{"name":"Süleymaniye Mosque","cat":"mosque","lat":41.0165,"lng":28.9639},{"name":"Galata Bridge","cat":"landmark","lat":41.0201,"lng":28.9737},{"name":"Galata Tower","cat":"viewpoint","lat":41.0256,"lng":28.9744},{"name":"İstiklal Avenue","cat":"market","lat":41.0335,"lng":28.9778},{"name":"Taksim Square","cat":"landmark","lat":41.037,"lng":28.9857},{"name":"İstanbul Modern","cat":"museum","lat":41.0264,"lng":28.9805},{"name":"Dolmabahçe Palace","cat":"palace","lat":41.0391,"lng":29.0006},{"name":"Yıldız Park","cat":"park","lat":41.049,"lng":29.011},{"name":"Ortaköy Mosque","cat":"mosque","lat":41.0475,"lng":29.027},{"name":"Bebek Bay","cat":"waterfront","lat":41.0776,"lng":29.0433},{"name":"Rumeli Fortress","cat":"historic","lat":41.0847,"lng":29.0566},{"name":"Emirgan Park","cat":"park","lat":41.1085,"lng":29.0546},{"name":"Maiden's Tower","cat":"viewpoint","lat":41.0211,"lng":29.0041},{"name":"Kadıköy & Moda","cat":"waterfront","lat":40.988,"lng":29.027},{"name":"Beylerbeyi Palace","cat":"palace","lat":41.0428,"lng":29.0419},{"name":"Büyük Çamlıca Hill","cat":"viewpoint","lat":41.0289,"lng":29.0686},{"name":"Çamlıca Mosque","cat":"mosque","lat":41.0275,"lng":29.0669},{"name":"Üsküdar Waterfront","cat":"waterfront","lat":41.0256,"lng":29.015},{"name":"Chora (Kariye) Mosque","cat":"historic","lat":41.0312,"lng":28.9391},{"name":"Eyüp Sultan Mosque","cat":"mosque","lat":41.0479,"lng":28.9337},{"name":"Pierre Loti Hill","cat":"viewpoint","lat":41.049,"lng":28.9337},{"name":"Balat & Fener","cat":"landmark","lat":41.0296,"lng":28.949},{"name":"Miniatürk","cat":"park","lat":41.062,"lng":28.9497},{"name":"Panorama 1453","cat":"museum","lat":41.0186,"lng":28.92},{"name":"Zorlu Center","cat":"market","lat":41.0668,"lng":29.017},{"name":"Vialand / İsfanbul","cat":"park","lat":41.073,"lng":28.933},{"name":"Princes' Islands (ferry)","cat":"waterfront","lat":40.876,"lng":29.129}];
@@ -7732,7 +8109,7 @@ function buildLegend(){
   GROUP_ORDER.forEach(kind=>{
     const lines = set.filter(l=>l.kind===kind && !l.partOf);   // partOf lines fold into their parent
     if(!lines.length) return;
-    html += `<div class="grp"><div class="grp-h" data-kind="${kind}">${kindLabel(kind)}<span>toggle</span></div><div class="lines-wrap">`;
+    html += `<div class="grp"><div class="grp-h" data-kind="${kind}">${kindLabel(kind)}<span>${svgEsc(t("toggleGroup"))}</span></div><div class="lines-wrap">`;
     lines.forEach(l=>{
       html += `<div class="lchip${lineLayers[l.ref].on?'':' off'}" data-ref="${l.ref}" title="${attrEsc(t('openLineMap'))}"><span class="sw" style="background:${l.color}" title="${attrEsc(t('showHide'))}"></span>${l.ref}</div>`;
     });
@@ -9413,7 +9790,7 @@ function renderProvenance(){
               : m.kind === 'community' ? 'pv-warn' : m.kind === 'scraped' ? 'pv-warn' : 'pv-dim';
     return '<div class="pv-row">' +
       '<span class="pv-k ' + cls + '">' + svgEsc(t('provKind_' + m.kind) || m.kind) + '</span>' +
-      '<span class="pv-t"><b>' + svgEsc(m.covers || file) + '</b>' +
+      '<span class="pv-t"><b>' + svgEsc(m['covers_' + lang] || m.covers || file) + '</b>' +
       '<span class="pv-s">' + svgEsc(m.source) + '</span></span>' +
       '<span class="pv-a">' + svgEsc(ageText(m.updated)) + '</span></div>';
   }).join('');
