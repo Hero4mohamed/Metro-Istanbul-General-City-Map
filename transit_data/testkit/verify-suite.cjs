@@ -17,7 +17,13 @@ const { execFileSync } = require('child_process');
 
 const ROOT = path.resolve(__dirname, '..', '..');
 const SRC = path.join(ROOT, 'index.html');
-const TMP = path.join(os.tmpdir(), 'raynet-mutant.html');
+/* One path per process. A fixed filename here is shared with every other checkout of this repo
+   on the machine — and there are worktrees. Two verify-suites running at once each overwrote
+   the other's mutant between the write and the spawn, so both reported a random handful of
+   real defects as "not caught": the mutation under test had been replaced on disk by the other
+   run's. Nothing in the output said so, which is the worst possible failure for an instrument
+   whose whole job is to tell you the suite is honest. */
+const TMP = path.join(os.tmpdir(), 'raynet-mutant-' + process.pid + '.html');
 const TESTS = path.join(ROOT, 'transit_data', 'test');
 const SUITES = fs.readdirSync(TESTS).filter(f => f.endsWith('.test.cjs')).map(f => path.join(TESTS, f));
 
@@ -485,9 +491,25 @@ for (const m of MUTATIONS) {
       env: { ...process.env, RAYNET_HTML: TMP },
       encoding: 'utf8',
       stdio: ['ignore', 'pipe', 'pipe'],
+      /* execFileSync buffers 1MB by default. A mutation that breaks the whole script fails most
+         of the suite at once, and each failure carries a TAP diagnostic block with a stack — at
+         93 tests that runs past 1MB, execFileSync throws ENOBUFS, and the truncated stdout no
+         longer contains the "not ok" line we are looking for. Five catastrophic mutations
+         reported themselves UNCAUGHT for exactly that reason: the suite was working and the
+         instrument reading it was not. A verification tool that under-reports as the suite
+         grows is worse than none. */
+      maxBuffer: 256 * 1024 * 1024,
     });
   } catch (e) {
     out = (e.stdout || '') + (e.stderr || '');
+    // A non-zero exit is the NORMAL case here: the suite is supposed to fail. Losing the output
+    // is not, and it looks identical to "not caught" unless we say so.
+    if (e.code === 'ENOBUFS' || /maxBuffer/i.test(String(e.message || ''))) {
+      console.log('  ??  ' + m.name);
+      console.log('      UNREADABLE - the suite\'s output overran the buffer, so this row proves nothing.');
+      problems.push(m.name + ' (output truncated)');
+      continue;
+    }
   }
 
   const escaped = m.expect.replace(/[.*+?^${}()|[\]\\]/g, ch => '\\' + ch);
