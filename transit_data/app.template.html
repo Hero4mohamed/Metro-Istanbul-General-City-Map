@@ -684,7 +684,18 @@
      printed in the operator’s own words, and says so rather than pretending to be a translation */
   .ann-tr{display:inline-block;font-size:var(--fs-4);font-weight:800;letter-spacing:.4px;text-transform:uppercase;
     padding:1px 6px;border-radius:var(--r-pill);border:1px solid var(--stroke);color:var(--dim);
-    background:var(--surface-2);vertical-align:1px;margin-right:2px;white-space:nowrap;cursor:help;}
+    background:var(--surface-2);vertical-align:1px;margin-inline-end:2px;white-space:nowrap;cursor:help;}
+  /* --- right to left ------------------------------------------------------------------
+     Arabic sets dir=rtl on the document, which is what its prose needs. The side effect is
+     that the bidi algorithm reorders a run of Latin text around any neutral character in
+     it, so the masthead "İSTANBUL · RAY-NET" came out as "RAY-NET · İSTANBUL" and the bus
+     operator tag " · İETT" jumped its separator. These are names, not sentences: they are
+     isolated so they keep their own direction whatever surrounds them. Physical left:/right:
+     rules are not affected by dir at all, so the map furniture needs no counterpart here. */
+  [dir="rtl"] .topbar h1,
+  [dir="rtl"] #busOpLabel{direction:ltr;unicode-bidi:isolate;}
+  [dir="rtl"] .topbar h1{justify-content:flex-end;}
+
   .ann-item .ann-tx small{display:block;color:var(--muted);font-size:var(--fs-6);margin-top:1px;}
   .ann-foot{font-size:var(--fs-5);color:var(--dim);padding-top:4px;border-top:1px solid var(--stroke);margin-top:2px;line-height:1.55;}
   .ann-foot a{color:var(--accent);text-decoration:none;}

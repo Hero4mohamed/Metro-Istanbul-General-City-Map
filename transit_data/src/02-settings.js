@@ -631,33 +631,62 @@ function kindLabel(kind){ const k=I18N[lang]['kind_'+kind]; return k!==undefined
 __TRANSLATOR_JS__
 // the names in an alert that are supposed to survive translation unchanged
 function disNames(d){ return [d.ref, d.from, d.to].concat(d.stations||[]).filter(Boolean); }
-function ensureEnglish(list){
+/* Normalise a freshly-arrived feed. This no longer produces the text — disText does that, per
+   reader, in the language they are actually reading — but it still settles the one thing that
+   belongs to the ENTRY rather than to the reader: whether a Turkish original exists to
+   translate from at all. A legacy entry that kept no original is promoted to one when what it
+   stores is visibly Turkish, so later readers get a real source instead of a frozen hybrid. */
+function ensureDisruptionText(list){
   for(const d of (list||[])){
     if(!d || !d.message) continue;
-    /* A hand-written entry and an LLM translation are both better English than these rules can
-       produce, and judging them by the rules’ own vocabulary would only mistake ordinary
-       English ("engineering works", "cancelled") for untranslated Turkish. Leave them alone. */
-    if(d.source==='manual' || d.translatedBy==='llm'){ if(!d.messageLang) d.messageLang='en'; continue; }
-    /* Everything else is machine output, so re-derive it from the authoritative original using
-       the DEPLOYED rules instead of trusting whatever the feed happens to store: the vocabulary
-       may have grown since it was written, and a hybrid baked in by an older build must not
-       outlive the fix for it. bestEffortEnglish hands back the untouched original — never a
-       guess — when the rules still fall short, and says which language that is in .lang. */
-    if(!d.messageTr){                                // legacy entry that kept no original
-      if(!hasResidualTurkish(d.message)){ if(!d.messageLang) d.messageLang='en'; continue; }
-      d.messageTr = d.message;
-    }
-    const best = bestEffortEnglish(d.messageTr, disNames(d));
-    d.message = best.text; d.messageLang = best.lang;
+    d._i18n = null;                                  // drop renderings memoised from older text
+    if(!d.messageTr && hasResidualTurkish(d.message)) d.messageTr = d.message;
+    if(!d.messageLang) d.messageLang = 'en';
   }
 }
+function ensureEnglish(list){ return ensureDisruptionText(list); }   // name kept for callers
 // localized disruption title + message (TR uses the original messageTr when present)
 function disTitle(d){ const k='ttl:'+(d.title||''); return I18N[lang][k]!==undefined ? I18N[lang][k] : (d.title||''); }
-function disMsg(d){ return (lang==='tr' && d.messageTr) ? d.messageTr : d.message; }
+/* The rules used to be run once, into English, and the result cached on the entry — which
+   quietly made English the only language a disruption could be read in: an Arabic or French
+   reader got the English translation, or the Turkish original, but never their own language.
+   So the translation is derived per reader instead, and memoised per language.
+
+   It is always derived from the authoritative Turkish rather than from whatever the feed
+   happens to store, for the same reason it was before: the deployed vocabulary may have grown
+   since the entry was written, and a hybrid baked in by an older build must not outlive the
+   fix for it. bestEffortTranslation hands back the untouched original — never a guess — when
+   the rules fall short in THIS language, and says which language that is in .lang. The
+   judgement is per language because the rules can cover an announcement in one and not
+   another, and each reader is owed the honest answer for the language they are reading. */
+function disText(d){
+  if(!d) return { text:'', lang:'en' };
+  if(lang === 'tr') return { text:d.messageTr || d.message || '', lang:'tr' };
+  if(!d._i18n) d._i18n = {};
+  if(d._i18n[lang]) return d._i18n[lang];
+  let r;
+  /* A hand-written entry and an LLM translation are both better English than these rules can
+     produce, and judging them by the rules’ own vocabulary would only mistake ordinary English
+     ("engineering works", "cancelled") for untranslated Turkish. In the other languages no
+     such hand-written version exists, so those go through the rules like any other entry. */
+  if(lang === 'en' && (d.source === 'manual' || d.translatedBy === 'llm')){
+    r = { text:d.message, lang:'en' };
+  } else if(d.messageTr && TR_TARGETS.indexOf(lang) >= 0){
+    const best = bestEffortTranslation(d.messageTr, disNames(d), lang);
+    r = { text:best.text, lang:best.lang };
+  } else {
+    r = { text:d.message || d.messageTr || '', lang:d.messageLang || 'en' };
+  }
+  d._i18n[lang] = r;
+  return r;
+}
+function disMsg(d){ return disText(d).text; }
 /* True when the reader is NOT reading Turkish but the text on screen is the Turkish original.
-   Untranslated is a fine outcome — inventing English we cannot vouch for is not — so the one
-   thing we owe the reader is to say which language they are looking at, and why. */
-function disUntranslated(d){ return lang!=='tr' && !!d && d.messageLang==='tr'; }
+   Untranslated is a fine outcome — inventing a translation we cannot vouch for is not — so the
+   one thing we owe the reader is to say which language they are looking at, and why. The test
+   is on the text actually chosen, not on a flag stored with the entry, because that choice is
+   now made per language. */
+function disUntranslated(d){ return lang !== 'tr' && !!d && disText(d).lang === 'tr'; }
 function disTrTag(d){
   return disUntranslated(d) ? '<span class="ann-tr" title="'+t('trOnlyWhy')+'">'+t('trOnlyTag')+'</span> ' : '';
 }

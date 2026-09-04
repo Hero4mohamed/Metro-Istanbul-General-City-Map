@@ -22,7 +22,7 @@ function shippedTranslator() {
   const b = html.indexOf('// ==TRANSLATOR-END==');
   assert.ok(a > 0 && b > a, 'translator markers not found in the built page');
   const mod = { exports: {} };
-  new Function('module', 'exports', html.slice(a, b) + '\nmodule.exports={translateTR,turkishShare,bestEffortEnglish,TR_FALLBACK_SHARE};')(mod, mod.exports);
+  new Function('module', 'exports', html.slice(a, b) + '\nmodule.exports={translateTR,turkishShare,bestEffortEnglish,bestEffortTranslation,TR_TARGETS,TR_PHRASES,TR_WORDS,TR_FALLBACK_SHARE};')(mod, mod.exports);
   return mod.exports;
 }
 
@@ -209,4 +209,122 @@ test('every machine-translated alert in the live feed matches the shipped rules'
       bad.push(d.ref + ': Turkish original with nothing to label it');
   }
   assert.deepStrictEqual(bad, [], 'in the shipped feed: ' + bad.join(' | '));
+});
+
+/* --- every language the app offers, not just English ---------------------------------------
+ *
+ * The rules used to carry one English replacement each, and the app ran them once, into
+ * English, and cached the result on the entry. That quietly made English the only language a
+ * disruption could be read in: a reader on the Arabic or French UI got the English sentence,
+ * or the untranslated Turkish, but never their own language — while the rest of the interface
+ * around it was fully translated.
+ *
+ * These are the checks that keep that from coming back. The structural one matters most: a
+ * rule added with only an English replacement would silently degrade Arabic and French for
+ * every announcement it matched, and nothing else in the suite would notice.
+ */
+
+/* Formulaic operator wording the rules are supposed to cover. Each entry is a real announcement
+   shape from metro.istanbul, with the names that are meant to survive translation unchanged. */
+const COVERED_ALL = [
+  ['Onarım çalışması nedeniyle seferler Yıldız-Mecidiyeköy ve Nurtepe istasyonundan aktarmalı olarak Çağlayan-Mahmutbey istasyonları arasında yapılmaktadır.',
+   ['M7', 'Yıldız-Mecidiyeköy', 'Nurtepe', 'Çağlayan', 'Mahmutbey']],
+  ['B2 Halkalı–Bahçeşehir hattı altyapı çalışmaları nedeniyle çalışmamaktadır.',
+   ['B2', 'Halkalı', 'Bahçeşehir']],
+  ['Olumsuz hava koşulları nedeniyle seferler geçici süreyle durdurulmuştur.', []],
+  ['Kadıköy istasyonu kapalıdır.', ['Kadıköy']],
+  ['Seferler normale dönmüştür.', []],
+];
+
+test('every rule says what it produces in every language, not only in English', () => {
+  const { TR_PHRASES, TR_WORDS, TR_TARGETS } = shippedTranslator();
+  assert.ok(Array.isArray(TR_PHRASES) && TR_PHRASES.length > 50, 'phrase table not found');
+  assert.deepStrictEqual(TR_TARGETS.slice().sort(), ['ar', 'en', 'fr'],
+    'the translator no longer targets the three languages this test assumes');
+
+  const gaps = [];
+  TR_PHRASES.forEach(([re, rep], i) => {
+    for (const tgt of TR_TARGETS)
+      if (typeof rep[tgt] !== 'string' || !rep[tgt].trim())
+        gaps.push('phrase #' + i + ' (' + String(re).slice(0, 40) + ') has no ' + tgt);
+  });
+  for (const k of Object.keys(TR_WORDS))
+    for (const tgt of TR_TARGETS)
+      if (typeof TR_WORDS[k][tgt] !== 'string' || !TR_WORDS[k][tgt].trim())
+        gaps.push('word "' + k + '" has no ' + tgt);
+
+  assert.deepStrictEqual(gaps, [], gaps.length + ' rule(s) incomplete: ' + gaps.slice(0, 6).join(' | '));
+});
+
+test('a covered alert is translated into each language, not handed over in English', () => {
+  const { bestEffortTranslation, TR_TARGETS } = shippedTranslator();
+  const bad = [];
+  for (const [src, names] of COVERED_ALL) {
+    const out = {};
+    for (const tgt of TR_TARGETS) {
+      const r = bestEffortTranslation(src, names, tgt);
+      out[tgt] = r.text;
+      // covered wording must actually reach the target language, not fall back to Turkish
+      if (r.lang !== tgt) bad.push(tgt + ' fell back to ' + r.lang + ': ' + src.slice(0, 40));
+    }
+    // three languages, three different sentences — identical output means one table is a copy
+    for (const [a, b] of [['en', 'ar'], ['en', 'fr'], ['ar', 'fr']])
+      if (out[a] === out[b]) bad.push(a + ' and ' + b + ' produced identical text for: ' + src.slice(0, 40));
+  }
+  assert.deepStrictEqual(bad, [], bad.join(' | '));
+});
+
+/* Arabic is the case a Latin-alphabet test suite is most likely to let through: an output that
+   quietly stayed English still looks like "a translation" to any check that only asks whether
+   the Turkish went away. */
+test('the Arabic translation is actually in Arabic', () => {
+  const { bestEffortTranslation } = shippedTranslator();
+  const ARABIC = /[؀-ۿ]/;
+  for (const [src, names] of COVERED_ALL) {
+    const r = bestEffortTranslation(src, names, 'ar');
+    assert.ok(ARABIC.test(r.text), 'no Arabic script in the Arabic output for: ' + src.slice(0, 40));
+    // every Latin word left in it must be one of the names that were meant to survive
+    const kept = new Set(names.flatMap(n => String(n).split(/[^A-Za-zÇĞİIÖŞÜçğıöşü0-9]+/))
+                              .filter(Boolean).map(w => w.toLocaleLowerCase('tr')));
+    const strays = (r.text.match(/[A-Za-zÇĞİIÖŞÜçğıöşü][A-Za-zÇĞİIÖŞÜçğıöşü0-9]*/g) || [])
+                     .filter(w => !kept.has(w.toLocaleLowerCase('tr')));
+    assert.deepStrictEqual(strays, [], 'untranslated Latin words in Arabic output: ' + strays.join(', '));
+  }
+});
+
+/* The fallback is a per-language judgement. The rules can cover an announcement well in one
+   language and badly in another, and a reader is owed the honest answer for the language they
+   are actually reading — not for English. */
+test('an alert the rules cannot carry falls back to Turkish in every language', () => {
+  const { bestEffortTranslation, TR_TARGETS } = shippedTranslator();
+  for (const tgt of TR_TARGETS) {
+    const r = bestEffortTranslation(UNCOVERED, UNCOVERED_NAMES, tgt);
+    assert.strictEqual(r.lang, 'tr', tgt + ' claimed to translate wording the rules do not cover');
+    assert.strictEqual(r.text, UNCOVERED.trim(),
+      tgt + ' altered the Turkish original instead of passing it through');
+  }
+});
+
+/* Every translation is derived from messageTr. An entry without one can only ever be shown in
+   the language it happens to be stored in, which for a hand-written entry means English text
+   under an Arabic heading — with nothing to tell the reader why. */
+test('every alert in the live feed carries the Turkish original its translations come from', () => {
+  const missing = H.json('disruptions.json')
+    .filter(d => d.message && !d.messageTr)
+    .map(d => d.ref || d.id);
+  assert.deepStrictEqual(missing, [],
+    'no Turkish original to translate from: ' + missing.join(', '));
+});
+
+/* Arabic و ("and") is a proclitic: it is written joined to the word that follows, including a
+   Latin station name. The tokeniser therefore sees "وMahmutbey" as a single word, which is in
+   neither the Arabic vocabulary nor the list of names, and does not begin with a Latin capital
+   — so on the vocabulary test alone it scores as source text nobody translated. Every station
+   named after a conjunction quietly cost the alert coverage, and an announcement listing
+   enough of them would have been thrown back to Turkish for a reader it was translated for. */
+test('an Arabic conjunction joined to a station name is not read as untranslated Turkish', () => {
+  const { turkishShare } = shippedTranslator();
+  const share = turkishShare('تسير الرحلات بين Çağlayan وMahmutbey.', ['Çağlayan', 'Mahmutbey'], 'ar');
+  assert.strictEqual(share, 0,
+    'a fused conjunction+name token was counted against translation coverage (share ' + share + ')');
 });

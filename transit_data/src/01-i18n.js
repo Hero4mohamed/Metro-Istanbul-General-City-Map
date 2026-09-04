@@ -76,7 +76,7 @@ const I18N = {
     annNone:"✓ No reported disruptions — network running normally.",
     annFoot:"Reported service faults &amp; closures. Live official status:",
     trOnlyTag:"Turkish original",
-    trOnlyWhy:"The operator wrote this in wording our English rules do not cover, so the official Turkish is shown unchanged rather than half-translated.",
+    trOnlyWhy:"The operator wrote this in wording our translation rules do not cover, so the official Turkish is shown unchanged rather than half-translated.",
     until:"until", daysLeft:"days left", endsToday:"ends today", ended:"ended",
     openHdr:"Coming soon", openTtl:"New line opening", opensOn:"Opens", openSoon:"SOON",
     inMonths:"in ~{n} mo", inWeeks:"in ~{n} wk", inDays:"in {n} d", kmU:"km", stnU:"stations",
@@ -135,6 +135,7 @@ const I18N = {
     loadingGeom:"Loading route geometry…", routeDrawn:"route drawn", needNet:"Could not fetch route (needs internet).",
     kind_metro:"Metro", kind_tram:"Tram", kind_ferry:"Ferry", kind_funicular:"Funicular",
     kind_marmaray:"Marmaray", kind_suburban:"Suburban", kind_metrobus:"Metrobüs (BRT)", kind_cable:"Cable car",
+    kind_subway:"Metro", kind_bus:"Bus", toggleGroup:"toggle",
     pairedCars:"two counterbalanced cars", shuttleSpur:"shuttle spur", interchangesWord:"interchanges", targetOpen:"target open", soonWord:"soon", stationsLower:"stations",
     st_construction:"Under construction", st_planned:"Planned", st_testing:"Under construction / testing", st_approx:"Approximate alignment",
     servedBy:"Served by {n} line(s).",
@@ -249,7 +250,7 @@ const I18N = {
     annNone:"✓ Bildirilen aksama yok — ağ normal çalışıyor.",
     annFoot:"Bildirilen servis arızaları ve kapanışları. Canlı resmi durum:",
     trOnlyTag:"Türkçe orijinal",
-    trOnlyWhy:"İşletmecinin ifadesi İngilizce çeviri kurallarımızın kapsamı dışında kaldığı için resmi Türkçe metin olduğu gibi gösteriliyor.",
+    trOnlyWhy:"İşletmecinin ifadesi çeviri kurallarımızın kapsamı dışında kaldığı için resmi Türkçe metin olduğu gibi gösteriliyor.",
     until:"şu tarihe kadar:", daysLeft:"gün kaldı", endsToday:"bugün bitiyor", ended:"sona erdi",
     openHdr:"Yakında açılıyor", openTtl:"Yeni hat açılışı", opensOn:"Açılış", openSoon:"YAKINDA",
     inMonths:"~{n} ay içinde", inWeeks:"~{n} hafta içinde", inDays:"{n} gün içinde", kmU:"km", stnU:"istasyon",
@@ -308,6 +309,7 @@ const I18N = {
     loadingGeom:"Güzergah çiziliyor…", routeDrawn:"güzergah çizildi", needNet:"Güzergah alınamadı (internet gerekli).",
     kind_metro:"Metro", kind_tram:"Tramvay", kind_ferry:"Vapur", kind_funicular:"Füniküler",
     kind_marmaray:"Marmaray", kind_suburban:"Banliyö", kind_metrobus:"Metrobüs", kind_cable:"Teleferik",
+    kind_subway:"Metro", kind_bus:"Otobüs", toggleGroup:"aç/kapa",
     pairedCars:"karşılıklı dengeli iki araç", shuttleSpur:"mekik hattı", interchangesWord:"aktarmalar", targetOpen:"hedef açılış", soonWord:"yakında", stationsLower:"istasyon",
     st_construction:"Yapım aşamasında", st_planned:"Planlanan", st_testing:"Yapım / test aşamasında", st_approx:"Yaklaşık güzergah",
     servedBy:"{n} hat hizmet veriyor.",
@@ -429,6 +431,7 @@ const I18N = {
     nextArr:"التالي", followingArr:"الذي يليه", noApproach:"لا عربات قادمة.", carrOff:"طبقة العربات معطّلة.",
     kind_metro:"مترو", kind_tram:"ترام", kind_ferry:"عبّارة", kind_funicular:"قطار جبلي مائل",
     kind_marmaray:"مرمراي", kind_suburban:"ضواحٍ", kind_metrobus:"متروبوس", kind_cable:"تلفريك",
+    kind_subway:"مترو", kind_bus:"حافلة", toggleGroup:"إظهار/إخفاء",
     shuttleSpur:"خط مكوكي", interchangesWord:"تحويلات", targetOpen:"الافتتاح المستهدف", soonWord:"قريبًا", stationsLower:"محطات",
     st_construction:"قيد الإنشاء", st_planned:"مخطَّط", st_testing:"قيد الإنشاء / الاختبار", st_approx:"مسار تقريبي",
     servedBy:"تخدمها {n} خط/خطوط.",
@@ -468,7 +471,71 @@ const I18N = {
     funStats:"أنت", passport:"جواز سفرك", linesRidden:"خطوط مركوبة", tripOne:"رحلة", tripMany:"رحلات",
     passportNote:"أكمل رحلة بزر ▶ ابدأ لتُضيء خطوطها. محفوظ على هذا الجهاز.",
     followLine:"تابع للتنبيهات", following:"متابَع · التنبيهات مفعّلة", timeToLeave:"حان وقت المغادرة",
-    reminderSet:"تم ضبط تذكير خلال {n} د", remindLeaveLabel:"🔔 ذكّرني بالمغادرة بعد" },
+    reminderSet:"تم ضبط تذكير خلال {n} د", remindLeaveLabel:"🔔 ذكّرني بالمغادرة بعد",
+    /* --- the 101 keys that used to fall through to English ------------------------------
+       t() falls back to English silently, so a missing key is invisible in review and very
+       visible to the reader: an Arabic panel with an English paragraph in the middle of it.
+       Register follows the dictionary above — تحويل for a change of line, محطة for a stop,
+       د for the minute, Latin digits to match LOCALE's ar-u-nu-latn. */
+    omniPh:"ابحث عن أي شيء — أماكن، مطاعم، مستشفيات…",
+    omniStops:"المحطات والمعالم", omniPlaces:"الأماكن", omniNear:"القريب مني",
+    omniNone:"لا نتائج. جرّب مكانًا أو حيًّا أو فئة مثل «مطاعم».",
+    omniOff:"غير متصل — تظهر المحطات والمعالم فقط.", omniLook:"جارٍ البحث…",
+    omniHint:"ابحث عن محطة أو معلم أو شارع أو حي — أو اختر فئة من الأعلى.",
+    whenNow:"الآن", whenDepart:"المغادرة", whenArrive:"الوصول", whenTimeT:"الوقت",
+    provLabel:"البيانات والمصادر",
+    provIntro:"من أين تأتي البيانات ومتى جرى تحديثها آخر مرة. بيانات المشغّل دقيقة؛ أما مصادر المجتمع والمستخلَصة من الويب فمُعلَّمة بذلك.",
+    provKind_operator:"المشغّل", provKind_official:"رسمي", provKind_community:"المجتمع",
+    provKind_scraped:"الويب", provKind_curated:"مُنسَّق",
+    provToday:"اليوم", provYesterday:"أمس", provDays:"قبل {n} يوم", provUnknown:"غير معروف",
+    diagLabel:"التشخيص", diagReport:"الإبلاغ عن مشكلة", diagCopy:"نسخ التقرير",
+    diagClear:"مسح", diagCopied:"تم النسخ",
+    diagNone:"لا أعطال مسجّلة على هذا الجهاز. لا يُرسل أي شيء تلقائيًا — الإبلاغ يفتح تقريرًا مُعبّأ مسبقًا يمكنك قراءته وتعديله أولًا.",
+    diagSome:"{n} عطل مسجّل على هذا الجهاز، آخرها: {m}. لا إرسال تلقائي. يتضمّن التقرير العطل والإصدار والمدينة واللغة والمتصفّح — ولا يتضمّن موقعك أو أماكنك المحفوظة أو مفتاحك.",
+    aiKeyLabel:"ذكاء المساعد (اختياري)", aiKeySave:"حفظ", aiKeyClear:"حذف",
+    aiKeyOn:"يُستخدم مفتاح Anthropic الخاص بك — يُحفظ في هذا المتصفّح فقط ويُرسل إلى Anthropic فقط. ويظل المساعد يجيب من بيانات هذه الخريطة.",
+    aiKeyOff:"اختياري. يعمل المساعد دون مفتاح من بيانات هذه الخريطة نفسها دون اتصال. الصق مفتاح Anthropic ليفهم صياغات أكثر حرية — ويبقى محفوظًا في هذا المتصفّح وحده.",
+    aiKeyFail:"تعذّر استخدام مفتاح الذكاء الاصطناعي — تتم الإجابة من بيانات الخريطة.",
+    busOsmNote:"الخطوط رسمها متطوّعو OpenStreetMap — لا توجد بيانات رسمية مفتوحة لهذه المدينة، لذا قد تكون التغطية ناقصة ولا تتوفّر مواعيد.",
+    lrToday:"اليوم ({d}) — أول وآخر رحلة:", lrEvery:"كل {n} د تقريبًا",
+    lrExact:"جدول المشغّل", lrHours:"ساعات التشغيل:",
+    lrWindow:"فترة تشغيل الخط المنشورة، وليست جدول مغادرات",
+    lrNoTimes:"لا يوجد جدول منشور لهذا الخط.",
+    lrWhich:"أي خط؟ اكتب رقمه أو اسمه — مثل «آخر رحلة M2» أو «son sefer 500T».",
+    ttDepart:"المغادرة", ttArrive:"الوصول", ttWait:"يشمل ~{n} د انتظارًا",
+    ttEst:"مُقدّر من وتيرة الرحلات المنشورة", ttShut:"لا يعمل في ذلك الوقت: {l}",
+    ttFirstService:"لا رحلات الآن — أول مغادرة في {t}.",
+    ttWaitsFor:"تنتظر هذه الرحلة الخط {l}، ولا رحلة له قبل {t}.",
+    ttConfHigh:"المواعيد من الجداول المنشورة",
+    ttConfMixed:"{n} من {m} مراحل من الجداول، والباقي مُقدّر",
+    ttMissed:"لا يمكن إدراك هذا التحويل في الوقت — تعتمد الخطة المغادرة التالية.",
+    xferSafe:"تحويل مريح", xferOk:"تحويل مناسب", xferTight:"تحويل ضيّق",
+    xferRisky:"تحويل ضيّق جدًا", xferMissed:"تحويل فائت", xferSlackMin:"{n} د للتحويل",
+    xferNoTt:"لا جدول لهذا الخط — توقّع {n} د تقريبًا",
+    xferWalkBuf:"{w} م سيرًا + {b} د في محطة تحويل بـ {l} خطوط",
+    xferNoHistory:"بناءً على الجدول ومسافة السير فقط — لا سجلّ تأخيرات منشور لهذا الخط.",
+    srcTimetable:"جدول منشور", srcOperator:"جدول المشغّل",
+    srcPublished:"وتيرة منشورة", srcDefault:"وتيرة مفترضة",
+    aiTitle:"اسأل الخريطة", aiPh:"أين آكل قرب Kadıköy؟", aiSend:"اسأل",
+    aiHello:"اسألني عن الأماكن أو الاتجاهات أو ما حولك. أجيب من بيانات هذه الخريطة ومن OpenStreetMap — ولا أختلق شيئًا.",
+    aiNoIdea:"لم أستطع ربط ذلك بمكان أو فئة أو مسار. جرّب «مطاعم قرب Taksim» أو «M2 إلى Kadıköy» أو «حافلات Levent».",
+    aiFound:"أقرب النتائج", aiRouting:"يجري حساب المسار — النتيجة في لوحة الرحلة.",
+    aiNeedTwo:"اذكر الطرفين، مثل «Taksim إلى Kadıköy».", aiNoPlace:"لم أجد",
+    aiStops:"أقرب المحطات", aiBusAt:"خطوط الحافلات هنا",
+    aiNoBus:"لا خطوط حافلات مسجّلة عند هذه المحطة.",
+    aiOffline:"أحتاج اتصالًا للبحث عن الأماكن. تظل المحطات والخطوط تعمل دون اتصال.",
+    aiAlertsNone:"لا اضطرابات مبلّغة حاليًا.", aiAlertsSome:"الاضطرابات المبلّغة",
+    aiAlertsLineOk:"لا اضطراب مبلّغ على هذا الخط.", aiAlertsUntil:"حتى",
+    aiAccStepFree:"بلا درجات", aiAccNot:"غير خالٍ من الدرجات",
+    aiAccUnknown:"لا بيانات إتاحة مسجّلة لهذه المحطة.",
+    aiAccCityOnly:"بيانات المصاعد والسلالم المتحركة منشورة لإسطنبول فقط.",
+    aiLinesAt:"الخطوط التي تخدم", aiLinesNone:"لا خطوط مسجّلة عند هذه المحطة.",
+    routeFrom:"مسار من", routeTo:"مسار إلى", nearHere:"ما القريب من هنا",
+    busLines:"خط", busLinesMany:"خطوط", showingFirst:"تُعرض أول",
+    noGeom:"لا يوجد رسم لمسار هذا الخط على الخريطة.", loadingGeom:"جارٍ تحميل مسار الخط…",
+    routeDrawn:"تم رسم المسار", needNet:"تعذّر جلب المسار (يتطلّب اتصالًا بالإنترنت).",
+    pairedCars:"عربتان متقابلتان متوازنتان",
+  },
   fr:{ liveNet:"Réseau de transport en direct", source:"source ↗", lines:"Lignes", stations:"Stations", carriages:"Rames",
     tabActive:"● Actif", tabVision:"◇ Vision", tabBus:"▤ Bus", tabWeather:"☀ Météo",
     baseMap:"Fond de carte", dark:"Sombre", streets:"Rues", satellite:"Satellite",
@@ -550,6 +617,7 @@ const I18N = {
     nextArr:"Prochain", followingArr:"Suivant", noApproach:"Aucune rame en approche.", carrOff:"Couche des rames désactivée.",
     kind_metro:"Métro", kind_tram:"Tramway", kind_ferry:"Ferry", kind_funicular:"Funiculaire",
     kind_marmaray:"Marmaray", kind_suburban:"Banlieue", kind_metrobus:"Métrobus (BRT)", kind_cable:"Téléphérique",
+    kind_subway:"Métro", kind_bus:"Bus", toggleGroup:"afficher/masquer",
     shuttleSpur:"navette", interchangesWord:"correspondances", targetOpen:"ouverture prévue", soonWord:"bientôt", stationsLower:"stations",
     st_construction:"En construction", st_planned:"Planifié", st_testing:"En construction / essais", st_approx:"Tracé approximatif",
     servedBy:"Desservie par {n} ligne(s).",
@@ -589,7 +657,73 @@ const I18N = {
     funStats:"Vous", passport:"Votre passeport de voyage", linesRidden:"lignes parcourues", tripOne:"trajet", tripMany:"trajets",
     passportNote:"Terminez un trajet avec ▶ Démarrer pour allumer ses lignes. Enregistré sur cet appareil.",
     followLine:"Suivre pour alertes", following:"Suivi · alertes activées", timeToLeave:"Il est temps de partir",
-    reminderSet:"Rappel réglé dans {n} min", remindLeaveLabel:"🔔 Me rappeler de partir dans" }
+    reminderSet:"Rappel réglé dans {n} min", remindLeaveLabel:"🔔 Me rappeler de partir dans",
+    /* --- the 101 keys that used to fall through to English ------------------------------
+       t() falls back to English silently, so a missing key is invisible in review and very
+       visible to the reader: a French panel with an English paragraph in the middle of it.
+       Register follows the dictionary above — correspondance for a change of line, rame for
+       a carriage, exploitant for the operator; typographic apostrophe and guillemets. */
+    omniPh:"Cherchez partout — lieux, restaurants, hôpitaux…",
+    omniStops:"Arrêts et lieux repères", omniPlaces:"Lieux", omniNear:"À proximité",
+    omniNone:"Aucun résultat. Essayez un lieu, un quartier ou une catégorie comme « restaurants ».",
+    omniOff:"Hors ligne — seuls les arrêts et les lieux repères s’affichent.", omniLook:"Recherche…",
+    omniHint:"Cherchez un arrêt, un lieu repère, une rue ou un quartier — ou choisissez une catégorie ci-dessus.",
+    whenNow:"Maintenant", whenDepart:"Départ", whenArrive:"Arrivée", whenTimeT:"Heure",
+    provLabel:"Données et sources",
+    provIntro:"D’où viennent les données et quand elles ont été actualisées. Les flux de l’exploitant sont exacts ; les sources communautaires et extraites du web sont signalées comme telles.",
+    provKind_operator:"exploitant", provKind_official:"officiel", provKind_community:"communauté",
+    provKind_scraped:"web", provKind_curated:"compilé",
+    provToday:"aujourd’hui", provYesterday:"hier", provDays:"il y a {n} jours", provUnknown:"inconnu",
+    diagLabel:"Diagnostic", diagReport:"Signaler un problème", diagCopy:"Copier le rapport",
+    diagClear:"Effacer", diagCopied:"Copié",
+    diagNone:"Aucune erreur enregistrée sur cet appareil. Rien n’est jamais envoyé automatiquement — le signalement ouvre un rapport prérempli que vous pouvez lire et modifier avant de l’envoyer.",
+    diagSome:"{n} erreur(s) enregistrée(s) sur cet appareil, la plus récente : {m}. Rien n’est envoyé automatiquement. Un rapport contient l’erreur, la version, la ville, la langue et le navigateur — jamais votre position, vos lieux enregistrés ni votre clé.",
+    aiKeyLabel:"IA de l’assistant (facultatif)", aiKeySave:"Enregistrer", aiKeyClear:"Effacer",
+    aiKeyOn:"Votre clé Anthropic est utilisée — conservée uniquement dans ce navigateur, envoyée uniquement à Anthropic. L’assistant répond toujours à partir des données de cette carte.",
+    aiKeyOff:"Facultatif. Sans clé, l’assistant fonctionne hors ligne à partir des données de cette carte. Collez une clé Anthropic pour qu’il comprenne des formulations plus libres — elle reste dans ce navigateur.",
+    aiKeyFail:"Votre clé IA n’a pas pu être utilisée — réponse à partir de la carte.",
+    busOsmNote:"Itinéraires cartographiés par la communauté OpenStreetMap — aucun flux ouvert officiel n’existe pour cette ville : la couverture peut être incomplète et aucun horaire n’est disponible.",
+    lrToday:"Aujourd’hui ({d}) — premier et dernier départ :", lrEvery:"environ toutes les {n} min",
+    lrExact:"horaires de l’exploitant", lrHours:"Heures de service :",
+    lrWindow:"plage de service publiée de la ligne, et non un tableau des départs",
+    lrNoTimes:"Aucun horaire publié pour cette ligne.",
+    lrWhich:"Quelle ligne ? Donnez son numéro ou son nom — par exemple « dernier départ M2 » ou « son sefer 500T ».",
+    ttDepart:"Départ", ttArrive:"Arrivée", ttWait:"dont ~{n} min d’attente",
+    ttEst:"estimé d’après les fréquences publiées", ttShut:"Ne circule pas à cette heure : {l}",
+    ttFirstService:"Aucun service actuellement — le premier départ est à {t}.",
+    ttWaitsFor:"Ce trajet attend la ligne {l}, qui ne circule pas avant {t}.",
+    ttConfHigh:"horaires issus des grilles publiées",
+    ttConfMixed:"{n} tronçons sur {m} d’après les horaires, le reste estimé",
+    ttMissed:"Cette correspondance ne peut pas être assurée à temps — ce plan prend le départ suivant.",
+    xferSafe:"correspondance confortable", xferOk:"correspondance correcte",
+    xferTight:"correspondance juste", xferRisky:"correspondance très juste",
+    xferMissed:"correspondance manquée", xferSlackMin:"{n} min pour la correspondance",
+    xferNoTt:"aucun horaire pour cette ligne — comptez environ {n} min",
+    xferWalkBuf:"{w} m à pied + {b} min dans un pôle d’échange à {l} lignes",
+    xferNoHistory:"Fondé uniquement sur l’horaire et le temps de marche — aucun historique de retards n’est publié pour cette ligne.",
+    srcTimetable:"horaire publié", srcOperator:"horaires de l’exploitant",
+    srcPublished:"fréquence publiée", srcDefault:"fréquence supposée",
+    aiTitle:"Interroger la carte", aiPh:"Où manger près de Kadıköy ?", aiSend:"Demander",
+    aiHello:"Demandez-moi des lieux, un itinéraire ou ce qu’il y a à proximité. Je réponds à partir des données de cette carte et d’OpenStreetMap — je n’invente rien.",
+    aiNoIdea:"Je n’ai pas pu rattacher cela à un lieu, une catégorie ou un itinéraire. Essayez « manger près de Taksim », « M2 vers Kadıköy » ou « bus à Levent ».",
+    aiFound:"Résultats les plus proches",
+    aiRouting:"Calcul de l’itinéraire en cours — le résultat est dans le panneau Trajet.",
+    aiNeedTwo:"Indiquez les deux extrémités, par ex. « Taksim vers Kadıköy ».",
+    aiNoPlace:"Je n’ai pas trouvé", aiStops:"Arrêts les plus proches", aiBusAt:"Lignes de bus ici",
+    aiNoBus:"Aucune ligne de bus enregistrée à cet arrêt.",
+    aiOffline:"J’ai besoin d’une connexion pour chercher des lieux. Les arrêts et les lignes fonctionnent hors ligne.",
+    aiAlertsNone:"Aucune perturbation signalée actuellement.", aiAlertsSome:"Perturbations signalées",
+    aiAlertsLineOk:"Aucune perturbation signalée sur cette ligne.", aiAlertsUntil:"jusqu’au",
+    aiAccStepFree:"Sans marches", aiAccNot:"Pas d’accès sans marches",
+    aiAccUnknown:"Aucune donnée d’accessibilité enregistrée pour cette station.",
+    aiAccCityOnly:"Les données d’ascenseurs et d’escaliers mécaniques ne sont publiées que pour İstanbul.",
+    aiLinesAt:"Lignes desservant", aiLinesNone:"Aucune ligne enregistrée à cet arrêt.",
+    routeFrom:"Itinéraire depuis", routeTo:"Itinéraire vers", nearHere:"Ce qu’il y a à proximité",
+    busLines:"ligne", busLinesMany:"lignes", showingFirst:"affichage des",
+    noGeom:"Aucun tracé cartographié pour cette ligne.", loadingGeom:"Chargement du tracé…",
+    routeDrawn:"tracé affiché", needNet:"Impossible de récupérer le tracé (connexion requise).",
+    pairedCars:"deux cabines à contrepoids",
+  }
 };
 const LOCALE = { en:'en-GB', tr:'tr-TR', ar:'ar-u-nu-latn', fr:'fr-FR' };   // ar: Latin digits to match the UI's numerals
 let lang = (function(){ try{ const s=localStorage.getItem('irn_lang'); if(I18N[s]) return s; }catch(e){}
@@ -603,6 +737,14 @@ function applyI18n(){
   document.querySelectorAll('[data-i18n-ph]').forEach(el=> el.placeholder = t(el.getAttribute('data-i18n-ph')));
   document.querySelectorAll('[data-i18n-title]').forEach(el=> el.title = t(el.getAttribute('data-i18n-title')));
   document.documentElement.lang = lang;
+  /* Arabic is read right to left. Setting lang without dir left every Arabic panel laid
+     out as English: the sentence ran the wrong way, and a mixed run like "M2 إلى Kadıköy"
+     put its parts in the wrong order because the bidi algorithm takes its base direction
+     from here. Physical left:/right: rules are unaffected by dir, so the map furniture
+     stays put; what flips is text flow, alignment and flex row order — which is what
+     should flip. The few places that needed holding still are in the [dir="rtl"] block
+     in the stylesheet. */
+  document.documentElement.dir = (lang === "ar") ? "rtl" : "ltr";
 }
 function setLang(l){
   if(!I18N[l]) return;
@@ -616,6 +758,11 @@ function setLang(l){
   try{ if(currentTab==='bus' && document.getElementById('busSearch')) renderBusList(document.getElementById('busSearch').value); }catch(e){}
   try{ if(currentOpts && currentOpts.length){ renderOptChips(); selectOption(currentOptIdx); } }catch(e){}
   try{ rebuildAdvRows(); }catch(e){}
+  /* Both of these render translated text and neither was on this list, so the mode chips and
+     the sources panel kept whatever language the page booted in until something else happened
+     to rebuild them. */
+  try{ renderModeChips(); }catch(e){}
+  try{ renderProvenance(); }catch(e){}
   try{ renderCardSeg(); }catch(e){}
   try{ if(wxData) renderWeather(); }catch(e){}
   try{ if(selected) openStation(selected); }catch(e){}

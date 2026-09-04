@@ -283,6 +283,61 @@ const CHECKS = [
     },
   },
   {
+    name: 'Arabic is laid out right to left, and every language gets its own alert text',
+    why: 'applyI18n set documentElement.lang and not dir, so Arabic sentences were laid out as English — and because the bidi algorithm takes its base direction from exactly that attribute, a mixed run like "M2 إلى Kadıköy" came out with its parts in the wrong order. The alert text had the matching hole: the rules were run once, into English, and cached, so a reader on the Arabic or French UI got the English sentence or the untranslated Turkish, never their own language. Both are checked here rather than in Node because both are properties of a real document.',
+    run: async (w, d) => {
+      if (typeof w.setLang !== 'function' || typeof w.disMsg !== 'function')
+        return 'the page exposes no way to change language';
+      const ARABIC = /[؀-ۿ]/;
+      /* Fixtures, not the live feed: the scraper rewrites disruptions.json every twenty minutes
+         and this must not start passing or failing on what İstanbul happens to be doing. */
+      const covered = () => ({ ref: 'M7', source: 'metro.istanbul', stations: ['Çağlayan', 'Mahmutbey'],
+        messageTr: 'Onarım çalışması nedeniyle seferler Çağlayan-Mahmutbey istasyonları arasında yapılmaktadır.' });
+      const uncovered = () => ({ ref: 'M2', source: 'metro.istanbul', stations: ['Sanayi'],
+        messageTr: 'Sanayi istasyonunda bir yolcunun intihar girişiminde bulunması nedeniyle ' +
+                   'Sanayi istasyonumuz işletmeye kapatılmıştır.' });
+
+      const before = d.documentElement.lang || 'en';
+      let saved = null;
+      try { saved = w.localStorage.getItem('irn_lang'); } catch (e) { /* storage may be blocked */ }
+      try {
+        w.setLang('ar');
+        if (d.documentElement.dir !== 'rtl')
+          return 'Arabic is still laid out left to right (dir=' + (d.documentElement.dir || 'unset') + ')';
+        const ar = String(w.disMsg(covered()) || '');
+        if (!ARABIC.test(ar)) return 'an Arabic reader was shown: ' + ar.slice(0, 70);
+        const arGap = uncovered();
+        if (!w.disUntranslated(arGap)) return 'wording the rules cannot carry went unlabelled in Arabic';
+        if (String(w.disMsg(arGap)) !== arGap.messageTr) return 'the Arabic fallback is not the untouched original';
+        /* Switching language has to re-render what is already on screen, not just what gets
+           drawn next. The mode chips and the sources panel were both missing from setLang's
+           refresh list, so they kept whatever language the page booted in — read here while
+           Arabic is still the active language, which is the whole point of the check. */
+        const chipIn = () => [...d.querySelectorAll('.mchip')].map(b => (b.textContent || '')).join(' ');
+        const chipsAr = chipIn();
+        if (chipsAr && !ARABIC.test(chipsAr)) return 'the mode chips did not follow the switch to Arabic';
+
+        w.setLang('fr');
+        if (d.documentElement.dir !== 'ltr') return 'the direction stuck on rtl after leaving Arabic';
+        const fr = String(w.disMsg(covered()) || '');
+        if (ARABIC.test(fr)) return 'a French reader was shown Arabic';
+
+        w.setLang('en');
+        const chipsEn = chipIn();
+        if (chipsEn && ARABIC.test(chipsEn)) return 'the mode chips stayed in Arabic on switching to English';
+        const en = String(w.disMsg(covered()) || '');
+        // three languages, three sentences — identical output means one of them is a copy
+        if (fr === en) return 'French and English produced the same sentence: ' + en.slice(0, 70);
+      } finally {
+        try { w.setLang(before); } catch (e) { /* leave the page as we found it */ }
+        try {
+          if (saved === null) w.localStorage.removeItem('irn_lang');
+          else w.localStorage.setItem('irn_lang', saved);
+        } catch (e) { /* storage may be blocked */ }
+      }
+    },
+  },
+  {
     name: 'a funicular’s two cars stay rope-linked',
     why: 'A funicular’s cars hang from one rope over a drum: one descends because the other climbs, so their positions always sum to the track length and they reach opposite ends together. Simulated as independent shuttles they drifted apart within a minute and could sit at the same station at once — which the machinery physically forbids, and which showed on the map as two cars crossing the same platform.',
     run: async (w) => {

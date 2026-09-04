@@ -470,7 +470,7 @@ function buildLegend(){
   GROUP_ORDER.forEach(kind=>{
     const lines = set.filter(l=>l.kind===kind && !l.partOf);   // partOf lines fold into their parent
     if(!lines.length) return;
-    html += `<div class="grp"><div class="grp-h" data-kind="${kind}">${kindLabel(kind)}<span>toggle</span></div><div class="lines-wrap">`;
+    html += `<div class="grp"><div class="grp-h" data-kind="${kind}">${kindLabel(kind)}<span>${svgEsc(t("toggleGroup"))}</span></div><div class="lines-wrap">`;
     lines.forEach(l=>{
       html += `<div class="lchip${lineLayers[l.ref].on?'':' off'}" data-ref="${l.ref}" title="${attrEsc(t('openLineMap'))}"><span class="sw" style="background:${l.color}" title="${attrEsc(t('showHide'))}"></span>${l.ref}</div>`;
     });
