@@ -357,6 +357,61 @@ const CHECKS = [
     },
   },
   {
+    name: 'a disrupted line is marked, and comes back when the fault clears',
+    why: 'The static suite reads the source. Only here can the DRAWN widths be measured — and width was the '
+       + 'defect: an 8.1px caution band over a 3.5px line meant a suspended B2 stopped being blue and became '
+       + 'an orange line matching nothing in the legend. This also walks the round trip the map never used to '
+       + 'make: a line goes down, and then comes back with nothing left behind.',
+    run: async (w) => {
+      if (typeof w.disruptionProbe !== 'function' || typeof w.setDisruptions !== 'function')
+        return 'the disruption probes are gone from the page';
+      const pick = w.disruptionProbe();
+      if (!pick) return 'no line with geometry and stations to test against';
+      const ref = pick.ref;
+      const start = w.disruptionProbe(ref);
+      if (start.lineWeight == null) return 'the line has no drawn core to measure against';
+      const normalDash = start.lineDash, before = start.marks.length;
+      const keep = [];   // the live feed, rebuilt from what the page reports as active
+      let failure = null;
+      try {
+        // a SECTION fault: the stripe marks WHERE, and must stay narrower than the line it marks
+        w.setDisruptions([{ id:'__smoke_seg', ref, scope:'segment', severity:'partial',
+          from: pick.from, to: pick.to, title:'x', message:'x' }]);
+        const seg = w.disruptionProbe(ref);
+        if (!seg.marks.length) failure = 'a section fault drew no marking at all';
+        else {
+          const widest = Math.max.apply(null, seg.marks);
+          if (widest > seg.lineWeight)
+            failure = 'the marking is ' + widest.toFixed(1) + 'px over a ' + seg.lineWeight.toFixed(1) +
+                      'px line — it covers the line it is marking instead of marking it';
+        }
+        // a WHOLE-LINE suspension: the line itself goes dashed, and routing drops it
+        if (!failure) {
+          w.setDisruptions([{ id:'__smoke_susp', ref, scope:'line', severity:'major', title:'x', message:'x' }]);
+          const susp = w.disruptionProbe(ref);
+          if (susp.lineDash === normalDash) failure = 'a suspended line still draws exactly like a running one';
+          else if (!susp.suspended.includes(ref)) failure = 'a suspended line is still routable';
+        }
+        // …and the same fault with an end date already past changes nothing at all
+        if (!failure) {
+          w.setDisruptions([{ id:'__smoke_over', ref, scope:'line', severity:'major',
+            title:'x', message:'x', until:'2020-01-01' }]);
+          const over = w.disruptionProbe(ref);
+          if (over.lineDash !== normalDash) failure = 'a fault that ended in 2020 still has the line dashed';
+          else if (over.marks.length) failure = 'a fault that ended in 2020 is still marked on the map';
+          else if (over.suspended.includes(ref)) failure = 'a fault that ended in 2020 still blocks routing';
+        }
+      } finally {
+        w.setDisruptions(keep);            // clear the injected faults
+        if (typeof w.loadLiveDisruptions === 'function') w.loadLiveDisruptions();   // and restore the real feed
+      }
+      if (failure) return failure;
+      const end = w.disruptionProbe(ref);
+      if (end.lineDash !== normalDash) return 'the line did not get its own styling back after the fault cleared';
+      if (end.marks.length > before) return 'the marking outlived the fault that drew it';
+    },
+  },
+  {
     name: 'the service worker registers',
     run: async (w) => {
       if (w.location.protocol === 'file:') return { skip: 'workers need http(s)' };

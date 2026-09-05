@@ -1,0 +1,35 @@
+name: Basemap health
+
+# CARTO began serving an "API KEY REQUIRED" placeholder for a share of tiles — with HTTP 200,
+# a valid PNG, a plausible size. Nothing failed, so nothing alerted, and a third of the map was
+# advertising for days before anyone looked at it. This is the alarm that was missing.
+#
+# Daily rather than per-push: the app's basemaps are third-party services that can change under
+# a deploy that touched nothing. And the degradation is intermittent, so one clean sample proves
+# only that nothing is wrong right now — it takes repeated runs for a rollout to show itself.
+#
+# Kept out of `npm test` on purpose: that suite has no dependencies and runs offline, and a
+# network check inside it would make every PR hostage to someone else's CDN.
+
+on:
+  schedule:
+    - cron: '17 5 * * *'
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+
+concurrency:
+  group: tiles
+  cancel-in-progress: false
+
+jobs:
+  tiles:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Are the basemaps still serving map data?
+        run: npm run check-tiles

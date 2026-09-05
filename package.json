@@ -8,7 +8,8 @@
     "test:mutation": "node transit_data/testkit/verify-suite.cjs",
     "verify": "npm run build && npm test && npm run test:mutation && npm run status",
     "status": "node transit_data/gen-status.cjs",
-    "scope": "node transit_data/testkit/analyse-scope.cjs"
+    "scope": "node transit_data/testkit/analyse-scope.cjs",
+    "check-tiles": "node transit_data/testkit/check-tiles.cjs"
   },
   "engines": {
     "node": ">=20"

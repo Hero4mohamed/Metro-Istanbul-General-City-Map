@@ -17,11 +17,22 @@ const { execFileSync } = require('child_process');
 
 const ROOT = path.resolve(__dirname, '..', '..');
 const SRC = path.join(ROOT, 'index.html');
-const TMP = path.join(os.tmpdir(), 'raynet-mutant.html');
+/* One path per process. A fixed filename here is shared with every other checkout of this repo
+   on the machine — and there are worktrees. Two verify-suites running at once each overwrote
+   the other's mutant between the write and the spawn, so both reported a random handful of
+   real defects as "not caught": the mutation under test had been replaced on disk by the other
+   run's. Nothing in the output said so, which is the worst possible failure for an instrument
+   whose whole job is to tell you the suite is honest. */
+const TMP = path.join(os.tmpdir(), 'raynet-mutant-' + process.pid + '.html');
 const TESTS = path.join(ROOT, 'transit_data', 'test');
 const SUITES = fs.readdirSync(TESTS).filter(f => f.endsWith('.test.cjs')).map(f => path.join(TESTS, f));
 
 const SRI_ON_SCRIPT = new RegExp('(<script[^>]+unpkg\\.com[^>]*?)\\s+integrity="[^"]*"');
+
+/* Anchor on ONE line. The sources carry mixed line endings, so index.html does too, and a
+   two-line anchor joined with \n silently fails to match — the mutation is then reported
+   SKIPPED rather than caught, which is how three checks here briefly proved nothing. Chain
+   .replace() calls when the edit spans lines. */
 
 const MUTATIONS = [
   {
@@ -250,7 +261,7 @@ const MUTATIONS = [
   {
     name: 'leave a line suspended forever after the works finish',
     expect: 'a suspended line is excluded from routing, not merely warned about',
-    apply: h => h.replace("if(d.until && Date.parse(d.until + 'T23:59:59') < Date.now()) continue;", ''),
+    apply: h => h.replace('    if(!disruptionActive(d)) continue;', ''),
   },
   {
     name: 'search an "arrive by" request at the current clock',
@@ -390,6 +401,93 @@ const MUTATIONS = [
       '  const m=Math.floor(sec/60), s=Math.floor(sec%60);\n' +
       '  return {t:(m>0?m+"m ":"")+String(s).padStart(2,"0")+"s", now:false};'),
   },
+  /* --- the disruption clock, and marking a line without replacing it --- */
+  /* --- basemaps: keyless, capped, and dimmed to the palette --- */
+  {
+    name: 'put a keyed CARTO basemap back',
+    expect: 'every basemap is keyless and depth-capped',
+    apply: h => h.replace("Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}',",
+                          "https://a.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png',"),
+  },
+  {
+    name: 'drop the depth cap so Leaflet asks for tiles past the coverage',
+    expect: 'every basemap is keyless and depth-capped',
+    apply: h => h.replace('maxZoom:20, maxNativeZoom:16, className:', 'maxZoom:20, className:'),
+  },
+  {
+    name: 'stop dimming the basemap the line colours were tuned against',
+    expect: 'the dark basemap is dimmed to the palette it was tuned for',
+    apply: h => h.replace(".base-dim{filter:brightness(.62)", ".base-dim{opacity:1;x-filter:brightness(.62)"),
+  },
+  {
+    name: 'leave the dim on in light mode',
+    expect: 'the dark basemap is dimmed to the palette it was tuned for',
+    apply: h => h.replace('body.light .base-dim{filter:none;}', ''),
+  },
+  {
+    name: 'let a finished works order keep the line shut (the B2 case)',
+    expect: 'a fault with an end date is over the moment that date is out',
+    apply: h => h.replace('  return end >= Date.now();', '  return true;'),
+  },
+  {
+    name: 'let a typo in the until date put a shut line back online',
+    expect: 'a fault with no end date, or an unreadable one, is never silently dropped',
+    apply: h => h.replace('  if(Number.isNaN(end)) return true;', '  if(Number.isNaN(end)) return false;'),
+  },
+  {
+    name: 'count ended faults in the announcements badge again',
+    expect: 'everything that shows a fault reads the same active list',
+    apply: h => h.replace('  const live = activeDisruptions();', '  const live = DISRUPTIONS;'),
+  },
+  {
+    name: 'hand the model the raw feed, ended faults included',
+    expect: 'everything that shows a fault reads the same active list',
+    apply: h => h.replace('      return { count:live.length,', '      return { count:(DISRUPTIONS||[]).length,')
+                  .replace('               alerts:live.map(d => ({ line:d.ref',
+                           '               alerts:(DISRUPTIONS||[]).map(d => ({ line:d.ref'),
+  },
+  {
+    name: 'stop noticing that a fault ended while the page is open',
+    expect: 'the fault set is re-derived while the page is open, and the memo cleared with it',
+    apply: h => h.replace('setInterval(()=>{ if(disrSignature() !== _disrSig) applyDisruptionFeed(); }, 30000);', ''),
+  },
+  {
+    name: 'leave the suspension memo stale when the feed changes',
+    expect: 'the fault set is re-derived while the page is open, and the memo cleared with it',
+    apply: h => h.replace('  clearTimingMemo();              // the suspension answer the router and the sim cache', ''),
+  },
+  {
+    name: 'fatten the marking back over the line it marks',
+    expect: 'the disruption marking is narrower than the line it marks',
+    apply: h => h.replace('  const sw   = Math.max(1.3, core * 0.5);', '  const sw   = Math.max(1.3, core * 1.8);'),
+  },
+  {
+    name: 'turn the soft wash back into a solid caution band',
+    expect: 'the disruption marking is narrower than the line it marks',
+    apply: h => h.replace('                              opacity:0.14, lineCap:', '                              opacity:0.95, lineCap:'),
+  },
+  {
+    name: 'bring back the red-cased yellow caution band',
+    expect: 'the opaque caution band does not come back',
+    apply: h => h.replace('color:col, weight:core+5,', "color:'#F5C518', weight:core+5,"),
+  },
+  {
+    name: 'clear a recovered line to no dash instead of its own',
+    expect: 'a suspended line is dashed, and gets its own dash back',
+    apply: h => h.replace('    const want = susp.has(o.ref) ? SUSP_DASH : o._normDash;',
+      '    const want = susp.has(o.ref) ? SUSP_DASH : null;'),
+  },
+  {
+    name: 'change the dash without repainting the canvas',
+    expect: 'a suspended line is dashed, and gets its own dash back',
+    apply: h => h.replace('    o.pl.redraw();          // canvas only repaints on its own when the weight changes', ''),
+  },
+  {
+    name: 'stripe a suspended line end to end as well as dashing it',
+    expect: 'a suspended line is dashed, and gets its own dash back',
+    apply: h => h.replace('    const bands = suspended ? [] : disruptionPaths(d).filter(c=>c && c.length>=2);',
+      '    const bands = disruptionPaths(d).filter(c=>c && c.length>=2);'),
+  },
 ];
 
 const original = fs.readFileSync(SRC, 'utf8');
@@ -415,9 +513,25 @@ for (const m of MUTATIONS) {
       env: { ...process.env, RAYNET_HTML: TMP },
       encoding: 'utf8',
       stdio: ['ignore', 'pipe', 'pipe'],
+      /* execFileSync buffers 1MB by default. A mutation that breaks the whole script fails most
+         of the suite at once, and each failure carries a TAP diagnostic block with a stack — at
+         93 tests that runs past 1MB, execFileSync throws ENOBUFS, and the truncated stdout no
+         longer contains the "not ok" line we are looking for. Five catastrophic mutations
+         reported themselves UNCAUGHT for exactly that reason: the suite was working and the
+         instrument reading it was not. A verification tool that under-reports as the suite
+         grows is worse than none. */
+      maxBuffer: 256 * 1024 * 1024,
     });
   } catch (e) {
     out = (e.stdout || '') + (e.stderr || '');
+    // A non-zero exit is the NORMAL case here: the suite is supposed to fail. Losing the output
+    // is not, and it looks identical to "not caught" unless we say so.
+    if (e.code === 'ENOBUFS' || /maxBuffer/i.test(String(e.message || ''))) {
+      console.log('  ??  ' + m.name);
+      console.log('      UNREADABLE - the suite\'s output overran the buffer, so this row proves nothing.');
+      problems.push(m.name + ' (output truncated)');
+      continue;
+    }
   }
 
   const escaped = m.expect.replace(/[.*+?^${}()|[\]\\]/g, ch => '\\' + ch);

@@ -468,3 +468,85 @@ test('the uniform radii are tokens, not repeated literals', () => {
   });
   assert.deepStrictEqual(leaks, [], 'pill/circle radii written as literals again: ' + leaks.join(', '));
 });
+
+/* --- 10. a disrupted line is MARKED, not replaced ---------------------------------------------
+   The overlay used to be a red-cased yellow caution band: measured on the shipped page it drew
+   at 8.1px over B2's own 3.5px line — 2.3x its width, fully opaque, in colours belonging to no
+   line on the map. You could see that something was wrong and could no longer see what it was
+   wrong on: a suspended B2 read as an orange line matching nothing in the legend.
+
+   Width is the entire contract. These tests hold the marking narrower than the thing it marks. */
+test('the disruption marking is narrower than the line it marks', () => {
+  const src = H.appScript();
+  const stripe = src.match(/const sw\s+= Math\.max\([\d.]+, core \* ([\d.]+)\);/);
+  assert.ok(stripe, 'the hazard stripe no longer derives its width from the line it marks');
+  assert.ok(parseFloat(stripe[1]) <= 0.6,
+    'the stripe is ' + stripe[1] + ' of the line\'s own width — at that ratio it covers what it marks');
+  const core = src.match(/const core = Math\.max\([\d.]+, base \* ls\);/);
+  assert.ok(core, 'the marking no longer measures itself against the line\'s drawn weight');
+  // the wash exists to give a thin stripe presence when zoomed out; as a fill it would be a band
+  const wash = src.match(/color:col, weight:core\+(\d+),\s*\n?\s*opacity:([\d.]+)/);
+  assert.ok(wash, 'the soft wash under the stripe is gone');
+  assert.ok(parseFloat(wash[2]) <= 0.2,
+    'the wash is at ' + wash[2] + ' opacity — that is a caution band again, not a wash');
+});
+
+test('the opaque caution band does not come back', () => {
+  const src = H.appScript();
+  assert.ok(!/#F5C518/.test(src), 'the opaque yellow caution infill is back over the line');
+  assert.ok(!/#D42A2A/.test(src), 'the red casing is back over the line');
+  assert.ok(!/weight:gw\+3\.4/.test(src), 'the band is being drawn wider than the line again');
+});
+
+test('a suspended line is dashed, and gets its own dash back', () => {
+  const src = H.appScript();
+  assert.ok(/const SUSP_DASH = '3,6';/.test(src), 'a suspended line no longer reads differently from a running one');
+  /* Restoring a REMEMBERED dash is the whole mechanism for "back online": hard-coding null
+     would flatten every line that is legitimately dashed — ferries, planned lines, branches. */
+  assert.ok(/if\(o\._normDash === undefined\) o\._normDash = o\.pl\.options\.dashArray \|\| null;/.test(src),
+    'the line\'s original dash is not remembered, so clearing a fault cannot restore it');
+  assert.ok(/const want = susp\.has\(o\.ref\) \? SUSP_DASH : o\._normDash;/.test(src),
+    'a line that recovers is not put back to its own styling');
+  // canvas does not repaint on a style change unless the weight moved
+  assert.ok(/o\.pl\.setStyle\(\{ dashArray: want \}\);\s*\n\s*o\.pl\.redraw\(\);/.test(src),
+    'the dash change is never painted — canvas only repaints itself when the weight changes');
+  // and a line down end-to-end must not ALSO get a stripe down its whole length
+  assert.ok(/const bands = suspended \? \[\] : disruptionPaths\(d\)/.test(src),
+    'a fully suspended line is dashed AND striped end to end — twice the ink, no extra information');
+});
+
+/* --- 11. the basemaps must stay keyless, and must stay capped ---------------------------------
+   This is a public static site: a key written into the page is a key given away, so a provider
+   that needs one cannot be used here at all. CARTO started enforcing exactly that and did it
+   with HTTP 200 — a valid PNG whose content was the words "API KEY REQUIRED", for a measured
+   29% of tiles in one İstanbul viewport. Nothing in the app could see it.
+
+   maxNativeZoom is the other half. Esri's Dark Gray Canvas advertises LOD 23 in its own
+   metadata and stops carrying data at z16; without the cap Leaflet requests tiles that come
+   back, again with HTTP 200, reading "Map data not yet available". Two providers, same trap. */
+test('every basemap is keyless and depth-capped', () => {
+  const src = H.appScript();
+  assert.ok(!/cartocdn/.test(src), 'a CARTO basemap is back — it serves placeholders without an API key');
+  assert.ok(!/[?&](api_?key|access_?token|key)=/i.test(src.match(/const BASES = \{[\s\S]*?\n\};/)[0] || ''),
+    'a basemap URL carries a key — this page is public, so that key is published with it');
+  const block = src.match(/const BASES = \{[\s\S]*?\n\};/);
+  assert.ok(block, 'the BASES table is gone');
+  const layers = block[0].match(/L\.tileLayer\(/g) || [];
+  const caps = block[0].match(/maxNativeZoom:\s*\d+/g) || [];
+  assert.strictEqual(caps.length, layers.length,
+    `${layers.length} basemaps but ${caps.length} maxNativeZoom caps — an uncapped layer requests ` +
+    'tiles past its coverage and gets a "Map data not yet available" placeholder at HTTP 200');
+});
+
+test('the dark basemap is dimmed to the palette it was tuned for', () => {
+  const src = H.appScript(), css = H.appStyle();
+  assert.ok(/className:'base-dim'/.test(src), 'the dark basemap no longer carries the dimming hook');
+  /* Match the brightness value, not just "filter:". The looser form was satisfied by
+     `body.light .base-dim{filter:none}` further down the sheet, so deleting the dim entirely
+     left the test green — the check was reading the rule that turns the dim OFF. */
+  assert.ok(/\.base-dim\{filter:brightness\(/.test(css),
+    "the .base-dim dimming is gone — Esri's canvas is a mid-grey, and the line colours are tuned for near-black");
+  // and it must be lifted in light mode, where it would darken a basemap meant to be light
+  assert.ok(/body\.light \.base-dim\{filter:none\}/.test(css.replace(/;\}/g, '}')),
+    'the dim is not lifted in light mode, where it darkens a basemap that is meant to be light');
+});

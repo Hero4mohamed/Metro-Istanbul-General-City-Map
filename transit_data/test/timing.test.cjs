@@ -370,8 +370,72 @@ test('a suspended line is excluded from routing, not merely warned about', () =>
   assert.ok(/susp && susp\.size && susp\.has\(m\.ref\)/.test(src),
     'suspended lines are no longer blocked — the planner can route onto a line that is not running');
   // it must respect an expiry, or a line stays "suspended" forever after the works finish
-  assert.ok(/if\(d\.until && Date\.parse\(d\.until \+ 'T23:59:59'\) < Date\.now\(\)\) continue;/.test(src),
+  assert.ok(/if\(!disruptionActive\(d\)\) continue;/.test(src),
     'an expired suspension no longer releases the line');
+});
+
+/* --- the disruption clock -------------------------------------------------------------------
+   `until` is the only thing standing between "the works are on" and "the works are over", and
+   for a while four places consulted it and three did not — so B2's finished engineering works
+   kept a caution band painted across the line while the router happily planned journeys on it.
+   These tests exercise the boundary directly rather than grepping for the arithmetic, because
+   the arithmetic moving is exactly the change that should be allowed. */
+function lift(name, nowIso) {
+  const src = H.appScript();
+  const at = src.indexOf('function ' + name + '(');
+  assert.ok(at > 0, name + ' is gone from the shipped page');
+  let i = src.indexOf('{', at), depth = 0, end = -1;
+  for (let j = i; j < src.length; j++) {
+    if (src[j] === '{') depth++;
+    else if (src[j] === '}' && --depth === 0) { end = j + 1; break; }
+  }
+  assert.ok(end > 0, 'could not read the body of ' + name);
+  const clock = { now: () => new Date(nowIso).getTime(), parse: Date.parse };
+  const mod = { exports: {} };
+  new Function('Date', 'module', src.slice(at, end) + '\nmodule.exports=' + name + ';')(clock, mod);
+  return mod.exports;
+}
+
+test('a fault with an end date is over the moment that date is out', () => {
+  const works = { id: 'w', ref: 'B2', until: '2026-08-31' };
+  assert.strictEqual(lift('disruptionActive', '2026-08-30T09:00:00')(works), true,  'the day before');
+  assert.strictEqual(lift('disruptionActive', '2026-08-31T23:00:00')(works), true,  'the last evening — still shut');
+  assert.strictEqual(lift('disruptionActive', '2026-09-01T00:30:00')(works), false, 'half an hour later — running again');
+  assert.strictEqual(lift('disruptionActive', '2026-09-03T12:00:00')(works), false, 'three days on');
+});
+
+test('a fault with no end date, or an unreadable one, is never silently dropped', () => {
+  const active = lift('disruptionActive', '2030-01-01T00:00:00');
+  assert.strictEqual(active({ id: 'x', ref: 'M5' }), true, 'an open-ended fault expired on its own');
+  assert.strictEqual(active({ id: 'y', ref: 'M5', until: 'next spring' }), true,
+    'a date we cannot parse cleared the fault — a typo in the feed would put a shut line back online');
+  assert.strictEqual(active(null), false, 'a missing entry counted as a live fault');
+});
+
+test('everything that shows a fault reads the same active list', () => {
+  const src = H.appScript();
+  // the panel, its badge, the map overlay, the follow-alerts and the assistant all filter
+  assert.ok(/const live = activeDisruptions\(\);\s*\n\s*document\.getElementById\('annCount'\)\.textContent = live\.length \+ ops\.length;/.test(src),
+    'the announcements badge counts faults that have ended');
+  assert.ok(/activeDisruptions\(\)\.forEach\(d=>\{/.test(src), 'the map overlay draws faults that have ended');
+  assert.ok(/for\(const d of activeDisruptions\(\)\)/.test(src), 'follow-alerts fire for faults that have ended');
+  assert.ok(/const al = activeDisruptions\(\)\.filter\(x => x\.ref === ref\)/.test(src),
+    'the assistant reports faults that have ended when asked about a line');
+  assert.ok(/const all = activeDisruptions\(\);/.test(src),
+    'the offline assistant reports faults that have ended');
+  assert.ok(!/\(DISRUPTIONS\|\|\[\]\)\.map\(d => \(\{ line:d\.ref/.test(src),
+    'the service_alerts tool hands the model the raw feed again, ended faults included');
+});
+
+test('the fault set is re-derived while the page is open, and the memo cleared with it', () => {
+  const src = H.appScript();
+  assert.ok(/function disrSignature\(\)/.test(src) && /setInterval\(\(\)=>\{ if\(disrSignature\(\) !== _disrSig\) applyDisruptionFeed\(\); \}/.test(src),
+    'nothing notices a fault ending while the page is open');
+  // lineHours caches the suspension; without this the router answers from the boot-time feed
+  assert.ok(/function applyDisruptionFeed\(\)\{[\s\S]*?clearTimingMemo\(\);/.test(src),
+    'the suspension memo is not cleared when the feed changes — the router keeps the old answer');
+  assert.ok(/DISRUPTIONS = data; applyDisruptionFeed\(\);/.test(src),
+    'the live fetch no longer re-derives everything from the new feed');
 });
 
 test('ranking compares door-to-door time, not travel time alone', () => {

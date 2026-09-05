@@ -129,11 +129,26 @@ function lineTiming(ref){
    by clearTimingMemo() when the disruption feed refreshes. */
 let _lineHoursMemo = Object.create(null);
 function clearTimingMemo(){ _lineTimingMemo = Object.create(null); _lineHoursMemo = Object.create(null); }
+/* ---- ONE disruption clock. ----------------------------------------------------------------
+   `until` is an end-of-day date: the fault is over once that day is out, and the line is back
+   in normal service. The router and the operating-hours check each carried their own copy of
+   this arithmetic; the map overlay, the announcements list, the follow-alerts and the assistant
+   carried none, so B2's engineering works kept a caution band painted over the line — and kept
+   the line's own colour hidden underneath it — for as long as the entry sat in the feed. The
+   date is the operator's; expiry is not a judgement call, so it belongs in one place. */
+function disruptionActive(d){
+  if(!d) return false;
+  if(!d.until) return true;                                  // open-ended: active until withdrawn
+  const end = Date.parse(d.until + 'T23:59:59');
+  if(Number.isNaN(end)) return true;                         // unparseable date → never silently drop a fault
+  return end >= Date.now();
+}
+function activeDisruptions(){ return (DISRUPTIONS||[]).filter(disruptionActive); }
 function lineHours(ref){
   const hit = _lineHoursMemo[ref];
   if(hit) return hit;
   const d=(DISRUPTIONS||[]).find(x=> x.ref===ref && x.scope==='line' && x.severity==='major'
-        && (!x.until || Date.parse(x.until+'T23:59:59')>=Date.now()));
+        && disruptionActive(x));
   const h=(lineTiming(ref).hours)||'';
   const f = { susp:d||null, hours:h, always:/24/.test(h), start:null, end:null, opens:null };
   if(!f.always){
