@@ -402,6 +402,28 @@ const MUTATIONS = [
       '  return {t:(m>0?m+"m ":"")+String(s).padStart(2,"0")+"s", now:false};'),
   },
   /* --- the disruption clock, and marking a line without replacing it --- */
+  /* --- basemaps: keyless, capped, and dimmed to the palette --- */
+  {
+    name: 'put a keyed CARTO basemap back',
+    expect: 'every basemap is keyless and depth-capped',
+    apply: h => h.replace("Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}',",
+                          "https://a.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png',"),
+  },
+  {
+    name: 'drop the depth cap so Leaflet asks for tiles past the coverage',
+    expect: 'every basemap is keyless and depth-capped',
+    apply: h => h.replace('maxZoom:20, maxNativeZoom:16, className:', 'maxZoom:20, className:'),
+  },
+  {
+    name: 'stop dimming the basemap the line colours were tuned against',
+    expect: 'the dark basemap is dimmed to the palette it was tuned for',
+    apply: h => h.replace(".base-dim{filter:brightness(.62)", ".base-dim{opacity:1;x-filter:brightness(.62)"),
+  },
+  {
+    name: 'leave the dim on in light mode',
+    expect: 'the dark basemap is dimmed to the palette it was tuned for',
+    apply: h => h.replace('body.light .base-dim{filter:none;}', ''),
+  },
   {
     name: 'let a finished works order keep the line shut (the B2 case)',
     expect: 'a fault with an end date is over the moment that date is out',

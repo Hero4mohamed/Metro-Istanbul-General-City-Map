@@ -2,17 +2,22 @@
    so every deploy activates immediately and the installed app self-updates.
    Strategy: NETWORK-FIRST for the page (updates always win; cached copy only when offline),
    stale-while-revalidate for static assets/CDNs, and NO caching for live data APIs. */
-const VERSION = '20260904095926';
+const VERSION = '20260905125544';
 const SHELL  = 'raynet-shell-' + VERSION;
 const STATIC = 'raynet-static-v1';
 const STATIC_HOSTS = ['unpkg.com', 'fonts.googleapis.com', 'fonts.gstatic.com'];
-const TILES  = 'raynet-tiles-v1';
-const TILE_HOST = /(^|\.)(basemaps\.cartocdn\.com|cartocdn\.com|arcgisonline\.com|tile\.openstreetmap\.org)$/;
+/* v2, and the activate handler below drops v1. Tiles are cached by URL, so the CARTO entries
+   would never be read again after the switch to Esri — but a phone that browsed the map during
+   the outage is holding up to 3,000 cached "API KEY REQUIRED" images, and they would sit there
+   occupying the cap until enough new tiles pushed them out. Naming a new cache reclaims that
+   space on the next visit instead. */
+const TILES  = 'raynet-tiles-v2';
+const TILE_HOST = /(^|\.)(arcgisonline\.com|tile\.openstreetmap\.org)$/;
 const TILE_CAP  = 3000;          // ~90 MB of 256px tiles; trimmed oldest-first
 
 /* Basemap tiles are cached AS YOU VIEW THEM, so an area you have actually looked at still
    draws when you are offline. Deliberately NOT a bulk download: mass-fetching a provider's
-   tile pyramid breaks CARTO's and OSM's usage policies. Everything else the app needs to
+   tile pyramid breaks Esri's and OSM's usage policies. Everything else the app needs to
    plan a trip — network geometry, stations, fares, timetables — is already local. */
 let tilePuts = 0;
 async function trimTiles(){
@@ -34,7 +39,9 @@ self.addEventListener('install', () => self.skipWaiting());
 self.addEventListener('activate', e => {
   e.waitUntil((async () => {
     const keys = await caches.keys();
-    await Promise.all(keys.filter(k => k.startsWith('raynet-shell-') && k !== SHELL).map(k => caches.delete(k)));
+    await Promise.all(keys.filter(k => (k.startsWith('raynet-shell-') && k !== SHELL) ||
+                                       (k.startsWith('raynet-tiles-')  && k !== TILES))
+                          .map(k => caches.delete(k)));
     await self.clients.claim();
   })());
 });

@@ -204,11 +204,11 @@ const CSP = [
   "script-src 'self' " + sha256(inlineScript[1]) + ' https://unpkg.com',
   "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://unpkg.com",
   'font-src https://fonts.gstatic.com data:',
-  // tiles come from CARTO and Esri; card art and marker icons are data: URIs
-  "img-src 'self' data: blob: https://*.basemaps.cartocdn.com https://server.arcgisonline.com",
+  // all three basemaps come from Esri; card art and marker icons are data: URIs
+  "img-src 'self' data: blob: https://server.arcgisonline.com",
   // every host the app fetches from, including tiles (the offline save uses fetch, not <img>)
   ["connect-src 'self'",
-   'https://*.basemaps.cartocdn.com', 'https://server.arcgisonline.com',
+   'https://server.arcgisonline.com',
    'https://photon.komoot.io', 'https://overpass-api.de', 'https://api.ibb.gov.tr',
    'https://api.open-meteo.com', 'https://routing.openstreetmap.de',
    'https://api.anthropic.com'].join(' '),

@@ -514,3 +514,39 @@ test('a suspended line is dashed, and gets its own dash back', () => {
   assert.ok(/const bands = suspended \? \[\] : disruptionPaths\(d\)/.test(src),
     'a fully suspended line is dashed AND striped end to end — twice the ink, no extra information');
 });
+
+/* --- 11. the basemaps must stay keyless, and must stay capped ---------------------------------
+   This is a public static site: a key written into the page is a key given away, so a provider
+   that needs one cannot be used here at all. CARTO started enforcing exactly that and did it
+   with HTTP 200 — a valid PNG whose content was the words "API KEY REQUIRED", for a measured
+   29% of tiles in one İstanbul viewport. Nothing in the app could see it.
+
+   maxNativeZoom is the other half. Esri's Dark Gray Canvas advertises LOD 23 in its own
+   metadata and stops carrying data at z16; without the cap Leaflet requests tiles that come
+   back, again with HTTP 200, reading "Map data not yet available". Two providers, same trap. */
+test('every basemap is keyless and depth-capped', () => {
+  const src = H.appScript();
+  assert.ok(!/cartocdn/.test(src), 'a CARTO basemap is back — it serves placeholders without an API key');
+  assert.ok(!/[?&](api_?key|access_?token|key)=/i.test(src.match(/const BASES = \{[\s\S]*?\n\};/)[0] || ''),
+    'a basemap URL carries a key — this page is public, so that key is published with it');
+  const block = src.match(/const BASES = \{[\s\S]*?\n\};/);
+  assert.ok(block, 'the BASES table is gone');
+  const layers = block[0].match(/L\.tileLayer\(/g) || [];
+  const caps = block[0].match(/maxNativeZoom:\s*\d+/g) || [];
+  assert.strictEqual(caps.length, layers.length,
+    `${layers.length} basemaps but ${caps.length} maxNativeZoom caps — an uncapped layer requests ` +
+    'tiles past its coverage and gets a "Map data not yet available" placeholder at HTTP 200');
+});
+
+test('the dark basemap is dimmed to the palette it was tuned for', () => {
+  const src = H.appScript(), css = H.appStyle();
+  assert.ok(/className:'base-dim'/.test(src), 'the dark basemap no longer carries the dimming hook');
+  /* Match the brightness value, not just "filter:". The looser form was satisfied by
+     `body.light .base-dim{filter:none}` further down the sheet, so deleting the dim entirely
+     left the test green — the check was reading the rule that turns the dim OFF. */
+  assert.ok(/\.base-dim\{filter:brightness\(/.test(css),
+    "the .base-dim dimming is gone — Esri's canvas is a mid-grey, and the line colours are tuned for near-black");
+  // and it must be lifted in light mode, where it would darken a basemap meant to be light
+  assert.ok(/body\.light \.base-dim\{filter:none\}/.test(css.replace(/;\}/g, '}')),
+    'the dim is not lifted in light mode, where it darkens a basemap that is meant to be light');
+});

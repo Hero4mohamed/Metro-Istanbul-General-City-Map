@@ -104,7 +104,7 @@ function cardFaceHTML(key, c){
 /* Offline basemap. Tiles are cached as you pan, so anywhere you have looked at already works
    offline; this button additionally walks the CURRENT view over a few zoom levels so you can
    prepare an area on purpose before losing signal. It is deliberately bounded and
-   user-initiated — bulk-harvesting a provider's tile pyramid is against CARTO's and OSM's
+   user-initiated — bulk-harvesting a provider's tile pyramid is against Esri's and OSM's
    usage policies, and is not what this does. Everything else needed to plan a trip (network,
    stations, fares, timetables, the routing graph) is already local. */
 const OFF_TILE_BUDGET = 700;        // hard ceiling per press

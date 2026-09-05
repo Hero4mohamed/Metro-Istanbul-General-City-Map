@@ -115,6 +115,13 @@
     -webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility;}
   ::selection{background:rgba(var(--ok-rgb),.32);color:#fff;}
   #map{position:fixed;inset:0;background:var(--obsidian);}
+  /* Esri's Dark Gray Canvas is a mid-grey, not the near-black CARTO dark_all it replaces, and
+     the line colours are tuned to sit on near-black — on the lighter ground they lose contrast
+     and the map stops reading as a transit diagram. Darkened here rather than by picking a
+     different basemap, because this is the only keyless dark canvas with real coverage. The
+     class is set on the layer (className:'base-dim'), so it never touches satellite or streets. */
+  .base-dim{filter:brightness(.62) contrast(1.08) saturate(.85);}
+  body.light .base-dim{filter:none;}
   #trainCanvas{position:fixed;inset:0;pointer-events:none;z-index:450;}
 
   /* unified slim scrollbars */

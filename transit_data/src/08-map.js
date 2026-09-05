@@ -10,18 +10,37 @@ L.control.zoom({ position:'bottomright' });
    rather than opaque ones. Opaque entries are padded by the browser to stop size-probing:
    342 cached tiles were being reported as 4.8 GB against a 4.8 GB quota, which both
    mis-reports usage and would exhaust a phone's storage quota within a few hundred tiles.
-   CARTO and Esri both send Access-Control-Allow-Origin, so this costs nothing. */
+   Esri sends Access-Control-Allow-Origin, so this costs nothing. */
 /* keepBuffer holds a wider ring of tiles around the view so panning does not expose bare
    background, and updateWhenZooming stops us queueing tiles mid-animation that are stale
    before they arrive — fewer requests in flight at once, which is also why they land faster. */
 const TILE_OPTS = { crossOrigin:'anonymous', keepBuffer:3, updateWhenZooming:false };
+/* Keyless basemaps only. This is a public static site: a key written into the page is a key
+   given away, so a provider that requires one cannot be used here at all.
+
+   CARTO withdrew unauthenticated access to its basemaps. It did not start returning errors —
+   it started returning HTTP 200 carrying a tile whose entire content is the words "API KEY
+   REQUIRED". That is worse than a failure: the tileerror retry below never fires, the service
+   worker happily caches it, and the map goes on "working" while showing no map. Esri serves
+   equivalent styles without a key, and the satellite layer already came from there.
+
+   maxNativeZoom is not optional. Dark Gray Canvas advertises LOD 23 in its own service
+   metadata but its tile pyramid stops carrying data at z16 — above that it returns, again with
+   HTTP 200, a placeholder reading "Map data not yet available". Pinning the request depth makes
+   Leaflet upscale the last real tile instead of asking for one that does not exist, which is
+   the difference between a slightly soft map and the same blank-with-writing failure we just
+   left. Measured per style rather than taken from the metadata, because the metadata is wrong. */
+const ESRI = 'https://server.arcgisonline.com/ArcGIS/rest/services/';
 const BASES = {
-  dark:    L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',
-            Object.assign({ subdomains:'abcd', maxZoom:20, attribution:'&copy; OpenStreetMap &copy; CARTO' }, TILE_OPTS)),
-  voyager: L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png',
-            Object.assign({ subdomains:'abcd', maxZoom:20, attribution:'&copy; OpenStreetMap &copy; CARTO' }, TILE_OPTS)),
-  sat:     L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
-            Object.assign({ maxZoom:19, attribution:'&copy; Esri, Maxar, Earthstar Geographics' }, TILE_OPTS))
+  dark:    L.tileLayer(ESRI + 'Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}',
+            Object.assign({ maxZoom:20, maxNativeZoom:16, className:'base-dim',
+              attribution:'&copy; Esri, HERE, Garmin, &copy; OpenStreetMap contributors' }, TILE_OPTS)),
+  voyager: L.tileLayer(ESRI + 'World_Street_Map/MapServer/tile/{z}/{y}/{x}',
+            Object.assign({ maxZoom:20, maxNativeZoom:19,
+              attribution:'&copy; Esri, HERE, Garmin, USGS, &copy; OpenStreetMap contributors' }, TILE_OPTS)),
+  sat:     L.tileLayer(ESRI + 'World_Imagery/MapServer/tile/{z}/{y}/{x}',
+            Object.assign({ maxZoom:20, maxNativeZoom:19,
+              attribution:'&copy; Esri, Vantor, Earthstar Geographics' }, TILE_OPTS))
 };
 /* A tile that errors stays blank until something happens to re-create it, so one dropped
    request left a permanent hole in the map. Re-request it a few times with backoff. Leaflet
