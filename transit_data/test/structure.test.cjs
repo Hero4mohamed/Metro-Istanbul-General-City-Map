@@ -307,11 +307,20 @@ test('token coverage of the stylesheet does not regress', () => {
 /* Merges EVERY block with this selector. An experience may declare its tokens in more than one
    place — Paper states its palette next to the colour reasoning and its type ramp next to the
    density reasoning — and reading only the first block reported the second half as missing. */
+/* A block ends at its FIRST closing brace, and comments are removed before matching.
+
+   It used to end at the next "\n  }", which only works if every rule is written across several
+   lines. Paper has a one-line rule, `body.paper{--r-pill:6px;}`, with no newline before its
+   brace — so the match ran on past it and swallowed the whole of the NEXT token block, which
+   was Atlas's, the day Atlas was inserted after Paper. Paper then appeared to define tokens it
+   does not, and two of its guarantees (it restates the whole palette; it clears AA) kept
+   passing against a palette with a hole in it. The mutation suite caught that, not the tests. */
 function tokenBlock(css, selector) {
-  const re = new RegExp(selector.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '\\{([\\s\\S]*?)\\n  \\}', 'g');
+  const bare = css.replace(/\/\*[\s\S]*?\*\//g, '');
+  const re = new RegExp('(?:^|[\\s}])' + selector.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '\\{([^}]*)\\}', 'g');
   const out = {};
   let m, found = false;
-  while ((m = re.exec(css)) !== null) {
+  while ((m = re.exec(bare)) !== null) {
     found = true;
     for (const d of m[1].matchAll(/(--[a-z0-9-]+)\s*:\s*([^;]+);/g)) out[d[1]] = d[2].trim();
   }
@@ -521,32 +530,112 @@ test('a suspended line is dashed, and gets its own dash back', () => {
    with HTTP 200 — a valid PNG whose content was the words "API KEY REQUIRED", for a measured
    29% of tiles in one İstanbul viewport. Nothing in the app could see it.
 
-   maxNativeZoom is the other half. Esri's Dark Gray Canvas advertises LOD 23 in its own
-   metadata and stops carrying data at z16; without the cap Leaflet requests tiles that come
-   back, again with HTTP 200, reading "Map data not yet available". Two providers, same trap. */
+   maxNativeZoom is the other half. Esri's tile pyramids stop carrying data at a depth the
+   service metadata does not admit to (Dark Gray Canvas advertises LOD 23 and ends at z16);
+   without the cap Leaflet requests tiles that come back, again with HTTP 200, reading "Map data
+   not yet available". Two providers, same trap. */
 test('every basemap is keyless and depth-capped', () => {
   const src = H.appScript();
   assert.ok(!/cartocdn/.test(src), 'a CARTO basemap is back — it serves placeholders without an API key');
-  assert.ok(!/[?&](api_?key|access_?token|key)=/i.test(src.match(/const BASES = \{[\s\S]*?\n\};/)[0] || ''),
-    'a basemap URL carries a key — this page is public, so that key is published with it');
   const block = src.match(/const BASES = \{[\s\S]*?\n\};/);
   assert.ok(block, 'the BASES table is gone');
-  const layers = block[0].match(/L\.tileLayer\(/g) || [];
-  const caps = block[0].match(/maxNativeZoom:\s*\d+/g) || [];
-  assert.strictEqual(caps.length, layers.length,
-    `${layers.length} basemaps but ${caps.length} maxNativeZoom caps — an uncapped layer requests ` +
-    'tiles past its coverage and gets a "Map data not yet available" placeholder at HTTP 200');
+  assert.ok(!/[?&](api_?key|access_?token|key)=/i.test(block[0]),
+    'a basemap URL carries a key — this page is public, so that key is published with it');
+  const layers = (block[0].match(/L\.tileLayer\(|new AtlasTiles\(/g) || []).length;
+  const caps = (block[0].match(/maxNativeZoom:\s*\d+/g) || []).length;
+  assert.ok(layers >= 3, 'expected the dark, light and satellite basemaps, found ' + layers);
+  assert.strictEqual(caps, layers,
+    `${layers} basemaps but ${caps} maxNativeZoom caps — an uncapped layer requests tiles past its ` +
+    'coverage and gets a "Map data not yet available" placeholder at HTTP 200');
 });
 
-test('the dark basemap is dimmed to the palette it was tuned for', () => {
-  const src = H.appScript(), css = H.appStyle();
-  assert.ok(/className:'base-dim'/.test(src), 'the dark basemap no longer carries the dimming hook');
-  /* Match the brightness value, not just "filter:". The looser form was satisfied by
-     `body.light .base-dim{filter:none}` further down the sheet, so deleting the dim entirely
-     left the test green — the check was reading the rule that turns the dim OFF. */
-  assert.ok(/\.base-dim\{filter:brightness\(/.test(css),
-    "the .base-dim dimming is gone — Esri's canvas is a mid-grey, and the line colours are tuned for near-black");
-  // and it must be lifted in light mode, where it would darken a basemap meant to be light
-  assert.ok(/body\.light \.base-dim\{filter:none\}/.test(css.replace(/;\}/g, '}')),
-    'the dim is not lifted in light mode, where it darkens a basemap that is meant to be light');
+/* --- 12. Atlas: the default experience ------------------------------------------------------
+   The map and the chrome designed as one object, and a regrade of the basemap rather than a
+   filter over it. These guard what is easy to lose: that it IS the default, that it restates
+   its palette completely, that it meets AA on its own surface, and that it is a structural
+   argument and not a recolour. */
+test('Atlas is the default experience, and the others are still selectable', () => {
+  const script = H.appScript(), html = H.html();
+  assert.ok(/const DEFAULT_UI_STYLE = 'atlas';/.test(script), 'Atlas is no longer the default');
+  const m = /const UI_STYLES = \[([^\]]+)\]/.exec(script);
+  const styles = [...m[1].matchAll(/'([a-z]+)'/g)].map(x => x[1]);
+  for (const s of ['atlas', 'neon', 'calm', 'paper'])
+    assert.ok(styles.includes(s), s + ' is gone from the experiences — nothing is to be removed, only the default moved');
+  assert.ok(html.indexOf('data-uis="atlas"') >= 0 && html.indexOf('data-uis="neon"') >= 0, 'a control is missing');
+  // a saved choice always wins: only a device with NO saved style moves to the new default
+  /* Pin the INITIALISER itself. The same ternary also appears in setUiStyle(), so matching it
+     anywhere was satisfied by that copy and removing the one that reads the saved choice at
+     boot left this green — found by the mutation suite, not by this test. */
+  assert.ok(/localStorage\.getItem\('irn_uistyle'\);\s*return UI_STYLES\.indexOf\(v\) >= 0 \? v : DEFAULT_UI_STYLE;/.test(script),
+    'a saved experience no longer takes precedence over the default at boot');
+});
+
+test('Atlas restates the whole palette, in both themes', () => {
+  const css = H.appStyle();
+  const base = tokenBlock(css, ':root');
+  const dark = tokenBlock(css, 'body.atlas');
+  const light = tokenBlock(css, 'body.atlas.light');
+  const colourish = Object.keys(base).filter(k => /^(--(?:ok|warn|danger|gold|violet|sky|crimson)-(?:ink|rgb)|--accent|--accent-2|--text|--muted|--dim|--panel|--obsidian|--stroke|--stroke-2|--surface|--surface-2|--track|--ring|--btn-ink|--grad-accent|--gold)$/.test(k));
+  const dMissing = colourish.filter(k => !(k in dark)), lMissing = colourish.filter(k => !(k in light));
+  assert.deepStrictEqual(dMissing, [], 'Atlas (night) inherits these from the neon palette: ' + dMissing.join(', '));
+  assert.deepStrictEqual(lMissing, [], 'Atlas (day) inherits these from the neon palette: ' + lMissing.join(', '));
+});
+
+test('Atlas meets AA on its own surface, in both themes', () => {
+  const css = H.appStyle();
+  for (const [label, sel] of [['night', 'body.atlas'], ['day', 'body.atlas.light']]) {
+    const t = tokenBlock(css, sel);
+    const bg = srgb(t['--obsidian']), fails = [];
+    for (const k of Object.keys(t)) {
+      if (k === '--btn-ink') continue;                   // measured against the accent gradient below
+      if (!/-ink$|^--text$|^--muted$|^--dim$|^--accent$/.test(k)) continue;
+      if (!/^#[0-9a-fA-F]{6}$/.test(t[k])) continue;
+      const r = contrast(srgb(t[k]), bg);
+      if (r < 4.5) fails.push(k + ' ' + r.toFixed(2) + ' on ' + t['--obsidian']);
+    }
+    /* the gradient is what buttons actually paint, so BOTH of its stops are checked, not just
+       --accent: a pretty gradient whose lighter end fails under white ink is a real defect */
+    const stops = [...(t['--grad-accent'] || '').matchAll(/#[0-9a-fA-F]{6}/g)].map(x => x[0]);
+    assert.ok(stops.length >= 2, label + ': --grad-accent has no readable stops');
+    for (const st of stops) {
+      const r = contrast(srgb(t['--btn-ink']), srgb(st));
+      if (r < 4.5) fails.push('--btn-ink ' + r.toFixed(2) + ' on gradient stop ' + st);
+    }
+    assert.deepStrictEqual(fails, [], 'Atlas ' + label + ' has tiers below WCAG AA: ' + fails.join(', '));
+  }
+});
+
+test('Atlas is a structural change, not only a palette', () => {
+  const css = H.appStyle();
+  const rules = (css.match(/body\.atlas[^{]*\{[^}]*\}/g) || [])
+    .filter(r => !/^\s*body\.atlas(\.light)?\s*\{/.test(r)).join('\n');
+  assert.ok(/border-radius\s*:\s*16px/.test(rules), 'Atlas no longer sets its card radius');
+  assert.ok(/box-shadow\s*:\s*0 1px 2px/.test(rules), 'Atlas no longer replaces the neon bloom with a quiet shadow');
+  assert.ok(/body\.atlas \.leaflet-bar a\{background:var\(--panel\)/.test(css),
+    'the zoom controls are hard-coded dark again — by day they sit as dark chips on a pale map');
+  assert.ok(rules.split('\n').length >= 10, 'Atlas has shrunk to a palette swap');
+});
+
+test('line outlines replace the glow, and the glow comes back for the other experiences', () => {
+  const src = H.appScript();
+  assert.ok(/function applyLineStyle\(\)/.test(src), 'applyLineStyle is gone');
+  assert.ok(/o\.base = o\.coreBase \+ CASING_PAD;/.test(src), 'Atlas no longer sizes the outline from the core');
+  assert.ok(/o\.base = o\.glowBase;/.test(src),
+    'the other experiences no longer get their glow width back — switching away from Atlas would leave outlines behind');
+  // the outline is the glow polyline repurposed: a second polyline per path would double the canvas work
+  assert.ok(/linePolys\.push\(glowE, coreE\)/.test(src), 'each path no longer shares one polyline between glow and outline');
+  // a dashed line must get a dashed outline, or a solid one under it hides "not in normal service"
+  assert.ok(/dashArray:\(o\.pair && o\.pair\.pl\.options\.dashArray\) \|\| null/.test(src),
+    'the outline no longer follows its line\'s dash — a suspended line would look ordinary again');
+});
+
+test('everything drawn on the map follows the BASEMAP, not the UI theme', () => {
+  const src = H.appScript();
+  assert.ok(/function mapTone\(\)\{ return curBaseKey === 'dark' \? 'night'/.test(src), 'the map tone no longer derives from the basemap');
+  // labels: ink and halo come from the tone, not from literals tuned for one background
+  assert.ok(/tctx\.strokeStyle = T\.halo;/.test(src) && /T\.labelMulti : T\.label/.test(src),
+    'station labels are hard-coded again — white text on a pale map is unreadable');
+  assert.ok(!/tctx\.strokeStyle = "rgba\(7,10,16,0\.92\)"/.test(src), 'the dark-only label halo is back');
+  // setBase must re-tone, or switching the basemap leaves the old outlines and labels behind
+  assert.ok(/curBaseKey=b;[\s\S]{0,200}applyMapTone\(\);/.test(src), 'setBase no longer re-applies the map tone');
 });

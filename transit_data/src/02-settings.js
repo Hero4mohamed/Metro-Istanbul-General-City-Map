@@ -8,12 +8,19 @@ let themePref = (function(){ const s=lsStr('irn_theme'); if(s==='light'||s==='da
   return (window.matchMedia && matchMedia('(prefers-color-scheme: light)').matches) ? 'light' : 'dark'; })();
 let routePref = (function(){ const s=lsStr('irn_routePref'); return (s==='fast'||s==='easy')?s:'fast'; })();
 function resolveTheme(pref){ if(pref==='auto'){ const h=new Date().getHours(); return (h>=19||h<7)?'dark':'light'; } return pref==='light'?'light':'dark'; }
+/* The browser's address bar / status bar colour, so the page and the chrome around it are one
+   surface. Atlas states its ground exactly; the other experiences keep their established values. */
+function syncThemeColor(actual){
+  const atlas = (typeof uiStyle !== 'undefined' && uiStyle === 'atlas');
+  const tc = document.querySelector('meta[name="theme-color"]');
+  if(tc) tc.setAttribute('content', atlas ? (actual==='light' ? '#F3F0E9' : '#1C2331') : (actual==='light' ? '#E9EEF5' : '#070A12'));
+}
 function applyTheme(pref, syncBase){
   themePref = (pref==='light'||pref==='auto') ? pref : 'dark';
   try{ localStorage.setItem('irn_theme', themePref); }catch(e){}
   const actual = resolveTheme(themePref);
   document.body.classList.toggle('light', actual==='light');
-  const tc=document.querySelector('meta[name="theme-color"]'); if(tc) tc.setAttribute('content', actual==='light'?'#E9EEF5':'#070A12');
+  syncThemeColor(actual);
   document.querySelectorAll('#themeSeg button').forEach(b=> b.classList.toggle('active', b.dataset.theme===themePref));
   // keep the map basemap in step with the UI theme (unless the user is on Satellite)
   if(syncBase && typeof setBase==='function'){
@@ -324,22 +331,25 @@ function applyDisplayPrefs(){
 /* The visual experiences. Each is a body class that restates the design tokens and, where it
    is making a different argument rather than a different palette, a small set of structural
    rules. Kept as a list so adding one is a data change, not a new branch in every consumer. */
-const UI_STYLES = ['neon', 'calm', 'paper'];
+const UI_STYLES = ['atlas', 'neon', 'calm', 'paper'];
+/* Atlas is the default. Neon was, until the basemap and the chrome were redesigned together; it
+   stays selectable, and anyone who picked a style explicitly keeps it — only a device with no
+   saved choice moves. `neon` is the one style with no body class of its own (it IS the base
+   stylesheet), which is why it is special-cased below rather than listed. */
+const DEFAULT_UI_STYLE = 'atlas';
 let uiStyle = (function(){ try{ const v=localStorage.getItem('irn_uistyle');
-  return UI_STYLES.indexOf(v) >= 0 ? v : 'neon'; }catch(e){ return 'neon'; } })();
+  return UI_STYLES.indexOf(v) >= 0 ? v : DEFAULT_UI_STYLE; }catch(e){ return DEFAULT_UI_STYLE; } })();
 function setUiStyle(v, save){
-  uiStyle = UI_STYLES.indexOf(v) >= 0 ? v : 'neon';
+  uiStyle = UI_STYLES.indexOf(v) >= 0 ? v : DEFAULT_UI_STYLE;
   for(const s of UI_STYLES) if(s !== 'neon') document.body.classList.toggle(s, uiStyle === s);
   if(save){ try{ localStorage.setItem('irn_uistyle', uiStyle); }catch(e){} }
   document.querySelectorAll('#styleSeg button').forEach(b=> b.classList.toggle('active', b.dataset.uis===uiStyle));
   /* The map's line glow is DRAWN, not styled, so no stylesheet can reach it — each experience
      has to say how much of it it wants. Neon keeps the full bloom, Calm thins it to a hint,
-     and Paper removes it: its whole argument is that the map is a document, and a document
-     does not glow. */
-  if(typeof linePolys!=='undefined'){
-    const op = uiStyle==='calm' ? 0.07 : (uiStyle==='paper' ? 0 : null);
-    linePolys.forEach(o=>{ if(o.glow) o.pl.setStyle({ opacity: op == null ? o.baseOp : op }); });
-  }
+     Paper removes it (a document does not glow), and Atlas swaps it for a solid outline. That
+     decision lives in applyLineStyle(), next to the polylines it restyles. */
+  if(typeof applyMapTone === 'function') applyMapTone();
+  syncThemeColor(document.body.classList.contains('light') ? 'light' : 'dark');
 }
 function setTextSize(s){ textSize=s==='large'?'large':'normal'; try{localStorage.setItem('irn_textsize',textSize);}catch(e){}
   document.querySelectorAll('#textSeg button').forEach(b=>b.classList.toggle('active', b.dataset.ts===textSize)); applyDisplayPrefs(); }

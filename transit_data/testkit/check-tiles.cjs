@@ -52,10 +52,13 @@ const ESRI = 'https://server.arcgisonline.com/ArcGIS/rest/services/';
 const CITY = { name: 'İstanbul (Bağcılar)', lat: 41.0400, lng: 28.8700 };
 const GRID = 20;                 // sized from the measured 29% placeholder rate — see above
 
-/* maxNative is the deepest zoom we believe carries data; it must match 08-map.js. */
+/* maxNative is the deepest zoom we believe carries data; it must match 08-map.js.
+
+   Two services, three basemaps: the app's dark and light maps are BOTH the Streets service,
+   regraded in the browser (08-basemap.js), so one fetch test covers both. Dark Gray Canvas used
+   to be a third entry here and is gone — it had no parks, no water colour and no place names. */
 const LAYERS = [
-  { key: 'dark',    maxNative: 16, url: ESRI + 'Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}' },
-  { key: 'voyager', maxNative: 19, url: ESRI + 'World_Street_Map/MapServer/tile/{z}/{y}/{x}' },
+  { key: 'streets', maxNative: 19, url: ESRI + 'World_Street_Map/MapServer/tile/{z}/{y}/{x}' },
   { key: 'sat',     maxNative: 19, url: ESRI + 'World_Imagery/MapServer/tile/{z}/{y}/{x}' },
 ];
 

@@ -164,15 +164,18 @@ function drawLabels(){
   tctx.globalAlpha = labelAlpha;
   tctx.font = "600 11px "+LABEL_FONT;
   tctx.textBaseline = "middle"; tctx.textAlign = "left"; tctx.lineJoin = "round";
+  // ink and halo follow what the map is drawn on: dark text in a pale halo by day, the reverse
+  // by night and over satellite. Hard-coded light-on-dark was right for exactly one basemap.
+  const T = MAP_T();
   for(const r of list){
     const multi = r.lines && r.lines.size>1;
     if(z < 14 && !multi) continue;                    // below z14 → interchanges only
     const p = map.latLngToContainerPoint([r.lat, r.lng]);
     if(p.x<-60||p.y<-16||p.x>s.x+60||p.y>s.y+16) continue;
     const x = p.x + 8, y = p.y;
-    tctx.lineWidth = 3.2; tctx.strokeStyle = "rgba(7,10,16,0.92)";
+    tctx.lineWidth = 3.2; tctx.strokeStyle = T.halo;
     tctx.strokeText(r.name, x, y);
-    tctx.fillStyle = multi ? "#ffffff" : "#cdd5e4";
+    tctx.fillStyle = multi ? T.labelMulti : T.label;
     tctx.fillText(r.name, x, y);
   }
   tctx.restore();

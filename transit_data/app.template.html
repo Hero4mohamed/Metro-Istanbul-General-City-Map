@@ -15,7 +15,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;600;700&family=JetBrains+Mono:wght@500;700;800&display=swap" rel="stylesheet">
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 34 34'%3E%3Crect x='1' y='1' width='32' height='32' rx='9' fill='%23D42A2A'/%3E%3Cpath d='M8 24V11L17 19.5 26 11V24' fill='none' stroke='%23fff' stroke-width='3.4' stroke-linecap='round' stroke-linejoin='round'/%3E%3Ccircle cx='17' cy='19.5' r='2.4' fill='%234ADE80'/%3E%3C/svg%3E">
 <meta name="description" content="Live İstanbul transit map — metro, tram, funicular, cable car, Marmaray, ferry and bus. Real-time carriages, official timetables, multi-stop trip planner, live disruptions and district weather.">
-<meta name="theme-color" content="#070A12">
+<meta name="theme-color" content="#1C2331">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -115,13 +115,6 @@
     -webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility;}
   ::selection{background:rgba(var(--ok-rgb),.32);color:#fff;}
   #map{position:fixed;inset:0;background:var(--obsidian);}
-  /* Esri's Dark Gray Canvas is a mid-grey, not the near-black CARTO dark_all it replaces, and
-     the line colours are tuned to sit on near-black — on the lighter ground they lose contrast
-     and the map stops reading as a transit diagram. Darkened here rather than by picking a
-     different basemap, because this is the only keyless dark canvas with real coverage. The
-     class is set on the layer (className:'base-dim'), so it never touches satellite or streets. */
-  .base-dim{filter:brightness(.62) contrast(1.08) saturate(.85);}
-  body.light .base-dim{filter:none;}
   #trainCanvas{position:fixed;inset:0;pointer-events:none;z-index:450;}
 
   /* unified slim scrollbars */
@@ -341,6 +334,95 @@
   /* …but a round thing must stay round: an avatar or a dot squared off is not a style choice */
   body.paper .logo-hub,body.paper .ai-orb,body.paper .ai-orb .orb,
   body.paper .geo-dot,body.paper .ac-dot,body.paper .nd{--r-pill:99px;}
+
+  /* ================= "Atlas" — the default experience ===================================
+     The map and the chrome designed as one object. The previous default was a near-black page
+     with neon accents over a flat grey basemap: dramatic, and hard on everything the map exists
+     to show — the basemap carried no water colour, no parks and, after the provider change, no
+     place names, and the interface was a different colour family from the ground it sat on.
+
+     Atlas takes its direction from the maps people already read fluently — pale ground, blue
+     water, green parks, amber arterials, white streets — and keeps it recognisably its own: a
+     warm ivory rather than cold grey, a slate-blue night rather than black, and a teal accent
+     where the usual choice is blue. The basemap itself is regraded per pixel (see 08-basemap.js)
+     into exactly these colours, so the surfaces below are not "close to" the map, they ARE the
+     map's ground:
+
+         day   ground #F3F0E9   water #AAD3EC   park #CDE5C0   arterial #FADEAA
+         night ground #1C2331   water #132F4C   park #1E3A34   arterial #80683F
+
+     Lines are drawn with an outline instead of a bloom (applyLineStyle), because a glow is
+     invisible on a pale map and a line with no edge disappears into the roads under it.
+
+     Neon, Calm and Paper stay selectable: this changes the default, it does not remove the
+     others. Like Paper, the palette is a token restatement, and the structure is a handful of
+     deliberate rules rather than a re-skin of every component. */
+  body.atlas{
+    --obsidian:#1C2331; --panel:rgba(22,29,42,.90); --stroke:rgba(255,255,255,.09);
+    --stroke-2:rgba(255,255,255,.16); --text:#EAF0F8; --muted:#A9B4C7; --dim:#8E9AB0;
+    --accent:#2FD3AE; --accent-2:#2BB6D6; --gold:#F5B83D; --btn-ink:#031A1A;
+    --grad-accent:linear-gradient(135deg,#34D9A8,#2BB6D6);
+    --surface:rgba(255,255,255,.05); --surface-2:rgba(255,255,255,.09);
+    --track:rgba(10,15,24,.55); --ring:rgba(47,211,174,.30);
+    --ok-rgb:47,211,174; --warn-rgb:245,166,35; --danger-rgb:229,72,77;
+    --gold-rgb:245,184,61; --violet-rgb:192,132,252; --sky-rgb:56,189,248; --crimson-rgb:200,16,46;
+    --ok-ink:#6FEAD0; --warn-ink:#F5B14A; --danger-ink:#F59CA0;
+    --gold-ink:#F7D27C; --violet-ink:#DDB9FF; --sky-ink:#5CC8F5; --crimson-ink:#FF9AA6;
+    --svg-hole:#161D2A;
+  }
+  body.atlas.light{
+    --obsidian:#F3F0E9; --panel:rgba(255,255,255,.95); --stroke:rgba(27,36,51,.10);
+    --stroke-2:rgba(27,36,51,.17); --text:#1B2433; --muted:#4F5B70; --dim:#5D697D;
+    /* Every tier clears AA on the ivory ground (the test measures against --obsidian). The two
+       the default light theme gets wrong are fixed here rather than inherited: --gold-ink is
+       4.31 there, and its --ok-ink is a hair above the line. */
+    --accent:#08796A; --accent-2:#0A6B83; --gold:#8A5A0F; --btn-ink:#FFFFFF;
+    --grad-accent:linear-gradient(135deg,#087A69,#0A6B83);
+    --surface:rgba(27,36,51,.04); --surface-2:rgba(27,36,51,.07);
+    --track:rgba(27,36,51,.06); --ring:rgba(8,121,106,.28);
+    --ok-rgb:8,121,106; --warn-rgb:138,90,15; --danger-rgb:163,34,39;
+    --gold-rgb:138,90,15; --violet-rgb:109,52,200; --sky-rgb:3,105,161; --crimson-rgb:180,18,31;
+    --ok-ink:#05694A; --warn-ink:#7A5200; --danger-ink:#A32227;
+    --gold-ink:#8A5410; --violet-ink:#6D28D9; --sky-ink:#0369A1; --crimson-ink:#B4121F;
+    --svg-hole:#FFFFFF;
+  }
+
+  /* --- structure: near-opaque cards with a quiet shadow. Neon's bloom and inset highlights are
+         gone; what separates a card from the map is its edge and its shadow, which is how the
+         map apps this is modelled on do it. */
+  body.atlas .glass,body.atlas .card,body.atlas .topbar,body.atlas .announce,body.atlas .station,
+  body.atlas .linep,body.atlas .go-panel,body.atlas .settings-panel,body.atlas .msheet{
+    backdrop-filter:blur(16px) saturate(1.15);-webkit-backdrop-filter:blur(16px) saturate(1.15);
+    border-radius:16px;
+    box-shadow:0 1px 2px rgba(0,0,0,.30),0 14px 34px -14px rgba(0,0,0,.65);
+  }
+  body.atlas.light .glass,body.atlas.light .card,body.atlas.light .topbar,body.atlas.light .announce,
+  body.atlas.light .station,body.atlas.light .linep,body.atlas.light .go-panel,
+  body.atlas.light .settings-panel,body.atlas.light .msheet{
+    box-shadow:0 1px 2px rgba(27,36,51,.10),0 10px 28px -12px rgba(27,36,51,.28);
+  }
+  body.atlas .logo{filter:none;}
+  body.atlas .logo-hub{animation:none;}
+  body.atlas .sec::before{box-shadow:none;}
+  body.atlas .btn,body.atlas .go-start,body.atlas .wc-go{box-shadow:none;}
+  body.atlas .badge,body.atlas .ac-item .ac-dot{box-shadow:none;}
+  body.atlas .ac-input:focus{box-shadow:0 0 0 3px var(--ring);}
+  /* the active state is a tint and a hairline, not a glow */
+  body.atlas .tabs button.active,body.atlas .seg button.active{box-shadow:inset 0 0 0 1px rgba(var(--ok-rgb),.38);}
+  body.atlas .seg button.active{background:rgba(var(--ok-rgb),.14);}
+  body.atlas .seg,body.atlas .tabs{border-radius:14px;}
+  body.atlas .seg button,body.atlas .tabs button{border-radius:11px;}
+  /* Leaflet's own furniture was hard-coded dark with !important and no light variant at all, so
+     by day the zoom buttons and attribution were dark chips on a pale map. They take the panel
+     tokens instead, which makes them right in both tones without a second rule set. */
+  body.atlas .leaflet-bar{box-shadow:0 1px 2px rgba(0,0,0,.25),0 8px 22px -10px rgba(0,0,0,.5)!important;}
+  body.atlas.light .leaflet-bar{box-shadow:0 1px 2px rgba(27,36,51,.12),0 8px 20px -10px rgba(27,36,51,.30)!important;}
+  body.atlas .leaflet-bar a{background:var(--panel)!important;color:var(--text)!important;border-color:var(--stroke)!important;}
+  body.atlas .leaflet-bar a:hover{background:var(--surface-2)!important;color:var(--text)!important;}
+  body.atlas .leaflet-control-attribution{background:var(--panel)!important;color:var(--muted)!important;}
+  body.atlas .leaflet-control-attribution a{color:var(--muted)!important;}
+  body.atlas .leaflet-tooltip.lt{background:var(--panel);color:var(--text);border-color:var(--stroke-2);}
+  body.atlas .leaflet-tooltip.lt b{color:var(--text);}
 
   /* ---- accessibility: visible keyboard focus everywhere. Mouse clicks stay clean because
      :focus-visible only matches keyboard/AT focus, so this costs the design nothing. ---- */
@@ -1478,7 +1560,8 @@
     </div>
     <div class="sp-row"><span data-i18n="uiStyle">Icon &amp; colour style</span>
       <div class="seg" id="styleSeg">
-        <button data-uis="neon" class="active" data-i18n="uiNeon">Neon</button>
+        <button data-uis="atlas" class="active" data-i18n="uiAtlas">Atlas</button>
+        <button data-uis="neon" data-i18n="uiNeon">Neon</button>
         <button data-uis="calm" data-i18n="uiCalm">Calm</button>
         <button data-uis="paper" data-i18n="uiPaper">Paper</button>
       </div>
