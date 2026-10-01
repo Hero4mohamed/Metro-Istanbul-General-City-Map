@@ -356,8 +356,8 @@ const MUTATIONS = [
   {
     name: 'offer an experience with no stylesheet behind it',
     expect: 'every declared experience has a stylesheet and a control',
-    apply: h => h.replace("const UI_STYLES = ['neon', 'calm', 'paper']",
-                          "const UI_STYLES = ['neon', 'calm', 'paper', 'halo']"),
+    apply: h => h.replace("const UI_STYLES = ['atlas', 'neon', 'calm', 'paper']",
+                          "const UI_STYLES = ['atlas', 'neon', 'calm', 'paper', 'halo']"),
   },
   {
     /* --- the size ramp. One tier is 143 declarations, so a typo here resizes a third of the
@@ -402,27 +402,122 @@ const MUTATIONS = [
       '  return {t:(m>0?m+"m ":"")+String(s).padStart(2,"0")+"s", now:false};'),
   },
   /* --- the disruption clock, and marking a line without replacing it --- */
-  /* --- basemaps: keyless, capped, and dimmed to the palette --- */
+  /* --- basemaps: keyless and capped --- */
   {
     name: 'put a keyed CARTO basemap back',
     expect: 'every basemap is keyless and depth-capped',
-    apply: h => h.replace("Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}',",
-                          "https://a.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png',"),
+    apply: h => h.replace("const ESRI_STREETS = ESRI + 'World_Street_Map/MapServer/tile/{z}/{y}/{x}';",
+                          "const ESRI_STREETS = 'https://a.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png';"),
+  },
+  /* --- Atlas: the default experience, the basemap regrade, and the line outlines --- */
+  {
+    name: 'make Neon the default experience again',
+    expect: 'Atlas is the default experience, and the others are still selectable',
+    apply: h => h.replace("const DEFAULT_UI_STYLE = 'atlas';", "const DEFAULT_UI_STYLE = 'neon';"),
   },
   {
-    name: 'drop the depth cap so Leaflet asks for tiles past the coverage',
+    name: 'let a saved experience be overridden by the default',
+    expect: 'Atlas is the default experience, and the others are still selectable',
+    apply: h => h.replace('return UI_STYLES.indexOf(v) >= 0 ? v : DEFAULT_UI_STYLE; }catch(e)', 'return DEFAULT_UI_STYLE; }catch(e)'),
+  },
+  {
+    name: 'give every line the same white outline, whatever its colour',
+    expect: 'every line colour stays visible on the land, in both tones',
+    apply: h => h.replace('if (contrastRgb(C, G) >= 3 && contrastRgb(C, neutral) >= 2.2) return rgbToHex(neutral);',
+                          'if (true) return rgbToHex(neutral);'),
+  },
+  {
+    name: 'search the outline tint the wrong way (lighter by day, darker by night)',
+    expect: 'a line that already shows gets the plain outline; one that does not gets a tint of its own colour',
+    apply: h => h.replace("const toward = tone === 'night' ? [255, 255, 255] : [0, 0, 0];",
+                          "const toward = tone === 'night' ? [0, 0, 0] : [255, 255, 255];"),
+  },
+  {
+    name: 'start lifting greys so low that label text is altered by day',
+    expect: 'place names survive the regrade',
+    apply: h => h.replace('curve: [[0, 0], [.6, .6], [.72, .79], [.82, .91], [.92, .97], [1, 1]],',
+                          'curve: [[0, 0], [.2, .45], [.72, .79], [.82, .91], [.92, .97], [1, 1]],'),
+  },
+  {
+    name: 'invert the night road hierarchy (roads darker than land, as CSS invert() does)',
+    expect: 'by night a road is brighter than the land, not darker',
+    apply: h => h.replace('[.96, .21], [1, .31]],', '[.96, .12], [1, .04]],'),
+  },
+  {
+    name: 'let night label text stay dark',
+    expect: 'place names survive the regrade',
+    apply: h => h.replace('curve: [[0, .90], [.25, .78], [.5, .58], [.62, .42],', 'curve: [[0, .10], [.25, .12], [.5, .20], [.62, .30],'),
+  },
+  {
+    name: 'make the ground differ from the land colour (every tile seam shows)',
+    expect: 'the ground is the land colour, so a tile seam is invisible',
+    apply: h => h.replace('ground: [243, 240, 233],                  // the colour the map shows through a tile seam',
+                          'ground: [243, 240, 226],                  // the colour the map shows through a tile seam'),
+  },
+  {
+    name: 'merge the park class into land (green stops being green)',
+    expect: 'park and land stay distinct classes — green stays green',
+    apply: h => h.replace('park:  { c: [205, 229, 192], ref: .82, k: .18 },', 'park:  { c: [243, 240, 233], ref: .82, k: .18 },'),
+  },
+  {
+    name: 'keep the park colour at country scale',
+    expect: 'at country scale a green pixel is land cover, not a park: the park colour fades out by z8',
+    apply: h => h.replace('const pk = (z === undefined || z === null) ? 1 : _smooth(8, 11, z);', 'const pk = 1;'),
+  },
+  {
+    name: 'let the regrade write past 255',
+    expect: 'alpha is never touched, and every channel stays a real colour',
+    apply: h => h.replace('function _clamp255(v) { return v < 0 ? 0 : (v > 255 ? 255 : v); }', 'function _clamp255(v) { return v; }'),
+  },
+  {
+    name: 'let the chrome drift from the ground it sits on',
+    expect: "the chrome IS the ground: Atlas panels share the map's colour",
+    apply: h => h.replace('--obsidian:#1C2331; --panel:rgba(22,29,42,.90);', '--obsidian:#1C2332; --panel:rgba(22,29,42,.90);'),
+  },
+  {
+    name: 'ship a day --dim that fails AA on the ivory ground',
+    expect: 'Atlas meets AA on its own surface, in both themes',
+    apply: h => h.replace('--muted:#4F5B70; --dim:#5D697D;', '--muted:#4F5B70; --dim:#9AA5B8;'),
+  },
+  {
+    name: 'ship a button gradient the ink cannot be read on',
+    expect: 'Atlas meets AA on its own surface, in both themes',
+    apply: h => h.replace('--grad-accent:linear-gradient(135deg,#087A69,#0A6B83);', '--grad-accent:linear-gradient(135deg,#34C9A8,#2BB6D6);'),
+  },
+  {
+    name: 'hard-code the zoom controls dark again',
+    expect: 'Atlas is a structural change, not only a palette',
+    apply: h => h.replace('body.atlas .leaflet-bar a{background:var(--panel)!important;', 'body.atlas .leaflet-bar a{background:#0d111b!important;'),
+  },
+  {
+    name: 'lose the dash on the outline (a suspended line looks ordinary again)',
+    expect: 'line outlines replace the glow, and the glow comes back for the other experiences',
+    apply: h => h.replace('dashArray:(o.pair && o.pair.pl.options.dashArray) || null });', 'dashArray:null });'),
+  },
+  {
+    name: 'leave the outline on when the experience changes (glow never returns)',
+    expect: 'line outlines replace the glow, and the glow comes back for the other experiences',
+    apply: h => h.replace('      o.base = o.glowBase;', '      o.base = o.coreBase + CASING_PAD;'),
+  },
+  {
+    name: 'draw station labels in light-on-dark ink on every basemap',
+    expect: 'everything drawn on the map follows the BASEMAP, not the UI theme',
+    apply: h => h.replace('tctx.strokeStyle = T.halo;', 'tctx.strokeStyle = "rgba(7,10,16,0.92)";'),
+  },
+  {
+    name: 'derive the map tone from the UI theme instead of the basemap',
+    expect: 'everything drawn on the map follows the BASEMAP, not the UI theme',
+    apply: h => h.replace("function mapTone(){ return curBaseKey === 'dark' ? 'night'", "function mapTone(){ return document.body.classList.contains('light') ? 'day'"),
+  },
+  {
+    name: 'switch the basemap without re-toning what is drawn on it',
+    expect: 'everything drawn on the map follows the BASEMAP, not the UI theme',
+    apply: h => h.replace('  applyMapTone();', ''),
+  },
+  {
+    name: 'ship a basemap with no depth cap',
     expect: 'every basemap is keyless and depth-capped',
-    apply: h => h.replace('maxZoom:20, maxNativeZoom:16, className:', 'maxZoom:20, className:'),
-  },
-  {
-    name: 'stop dimming the basemap the line colours were tuned against',
-    expect: 'the dark basemap is dimmed to the palette it was tuned for',
-    apply: h => h.replace(".base-dim{filter:brightness(.62)", ".base-dim{opacity:1;x-filter:brightness(.62)"),
-  },
-  {
-    name: 'leave the dim on in light mode',
-    expect: 'the dark basemap is dimmed to the palette it was tuned for',
-    apply: h => h.replace('body.light .base-dim{filter:none;}', ''),
+    apply: h => h.replace('Object.assign({ maxZoom:20, maxNativeZoom:19, attribution:ESRI_ATTR,', 'Object.assign({ maxZoom:20, attribution:ESRI_ATTR,'),
   },
   {
     name: 'let a finished works order keep the line shut (the B2 case)',

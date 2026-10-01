@@ -112,12 +112,18 @@ const CHECKS = [
     why: 'The service worker once answered failures with a 200 placeholder, so Leaflet believed a blank square was the map.',
     run: async (w, d) => {
       if (document.hidden) return { skip: 'hidden documents do not fetch tile images' };
-      const some = await until(() => d.querySelectorAll('#map img.leaflet-tile').length > 4, 12000);
+      /* Two kinds of tile now. The satellite layer is still <img>; the day and night basemaps are
+         <canvas>, because the regrade needs their pixels. A canvas has no naturalWidth to be 0:
+         Leaflet only gives a tile the leaflet-tile-loaded class when it finished WITHOUT an
+         error, so a canvas that never gets it is the failed one. */
+      const SEL = '#map img.leaflet-tile, #map canvas.leaflet-tile';
+      const some = await until(() => d.querySelectorAll(SEL).length > 4, 12000);
       if (!some) return 'no tiles were requested at all';
       await sleep(2500);
-      const t = [...d.querySelectorAll('#map img.leaflet-tile')];
-      const failed = t.filter(i => i.complete && i.naturalWidth === 0).length;
-      const placeholder = t.filter(i => /^data:image\/svg/.test(i.src)).length;
+      const t = [...d.querySelectorAll(SEL)];
+      const failed = t.filter(i => i.tagName === 'CANVAS' ? !i.classList.contains('leaflet-tile-loaded')
+                                                          : (i.complete && i.naturalWidth === 0)).length;
+      const placeholder = t.filter(i => i.tagName === 'IMG' && /^data:image\/svg/.test(i.src)).length;
       if (placeholder) return placeholder + ' placeholder tile(s) — the worker is faking success';
       if (failed > Math.max(2, t.length * 0.15)) return failed + ' of ' + t.length + ' tiles failed';
     },
@@ -409,6 +415,58 @@ const CHECKS = [
       const end = w.disruptionProbe(ref);
       if (end.lineDash !== normalDash) return 'the line did not get its own styling back after the fault cleared';
       if (end.marks.length > before) return 'the marking outlived the fault that drew it';
+    },
+  },
+  {
+    name: 'Atlas: the basemap is regraded, and what is drawn on it follows the basemap',
+    why: 'The static suite proves the arithmetic; only here can the REAL tiles be read back. The basemap is Esri’s '
+       + 'Streets map regraded per pixel into the Atlas palette, so the most common colour across the loaded tiles must '
+       + 'be the land colour. It also walks the part that is easy to leave half-switched: line outlines come from the '
+       + 'basemap, the glow comes back for the other experiences, and nothing is left behind after a round trip.',
+    run: async (w) => {
+      if (typeof w.atlasProbe !== 'function') return 'atlasProbe is gone from the page';
+      const start = w.atlasProbe();
+      const keepStyle = start.style, keepBase = start.base;
+      let failure = null;
+      try {
+        // 1. day: ivory ground, white outline sized from the core
+        w.setUiStyle('atlas'); w.setBase('voyager');
+        let p = w.atlasProbe();
+        if (!p.outline) failure = 'no line polylines to read';
+        else if (p.outline.base <= p.outline.coreBase)
+          failure = 'day: the outline is not wider than the line it outlines';
+        else if (p.outline.opacity < 0.85) failure = 'day: the outline is nearly transparent (' + p.outline.opacity + ')';
+        // 2. night: a different outline, from the BASEMAP not the UI theme
+        if (!failure) {
+          const dayColour = p.outline.color;
+          w.setBase('dark'); p = w.atlasProbe();
+          if (p.tone !== 'night') failure = 'the dark basemap does not report the night tone';
+          else if (p.outline.color === dayColour) failure = 'the outline did not change with the basemap — it is following the theme';
+        }
+        // 3. another experience brings its own glow back and takes the outline away
+        if (!failure) {
+          w.setUiStyle('neon'); p = w.atlasProbe();
+          if (p.outline.base !== p.outline.glowBase) failure = 'neon: the glow width did not come back (' + p.outline.base + ')';
+          else if (p.outline.opacity > 0.3) failure = 'neon: the line is still outlined at opacity ' + p.outline.opacity;
+        }
+        // 4. the tiles themselves (only meaningful in a visible window: hidden ones fetch nothing)
+        if (!failure && !document.hidden && !w.document.hidden) {
+          w.setUiStyle('atlas'); w.setBase('voyager');
+          const t0 = Date.now(); let q = null;
+          while (Date.now() - t0 < 12000) { q = w.atlasProbe(); if (q.canvasTiles >= 4 && q.tile) break; await sleep(300); }
+          if (!q || q.canvasTiles < 4) failure = 'the day basemap never produced canvas tiles — the regrade layer is not in use';
+          else {
+            const g = q.ground.match(/\d+/g).map(Number);
+            const off = Math.max.apply(null, q.tile.map((v, i) => Math.abs(v - g[i])));
+            if (off > 28) failure = 'the most common tile colour ' + q.tile + ' is not the ivory ground ' + g + ' — tiles are not being regraded';
+          }
+        }
+      } finally {
+        w.setUiStyle(keepStyle); w.setBase(keepBase);
+      }
+      if (failure) return failure;
+      const end = w.atlasProbe();
+      if (end.style !== keepStyle || end.base !== keepBase) return 'the experience or basemap was not restored after the round trip';
     },
   },
   {

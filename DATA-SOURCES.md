@@ -12,7 +12,7 @@ redistribute it.
 | Source | Used for | Stated terms | Attribution shown in-app |
 |---|---|---|---|
 | **OpenStreetMap** (via Overpass) | Rail, tram, ferry and funicular geometry; station positions; Ankara/İzmir/Bursa/Antalya bus routes; POI and category search via Photon | ODbL 1.0 — attribution **and share-alike** | yes, map credit |
-| **CARTO** basemaps | Dark and Voyager raster tiles | CARTO basemap terms; free tier for non-commercial use, attribution required | yes, map credit |
+| **Esri** World Street Map | The day and night basemaps. The tiles are **recoloured in the browser** into the app's own palette (see `transit_data/src/08-basemap.js`); only Esri's original tiles are fetched and cached, never the recoloured result | Esri's published terms for its basemap tile services; the keyless endpoint is used as published | yes, map credit: © Esri, HERE, Garmin, USGS, © OpenStreetMap contributors |
 | **Esri / Maxar / Earthstar** | Satellite imagery layer | Esri World Imagery terms of use | yes, map credit |
 | **İETT** (via İBB Open Data) | İstanbul bus routes, stops and GTFS timetables | İBB Open Data portal terms | yes, "İETT GTFS" on the bus panel |
 | **İBB Open Data** | Station registry, lift/escalator counts, live arrivals | İBB Open Data portal terms | yes |
@@ -43,7 +43,7 @@ and the cleaner path is to ask İBB and Kocaeli BB for permission or an API.
 
 ## Tile usage policy
 
-CARTO's and OpenStreetMap's tile policies prohibit bulk downloading. The offline feature is
+Esri's and OpenStreetMap's tile policies prohibit bulk downloading. The offline feature is
 deliberately built to respect this: it caches only tiles the user has actually viewed, the
 "Save this area" action is user-initiated and capped (~340 tiles for the current view across
 four zoom levels), and the cache is LRU-trimmed at 3,000 tiles. Do not raise those limits
@@ -85,3 +85,15 @@ So neither city publishes an open bus feed that can be fetched. İzmir does, and
 at operator depth. The remaining route for Bursa/Antalya would be scraping the transport sites
 the way Kocaeli was scraped — possible, but unlicensed and fragile, so it is a deliberate
 choice not taken rather than a gap nobody looked at.
+
+## Basemap provider risk
+
+CARTO withdrew keyless access in September 2026 by serving an "API KEY REQUIRED" placeholder
+image with HTTP 200 for roughly a third of tiles — a failure no status code can see. The app is a
+public static site, so a provider that needs a key cannot be used at all (a key in the page is a
+key given away). Esri's endpoints are keyless today and the same thing could happen to them.
+
+`npm run check-tiles` (and the daily *Basemap health* workflow) is the alarm: it hashes a grid of
+tiles over inland İstanbul and fails if any image repeats, because a placeholder is the same
+bytes everywhere and a real map never is. A green run means "not serving placeholders right
+now", not "healthy" — the CARTO degradation was intermittent.
