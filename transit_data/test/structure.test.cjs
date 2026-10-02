@@ -619,13 +619,16 @@ test('Atlas is a structural change, not only a palette', () => {
 test('line outlines replace the glow, and the glow comes back for the other experiences', () => {
   const src = H.appScript();
   assert.ok(/function applyLineStyle\(\)/.test(src), 'applyLineStyle is gone');
-  assert.ok(/o\.base = o\.coreBase \+ CASING_PAD;/.test(src), 'Atlas no longer sizes the outline from the core');
+  assert.ok(/o\.base = o\.coreBase \+ \(o\.solidCasing \? CASING_PAD_PLANNED : CASING_PAD\);/.test(src), 'Atlas no longer sizes the outline from the core');
   assert.ok(/o\.base = o\.glowBase;/.test(src),
     'the other experiences no longer get their glow width back — switching away from Atlas would leave outlines behind');
   // the outline is the glow polyline repurposed: a second polyline per path would double the canvas work
   assert.ok(/linePolys\.push\(glowE, coreE\)/.test(src), 'each path no longer shares one polyline between glow and outline');
   // a dashed line must get a dashed outline, or a solid one under it hides "not in normal service"
-  assert.ok(/dashArray:\(o\.pair && o\.pair\.pl\.options\.dashArray\) \|\| null/.test(src),
+  /* ...but only for a LIVE line. A line that is not yet running is dashed by design, so the
+     ambiguity this guards against does not exist for it, and a dashed outline on a busy map is
+     hard to follow: its outline stays continuous (solidCasing). Both halves are pinned. */
+  assert.ok(/dashArray:o\.solidCasing \? null : \(\(o\.pair && o\.pair\.pl\.options\.dashArray\) \|\| null\)/.test(src),
     'the outline no longer follows its line\'s dash — a suspended line would look ordinary again');
 });
 

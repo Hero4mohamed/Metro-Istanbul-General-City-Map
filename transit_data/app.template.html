@@ -539,6 +539,46 @@
   .leaflet-tooltip.lt::before{display:none;}
   .planned-banner{background:rgba(var(--violet-rgb),.1);border:1px solid rgba(var(--violet-rgb),.38);border-radius:12px;padding:10px 12px;font-size:11.5px;font-weight:700;color:var(--violet-ink);}
   .planned-banner span{display:block;font-weight:400;color:var(--muted);font-size:var(--fs-7);margin-top:4px;line-height:1.4;}
+  /* ---- Vision: the panel for a line that is not running yet (11a-planned-panel.js) ---------
+     Stage colours come from the semantic tokens, so every experience and both themes get a
+     legible version without a second rule set: building = the warm tier, planned = sky, on hold
+     = muted grey, long-term = violet. */
+  .lp-plan{margin:2px 0 8px;display:flex;flex-direction:column;gap:9px;}
+  .pl-top{display:flex;align-items:center;flex-wrap:wrap;gap:6px 10px;}
+  .pl-chip{font-size:var(--fs-6);font-weight:800;letter-spacing:.5px;text-transform:uppercase;padding:3px 9px;border-radius:var(--r-pill);border:1px solid transparent;}
+  .pl-chip.ph-construction{background:rgba(var(--gold-rgb),.16);color:var(--gold-ink);border-color:rgba(var(--gold-rgb),.45);}
+  .pl-chip.ph-planned{background:rgba(var(--sky-rgb),.14);color:var(--sky-ink);border-color:rgba(var(--sky-rgb),.4);}
+  .pl-chip.ph-hold{background:var(--surface-2);color:var(--muted);border-color:var(--stroke-2);}
+  .pl-chip.ph-vision{background:rgba(var(--violet-rgb),.13);color:var(--violet-ink);border-color:rgba(var(--violet-rgb),.38);}
+  .pl-tgt{font-size:11.5px;font-weight:700;color:var(--text);line-height:1.35;}
+  .pl-tgt small{font-size:var(--fs-4);letter-spacing:.7px;text-transform:uppercase;color:var(--dim);font-weight:700;margin-right:3px;}
+  .pl-tgt i,.pl-srcs i,.pl-prog i{font-style:normal;color:var(--dim);font-weight:500;font-size:var(--fs-6);}
+  .pl-prog span{display:block;font-size:var(--fs-7);color:var(--muted);margin-top:4px;}
+  .pl-bar{height:6px;border-radius:var(--r-pill);background:var(--track);overflow:hidden;border:1px solid var(--stroke);}
+  .pl-bar i{display:block;height:100%;border-radius:var(--r-pill);background:var(--grad-accent);}
+  .pl-notes{margin:0;padding-left:16px;font-size:var(--fs-7);color:var(--muted);line-height:1.45;}
+  .pl-notes li{margin-bottom:3px;}
+  .pl-facts{display:grid;grid-template-columns:1fr 1fr;gap:6px;}
+  .pf{background:var(--surface);border:1px solid var(--stroke);border-radius:10px;padding:6px 8px;min-width:0;}
+  .pf span{display:block;font-size:var(--fs-3);letter-spacing:.6px;text-transform:uppercase;color:var(--dim);font-weight:700;}
+  .pf b{display:block;font-size:11px;font-weight:650;line-height:1.3;overflow-wrap:anywhere;}
+  .pl-h{display:flex;justify-content:space-between;align-items:baseline;gap:8px;font-size:var(--fs-5);letter-spacing:1.1px;text-transform:uppercase;color:var(--dim);font-weight:700;margin-top:2px;}
+  .pl-h span{letter-spacing:0;text-transform:none;font-weight:500;}
+  .pl-stns{margin:0;padding:0;list-style:none;columns:2;column-gap:10px;font-size:var(--fs-7);line-height:1.5;counter-reset:s;}
+  .pl-stns li{counter-increment:s;color:var(--dim);break-inside:avoid;padding:1px 0;}
+  .pl-stns li::before{content:counter(s) ". ";color:var(--dim);font-variant-numeric:tabular-nums;}
+  .pl-stns li.go{color:var(--text);cursor:pointer;}
+  .pl-stns li.go:hover{color:var(--accent);text-decoration:underline;}
+  .pl-none,.pl-geo,.pl-cmp,.pl-ver,.pl-unv{font-size:var(--fs-7);color:var(--muted);line-height:1.45;}
+  .pl-cmp{color:var(--dim);margin-top:2px;}
+  .pl-unv{color:var(--warn-ink);}
+  .pl-srcs{display:flex;flex-direction:column;gap:4px;font-size:var(--fs-7);line-height:1.35;}
+  .pl-srcs a{color:var(--accent);text-decoration:none;overflow-wrap:anywhere;}
+  .pl-srcs a:hover{text-decoration:underline;}
+  .vis-sum{font-size:var(--fs-6);color:var(--muted);margin:0 0 8px;font-weight:600;}
+  .grp-h.ph-construction{color:var(--gold-ink);}
+  .grp-h.ph-planned{color:var(--sky-ink);}
+  .grp-h.ph-vision{color:var(--violet-ink);}
 
   .row{display:flex;align-items:center;justify-content:space-between;font-size:12px;padding:5px 0;font-weight:550;}
   .switch{position:relative;width:38px;height:21px;flex:none;}
@@ -559,6 +599,9 @@
     background:var(--surface);font-size:var(--fs-8);font-weight:650;cursor:pointer;transition:all .15s var(--ease);user-select:none;}
   .lchip:hover{border-color:var(--stroke-2);background:var(--surface-2);transform:translateY(-1px);}
   .lchip.off{opacity:.3;filter:saturate(.2);}
+  /* a project that only exists in OpenStreetMap so far: shown, but visibly a notch less certain */
+  .lchip.unv{border-style:dashed;opacity:.82;}
+  .lchip.unv.off{opacity:.3;}
   .lchip .sw{width:11px;height:11px;border-radius:var(--r-round);flex:none;box-shadow:0 0 6px -1px currentColor;position:relative;cursor:pointer;transition:transform .15s var(--ease),box-shadow .15s var(--ease);}
   .lchip .sw::after{content:"";position:absolute;inset:-7px;border-radius:var(--r-round);}   /* larger tap target for the toggle */
   .lchip .sw:hover{transform:scale(1.4);box-shadow:0 0 0 3px rgba(255,255,255,.16);}
@@ -714,7 +757,10 @@
   .svc-row .svc-tx b{color:var(--text);font-weight:650;}
 
   /* Line info panel */
-  .linep{position:fixed;left:14px;bottom:14px;width:312px;z-index:1001;padding:16px;display:none;max-height:72vh;overflow:auto;}
+  /* The height stops short of the left rail's buttons (locate, layers): a planned line's panel is
+     long, and at 72vh its top edge slid underneath them and hid the line's own name. */
+  .linep{position:fixed;left:14px;bottom:14px;width:312px;z-index:1001;padding:16px;display:none;
+    max-height:min(72vh,calc(100vh - var(--rail-top) - var(--rail-step)*2 - var(--gutter)*2));overflow:auto;}
   .linep.show{display:block;animation:su .24s var(--ease);}
   .linep .x{position:absolute;top:12px;right:12px;width:25px;height:25px;border-radius:9px;border:1px solid var(--stroke);background:var(--surface);color:var(--muted);cursor:pointer;transition:all .15s var(--ease);}
   .linep .x:hover{color:#fff;border-color:#FB7185;background:rgba(244,63,94,.15);}
@@ -1254,6 +1300,7 @@
   .lyr-body{display:flex;flex-direction:column;}
   .lyr-body.folded{display:none;}
   /* 39 line chips made this section taller than the whole viewport — cap it and scroll inside */
+  #legend.vision{max-height:48vh;}   /* the Vision tab lists every project, not a handful of lines */
   #legend{max-height:34vh;overflow-y:auto;overscroll-behavior:contain;padding-right:2px;}
   #legend::-webkit-scrollbar{width:6px;}
   #legend::-webkit-scrollbar-thumb{background:var(--stroke-2);border-radius:var(--r-pill);}
@@ -1886,13 +1933,14 @@
   <div class="lp-kind" id="lpKind"></div>
   <button class="lp-follow" id="lpFollow"></button>
   <div class="lp-stats" id="lpStats"></div>
+  <div class="lp-plan" id="lpPlan" style="display:none"></div>
   <div class="bt" id="lpStripBt" data-i18n="lineMap">Line map</div>
   <div class="lp-strip" id="lpStrip"></div>
-  <div class="bt" data-i18n="connectivity">Connectivity</div>
+  <div class="bt" id="lpConnBt" data-i18n="connectivity">Connectivity</div>
   <div class="lp-conn" id="lpConn"></div>
-  <div class="bt" data-i18n="expansion">Expansion Projects</div>
+  <div class="bt" id="lpExpBt" data-i18n="expansion">Expansion Projects</div>
   <div id="lpExp"></div>
-  <div class="lp-src" data-i18n="lpSrc">Metadata aligned with İBB / Metro İstanbul records · dates are official projections</div>
+  <div class="lp-src" id="lpSrcNote" data-i18n="lpSrc">Metadata aligned with İBB / Metro İstanbul records · dates are official projections</div>
 </div>
 
 <div class="announce glass" id="announce">

@@ -673,9 +673,11 @@ function disTrTag(d){
 }
 // best-effort translation of LINE_META status strings (data); unknown values pass through
 function transStatus(s){
-  const m={ 'Under construction':'st_construction', 'Planned':'st_planned', 'Under construction / testing':'st_testing',
+  const m={ 'Under construction':'st_construction', 'Planned':'st_planned', 'On hold':'st_hold', 'Long-term plan':'st_vision',
             'Under construction / testing':'st_testing' };
   if(m[s]) return t(m[s]);
+  if(/hold/i.test(s)) return t('st_hold');
+  if(/long-term/i.test(s)) return t('st_vision');
   if(/testing/i.test(s)) return t('st_testing');
   if(/construction/i.test(s)) return t('st_construction');
   if(/planned/i.test(s)) return t('st_planned');

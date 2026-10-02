@@ -466,8 +466,13 @@ async function selectBus(id, row){
 function buildLegend(){
   const el = document.getElementById('legend');
   const set = tabLines();
+  el.classList.toggle('vision', currentTab==='vision');
   let html="";
-  GROUP_ORDER.forEach(kind=>{
+  /* Vision groups by STAGE, not by mode: "what is being built, what is only planned" is the
+     question that tab answers. Every stage is its own chip — a stage of a line is a different
+     project with its own status, so folding it into a parent would hide exactly what is shown. */
+  if(currentTab==='vision') html = visionLegendHTML(set);
+  else GROUP_ORDER.forEach(kind=>{
     const lines = set.filter(l=>l.kind===kind && !l.partOf);   // partOf lines fold into their parent
     if(!lines.length) return;
     html += `<div class="grp"><div class="grp-h" data-kind="${kind}">${kindLabel(kind)}<span>toggle</span></div><div class="lines-wrap">`;
@@ -489,7 +494,7 @@ function buildLegend(){
   });
   el.querySelectorAll('.grp-h').forEach(h=>{
     h.addEventListener('click', ()=>{
-      const refs = set.filter(l=>l.kind===h.dataset.kind && !l.partOf).map(l=>l.ref);
+      const refs = set.filter(l=> h.dataset.phase ? phaseOf(l)===h.dataset.phase : (l.kind===h.dataset.kind && !l.partOf)).map(l=>l.ref);
       const anyOn = refs.some(r=>lineLayers[r].on);
       refs.forEach(r=>setLine(r, !anyOn));
     });
@@ -502,7 +507,9 @@ function setLine(ref, on){
   const chip=document.querySelector(`.lchip[data-ref="${CSS.escape(ref)}"]`);
   if(chip) chip.classList.toggle('off', !on);
   // keep integrated sub-lines (M2S→M2, M11X→M11) in sync with their parent
-  NETWORK.forEach(l => { if(l.partOf===ref) setLine(l.ref, on); });
+  /* only siblings of the same kind: a planned extension of a live line (M2 -> its Sefaköy stage)
+     is its own layer on another tab, and hiding the live M2 must not silently hide it too */
+  NETWORK.forEach(l => { if(l.partOf===ref && isLive(l)===isLive(lineByRef[ref])) setLine(l.ref, on); });
 }
 function toggleLine(ref){ setLine(ref, !lineLayers[ref].on); }
 

@@ -492,12 +492,12 @@ const MUTATIONS = [
   {
     name: 'lose the dash on the outline (a suspended line looks ordinary again)',
     expect: 'line outlines replace the glow, and the glow comes back for the other experiences',
-    apply: h => h.replace('dashArray:(o.pair && o.pair.pl.options.dashArray) || null });', 'dashArray:null });'),
+    apply: h => h.replace('dashArray:o.solidCasing ? null : ((o.pair && o.pair.pl.options.dashArray) || null) });', 'dashArray:null });'),
   },
   {
     name: 'leave the outline on when the experience changes (glow never returns)',
     expect: 'line outlines replace the glow, and the glow comes back for the other experiences',
-    apply: h => h.replace('      o.base = o.glowBase;', '      o.base = o.coreBase + CASING_PAD;'),
+    apply: h => h.replace('      o.base = o.glowBase;', '      o.base = o.coreBase + CASING_PAD_PLANNED;'),
   },
   {
     name: 'draw station labels in light-on-dark ink on every basemap',

@@ -8,6 +8,10 @@ function project(line){
   for(let i=1;i<c.length;i++) cum[i] = cum[i-1] + metersBetween(c[i-1], c[i]);
   line._cum = cum;
   line._len = cum[c.length-1] || 0;
+  /* project() drives the simulation and station projection from the FIRST path only, which is
+     right for a live line. A planned line can be mapped in several pieces (a bridge or a
+     tunnel mouth between them), so the length a person should be shown is the sum. */
+  line._lenAll = (line.paths||[]).reduce((sum,p)=>{ let d=0; for(let i=1;i<p.length;i++) d+=metersBetween(p[i-1],p[i]); return sum+d; }, 0) || line._len;
 
   // project each station onto the polyline → cumulative distance s
   line.stations.forEach(st => {

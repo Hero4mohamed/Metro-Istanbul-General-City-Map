@@ -16,7 +16,8 @@ redistribute it.
 | **Esri / Maxar / Earthstar** | Satellite imagery layer | Esri World Imagery terms of use | yes, map credit |
 | **İETT** (via İBB Open Data) | İstanbul bus routes, stops and GTFS timetables | İBB Open Data portal terms | yes, "İETT GTFS" on the bus panel |
 | **İBB Open Data** | Station registry, lift/escalator counts, live arrivals | İBB Open Data portal terms | yes |
-| **metro.istanbul** | Live service disruptions (scraped) | No published open-data licence | yes, source linked |
+| **metro.istanbul** | Live service disruptions (scraped); the Vision tab's project facts (contractor, cost, stations) from its public project pages | No published open-data licence | yes, source linked |
+| **Municipal, ministry and press sources** (EGO, İzmir BB, Bursa BB, Kocaeli BB, news reports) | Vision tab status, progress and opening targets, read by hand and cited per entry with an as-of date in `planned-registry.json` | n/a: facts cited, nothing copied or scraped | yes, each source linked in the line panel |
 | **Kocaeli Büyükşehir / UlaşımPark** | Kocaeli bus routes (scraped from published route pages) | No published open-data licence | yes, operator named |
 | **TCDD Taşımacılık** | Intercity rail lines | No published open-data licence | yes |
 | **Photon** (komoot) | Geocoding and category search over OSM | Free, keyless; underlying data ODbL | yes |

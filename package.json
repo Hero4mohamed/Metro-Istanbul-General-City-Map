@@ -9,7 +9,8 @@
     "verify": "npm run build && npm test && npm run test:mutation && npm run status",
     "status": "node transit_data/gen-status.cjs",
     "scope": "node transit_data/testkit/analyse-scope.cjs",
-    "check-tiles": "node transit_data/testkit/check-tiles.cjs"
+    "check-tiles": "node transit_data/testkit/check-tiles.cjs",
+    "planned": "node transit_data/fetch-planned.cjs && node transit_data/fetch-planned-facts.cjs && node transit_data/process-planned.cjs && npm run build"
   },
   "engines": {
     "node": ">=20"

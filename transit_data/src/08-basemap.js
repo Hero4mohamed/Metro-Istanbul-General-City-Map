@@ -117,6 +117,13 @@ function makeBasemapGrade(pal) {
        boundaries (dark green Turkey beside slate Greece, at night). So the park colour fades
        into the land colour as the map zooms out. `z` is optional: omitted means full strength. */
     const pk = (z === undefined || z === null) ? 1 : _smooth(8, 11, z);
+    /* City-overview zoom (z12 and below) is drawn differently. Measured on real tiles: the
+       built-up area is a SALMON fill (hue 10-30, saturation 0.8-1.0, lightness 0.75-0.90 — e.g.
+       254,182,156) and motorways are a darker orange (236,152,120), where at z13+ the same hues
+       are the roads themselves. Treating them all as "arterial" turned the whole city amber. So
+       down here lightness decides: pale is built-up ground, dark is road. Above z12 nothing
+       changes, so the street-level look is exactly what it was. */
+    const low = (z !== undefined && z !== null && z <= 12);
     const pc0 = La.c[0] + (Pk.c[0] - La.c[0]) * pk, pc1 = La.c[1] + (Pk.c[1] - La.c[1]) * pk,
           pc2 = La.c[2] + (Pk.c[2] - La.c[2]) * pk;
     for (let i = 0; i < d.length; i += 4) {
@@ -139,8 +146,13 @@ function makeBasemapGrade(pal) {
         if (chroma >= .002) {
           let h = M === r ? ((g - b) / dd) % 6 : M === g ? (b - r) / dd + 2 : (r - g) / dd + 4;
           h *= 60; if (h < 0) h += 360;
-          const ww = _band(h, 210, 38), wp = _band(h, 76, 15), wl = _band(h, 55, 14),
-                wu = _band(h, 33, 13),  wr = _band(h, 18, 14);
+          const ww = _band(h, 210, 38), wp = _band(h, 76, 15), wl = _band(h, 55, 14);
+          let wu, wr;
+          if (low) {
+            const warm = _band(h, 18, 24), pale = _smooth(.72, .78, l);
+            wu = Math.max(_band(h, 33, 13), warm * pale);       // the salmon fill, and the old built-up tan
+            wr = _band(h, 15, 16) * (1 - pale);                 // only the darker orange is a road
+          } else { wu = _band(h, 33, 13); wr = _band(h, 18, 14); }
           const sum = ww + wp + wl + wu + wr;
           if (sum >= .002) {                             // a hue we have no class for (an icon) stays itself
             const dW = (l - W.ref) * W.k * 255,  dP = (l - Pk.ref) * Pk.k * 255, dL = (l - La.ref) * La.k * 255,
