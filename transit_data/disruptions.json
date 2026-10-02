@@ -34,5 +34,16 @@
     "messageTr": "Hava muhalefeti nedeniyle seferler yapılamamaktadır.",
     "message": "Due to adverse weather, services cannot operate.",
     "messageLang": "en"
+  },
+  {
+    "id": "tf2-al-m-yor",
+    "ref": "TF2",
+    "source": "metro.istanbul",
+    "scope": "line",
+    "severity": "minor",
+    "title": "Service notice",
+    "messageTr": "Hava muhalefeti nedeniyle seferler yapılamamaktadır",
+    "message": "Due to adverse weather, services cannot operate.",
+    "messageLang": "en"
   }
 ]
