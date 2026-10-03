@@ -180,6 +180,13 @@ liveLines.forEach(line => line.paths.forEach(path => {
   ghostLines.push(g); g.addTo(ghostGroup);
 }));
 
+/* ONE station dot, on every line and every tab: a white disc with a thick black outline. Stations used
+   to be drawn four ways — a disc in the line's own colour, a white disc in a coloured ring, a hollow
+   ring for planned lines, a dark disc for intercity — so the same kind of place looked like four
+   different things depending on which line it was on. The line's colour already says which line;
+   the dot only has to say "a station is here", the same way everywhere. */
+const STATION_RING = 2.4;
+const stationDot = extra => Object.assign({ color:'#05070A', fillColor:'#FFFFFF', fillOpacity:1, weight:STATION_RING }, extra || {});
 // station markers (merged registry)
 const stationGroup = L.layerGroup();
 const stationMarkers = {};
@@ -187,10 +194,9 @@ const stationMarkersArr = [];   // {m, base} for zoom-responsive radius
 stationList.forEach(r => {
   const ix = r.lines.size>1;
   const col = ix ? "#ffffff" : lineByRef[[...r.lines][0]].color;
-  const base = ix?5:3.4;
+  const base = ix?6.2:4.6;          // big enough that the white shows inside the thick black ring
   const m = L.circleMarker([r.lat, r.lng], {
-    renderer:stationRenderer, radius: base,
-    color:"#0B0F19", weight: ix?2:1.2, fillColor: col, fillOpacity:1
+    renderer:stationRenderer, radius: base, color:'#05070A', weight:STATION_RING, fillColor:'#FFFFFF', fillOpacity:1
   });
   m.on('click', (e) => { openStation(r); L.DomEvent.stop(e); });
   m.addTo(stationGroup);
@@ -202,11 +208,11 @@ stationList.forEach(r => {
 const plannedStationGroup = L.layerGroup();
 plannedStationList.forEach(r => {
   const m = L.circleMarker([r.lat, r.lng], {
-    renderer:stationRenderer, radius:3.6, color:r.color, weight:1.6, fillColor:"#0B0F19", fillOpacity:1
+    renderer:stationRenderer, radius:4.6, color:'#05070A', weight:STATION_RING, fillColor:'#FFFFFF', fillOpacity:1
   });
   m.on('click', (e) => { openLine(lineByRef[r.ref]); L.DomEvent.stop(e); });
   m.addTo(plannedStationGroup);
-  stationMarkersArr.push({ m, base:3.6, refs:new Set([r.ref]), planned:true, color:r.color });
+  stationMarkersArr.push({ m, base:4.6, refs:new Set([r.ref]), planned:true, color:r.color });
 });
 
 // zoom-responsive sizing: thin lines & small dots when zoomed out (de-clutter)
@@ -250,7 +256,8 @@ function clearRouteFocus(){
 function applyZoomStyling(){
   const z = map.getZoom(), ls = lineScale(z), ms = markerScale(z);
   linePolys.forEach(o => o.pl.setStyle({ weight: Math.max(0.5, o.base*ls) }));
-  stationMarkersArr.forEach(o => o.m.setRadius(Math.max(1, o.base*ms)));
+  // the black ring shrinks with the dot, or a tiny zoomed-out station would be nothing but ring
+  stationMarkersArr.forEach(o => { o.m.setRadius(Math.max(1, o.base*ms)); o.m.setStyle({ weight: Math.max(1, STATION_RING*ms) }); });
 }
 map.on('zoomend', applyZoomStyling);
 
@@ -294,30 +301,12 @@ function applyLineStyle(){
   });
   applyZoomStyling();
 }
-/* Station rings. Night keeps the established look — a coloured dot in a dark ring. By day that
-   is wrong: the casing is now white, so a white ring would melt into it and a dark ring reads
-   as a hole punched in the line. A day station is the classic metro-map stop instead: a white
-   disc in a ring of the line's own colour (or of its outline tint, for a colour too light to
-   show on its own), with interchanges a white disc in dark ink. */
+/* Station dots are ONE style everywhere (see STATION_RING): a white disc with a thick black outline,
+   whatever the line, the tab or the basemap. This runs on every tone change only to put that style
+   back after anything restyled a marker — it no longer varies with the tone. */
 function applyStationStyle(){
-  const tone = mapTone(), T = MAP_TONES[tone];
-  const day = tone === 'day';
-  stationMarkersArr.forEach(o => {
-    if(o.planned){
-      o.m.setStyle({ color: day ? casingForRing(o.color, tone) : o.color, fillColor:T.hole });
-    } else if(o.ix){
-      o.m.setStyle({ color:T.ring, fillColor:'#FFFFFF' });
-    } else if(day){
-      o.m.setStyle({ color:casingForRing(o.color, tone), fillColor:'#FFFFFF', weight:2 });
-    } else {
-      o.m.setStyle({ color:T.ring, fillColor:o.color, weight:1.2 });
-    }
-  });
-}
-// the ring of a day station: the line's colour if it shows on ivory, else its darker outline tint
-function casingForRing(color, tone){
-  const k = casingFor(color, tone);
-  return k === '#FFFFFF' ? color : k;
+  stationMarkersArr.forEach(o => o.m.setStyle({ color:'#05070A', fillColor:'#FFFFFF', fillOpacity:1 }));
+  applyZoomStyling();
 }
 // everything that depends on what the map is drawn on, in one call
 function applyMapTone(){

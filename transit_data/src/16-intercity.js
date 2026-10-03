@@ -8,8 +8,7 @@ let icReturn = null, icListBuilt = false, icMode = 'all', icSelected = null;
 const intercityStationGroup = L.layerGroup();
 const intercityHi = L.layerGroup();                          // bold overlay for the selected route
 intercityLines.forEach(line => line.stations.forEach(st => {
-  L.circleMarker([st.lat, st.lng], { renderer:lineRenderer, radius:3.4, color:line.color,
-      weight:1.6, fillColor:'#0b0f16', fillOpacity:1 })
+  L.circleMarker([st.lat, st.lng], stationDot({ renderer:lineRenderer, radius:4.4 }))
     .bindTooltip(`${svgEsc(st.name)} · ${svgEsc(line.ref)}`, { className:'lt', direction:'top' })
     .on('click', ()=> openLine(line))
     .addTo(intercityStationGroup);
@@ -72,8 +71,7 @@ function selectIntercity(l, openPanel){
     L.polyline(p, { renderer:lineRenderer, color:l.color, weight:4.5, opacity:1, lineCap:'round', lineJoin:'round' })
       .bindTooltip(l.official, { sticky:true, className:'lt' }).on('click', ()=> openLine(l)).addTo(intercityHi);
   });
-  l.stations.forEach(st => L.circleMarker([st.lat, st.lng], { renderer:lineRenderer, radius:4, color:l.color,
-      weight:2, fillColor:'#080c14', fillOpacity:1 })
+  l.stations.forEach(st => L.circleMarker([st.lat, st.lng], stationDot({ renderer:lineRenderer, radius:4.8 }))
       .bindTooltip(svgEsc(st.name), { direction:'top', className:'lt' }).addTo(intercityHi));
   // labelled terminus markers: the route's advertised city names at the two geographic extremes.
   // Label pushed outward (west→left, east→right); flag on the end farther from İstanbul (the
@@ -83,7 +81,7 @@ function selectIntercity(l, openPanel){
     const dir = st.lng <= other.lng ? 'left' : 'right';
     const foreign = l.intl && metersBetween([st.lat,st.lng],HALK) > metersBetween([other.lat,other.lng],HALK);
     const flag = (foreign && l.flag) ? l.flag+' ' : '';
-    L.circleMarker([st.lat, st.lng], { renderer:lineRenderer, radius:6.5, color:l.color, weight:3, fillColor:'#fff', fillOpacity:1 })
+    L.circleMarker([st.lat, st.lng], stationDot({ renderer:lineRenderer, radius:6.5 }))
       .bindTooltip(`${flag}${svgEsc(e.city)}`, { permanent:true, direction:dir, className:'ic-lbl' }).addTo(intercityHi); });
   intercityHi.addTo(map);
   fitIntercity([l]);

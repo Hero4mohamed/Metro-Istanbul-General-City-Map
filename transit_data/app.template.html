@@ -105,6 +105,24 @@
     --gold-ink:#B45309; --violet-ink:#7C3AED; --sky-ink:#0369A1; --crimson-ink:#B4121F;
   }
   body.light .glass,body.light .card,body.light .topbar{box-shadow:0 12px 34px -14px rgba(20,30,55,.35);}
+  /* The fourth theme, "Mixed": everything light EXCEPT the tabs. The page is the light theme (body.light);
+     the tab card (and the phone's bottom tab bar) simply restate the DARK tokens for themselves, so every
+     rule inside them — active tab tints, hover, text — keeps working with no second set of rules. An
+     element's own declaration beats the value it would inherit, so this also holds under Atlas, Calm and
+     Paper, which restate the tokens on the body. */
+  body.tabs-dark #cardTabs,body.tabs-dark .mnav{
+    --obsidian:#070A12; --panel:rgba(13,17,27,0.92); --stroke:rgba(255,255,255,0.08);
+    --stroke-2:rgba(255,255,255,0.15); --text:#EEF2F8; --muted:#9AA4B8; --dim:#78849C;
+    --accent:#34D399; --accent-2:#2DD4BF; --gold:#FBBF24; --btn-ink:#03130A;
+    --grad-accent:linear-gradient(135deg,#4ADE80,#14B8A6);
+    --surface:rgba(255,255,255,.045); --surface-2:rgba(255,255,255,.08);
+    --track:rgba(4,7,13,.55); --ring:rgba(52,211,153,.28); --svg-hole:#0b0f17;
+    --ok-ink:#7CF0BE; --warn-ink:#F5A623; --danger-ink:#F08287;
+    --gold-ink:#FCD97C; --violet-ink:#DDB9FF; --sky-ink:#38BDF8; --crimson-ink:#FF9AA6;
+    --ok-rgb:52,211,153; --warn-rgb:245,166,35; --danger-rgb:229,72,77;
+    --gold-rgb:251,191,36; --violet-rgb:192,132,252; --sky-rgb:56,189,248; --crimson-rgb:200,16,46;
+    color:var(--text);
+  }
   body.light .locate-fab{box-shadow:0 8px 22px -10px rgba(20,30,55,.4);}
   /* darken pastel "active" text (tuned for dark mode) so it reads on light panels */
   
@@ -1579,6 +1597,7 @@
         <button data-theme="dark" class="active" data-i18n="dark">Dark</button>
         <button data-theme="light" data-i18n="light">Light</button>
         <button data-theme="auto" data-i18n="themeAuto">Auto</button>
+        <button data-theme="split" data-i18n="themeSplit" data-i18n-title="themeSplitTip" title="Everything light, except the tabs">Mixed</button>
       </div>
     </div>
     <div class="sp-row sp-col" id="cardRow"><span data-i18n="fareCard">Fare card</span>
@@ -1725,7 +1744,7 @@
 </div>
 
 <div class="controls" id="controls">
-  <div class="card glass" style="padding:7px;">
+  <div class="card glass" id="cardTabs" style="padding:7px;">
     <div class="tabs" id="tabs" role="tablist" aria-label="Map view">
       <button data-tab="active" class="active" role="tab" aria-selected="true" data-i18n="tabActive">● Active</button>
       <button data-tab="vision" role="tab" aria-selected="false" data-i18n="tabVision">◇ Vision</button>
