@@ -105,6 +105,15 @@ function _neutralTable(pal) {
   return { lo: lo, tint: tint };
 }
 function _clamp255(v) { return v < 0 ? 0 : (v > 255 ? 255 : v); }
+/* Water hue: blue, with enough colour to be blue rather than grey (hue 195-225, measured on the
+   sea at z12-z14: base water is ~210, the ferry ink 200-210). */
+function _waterHued(R, G, B) {
+  const M = Math.max(R, G, B), m = Math.min(R, G, B), dd = M - m;
+  if (dd < 30 || M !== B) return false;
+  const h = 60 * ((R - G) / dd + 4);
+  return h >= 195 && h <= 225;
+}
+const FERRY_RING = [[6, 0], [-6, 0], [0, 6], [0, -6], [6, 6], [-6, 6], [6, -6], [-6, -6]];
 
 /* Regrade an RGBA buffer IN PLACE. Alpha is never touched.
 
@@ -132,9 +141,32 @@ function makeBasemapGrade(pal) {
     const low = (z !== undefined && z !== null && z <= 12);
     const pc0 = La.c[0] + (Pk.c[0] - La.c[0]) * pk, pc1 = La.c[1] + (Pk.c[1] - La.c[1]) * pk,
           pc2 = La.c[2] + (Pk.c[2] - La.c[2]) * pk;
+    /* Esri draws its own ferry routes into the tiles: thin dashed lines across the water with an
+       italic label along each. The app draws the ferry lines itself, properly, from the operator
+       data, so the baked-in ones are a second, fainter, unlabelled-by-us copy that criss-crosses
+       the sea. They are blue ink — water hue, a little darker than the water — and the one thing
+       that tells them from a blue icon or a river is where they are: surrounded by more water.
+       So a pass over the ORIGINAL pixels first marks everything water-hued, and a blue-ink pixel
+       with water on (nearly) every side is painted as plain water. Land is never touched: a blue
+       pixel there has land beside it. (Sea names such as "Marmara Denizi" are the same ink and go
+       with them; the app has its own labels for what matters.) */
+    const side = Math.round(Math.sqrt(d.length / 4)), wm = new Uint8Array(side * side);
+    for (let p = 0, k = 0; p < wm.length; p++, k += 4) wm[p] = _waterHued(d[k], d[k + 1], d[k + 2]) ? 1 : 0;
+    const around = function (p) {                       // how many of 8 points 6px away are water-hued; off the tile counts as water
+      const x = p % side, y = (p - x) / side; let n = 0;
+      for (let q = 0; q < 8; q++) {
+        const xx = x + FERRY_RING[q][0], yy = y + FERRY_RING[q][1];
+        n += (xx < 0 || yy < 0 || xx >= side || yy >= side) ? 1 : wm[yy * side + xx];
+      }
+      return n;
+    };
     for (let i = 0; i < d.length; i += 4) {
       const r = d[i] / 255, g = d[i + 1] / 255, b = d[i + 2] / 255;
       const M = Math.max(r, g, b), m = Math.min(r, g, b), l = (M + m) / 2, dd = M - m;
+      if (wm[i >> 2] && l >= .42 && l < .84 && around(i >> 2) >= 7) {
+        d[i] = W.c[0]; d[i + 1] = W.c[1]; d[i + 2] = W.c[2];      // ferry route or its label, over open water
+        continue;
+      }
       let R0 = d[i], G0 = d[i + 1], B0 = d[i + 2];
       if (NT) {
         const ix = (l * 255 + .5) | 0, sh = NT.lo[ix] - l * 255;

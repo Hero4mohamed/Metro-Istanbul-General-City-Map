@@ -421,6 +421,16 @@ const MUTATIONS = [
     apply: h => h.replace('return UI_STYLES.indexOf(v) >= 0 ? v : DEFAULT_UI_STYLE; }catch(e)', 'return DEFAULT_UI_STYLE; }catch(e)'),
   },
   {
+    name: 'stop erasing the ferry routes Esri bakes into the sea tiles',
+    expect: 'a ferry route drawn into the sea tile is erased, in both tones',
+    apply: h => h.replace('if (wm[i >> 2] && l >= .42 && l < .84 && around(i >> 2) >= 7) {', 'if (false) {'),
+  },
+  {
+    name: 'erase blue on land as if it were a ferry route',
+    expect: 'blue on land is not mistaken for a ferry route',
+    apply: h => h.replace('n += (xx < 0 || yy < 0 || xx >= side || yy >= side) ? 1 : wm[yy * side + xx];', 'n += 1;'),
+  },
+  {
     name: 'give every line the same white outline, whatever its colour',
     expect: 'every line colour stays visible on the land, in both tones',
     apply: h => h.replace('if (contrastRgb(C, G) >= 3 && contrastRgb(C, neutral) >= 2.2) return rgbToHex(neutral);',
