@@ -257,15 +257,15 @@ test('a river is still a river: water ink beside land stays', () => {
 });
 
 /* ONE road colour at night. Esri draws roads as white streets, orange arterials and darker orange
-   motorways; the dark map shows all of them as the same off-white, because a map whose roads come
+   motorways; the dark map shows all of them as the same light grey, because a map whose roads come
    in four colours is a map whose roads compete with the lines. The exception is the road under a
    label: a label's halo and a street are both pure white in the tile, so anything within a few
    pixels of a letter is dark, and the letters stay legible. */
 const ESRI_WHITE = [255, 255, 255], ESRI_ARTERIAL = [244, 194, 162], ESRI_MOTORWAY = [236, 152, 120], ESRI_LAND = [243, 240, 233];
 
-test('every road is the same off-white at night, whatever Esri drew it as', () => {
-  const B = basemap(), road = B.ATLAS_PAL.night.roadWhite;
-  assert.ok(road && road.every(v => v > 170 && v < 235), 'the road colour must be an off-white, not a grey or a pure white: ' + road);
+test('every road is the same light grey at night, whatever Esri drew it as', () => {
+  const B = basemap(), road = B.ATLAS_PAL.night.roadGrey;
+  assert.ok(road && road.every(v => v > 110 && v < 200), 'the road colour must be a light grey, not near-white and not dark: ' + road);
   const out = tile(B, 'night', (x, y) => (x === 20 ? ESRI_WHITE : (x === 30 ? ESRI_ARTERIAL : (x === 10 ? ESRI_MOTORWAY : ESRI_LAND))), 41, 14);
   for (const [name, x] of [['white street', 20], ['orange arterial', 30], ['motorway', 10]])
     assert.ok(near(out(x, 20), road, 14), name + ' is ' + out(x, 20).map(Math.round) + ', not the one road colour ' + road);
@@ -276,14 +276,14 @@ test('every road is the same off-white at night, whatever Esri drew it as', () =
 test('the land is never mistaken for a road', () => {
   const B = basemap();
   const out = tile(B, 'night', () => ESRI_LAND, 41, 14);
-  assert.ok(!near(out(20, 20), B.ATLAS_PAL.night.roadWhite, 40), 'plain land came out as road: ' + out(20, 20).map(Math.round));
+  assert.ok(!near(out(20, 20), B.ATLAS_PAL.night.roadGrey, 40), 'plain land came out as road: ' + out(20, 20).map(Math.round));
 });
 
 test('a street under a label goes dark, so the letters stay readable', () => {
   const B = basemap();
   // a white street along row 20, with a block of dark label ink on it at x 18-22
   const out = tile(B, 'night', (x, y) => (y === 20 ? (x >= 18 && x <= 22 && x % 2 ? [40, 40, 40] : ESRI_WHITE) : ESRI_LAND), 41, 14);
-  const road = B.ATLAS_PAL.night.roadWhite;
+  const road = B.ATLAS_PAL.night.roadGrey;
   assert.ok(near(out(5, 20), road, 14), 'the street far from the label should be the road colour');
   const beside = out(24, 20);                                  // 3px from the nearest ink (x 21)
   assert.ok(B.contrastRgb(beside, [255, 255, 255]) > 6, 'a street pixel beside a label is still bright (' + beside.map(Math.round) + '): the label would sit on a white halo');

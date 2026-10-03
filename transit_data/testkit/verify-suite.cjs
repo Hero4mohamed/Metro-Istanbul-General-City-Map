@@ -512,7 +512,7 @@ const MUTATIONS = [
   },
   {
     name: 'stop unifying the road colour (white streets stay a different colour from arterials)',
-    expect: 'every road is the same off-white at night, whatever Esri drew it as',
+    expect: 'every road is the same light grey at night, whatever Esri drew it as',
     apply: h => h.replace('if (OW && dd < .045 && l > .93 && !near[i >> 2]) {', 'if (false) {'),
   },
   {
@@ -546,7 +546,7 @@ const MUTATIONS = [
   {
     name: 'invert the night road hierarchy (roads darker than land, as CSS invert() does)',
     expect: 'by night a road is brighter than the land, not darker',
-    apply: h => h.replace('roadWhite: [208, 206, 200], roadHalo: [25, 26, 29],', 'roadWhite: [12, 12, 14], roadHalo: [25, 26, 29],'),
+    apply: h => h.replace('roadGrey: [150, 152, 158], roadHalo: [25, 26, 29],', 'roadGrey: [12, 12, 14], roadHalo: [25, 26, 29],'),
   },
   {
     name: 'let night label text stay dark',
