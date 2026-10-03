@@ -56,25 +56,28 @@ const ATLAS_PAL = {
     tintS: 0,                                 // no tint: by day the source's own hue is left alone
   },
   /* Night is GRAPHITE: neutral charcoal ground, near-black water, a whisper of green for parks, and
-     main roads in a light grey. The first night palette was a slate blue with teal and brown roads;
-     people found the whole screen too much, and the dark grey-and-black look that came before it
-     was the one they wanted back. A mustard yellow for the main roads was tried and replaced with
-     this: the map is now colourless except for the metro lines, which is what lets them carry it.
-     The grey sits well above the minor streets (white road fill, pulled to ~L 0.31 by the curve
-     below) so the road hierarchy still reads. */
+     main roads in a quiet slate grey. The first night palette was a slate blue with teal and brown
+     roads; people found the whole screen too much, and the dark grey-and-black look that came
+     before it was the one they wanted back. Mustard main roads, then light-grey ones, were tried
+     and both made the roads the loudest thing on the map: they sit under the metro lines and must
+     not compete with them. So this follows how Google's dark map treats a road — only a step above
+     the ground, a step more for the main ones — and leaves the colour to water (a deep blue) and
+     parks (a dark green), which is what makes a city read as a place and not a street diagram. */
   night: {
     ground: [30, 31, 34],
     bands: {
-      water: { c: [18, 21, 26],   ref: .86, k: .30 },
-      park:  { c: [30, 43, 35],   ref: .82, k: .18 },
+      water: { c: [19, 26, 38],   ref: .86, k: .30 },
+      park:  { c: [31, 44, 38],   ref: .82, k: .18 },
       land:  { c: [30, 31, 34],   ref: .85, k: .10 },
       urban: { c: [35, 36, 39],   ref: .82, k: .10 },
-      road:  { c: [130, 132, 138], ref: .76, k: .20 },
+      road:  { c: [82, 86, 95],   ref: .76, k: .20 },
     },
     tintH: 220, tintS: 0,                     // no tint: greys stay grey
     // lightness in -> lightness out. Dark label text (low l) -> light; the halos and casings
-    // (high l) -> dark; white road fill (1.0) -> one step above the land.
-    curve: [[0, .90], [.25, .78], [.5, .58], [.62, .42], [.78, .17], [.9, .15], [.96, .21], [1, .31]],
+    // (high l) -> dark; white road fill (1.0) -> one quiet step above the land. Google's dark map is
+    // the model for the hierarchy: streets are only a little lighter than the ground, main roads a
+    // little lighter again, and it is the labels, water and parks that do the talking.
+    curve: [[0, .90], [.25, .78], [.5, .58], [.62, .42], [.78, .15], [.9, .14], [.96, .17], [1, .23]],
   },
 };
 

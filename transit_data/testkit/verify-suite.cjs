@@ -511,7 +511,7 @@ const MUTATIONS = [
   {
     name: 'invert the night road hierarchy (roads darker than land, as CSS invert() does)',
     expect: 'by night a road is brighter than the land, not darker',
-    apply: h => h.replace('[.96, .21], [1, .31]],', '[.96, .12], [1, .04]],'),
+    apply: h => h.replace('[.96, .17], [1, .23]],', '[.96, .12], [1, .04]],'),
   },
   {
     name: 'let night label text stay dark',
