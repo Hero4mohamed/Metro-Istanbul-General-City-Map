@@ -511,6 +511,21 @@ const MUTATIONS = [
     apply: h => h.replace('wireFold("plannerHead","plannerBody","irn_planner")', 'wireFold("plannerHead","plannerBody","irn_layers")'),
   },
   {
+    name: 'stop unifying the road colour (white streets stay a different colour from arterials)',
+    expect: 'every road is the same off-white at night, whatever Esri drew it as',
+    apply: h => h.replace('if (OW && dd < .045 && l > .93 && !near[i >> 2]) {', 'if (false) {'),
+  },
+  {
+    name: 'let a road sit white under a label (the halo and the street are the same white)',
+    expect: 'a street under a label goes dark, so the letters stay readable',
+    apply: h => h.replace('if (OW && dd < .045 && l > .93 && !near[i >> 2]) {', 'if (OW && dd < .045 && l > .93) {'),
+  },
+  {
+    name: 'turn the land into road (the white ramp starts below the land colour)',
+    expect: 'the land is never mistaken for a road',
+    apply: h => h.replace('const w = _smooth(.93, .995, l);', 'const w = _smooth(.60, .995, l);'),
+  },
+  {
     name: 'give every line the same white outline, whatever its colour',
     expect: 'every line colour stays visible on the land, in both tones',
     apply: h => h.replace('if (contrastRgb(C, G) >= 3 && contrastRgb(C, neutral) >= 2.2) return rgbToHex(neutral);',
@@ -531,7 +546,7 @@ const MUTATIONS = [
   {
     name: 'invert the night road hierarchy (roads darker than land, as CSS invert() does)',
     expect: 'by night a road is brighter than the land, not darker',
-    apply: h => h.replace('[.96, .17], [1, .23]],', '[.96, .12], [1, .04]],'),
+    apply: h => h.replace('roadWhite: [208, 206, 200], roadHalo: [25, 26, 29],', 'roadWhite: [12, 12, 14], roadHalo: [25, 26, 29],'),
   },
   {
     name: 'let night label text stay dark',
