@@ -76,10 +76,12 @@ test('place names survive the regrade', () => {
     assert.deepStrictEqual(px(B, 'day', t).slice(0, 3).map(Math.round), t, 'day label text was altered');
   // by night, dark text must come out LIGHT against the ground it sits on: that is the whole point
   const ground = B.ATLAS_PAL.night.ground;
-  for (const t of [ESRI.text, ESRI.streetName]) {
+  /* Place names must clear AA; street names are deliberately quieter (they were the clutter on a zoomed-out map) and
+     only have to clear the 3:1 that WCAG sets for anything that is not body text. */
+  for (const [t, need] of [[ESRI.text, 4.5], [ESRI.streetName, 3]]) {
     const out = px(B, 'night', t);
-    assert.ok(B.contrastRgb(out, ground) >= 4.5,
-      'night label text is ' + B.contrastRgb(out, ground).toFixed(2) + ':1 on the ground, under AA — got ' + out.slice(0, 3).map(Math.round));
+    assert.ok(B.contrastRgb(out, ground) >= need,
+      'night label text is ' + B.contrastRgb(out, ground).toFixed(2) + ':1 on the ground, under ' + need + ' — got ' + out.slice(0, 3).map(Math.round));
   }
 });
 
@@ -287,4 +289,43 @@ test('a street under a label goes dark, so the letters stay readable', () => {
   assert.ok(near(out(5, 20), road, 14), 'the street far from the label should be the road colour');
   const beside = out(24, 20);                                  // 3px from the nearest ink (x 21)
   assert.ok(B.contrastRgb(beside, [255, 255, 255]) > 6, 'a street pixel beside a label is still bright (' + beside.map(Math.round) + '): the label would sit on a white halo');
+});
+
+/* Quiet map. The base is a picture with its labels, road shields and pictograms baked in, so they cannot be made
+   smaller — but they can be made much less obvious, which is what a zoomed-out map needs: solid signs and symbols
+   are removed, coloured label text is dimmed, and grey text is dimmer the further out the map is. */
+const gradeOf = (B, pal) => B.makeBasemapGrade(pal);
+function rawTile(B, pal, paint, side = 41, z = 14) {
+  const d = new Float64Array(side * side * 4);
+  for (let y = 0; y < side; y++) for (let x = 0; x < side; x++) { const c = paint(x, y), i = (y * side + x) * 4; d[i] = c[0]; d[i + 1] = c[1]; d[i + 2] = c[2]; d[i + 3] = 255; }
+  gradeOf(B, pal)(d, z);
+  return (x, y) => { const i = (y * side + x) * 4; return [d[i], d[i + 1], d[i + 2]]; };
+}
+
+test('a road shield or symbol is removed, white letters and all, in both tones', () => {
+  const B = basemap();
+  for (const tone of ['day', 'night']) {
+    const GREEN_SIGN = [0, 110, 70];
+    const out = rawTile(B, B.ATLAS_PAL[tone], (x, y) => (x >= 14 && x <= 27 && y >= 15 && y <= 24
+      ? ((x === 17 || x === 18) && y >= 17 && y <= 22 ? [255, 255, 255] : GREEN_SIGN) : ESRI_LAND));
+    const ground = B.ATLAS_PAL[tone].bands.land.c;
+    assert.ok(near(out(22, 19), ground, 14), tone + ': the sign body is still drawn: ' + out(22, 19).map(Math.round));
+    assert.ok(near(out(17, 19), ground, 14), tone + ': a white letter inside the sign is left behind: ' + out(17, 19).map(Math.round));
+  }
+});
+
+test('a thin coloured stroke is a letter, not a sign: it stays, quieter than it was', () => {
+  const B = basemap(), pal = B.ATLAS_PAL.night, GREEN_TEXT = [60, 140, 80];
+  const paint = (x, y) => (x === 20 || x === 21 ? GREEN_TEXT : ESRI_LAND);
+  const quiet = rawTile(B, pal, paint), loud = rawTile(B, Object.assign({}, pal, { quietInk: 0 }), paint);
+  const ground = pal.bands.land.c;
+  assert.ok(!near(quiet(20, 20), ground, 6), 'a coloured label was erased like a sign');
+  assert.ok(B.contrastRgb(quiet(20, 20), ground) < B.contrastRgb(loud(20, 20), ground), 'coloured label text was not made quieter');
+});
+
+test('grey text is dimmer the further out the map is, and untouched up close', () => {
+  const B = basemap(), pal = B.ATLAS_PAL.night, ground = pal.bands.land.c;
+  const at = z => rawTile(B, pal, (x, y) => (x === 20 || x === 21 ? [40, 40, 40] : ESRI_LAND), 41, z)(20, 20);
+  assert.ok(B.contrastRgb(at(11), ground) < B.contrastRgb(at(15), ground) - 0.5, 'text is not quieter when zoomed out: z11 ' + B.contrastRgb(at(11), ground).toFixed(2) + ' vs z15 ' + B.contrastRgb(at(15), ground).toFixed(2));
+  assert.ok(Math.abs(B.contrastRgb(at(15), ground) - B.contrastRgb(at(18), ground)) < 0.05, 'text close up should not depend on the zoom');
 });

@@ -526,6 +526,41 @@ const MUTATIONS = [
     apply: h => h.replace('const w = _smooth(.93, .995, l);', 'const w = _smooth(.60, .995, l);'),
   },
   {
+    name: 'leave road shields and symbols on the map',
+    expect: 'a road shield or symbol is removed, white letters and all, in both tones',
+    apply: h => h.replace('if (blobs && blobs[i >> 2]) {', 'if (false) {'),
+  },
+  {
+    name: 'erase coloured label text as if it were a sign (or leave it at full strength)',
+    expect: 'a thin coloured stroke is a letter, not a sign: it stays, quieter than it was',
+    apply: h => h.replace('if (QI && l < .55 && dd >= .07) {', 'if (false) {'),
+  },
+  {
+    name: 'stop dimming grey text when the map is zoomed out',
+    expect: 'grey text is dimmer the further out the map is, and untouched up close',
+    apply: h => h.replace('if (gain < 1 && l < .45 && dd < .12) {', 'if (false) {'),
+  },
+  {
+    name: 'fill a station dot with its line colour again',
+    expect: 'every station dot is the same white disc with a thick black outline',
+    apply: h => h.replace("renderer:stationRenderer, radius: base, color:'#05070A', weight:STATION_RING, fillColor:'#FFFFFF'", "renderer:stationRenderer, radius: base, color:'#05070A', weight:STATION_RING, fillColor: col"),
+  },
+  {
+    name: 'draw the strip-map terminus the old coloured way',
+    expect: 'the line-panel strip map uses the same station dot',
+    apply: h => h.replace('r="8" fill="#fff" stroke="#05070A" stroke-width="3.4"', 'r="8" fill="var(--svg-hole)" stroke="#05070A" stroke-width="3.4"'),
+  },
+  {
+    name: 'never mark the body as having dark tabs',
+    expect: 'the fourth theme, Mixed, is offered, remembered and keeps only the tabs dark',
+    apply: h => h.replace("document.body.classList.toggle('tabs-dark', themePref==='split');", ''),
+  },
+  {
+    name: 'let the Mixed theme resolve to the dark page',
+    expect: 'the fourth theme, Mixed, is offered, remembered and keeps only the tabs dark',
+    apply: h => h.replace("return (pref==='light'||pref==='split')?'light':'dark'; }", "return (pref==='light')?'light':'dark'; }"),
+  },
+  {
     name: 'give every line the same white outline, whatever its colour',
     expect: 'every line colour stays visible on the land, in both tones',
     apply: h => h.replace('if (contrastRgb(C, G) >= 3 && contrastRgb(C, neutral) >= 2.2) return rgbToHex(neutral);',
@@ -551,7 +586,7 @@ const MUTATIONS = [
   {
     name: 'let night label text stay dark',
     expect: 'place names survive the regrade',
-    apply: h => h.replace('curve: [[0, .90], [.25, .78], [.5, .58], [.62, .42],', 'curve: [[0, .10], [.25, .12], [.5, .20], [.62, .30],'),
+    apply: h => h.replace('curve: [[0, .82], [.2, .70], [.35, .52], [.5, .38], [.62, .28],', 'curve: [[0, .10], [.2, .12], [.35, .16], [.5, .20], [.62, .30],'),
   },
   {
     name: 'make the ground differ from the land colour (every tile seam shows)',

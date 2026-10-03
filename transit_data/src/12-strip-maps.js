@@ -49,9 +49,10 @@ function lineStripSVG(line){
         P.push(`<text x="${x}" y="${by-1}" text-anchor="middle" font-size="8.5" font-weight="700" fill="${inkOn(ch.col)}" style="font-family:var(--mono)">${svgEsc(ch.lab)}</text>`);
       });
     }
-    if(term) P.push(`<circle cx="${x}" cy="${TY}" r="8" fill="var(--svg-hole)" stroke="${col}" stroke-width="4"/>`);
-    else if(others.length) P.push(`<circle cx="${x}" cy="${TY}" r="6.5" fill="var(--svg-hole)" stroke="${col}" stroke-width="3"/>`);
-    else P.push(`<circle cx="${x}" cy="${TY}" r="5" fill="${col}"/><circle cx="${x}" cy="${TY}" r="2.1" fill="var(--svg-hole)"/>`);
+    /* the same dot as on the map: white, thick black outline — only the size says terminus / interchange / stop */
+    if(term) P.push(`<circle cx="${x}" cy="${TY}" r="8" fill="#fff" stroke="#05070A" stroke-width="3.4"/>`);
+    else if(others.length) P.push(`<circle cx="${x}" cy="${TY}" r="6.5" fill="#fff" stroke="#05070A" stroke-width="3"/>`);
+    else P.push(`<circle cx="${x}" cy="${TY}" r="5" fill="#fff" stroke="#05070A" stroke-width="2.6"/>`);
     P.push(`<text x="${x+4}" y="${TY+15}" transform="rotate(45 ${x+4} ${TY+15})" font-size="10.5" fill="${term?'var(--text)':'var(--muted)'}" font-weight="${term?'700':'500'}" style="font-family:var(--font)">${svgEsc(st.name)}</text>`);
   });
   return `<svg class="strip-svg" viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" xmlns="http://www.w3.org/2000/svg">${P.join('')}</svg>`;

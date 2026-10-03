@@ -4,10 +4,13 @@
    =========================================================================== */
 const lsStr=(k,def)=>{ try{ const s=localStorage.getItem(k); return s==null?def:s; }catch(e){ return def; } };
 const lsJSON=(k)=>{ try{ return JSON.parse(localStorage.getItem(k)); }catch(e){ return null; } };
-let themePref = (function(){ const s=lsStr('irn_theme'); if(s==='light'||s==='dark'||s==='auto') return s;
+let themePref = (function(){ const s=lsStr('irn_theme'); if(s==='light'||s==='dark'||s==='auto'||s==='split') return s;
   return (window.matchMedia && matchMedia('(prefers-color-scheme: light)').matches) ? 'light' : 'dark'; })();
 let routePref = (function(){ const s=lsStr('irn_routePref'); return (s==='fast'||s==='easy')?s:'fast'; })();
-function resolveTheme(pref){ if(pref==='auto'){ const h=new Date().getHours(); return (h>=19||h<7)?'dark':'light'; } return pref==='light'?'light':'dark'; }
+/* 'split' is the fourth choice: everything light EXCEPT the tabs, which stay dark. For the page it is the light theme
+   (so it resolves to 'light' and the light basemap goes with it); the tabs are the only thing that differs, and that is
+   a body class, not a second palette. */
+function resolveTheme(pref){ if(pref==='auto'){ const h=new Date().getHours(); return (h>=19||h<7)?'dark':'light'; } return (pref==='light'||pref==='split')?'light':'dark'; }
 /* The browser's address bar / status bar colour, so the page and the chrome around it are one
    surface. Atlas states its ground exactly; the other experiences keep their established values. */
 function syncThemeColor(actual){
@@ -16,10 +19,11 @@ function syncThemeColor(actual){
   if(tc) tc.setAttribute('content', atlas ? (actual==='light' ? '#F3F0E9' : '#1E1F22') : (actual==='light' ? '#E9EEF5' : '#070A12'));
 }
 function applyTheme(pref, syncBase){
-  themePref = (pref==='light'||pref==='auto') ? pref : 'dark';
+  themePref = (pref==='light'||pref==='auto'||pref==='split') ? pref : 'dark';
   try{ localStorage.setItem('irn_theme', themePref); }catch(e){}
   const actual = resolveTheme(themePref);
   document.body.classList.toggle('light', actual==='light');
+  document.body.classList.toggle('tabs-dark', themePref==='split');
   syncThemeColor(actual);
   document.querySelectorAll('#themeSeg button').forEach(b=> b.classList.toggle('active', b.dataset.theme===themePref));
   // keep the map basemap in step with the UI theme (unless the user is on Satellite)

@@ -544,6 +544,30 @@ const CHECKS = [
     },
   },
   {
+    name: 'the Mixed theme is light everywhere except the tabs',
+    why: 'The static suite proves the wiring; only a real page shows the rendered result — that the tab card is genuinely dark '
+       + 'while the card under it is genuinely light, and that going back to the saved theme puts everything back.',
+    run: async (w) => {
+      const prev = (() => { try { return w.localStorage.getItem('irn_theme') || 'dark'; } catch (e) { return 'dark'; } })();
+      const rgb = el => (w.getComputedStyle(el).backgroundColor.match(/[\d.]+/g) || [0, 0, 0]).slice(0, 3).map(Number);
+      const sum = el => rgb(el).reduce((a, b) => a + b, 0);
+      try {
+        w.applyTheme('split', true);
+        const tabs = w.document.getElementById('cardTabs'), layers = w.document.getElementById('cardLayers');
+        if (!tabs || !layers) return 'the tab card or the layers card is missing';
+        if (!w.document.body.classList.contains('light')) return 'Mixed did not make the page light';
+        if (!w.document.body.classList.contains('tabs-dark')) return 'Mixed did not mark the tabs as dark';
+        if (sum(tabs) > 200) return 'the tab card is not dark (' + rgb(tabs) + ')';
+        if (sum(layers) < 600) return 'the layers card is not light (' + rgb(layers) + ')';
+        const active = w.document.querySelector('#tabs button.active');
+        const ink = (w.getComputedStyle(active).color.match(/[\d.]+/g) || [0, 0, 0]).slice(0, 3).map(Number).reduce((a, b) => a + b, 0);
+        if (ink < 300) return 'the active tab text is dark on a dark card (' + ink + ')';
+        w.applyTheme('dark', true);
+        if (w.document.body.classList.contains('tabs-dark')) return 'leaving Mixed left the dark-tabs marker behind';
+      } finally { w.applyTheme(prev, true); }
+    },
+  },
+  {
     name: 'the service worker registers',
     run: async (w) => {
       if (w.location.protocol === 'file:') return { skip: 'workers need http(s)' };

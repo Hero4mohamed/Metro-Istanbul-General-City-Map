@@ -53,6 +53,7 @@ const ATLAS_PAL = {
        whisper of edge. Text (below 0.6) is deliberately left exactly alone: its anti-aliased
        edges live at 0.5-0.8, and lightening them thins every label. */
     curve: [[0, 0], [.6, .6], [.72, .79], [.82, .91], [.92, .97], [1, 1]],
+    quietInk: .55,
     tintS: 0,                                 // no tint: by day the source's own hue is left alone
   },
   /* Night is GRAPHITE: neutral charcoal ground, near-black water, a whisper of green for parks, and
@@ -82,7 +83,8 @@ const ATLAS_PAL = {
     // (high l) -> dark; white road fill (1.0) -> one quiet step above the land. Google's dark map is
     // the model for the hierarchy: streets are only a little lighter than the ground, main roads a
     // little lighter again, and it is the labels, water and parks that do the talking.
-    curve: [[0, .90], [.25, .78], [.5, .58], [.62, .42], [.78, .15], [.9, .14], [.96, .17], [1, .23]],
+    curve: [[0, .82], [.2, .70], [.35, .52], [.5, .38], [.62, .28], [.78, .15], [.9, .14], [.96, .17], [1, .23]],
+    quietInk: .5, inkGain: .72,
   },
 };
 
@@ -114,6 +116,49 @@ function _neutralTable(pal) {
   return { lo: lo, tint: tint };
 }
 function _clamp255(v) { return v < 0 ? 0 : (v > 255 ? 255 : v); }
+/* A separable 1-D morphology pass over a side x side mask: dilate (any set pixel in the window) or erode
+   (all of them). Off the tile edge counts as SET when eroding, so a sign cut in half by a tile boundary is
+   not eaten away at the cut. */
+function _morph(a, side, r, erode) {
+  const n = side * side, b = new Uint8Array(n), c = new Uint8Array(n);
+  for (let y = 0; y < side; y++) for (let x = 0; x < side; x++) {
+    let v = erode ? 1 : 0;
+    for (let q = x - r; q <= x + r; q++) {
+      const s = (q < 0 || q >= side) ? (erode ? 1 : 0) : a[y * side + q];
+      if (erode ? !s : s) { v = erode ? 0 : 1; break; }
+    }
+    b[y * side + x] = v;
+  }
+  for (let x = 0; x < side; x++) for (let y = 0; y < side; y++) {
+    let v = erode ? 1 : 0;
+    for (let q = y - r; q <= y + r; q++) {
+      const s = (q < 0 || q >= side) ? (erode ? 1 : 0) : b[q * side + x];
+      if (erode ? !s : s) { v = erode ? 0 : 1; break; }
+    }
+    c[y * side + x] = v;
+  }
+  return c;
+}
+/* Signs, badges and symbols: the road shields, the transit pictograms, the POI icons. Each is a SOLID block of
+   saturated colour a few pixels across — which is what separates it from a letter, whose strokes are one or
+   two pixels wide and from a road, which is a pale fill. So: mark every saturated, not-light pixel, keep only
+   what survives an erosion by 2 (a block at least 5px thick), grow it back, then grow it a little further to
+   take in the white letters inside the sign. null when the tile has none (most tiles). */
+function _signBlobs(d, side) {
+  const n = side * side, a = new Uint8Array(n);
+  let any = 0;
+  for (let p = 0, k = 0; p < n; p++, k += 4) {
+    const R = d[k], G = d[k + 1], B = d[k + 2], M = Math.max(R, G, B), m = Math.min(R, G, B), dd = M - m, sum = M + m;
+    if (sum < 331 && dd > 0) {                                        // lightness under .65
+      const den = 1 - Math.abs(sum / 255 - 1);
+      if (den > 0 && dd / 255 / den > .28) { a[p] = 1; any = 1; }     // and saturated
+    }
+  }
+  if (!any) return null;
+  const opened = _morph(_morph(a, side, 2, true), side, 2, false);
+  let has = 0; for (let p = 0; p < n; p++) if (opened[p]) { has = 1; break; }
+  return has ? _morph(opened, side, 3, false) : null;
+}
 /* 1 where a pixel is within `r` pixels of dark ink (text, an icon, a shield): any pixel darker than
    mid-grey in the ORIGINAL tile. Esri's roads and its label halos are the same pure white, so
    distance from ink is the only thing that tells them apart. A separable max filter. */
@@ -153,6 +198,7 @@ const FERRY_RING = [[6, 0], [-6, 0], [0, 6], [0, -6], [6, 6], [-6, 6], [6, -6], 
 function makeBasemapGrade(pal) {
   const B = pal.bands, W = B.water, Pk = B.park, La = B.land, Ur = B.urban, Ro = B.road;
   const OW = pal.roadGrey || null, OH = pal.roadHalo || null;
+  const QI = pal.quietInk || 0, IG = pal.inkGain || 1;     // how much of a coloured label's strength survives; how far zoomed-out text is dimmed
   const NT = pal.curve ? _neutralTable(pal) : null;
   return function grade(d, z) {
     /* Scale. Above about z11 a green pixel is a park and wants its own colour. Below z9 it is a
@@ -190,11 +236,17 @@ function makeBasemapGrade(pal) {
       return n;
     };
     const near = OW ? _nearInk(d, side, 3) : null;
+    const blobs = _signBlobs(d, side);
+    const gain = (IG < 1 && z !== undefined && z !== null) ? IG + (1 - IG) * _smooth(11, 15, z) : 1;   // text is quietest when zoomed out
     for (let i = 0; i < d.length; i += 4) {
       const r = d[i] / 255, g = d[i + 1] / 255, b = d[i + 2] / 255;
       const M = Math.max(r, g, b), m = Math.min(r, g, b), l = (M + m) / 2, dd = M - m;
       if (wm[i >> 2] && l >= .42 && l < .84 && around(i >> 2) >= 7) {
         d[i] = W.c[0]; d[i + 1] = W.c[1]; d[i + 2] = W.c[2];      // ferry route or its label, over open water
+        continue;
+      }
+      if (blobs && blobs[i >> 2]) {                                 // a road shield, transit symbol or POI icon: gone
+        d[i] = La.c[0]; d[i + 1] = La.c[1]; d[i + 2] = La.c[2];
         continue;
       }
       let R0 = d[i], G0 = d[i + 1], B0 = d[i + 2];
@@ -239,6 +291,17 @@ function makeBasemapGrade(pal) {
             oR = R0 + (R - R0) * a; oG = G0 + (G - G0) * a; oB = B0 + (Bl - B0) * a;
           }
         }
+      }
+      if (QI && l < .55 && dd >= .07) {                          // coloured label text (a park, a POI, a district): quieter
+        const s = dd / (1 - Math.abs(2 * l - 1) + 1e-6);
+        if (s > .25) {
+          let h = M === r ? ((g - b) / dd) % 6 : M === g ? (b - r) / dd + 2 : (r - g) / dd + 4;
+          h *= 60; if (h < 0) h += 360;
+          if (h < 6 || h > 34) { oR = La.c[0] + (oR - La.c[0]) * QI; oG = La.c[1] + (oG - La.c[1]) * QI; oB = La.c[2] + (oB - La.c[2]) * QI; }   // not the road/built-up hues
+        }
+      }
+      if (gain < 1 && l < .45 && dd < .12) {                      // grey text, quieter the further out the map is
+        oR = La.c[0] + (oR - La.c[0]) * gain; oG = La.c[1] + (oG - La.c[1]) * gain; oB = La.c[2] + (oB - La.c[2]) * gain;
       }
       if (OW && dd < .045 && l > .93 && !near[i >> 2]) {          // a white street, away from any label: the one road colour
         // by how white it is, between the land (L .93) and pure white, so a street's anti-aliased edge fades instead of breaking up
