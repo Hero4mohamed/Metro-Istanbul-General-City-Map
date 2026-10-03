@@ -24,102 +24,267 @@ const stripTags = s => s.replace(/<[^>]+>/g,' ');
 // ==TRANSLATOR-START== (this block is injected verbatim into the app by build.cjs so the
 // client can re-translate any disruption that still contains Turkish — single source of truth)
 // [İi] etc. because JS regex /i/ does ASCII case-folding only — Turkish İ/I aren't handled.
-const TR2EN_PHRASES = [
+/* One Turkish pattern, three destinations. The rules used to carry a single English string,
+   which quietly made English the only language a disruption could be read in: an Arabic or
+   French reader got the English translation, or the Turkish original, but never their own
+   language. The pattern list is the hard-won part — the ordering comments below are about
+   which Turkish form must be matched before which — so it stays exactly one list, and each
+   rule names what it produces in each language instead. */
+const TR_PHRASES = [
   // requests by authorities ("X'nin talebi doğrultusunda …")
-  [/^\s*(.+?)['’ʼ]?\s*n[iı]n\s+talebi\s+doğrultusunda[ ,]*/i, 'At the request of $1, '],
-  [/talebi\s+doğrultusunda/gi, 'per request'],
-  [/doğrultusunda/gi, 'in line with'],
+  /* Named before the generic request rule, because that one captures the whole authority as
+     one opaque group and leaves the word-level map to translate "Emniyeti" in place — which
+     is correct in English ("İstanbul Police") and backwards in Arabic and French, where the
+     institution leads and the city follows. */
+  [/^\s*(\S+)\s+[Ee]mniyeti(?:nin)?\s+talebi\s+doğrultusunda[ ,]*/i,
+    { en:'At the request of the $1 Police, ', ar:'بناءً على طلب مديرية أمن $1، ',
+      fr:'À la demande de la police de $1, ' }],
+  [/^\s*(.+?)['’ʼ]?\s*n[iı]n\s+talebi\s+doğrultusunda[ ,]*/i,
+    { en:'At the request of $1, ', ar:'بناءً على طلب $1، ', fr:'À la demande de $1, ' }],
+  [/talebi\s+doğrultusunda/gi, { en:'per request', ar:'بناءً على الطلب', fr:'à la demande' }],
+  [/doğrultusunda/gi,          { en:'in line with', ar:'وفقًا لـ', fr:'conformément à' }],
   // station/segment ride patterns (most specific first)
-  [/seferler(?:imiz)?\s+yapıl(?:a)?mamaktadır/gi, 'services cannot operate'],
-  [/([^\s,]+)\s*[-–]\s*([^\s,]+)\s+istasyonları\s+arasında\s+yapılmaktadır/gi, 'operate between $1 and $2'],
-  [/([^\s,]+)\s+ve\s+([^\s,]+)\s+[İi]stasyon(?:undan|larından)\s+aktarmalı\s+olarak/gi, 'with a transfer at $1 and $2,'],
-  [/([^\s,]+)\s+[İi]stasyon(?:undan|larından)\s+aktarmalı\s+olarak/gi, 'with a transfer at $1,'],
-  [/([^\s,]+)\s*[-–]\s*([^\s,]+)\s+istasyonları\s+arasında/gi, 'between $1 and $2'],
+  [/seferler(?:imiz)?\s+yapıl(?:a)?mamaktadır/gi,
+    { en:'services cannot operate', ar:'لا يمكن تسيير الرحلات', fr:'les trains ne peuvent pas circuler' }],
+  [/([^\s,]+)\s*[-–]\s*([^\s,]+)\s+istasyonları\s+arasında\s+yapılmaktadır/gi,
+    { en:'operate between $1 and $2', ar:'تسير بين $1 و$2', fr:'circulent entre $1 et $2' }],
+  [/([^\s,]+)\s+ve\s+([^\s,]+)\s+[İi]stasyon(?:undan|larından)\s+aktarmalı\s+olarak/gi,
+    { en:'with a transfer at $1 and $2,', ar:'مع تحويل في $1 و$2،', fr:'avec correspondance à $1 et $2,' }],
+  [/([^\s,]+)\s+[İi]stasyon(?:undan|larından)\s+aktarmalı\s+olarak/gi,
+    { en:'with a transfer at $1,', ar:'مع تحويل في $1،', fr:'avec correspondance à $1,' }],
+  [/([^\s,]+)\s*[-–]\s*([^\s,]+)\s+istasyonları\s+arasında/gi,
+    { en:'between $1 and $2', ar:'بين $1 و$2', fr:'entre $1 et $2' }],
   // reasons — lowercase so they read correctly mid-sentence (first letter re-capitalised at end)
-  [/planlı\s+bakım\s+(?:ve\s+onarım\s+)?çalış(?:ması|maları)?\s*(?:nedeniyle)?/gi, 'due to planned maintenance,'],
-  [/onarım\s+çalış(?:ması|maları)\s+nedeniyle/gi, 'due to maintenance works,'],
-  [/bakım\s+(?:ve\s+onarım\s+)?çalış(?:ması|maları)\s+nedeniyle/gi, 'due to maintenance works,'],
-  [/teknik\s+(?:bir\s+)?arıza\s+nedeniyle/gi, 'due to a technical fault,'],
-  [/sinyalizasyon\s+arızası\s+nedeniyle/gi, 'due to a signalling fault,'],
-  [/elektrik\s+kesintisi\s+nedeniyle/gi, 'due to a power outage,'],
-  [/olumsuz\s+hava\s+koşulları\s+nedeniyle/gi, 'due to adverse weather conditions,'],
-  [/hava\s+muhalefeti\s+(?:nedeniyle|sebebiyle)/gi, 'due to adverse weather,'],
-  [/hava\s+muhalefeti/gi, 'adverse weather'],
-  [/olumsuz\s+hava\s+(?:şartları|koşulları)/gi, 'adverse weather'],
-  [/hava\s+koşulları\s+nedeniyle/gi, 'due to weather conditions,'],
-  [/yoğunluk\s+nedeniyle/gi, 'due to congestion,'],
-  [/çalışmaları?\s+nedeniyle/gi, 'due to works,'],
-  [/(?:nedeniyle|sebebiyle|dolayısıyla)/gi, 'due to'],
+  [/planlı\s+bakım\s+(?:ve\s+onarım\s+)?çalış(?:ması|maları)?\s*(?:nedeniyle)?/gi,
+    { en:'due to planned maintenance,', ar:'بسبب أعمال صيانة مخطّطة،', fr:'en raison de travaux de maintenance programmés,' }],
+  [/onarım\s+çalış(?:ması|maları)\s+nedeniyle/gi,
+    { en:'due to maintenance works,', ar:'بسبب أعمال الإصلاح،', fr:'en raison de travaux de réparation,' }],
+  [/bakım\s+(?:ve\s+onarım\s+)?çalış(?:ması|maları)\s+nedeniyle/gi,
+    { en:'due to maintenance works,', ar:'بسبب أعمال الصيانة،', fr:'en raison de travaux d’entretien,' }],
+  [/teknik\s+(?:bir\s+)?arıza\s+nedeniyle/gi,
+    { en:'due to a technical fault,', ar:'بسبب عطل فني،', fr:'en raison d’une panne technique,' }],
+  [/sinyalizasyon\s+arızası\s+nedeniyle/gi,
+    { en:'due to a signalling fault,', ar:'بسبب عطل في نظام الإشارات،', fr:'en raison d’une panne de signalisation,' }],
+  [/elektrik\s+kesintisi\s+nedeniyle/gi,
+    { en:'due to a power outage,', ar:'بسبب انقطاع التيار الكهربائي،', fr:'en raison d’une coupure de courant,' }],
+  [/olumsuz\s+hava\s+koşulları\s+nedeniyle/gi,
+    { en:'due to adverse weather conditions,', ar:'بسبب سوء الأحوال الجوية،', fr:'en raison de conditions météorologiques défavorables,' }],
+  [/hava\s+muhalefeti\s+(?:nedeniyle|sebebiyle)/gi,
+    { en:'due to adverse weather,', ar:'بسبب سوء الأحوال الجوية،', fr:'en raison du mauvais temps,' }],
+  [/hava\s+muhalefeti/gi, { en:'adverse weather', ar:'سوء الأحوال الجوية', fr:'mauvais temps' }],
+  [/olumsuz\s+hava\s+(?:şartları|koşulları)/gi,
+    { en:'adverse weather', ar:'أحوال جوية سيئة', fr:'conditions météorologiques défavorables' }],
+  [/hava\s+koşulları\s+nedeniyle/gi,
+    { en:'due to weather conditions,', ar:'بسبب الأحوال الجوية،', fr:'en raison des conditions météorologiques,' }],
+  [/yoğunluk\s+nedeniyle/gi, { en:'due to congestion,', ar:'بسبب الازدحام،', fr:'en raison de l’affluence,' }],
+  /* "altyapı çalışmaları nedeniyle" reached the generic works rule below, which matched the
+     "çalışmaları nedeniyle" inside it and left "altyapı" stranded in Turkish — the B2 alert
+     shipped that way. Specific before generic, as everywhere else in this list. */
+  [/altyapı\s+çalış(?:ması|maları)\s+(?:nedeniyle|sebebiyle)/gi,
+    { en:'due to infrastructure works,', ar:'بسبب أعمال البنية التحتية،', fr:'en raison de travaux d’infrastructure,' }],
+  [/altyapı\s+çalış(?:ması|maları)/gi,
+    { en:'infrastructure works', ar:'أعمال البنية التحتية', fr:'travaux d’infrastructure' }],
+  [/çalışmaları?\s+nedeniyle/gi, { en:'due to works,', ar:'بسبب الأعمال،', fr:'en raison de travaux,' }],
+  [/(?:nedeniyle|sebebiyle|dolayısıyla)/gi, { en:'due to', ar:'بسبب', fr:'en raison de' }],
   // line/station nouns
-  [/[Tt]eleferik\s+[Hh]attı(?:mız)?/gi, 'cable car line'], [/[Ff]üniküler\s+[Hh]attı(?:mız)?/gi, 'funicular line'],
-  [/[Mm]etro\s+[Hh]attı(?:mız)?/gi, 'metro line'], [/[Tt]ramvay\s+[Hh]attı(?:mız)?/gi, 'tram line'],
-  [/[Bb]anliyö\s+[Hh]attı(?:mız)?/gi, 'suburban line'],
-  [/[Hh]attımız/gi, 'our line'], [/[Hh]attında/gi, 'on the line'], [/[Hh]attı/gi, 'line'],
-  [/[İi]stasyonumuzdan\b/gi, 'from our station'], [/[İi]stasyonumuzda\b/gi, 'at our station'],
-  [/[İi]stasyonumuz\b/gi, 'our station'],
+  [/[Tt]eleferik\s+[Hh]attı(?:mız)?/gi, { en:'cable car line', ar:'خط التلفريك', fr:'ligne de téléphérique' }],
+  [/[Ff]üniküler\s+[Hh]attı(?:mız)?/gi, { en:'funicular line', ar:'خط الفونيكولار', fr:'ligne de funiculaire' }],
+  [/[Mm]etro\s+[Hh]attı(?:mız)?/gi,     { en:'metro line', ar:'خط المترو', fr:'ligne de métro' }],
+  [/[Tt]ramvay\s+[Hh]attı(?:mız)?/gi,   { en:'tram line', ar:'خط الترام', fr:'ligne de tramway' }],
+  [/[Bb]anliyö\s+[Hh]attı(?:mız)?/gi,   { en:'suburban line', ar:'خط الضواحي', fr:'ligne de banlieue' }],
+  /* "B2 Halkalı–Bahçeşehir hattı" — Turkish and English both put the name before the noun,
+     Arabic and French put it after. Anchored to the start of the announcement and limited to
+     two tokens, which is the shape a line name actually takes ("B2 Halkalı–Bahçeşehir", "M2");
+     "hattı" as part of a longer phrase falls through to the generic rules below.
+     NOT \b after "hattı": JS word boundaries are ASCII-only, so ı/ş/ğ are already non-word
+     characters and \b never fires between one and a following space. The lookahead spells the
+     boundary out instead — with \b the rule matched nothing at all. */
+  [/^\s*(\S+(?:\s+\S+)?)\s+[Hh]attı(?![A-Za-zÇĞİIÖŞÜçğıöşü])/,
+    { en:'$1 line', ar:'خط $1', fr:'la ligne $1' }],
+  [/[Hh]attımız/gi, { en:'our line', ar:'خطنا', fr:'notre ligne' }],
+  [/[Hh]attında/gi, { en:'on the line', ar:'على الخط', fr:'sur la ligne' }],
+  [/[Hh]attı/gi,    { en:'line', ar:'خط', fr:'ligne' }],
+  [/[İi]stasyonumuzdan\b/gi, { en:'from our station', ar:'من محطتنا', fr:'depuis notre station' }],
+  [/[İi]stasyonumuzda\b/gi,  { en:'at our station', ar:'في محطتنا', fr:'à notre station' }],
+  // "Taksim istasyonumuz" — the name qualifies the noun, so it cannot simply be left in front
+  [/(\S+)\s+[İi]stasyonumuz\b/g,
+    { en:'our $1 station', ar:'محطتنا في $1', fr:'notre station $1' }],
+  [/[İi]stasyonumuz\b/gi,    { en:'our station', ar:'محطتنا', fr:'notre station' }],
   // status clauses
-  [/seferler(?:imiz)?\s+(?:geçici\s+(?:bir\s+)?süreyle\s+)?durdurul(?:muştur|du)/gi, 'services are temporarily suspended'],
-  [/seferler(?:imiz)?\s+normale\s+dön(?:müştür|dü)/gi, 'services have returned to normal'],
-  [/normale\s+dön(?:müştür|dü)/gi, 'has returned to normal'],
-  [/geçici\s+(?:olarak|(?:bir\s+)?süreyle)\s+hizmet\s+dışıdır/gi, 'is temporarily out of service'],
-  [/hizmet\s+dışına\s+alınmıştır/gi, 'has been taken out of service'],
-  [/hizmet\s+dışıdır/gi, 'is out of service'], [/hizmet\s+dışı/gi, 'out of service'],
-  [/hizmete\s+kapatılmıştır/gi, 'has been closed to service'],
-  [/hizmete\s+(?:yeniden\s+)?alınmıştır/gi, 'has been brought back into service'],
-  [/hizmet\s+ver(?:il)?memektedir/gi, 'is not in service'],
-  [/hizmet\s+vermeye\s+(?:yeniden\s+)?başlamıştır/gi, 'has resumed service'],
-  [/geçici\s+(?:olarak|(?:bir\s+)?süreyle)\s+kapatılmıştır/gi, 'has been temporarily closed'],
-  [/[İi]stasyon(?:u|umuz)?\s+kapalıdır/gi, 'station is closed'],
-  [/kapatılmıştır/gi, 'has been closed'], [/kapatılmış(?:tır)?/gi, 'closed'],
-  [/geçici\s+(?:bir\s+)?süreyle/gi, 'temporarily'], [/geçici\s+olarak/gi, 'temporarily'],
-  [/aktarmalı\s+olarak/gi, 'with a transfer,'],
-  [/seferler(?:imiz|ini|ine|i)?/gi, 'trains'],
-  [/istasyonları\s+arasında/gi, 'between the stations'],
-  [/arasında\s+yapılmaktadır/gi, 'operate between'], [/yapılmaktadır/gi, 'are operating'],
-  [/yapıl(?:a)?mamaktadır/gi, 'cannot operate'],
+  [/seferler(?:imiz)?\s+(?:geçici\s+(?:bir\s+)?süreyle\s+)?durdurul(?:muştur|du)/gi,
+    { en:'services are temporarily suspended', ar:'أُوقفت الرحلات مؤقتًا', fr:'les trains sont temporairement interrompus' }],
+  [/seferler(?:imiz)?\s+normale\s+dön(?:müştür|dü)/gi,
+    { en:'services have returned to normal', ar:'عادت الرحلات إلى طبيعتها', fr:'les trains circulent de nouveau normalement' }],
+  [/normale\s+dön(?:müştür|dü)/gi, { en:'has returned to normal', ar:'عاد إلى طبيعته', fr:'est revenu à la normale' }],
+  [/geçici\s+(?:olarak|(?:bir\s+)?süreyle)\s+hizmet\s+dışıdır/gi,
+    { en:'is temporarily out of service', ar:'خارج الخدمة مؤقتًا', fr:'est temporairement hors service' }],
+  [/hizmet\s+dışına\s+alınmıştır/gi, { en:'has been taken out of service', ar:'أُخرج من الخدمة', fr:'a été mis hors service' }],
+  [/hizmet\s+dışıdır/gi, { en:'is out of service', ar:'خارج الخدمة', fr:'est hors service' }],
+  [/hizmet\s+dışı/gi,    { en:'out of service', ar:'خارج الخدمة', fr:'hors service' }],
+  [/hizmete\s+kapatılmıştır/gi, { en:'has been closed to service', ar:'أُغلقت أمام الخدمة', fr:'a été fermée à l’exploitation' }],
+  [/hizmete\s+(?:yeniden\s+)?alınmıştır/gi,
+    { en:'has been brought back into service', ar:'أُعيد إلى الخدمة', fr:'a été remis en service' }],
+  [/hizmet\s+ver(?:il)?memektedir/gi, { en:'is not in service', ar:'لا يقدّم الخدمة', fr:'n’est pas en service' }],
+  [/hizmet\s+vermeye\s+(?:yeniden\s+)?başlamıştır/gi,
+    { en:'has resumed service', ar:'استأنف الخدمة', fr:'a repris le service' }],
+  [/geçici\s+(?:olarak|(?:bir\s+)?süreyle)\s+kapatılmıştır/gi,
+    { en:'has been temporarily closed', ar:'أُغلقت مؤقتًا', fr:'a été temporairement fermée' }],
+  /* "Kadıköy istasyonu kapalıdır" — again the name leads in Turkish and English and follows
+     in Arabic and French, and here the noun's gender governs the adjective too, so the whole
+     clause is spelled out rather than assembled from a noun rule and a separate "is closed". */
+  [/^\s*(\S+(?:\s+\S+)?)\s+[İi]stasyon(?:u|umuz)?\s+kapalıdır/,
+    { en:'$1 station is closed', ar:'محطة $1 مغلقة', fr:'La station $1 est fermée' }],
+  [/[İi]stasyon(?:u|umuz)?\s+kapalıdır/gi, { en:'station is closed', ar:'المحطة مغلقة', fr:'la station est fermée' }],
+  /* "çalışmamaktadır" contains "çalışma", so the generic noun rule further down would eat its
+     stem and strand "maktadır" — the same half-eaten-word failure the locative rules below
+     document. Negative and positive finite forms therefore come first. */
+  [/çalışmamaktadır/gi, { en:'is not operating', ar:'لا يعمل', fr:'ne circule pas' }],
+  [/çalışmaktadır/gi,   { en:'is operating', ar:'يعمل', fr:'circule' }],
+  [/kapatılmıştır/gi, { en:'has been closed', ar:'أُغلقت', fr:'a été fermée' }],
+  [/kapatılmış(?:tır)?/gi, { en:'closed', ar:'مغلق', fr:'fermé' }],
+  /* Only the "seferler …" form of this was spelled out, so an announcement about a LINE being
+     suspended split into a bare adverb and a bare verb and came out in Turkish order:
+     "temporarily has been suspended", "مؤقتًا أُوقف". Adverb placement differs per language,
+     so the clause is translated as a clause. */
+  [/geçici\s+(?:(?:bir\s+)?süreyle|olarak)\s+durdurul(?:muştur|du)/gi,
+    { en:'has been temporarily suspended', ar:'أُوقف مؤقتًا', fr:'est temporairement à l’arrêt' }],
+  [/geçici\s+(?:bir\s+)?süreyle/gi, { en:'temporarily', ar:'مؤقتًا', fr:'temporairement' }],
+  [/geçici\s+olarak/gi, { en:'temporarily', ar:'مؤقتًا', fr:'temporairement' }],
+  [/aktarmalı\s+olarak/gi, { en:'with a transfer,', ar:'مع تحويل،', fr:'avec correspondance,' }],
+  [/seferler(?:imiz|ini|ine|i)?/gi, { en:'trains', ar:'الرحلات', fr:'les trains' }],
+  [/istasyonları\s+arasında/gi, { en:'between the stations', ar:'بين المحطات', fr:'entre les stations' }],
+  [/arasında\s+yapılmaktadır/gi, { en:'operate between', ar:'تسير بين', fr:'circulent entre' }],
+  [/yapılmaktadır/gi, { en:'are operating', ar:'تسير', fr:'circulent' }],
+  [/yapıl(?:a)?mamaktadır/gi, { en:'cannot operate', ar:'لا يمكن تسييرها', fr:'ne peuvent pas circuler' }],
   /* The locative was missing, and the generic rules matched the "istasyonu" inside
      "istasyonunda" and left the "nda" stranded — real output was "Sanayi stationnda bir
      yolcunun…". A half-eaten word is worse than an untranslated one, so the inflected forms are
      spelled out FIRST (longest first, or the shorter stem consumes the stem and strands the
      suffix) and the general rules are \b-anchored: an inflection nobody listed now stays
      Turkish instead of becoming a non-word. */
-  [/istasyonlarından/gi, 'from the stations'], [/istasyonlarında/gi, 'at the stations'],
-  [/[İi]stasyon(?:umuz|u)?ndan\b/gi, 'from the station'], [/[İi]stasyondan\b/gi, 'from the station'],
-  [/[İi]stasyon(?:umuz|u)?nda\b/gi, 'at the station'], [/[İi]stasyonda\b/gi, 'at the station'],
-  [/istasyonları\b/gi, 'stations'],
-  [/[İi]stasyon(?:umuz|u)?\b/gi, 'station'],
-  [/aktarmalı/gi, 'with transfer'], [/arasında/gi, 'between'],
-  [/devam\s+etmektedir/gi, 'continues'], [/başlamıştır/gi, 'has started'],
-  [/kapalıdır/gi, 'is closed'], [/açıktır/gi, 'is open'],
-  [/[Oo]narım/gi, 'repair'], [/[Bb]akım/gi, 'maintenance'], [/arıza/gi, 'fault'],
-  [/çalışmaları/gi, 'works'], [/çalışması/gi, 'works'], [/çalışma/gi, 'work'],
-  [/vatandaşlarımız(?:ın|a|ı)?/gi, 'passengers'], [/yolcularımız(?:ın|a|ı)?/gi, 'passengers'],
-  [/(?:sayın\s+)?yolcular(?:ımız)?/gi, 'passengers'],
-  [/bilgi(?:lerinize|nize)\s+(?:saygıyla\s+)?sunulur/gi, 'for your information'],
-  [/durdurul(?:muştur|du)/gi, 'has been suspended'],
+  [/istasyonlarından/gi, { en:'from the stations', ar:'من المحطات', fr:'depuis les stations' }],
+  [/istasyonlarında/gi,  { en:'at the stations', ar:'في المحطات', fr:'aux stations' }],
+  [/[İi]stasyon(?:umuz|u)?ndan\b/gi, { en:'from the station', ar:'من المحطة', fr:'depuis la station' }],
+  [/[İi]stasyondan\b/gi, { en:'from the station', ar:'من المحطة', fr:'depuis la station' }],
+  [/[İi]stasyon(?:umuz|u)?nda\b/gi, { en:'at the station', ar:'في المحطة', fr:'à la station' }],
+  [/[İi]stasyonda\b/gi, { en:'at the station', ar:'في المحطة', fr:'à la station' }],
+  // \b would never fire here either — "istasyonları" ends in ı, which \b does not recognise
+  [/istasyonları(?![A-Za-zÇĞİIÖŞÜçğıöşü])/gi, { en:'stations', ar:'المحطات', fr:'stations' }],
+  [/[İi]stasyon(?:umuz|u)?\b/gi, { en:'station', ar:'محطة', fr:'station' }],
+  [/aktarmalı/gi, { en:'with transfer', ar:'مع تحويل', fr:'avec correspondance' }],
+  [/arasında/gi,  { en:'between', ar:'بين', fr:'entre' }],
+  [/devam\s+etmektedir/gi, { en:'continues', ar:'مستمر', fr:'se poursuit' }],
+  [/başlamıştır/gi, { en:'has started', ar:'بدأ', fr:'a commencé' }],
+  [/kapalıdır/gi, { en:'is closed', ar:'مغلق', fr:'est fermé' }],
+  [/açıktır/gi,   { en:'is open', ar:'مفتوح', fr:'est ouvert' }],
+  [/[Oo]narım/gi, { en:'repair', ar:'إصلاح', fr:'réparation' }],
+  [/[Bb]akım/gi,  { en:'maintenance', ar:'صيانة', fr:'entretien' }],
+  [/arıza/gi,     { en:'fault', ar:'عطل', fr:'panne' }],
+  [/çalışmaları/gi, { en:'works', ar:'أعمال', fr:'travaux' }],
+  [/çalışması/gi,   { en:'works', ar:'أعمال', fr:'travaux' }],
+  [/çalışma/gi,     { en:'work', ar:'عمل', fr:'travaux' }],
+  [/vatandaşlarımız(?:ın|a|ı)?/gi, { en:'passengers', ar:'الركاب', fr:'les voyageurs' }],
+  [/yolcularımız(?:ın|a|ı)?/gi,    { en:'passengers', ar:'الركاب', fr:'les voyageurs' }],
+  [/(?:sayın\s+)?yolcular(?:ımız)?/gi, { en:'passengers', ar:'الركاب الكرام', fr:'les voyageurs' }],
+  [/bilgi(?:lerinize|nize)\s+(?:saygıyla\s+)?sunulur/gi,
+    { en:'for your information', ar:'للعلم', fr:'pour information' }],
+  [/durdurul(?:muştur|du)/gi, { en:'has been suspended', ar:'أُوقف', fr:'a été suspendu' }],
 ];
 // whole-word cleanup for the odd straggler the phrase rules missed (base forms only)
-const TR2EN_WORDS = {
-  've':'and','ile':'with','için':'for','olarak':'as','ancak':'however','ayrıca':'also','ise':'while',
-  'teleferik':'cable car','füniküler':'funicular','metro':'metro','tramvay':'tram','vapur':'ferry','banliyö':'suburban',
-  'hat':'line','sefer':'service','seferler':'services','yön':'direction','yönünde':'toward','yönü':'direction',
-  'saatleri':'hours','saatlerinde':'hours','gün':'day','saat':'hour','dakika':'minutes','süreyle':'temporarily',
-  'geçici':'temporary','planlı':'planned','planlanan':'planned','kapalı':'closed','açık':'open','kapatıldı':'closed',
-  'yeniden':'again','normal':'normal','aksama':'disruption','arıza':'fault','bakım':'maintenance','onarım':'repair',
-  'çalışıyor':'operating','çalışmıyor':'not operating','durduruldu':'suspended','başladı':'started','bitti':'ended',
-  'emniyeti':'Police','emniyetinin':'Police','valiliği':'Governorship','belediyesi':'Municipality',
-  'talebi':'request','nedeni':'reason','güvenlik':'security','etkinlik':'event','maç':'match'
+const TR_WORDS = {
+  've':      { en:'and', ar:'و', fr:'et' },
+  'ile':     { en:'with', ar:'مع', fr:'avec' },
+  'için':    { en:'for', ar:'من أجل', fr:'pour' },
+  'olarak':  { en:'as', ar:'بصفة', fr:'en tant que' },
+  'ancak':   { en:'however', ar:'غير أن', fr:'toutefois' },
+  'ayrıca':  { en:'also', ar:'كذلك', fr:'également' },
+  'ise':     { en:'while', ar:'بينما', fr:'tandis que' },
+  'teleferik':{ en:'cable car', ar:'التلفريك', fr:'téléphérique' },
+  'füniküler':{ en:'funicular', ar:'الفونيكولار', fr:'funiculaire' },
+  'metro':   { en:'metro', ar:'المترو', fr:'métro' },
+  'tramvay': { en:'tram', ar:'الترام', fr:'tramway' },
+  'vapur':   { en:'ferry', ar:'العبّارة', fr:'ferry' },
+  'banliyö': { en:'suburban', ar:'الضواحي', fr:'banlieue' },
+  'hat':     { en:'line', ar:'خط', fr:'ligne' },
+  'sefer':   { en:'service', ar:'رحلة', fr:'circulation' },
+  'seferler':{ en:'services', ar:'الرحلات', fr:'circulations' },
+  'yön':     { en:'direction', ar:'اتجاه', fr:'sens' },
+  'yönünde': { en:'toward', ar:'باتجاه', fr:'en direction de' },
+  'yönü':    { en:'direction', ar:'اتجاه', fr:'sens' },
+  'saatleri':{ en:'hours', ar:'ساعات', fr:'heures' },
+  'saatlerinde':{ en:'hours', ar:'ساعات', fr:'heures' },
+  'gün':     { en:'day', ar:'يوم', fr:'jour' },
+  'saat':    { en:'hour', ar:'ساعة', fr:'heure' },
+  'dakika':  { en:'minutes', ar:'دقائق', fr:'minutes' },
+  'süreyle': { en:'temporarily', ar:'مؤقتًا', fr:'temporairement' },
+  'geçici':  { en:'temporary', ar:'مؤقت', fr:'temporaire' },
+  'planlı':  { en:'planned', ar:'مخطّط', fr:'programmé' },
+  'planlanan':{ en:'planned', ar:'مخطّط', fr:'programmé' },
+  'altyapı': { en:'infrastructure', ar:'البنية التحتية', fr:'infrastructure' },
+  'kapalı':  { en:'closed', ar:'مغلق', fr:'fermé' },
+  'açık':    { en:'open', ar:'مفتوح', fr:'ouvert' },
+  'kapatıldı':{ en:'closed', ar:'أُغلق', fr:'fermé' },
+  'yeniden': { en:'again', ar:'مجددًا', fr:'de nouveau' },
+  'normal':  { en:'normal', ar:'طبيعي', fr:'normal' },
+  'aksama':  { en:'disruption', ar:'اضطراب', fr:'perturbation' },
+  'arıza':   { en:'fault', ar:'عطل', fr:'panne' },
+  'bakım':   { en:'maintenance', ar:'صيانة', fr:'entretien' },
+  'onarım':  { en:'repair', ar:'إصلاح', fr:'réparation' },
+  'çalışıyor':{ en:'operating', ar:'يعمل', fr:'en service' },
+  'çalışmıyor':{ en:'not operating', ar:'لا يعمل', fr:'hors service' },
+  'durduruldu':{ en:'suspended', ar:'أُوقف', fr:'suspendu' },
+  'başladı': { en:'started', ar:'بدأ', fr:'a commencé' },
+  'bitti':   { en:'ended', ar:'انتهى', fr:'terminé' },
+  'emniyeti':{ en:'Police', ar:'مديرية الأمن', fr:'la Police' },
+  'emniyetinin':{ en:'Police', ar:'مديرية الأمن', fr:'la Police' },
+  'valiliği':{ en:'Governorship', ar:'الولاية', fr:'la Préfecture' },
+  'belediyesi':{ en:'Municipality', ar:'البلدية', fr:'la Municipalité' },
+  'talebi':  { en:'request', ar:'طلب', fr:'demande' },
+  'nedeni':  { en:'reason', ar:'سبب', fr:'motif' },
+  'güvenlik':{ en:'security', ar:'أمن', fr:'sécurité' },
+  'etkinlik':{ en:'event', ar:'فعالية', fr:'événement' },
+  'maç':     { en:'match', ar:'مباراة', fr:'match' }
 };
-function translateTR(text){
+const TR_TARGETS = ['en', 'ar', 'fr'];
+/* Turkish is verb-final and puts both the transfer clause and the reason before the thing
+   they qualify; none of the three destinations reads that way. Substitution alone therefore
+   produces grammatical words in Turkish order — "B2 Halkalı–Bahçeşehir line due to
+   infrastructure works, is not operating" — which is understandable but is not how any of
+   these languages writes it. These run last, on our own output, so each pattern is written
+   in the language it repairs rather than in Turkish. */
+const TR_REORDER = {
+  en: [
+    [/trains\s+with a transfer at (.+?),\s*operate between (.+?)[.\s]*$/i,
+     'trains operate between $2, with a transfer at $1.'],
+    /* subject + reason + predicate -> subject + predicate + reason. The reason phrase is
+       captured whole, prefix included, rather than reassembled: French elides ("en raison
+       d’une panne"), so a pattern that expected the uncontracted preposition matched nothing
+       and left the sentence in Turkish order. */
+    [/^\s*(?!due to)(.+?)\s+(due to [^,]*),\s*(.+?)[.\s]*$/i, '$1 $3 $2.']
+  ],
+  fr: [
+    [/les trains\s+avec correspondance à (.+?),\s*circulent entre (.+?)[.\s]*$/i,
+     'les trains circulent entre $2, avec correspondance à $1.'],
+    [/^\s*(?!en raison d)(.+?)\s+(en raison d(?:e|’|')[^,]*),\s*(.+?)[.\s]*$/i, '$1 $3 $2.']
+  ],
+  ar: [
+    [/الرحلات\s+مع تحويل في (.+?)،\s*تسير بين (.+?)[.\s]*$/,
+     'تسير الرحلات بين $2، مع تحويل في $1.'],
+    [/^\s*(?!بسبب)(.+?)\s+(بسبب [^،]*)،\s*(.+?)[.\s]*$/, '$1 $3 $2.']
+  ]
+};
+function translateTR(text, target){
+  const tgt = TR_TARGETS.indexOf(target) >= 0 ? target : 'en';
   let s=' '+text+' ';
-  for(const [re,rep] of TR2EN_PHRASES) s=s.replace(re,rep);
+  for(const [re,rep] of TR_PHRASES) s=s.replace(re, rep[tgt]);
   // whole-word stragglers (base forms only; station/line names pass through unchanged)
-  s=s.replace(/[A-Za-zÇĞİıÖŞÜçğöşü]+/g, w=>{ const k=w.toLocaleLowerCase('tr'); return TR2EN_WORDS[k]||w; });
-  // move the transfer clause to the end so it reads naturally in English
-  s=s.replace(/trains\s+with a transfer at (.+?),\s*operate between (.+?)[.\s]*$/i,
-              'trains operate between $2, with a transfer at $1.');
-  s=s.replace(/\s+,/g,',').replace(/,\s*,/g,',').replace(/\s{2,}/g,' ').replace(/\s+\./g,'.').trim();
-  s=s.charAt(0).toUpperCase()+s.slice(1);
+  s=s.replace(/[A-Za-zÇĞİıÖŞÜçğöşü]+/g, w=>{ const k=w.toLocaleLowerCase('tr');
+                                             return (TR_WORDS[k] && TR_WORDS[k][tgt]) || w; });
+  for(const [re,rep] of (TR_REORDER[tgt]||[])) s = s.replace(re, rep);
+  s=s.replace(/\s+([,،])/g,'$1').replace(/([,،])\s*[,،]/g,'$1').replace(/\s{2,}/g,' ').replace(/\s+\./g,'.').trim();
+  // Arabic is caseless; capitalising its first character is a no-op, but doing it only where
+  // it means something keeps the intent legible.
+  if(tgt !== 'ar') s=s.charAt(0).toUpperCase()+s.slice(1);
   if(s && !/[.!?]$/.test(s)) s+='.';
   return s;
 }
@@ -141,41 +306,60 @@ const hasResidualTurkish = s => TR_RESIDUAL.test(s||'');
    intihar / girişiminde / bulunması / işletmeye" is on the list.
 
    What matters is the PROPORTION, and it can be measured exactly rather than sniffed at:
-   every English word translateTR is capable of producing comes from the replacement side of
-   the two tables above. So a word in the output that is not in that vocabulary, and is not a
-   proper noun, is BY CONSTRUCTION source text that no rule matched. No language detection,
-   and no word list that has to be kept in step with the rules by hand. */
-const EN_EMITTED = (function(){
-  const set = new Set();
-  const add = str => String(str).toLowerCase().replace(/\$\d/g,' ').split(/[^a-z]+/)
-                      .forEach(w=>{ if(w) set.add(w); });
-  for(const rule of TR2EN_PHRASES) add(rule[1]);
-  for(const k in TR2EN_WORDS) add(TR2EN_WORDS[k]);
-  return set;
-})();
-// letter-initial, so dates and numbers are not words; digits allowed, so "M2"/"T1" stay whole
-const TR_TOKEN  = /[A-Za-zÇĞİIÖŞÜçğıöşü][A-Za-zÇĞİIÖŞÜçğıöşü0-9'’]*/g;
-const TR_CAPPED = /^[A-ZÇĞİIÖŞÜ]/;
+   every word translateTR is capable of producing comes from the replacement side of the two
+   tables above. So a word in the output that is not in that vocabulary, and is not a proper
+   noun, is BY CONSTRUCTION source text that no rule matched. No language detection, and no
+   word list that has to be kept in step with the rules by hand. */
+/* letter-initial, so dates and numbers are not words; digits allowed, so "M2"/"T1" stay whole.
+   Accented Latin is in the class for French and the Arabic block for Arabic — a tokeniser that
+   split "météorologiques" or skipped "الرحلات" would score those languages as untranslated. */
+const TR_TOKEN  = /[A-Za-zÀ-ÖØ-öø-ÿÇĞİIÖŞÜçğıöşü؀-ۿ][A-Za-zÀ-ÖØ-öø-ÿÇĞİIÖŞÜçğıöşü0-9'’؀-ۿ]*/g;
+const TR_CAPPED = /^[A-ZÀ-ÖØ-ÞÇĞİIÖŞÜ]/;
+const TR_ARABIC = /[؀-ۿ]/;
 
-/* Share of the classifiable words in `en` that are still Turkish, 0..1.
+const TR_EMITTED = (function(){
+  const out = {};
+  for(const tgt of TR_TARGETS){
+    const set = new Set();
+    const add = str => { for(const w of (String(str).replace(/\$\d/g,' ').match(TR_TOKEN)||[])){
+                           set.add(w.toLowerCase()); set.add(w.toLocaleLowerCase('tr')); } };
+    for(const rule of TR_PHRASES) add(rule[1][tgt]);
+    for(const k in TR_WORDS) add(TR_WORDS[k][tgt]);
+    for(const ro of (TR_REORDER[tgt]||[])) add(ro[1]);
+    out[tgt] = set;
+  }
+  return out;
+})();
+
+/* Share of the classifiable words in `out` that are still Turkish, 0..1.
    `names` are this alert's station and line names: they pass through untranslated BY DESIGN
    and must never count against coverage. Capitalised words are read as proper nouns and left
    out of the count entirely — including the first word, whose capital was put there by
    translateTR itself and so says nothing about what it is. Leaving a word out is the honest
    move where we cannot classify it: it neither excuses the rules nor condemns them. */
-function turkishShare(en, names){
+function turkishShare(out, names, target){
+  const tgt = TR_TARGETS.indexOf(target) >= 0 ? target : 'en';
   const known = new Set();
   for(const n of (names||[]))
     for(const w of (String(n).match(TR_TOKEN)||[])) known.add(w.toLocaleLowerCase('tr'));
-  let english=0, turkish=0;
-  for(const w of (String(en||'').match(TR_TOKEN)||[])){
+  let translated=0, turkish=0;
+  for(const w of (String(out||'').match(TR_TOKEN)||[])){
     const k = w.toLocaleLowerCase('tr');
     if(known.has(k)) continue;                  // a station or line name
-    if(EN_EMITTED.has(k)){ english++; continue; }
+
+
+    /* Arabic script in the output can only have come from our own replacement tables, so it
+       is translated by construction. This is not merely a shortcut for the vocabulary lookup
+       below: Arabic و is a proclitic and attaches to the word after it, so the tokeniser sees
+       "وMahmutbey" as ONE word — absent from the Arabic vocabulary, absent from the list of
+       station names, and not Latin-capitalised, so without this it is scored as source text
+       nobody translated. Every station named after a conjunction cost coverage. */
+    if(TR_ARABIC.test(w)){ translated++; continue; }
+    if(TR_EMITTED[tgt].has(k)){ translated++; continue; }
     if(TR_CAPPED.test(w)) continue;             // proper noun (or, on word one, unknowable)
     turkish++;                                  // source text no rule touched
   }
-  return (english+turkish) ? turkish/(english+turkish) : 0;
+  return (translated+turkish) ? turkish/(translated+turkish) : 0;
 }
 /* Past this share the hybrid is worse than either language, so the original ships instead.
    A quarter sits in a wide empty gap: the formulaic alerts the rules DO cover measure 0.00
@@ -183,15 +367,21 @@ function turkishShare(en, names){
 const TR_FALLBACK_SHARE = 0.25;
 
 /* The one decision the scraper and the app both make about an announcement.
-   It never invents English. Where the rules fall short it returns the CLEAN ORIGINAL, flagged
-   lang:'tr' so the UI can say so, instead of passing a half-translation off as a translation. */
-function bestEffortEnglish(tr, names){
+   It never invents a translation. Where the rules fall short it returns the CLEAN ORIGINAL,
+   flagged lang:'tr' so the UI can say so, instead of passing a half-translation off as one.
+   The judgement is made per destination language: the rules can cover an announcement well
+   enough in one language and not in another, and each reader is owed the honest answer for
+   the language they are actually reading. */
+function bestEffortTranslation(tr, names, target){
+  const tgt   = TR_TARGETS.indexOf(target) >= 0 ? target : 'en';
   const src   = String(tr||'').trim();
-  const en    = translateTR(src);
-  const share = turkishShare(en, names);
+  const out   = translateTR(src, tgt);
+  const share = turkishShare(out, names, tgt);
   return share > TR_FALLBACK_SHARE ? { text:src, lang:'tr', share:share }
-                                   : { text:en,  lang:'en', share:share };
+                                   : { text:out, lang:tgt, share:share };
 }
+// the English-only entry point the scraper and the older call sites use
+function bestEffortEnglish(tr, names){ return bestEffortTranslation(tr, names, 'en'); }
 // ==TRANSLATOR-END==
 async function llmTranslate(tr){
   const key=process.env.ANTHROPIC_API_KEY; if(!key) return null;
