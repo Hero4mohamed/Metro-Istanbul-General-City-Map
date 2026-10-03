@@ -6,7 +6,7 @@
 <!-- Substituted by build.cjs, which hashes the inline script from the final bytes. Pages
      cannot set headers, so this ships as meta; frame-ancestors and report-uri are
      unavailable that way. -->
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-CTCJlJ0gvmSA9SvkKLgf6UVq0idomHCtE5V86WCo2AY=' https://unpkg.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://unpkg.com; font-src https://fonts.gstatic.com data:; img-src 'self' data: blob: https://server.arcgisonline.com; connect-src 'self' https://server.arcgisonline.com https://photon.komoot.io https://overpass-api.de https://api.ibb.gov.tr https://api.open-meteo.com https://routing.openstreetmap.de https://api.anthropic.com; worker-src 'self'; manifest-src 'self'; base-uri 'self'; form-action 'none'; object-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-FUOG4GAzfw89Nty2H5yLTwPsxmuXqHVZZP+IFs/NxxE=' https://unpkg.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://unpkg.com; font-src https://fonts.gstatic.com data:; img-src 'self' data: blob: https://server.arcgisonline.com; connect-src 'self' https://server.arcgisonline.com https://photon.komoot.io https://overpass-api.de https://api.ibb.gov.tr https://api.open-meteo.com https://routing.openstreetmap.de https://api.anthropic.com; worker-src 'self'; manifest-src 'self'; base-uri 'self'; form-action 'none'; object-src 'none'">
 <title>İSTANBUL RAY-NET · Live Rail Network Map &amp; Simulation</title>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
       integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
@@ -349,7 +349,7 @@
      map's ground:
 
          day   ground #F3F0E9   water #AAD3EC   park #CDE5C0   arterial #FADEAA
-         night ground #1E1F22   water #12151A   park #212623   arterial #82848A
+         night ground #1E1F22   water #12151A   park #212623   arterial #52565F
 
      Lines are drawn with an outline instead of a bloom (applyLineStyle), because a glow is
      invisible on a pale map and a line with no edge disappears into the roads under it.
@@ -1978,7 +1978,7 @@
 
    The report carries the fault, the build, the city, the language and the browser. It never
    carries location, saved places, trip history or the API key. ===== */
-const BUILD = "20261003131247";
+const BUILD = "20261003132130";
 const DIAG_MAX = 20;
 let DIAG = [];
 try { DIAG = JSON.parse(localStorage.getItem("irn_diag") || "[]"); } catch (e) { DIAG = []; }
@@ -5609,25 +5609,28 @@ const ATLAS_PAL = {
     tintS: 0,                                 // no tint: by day the source's own hue is left alone
   },
   /* Night is GRAPHITE: neutral charcoal ground, near-black water, a whisper of green for parks, and
-     main roads in a light grey. The first night palette was a slate blue with teal and brown roads;
-     people found the whole screen too much, and the dark grey-and-black look that came before it
-     was the one they wanted back. A mustard yellow for the main roads was tried and replaced with
-     this: the map is now colourless except for the metro lines, which is what lets them carry it.
-     The grey sits well above the minor streets (white road fill, pulled to ~L 0.31 by the curve
-     below) so the road hierarchy still reads. */
+     main roads in a quiet slate grey. The first night palette was a slate blue with teal and brown
+     roads; people found the whole screen too much, and the dark grey-and-black look that came
+     before it was the one they wanted back. Mustard main roads, then light-grey ones, were tried
+     and both made the roads the loudest thing on the map: they sit under the metro lines and must
+     not compete with them. So this follows how Google's dark map treats a road — only a step above
+     the ground, a step more for the main ones — and leaves the colour to water (a deep blue) and
+     parks (a dark green), which is what makes a city read as a place and not a street diagram. */
   night: {
     ground: [30, 31, 34],
     bands: {
-      water: { c: [18, 21, 26],   ref: .86, k: .30 },
-      park:  { c: [30, 43, 35],   ref: .82, k: .18 },
+      water: { c: [19, 26, 38],   ref: .86, k: .30 },
+      park:  { c: [31, 44, 38],   ref: .82, k: .18 },
       land:  { c: [30, 31, 34],   ref: .85, k: .10 },
       urban: { c: [35, 36, 39],   ref: .82, k: .10 },
-      road:  { c: [130, 132, 138], ref: .76, k: .20 },
+      road:  { c: [82, 86, 95],   ref: .76, k: .20 },
     },
     tintH: 220, tintS: 0,                     // no tint: greys stay grey
     // lightness in -> lightness out. Dark label text (low l) -> light; the halos and casings
-    // (high l) -> dark; white road fill (1.0) -> one step above the land.
-    curve: [[0, .90], [.25, .78], [.5, .58], [.62, .42], [.78, .17], [.9, .15], [.96, .21], [1, .31]],
+    // (high l) -> dark; white road fill (1.0) -> one quiet step above the land. Google's dark map is
+    // the model for the hierarchy: streets are only a little lighter than the ground, main roads a
+    // little lighter again, and it is the labels, water and parks that do the talking.
+    curve: [[0, .90], [.25, .78], [.5, .58], [.62, .42], [.78, .15], [.9, .14], [.96, .17], [1, .23]],
   },
 };
 
