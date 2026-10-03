@@ -216,7 +216,7 @@ function renderAnnouncements(){
         <span class="ann-sev ann-soon">${t('openSoon')}</span>
         <span class="ann-ttl">🚈 ${t('openTtl')}</span>
       </div>
-      <div class="ann-msg">${o.name} · ${o.km} ${t('kmU')} · ${o.stations} ${t('stnU')}</div>
+      <div class="ann-msg">${[o.name, o.km ? o.km+' '+t('kmU') : '', o.stations ? o.stations+' '+t('stnU') : ''].filter(Boolean).join(' · ')}</div>
       <div class="ann-until">🗓 ${t('opensOn')} ${o.disp}${rel?' · '+rel:''}</div></div>`;
   }).join('');
   const body = document.getElementById('annBody');

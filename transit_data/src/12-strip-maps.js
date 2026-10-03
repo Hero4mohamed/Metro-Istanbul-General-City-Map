@@ -148,6 +148,24 @@ function openLine(line){
     if(cl && cl.lines.size>1){ const others=[...cl.lines].filter(r=>r!==line.ref); if(others.length) conns.push({at:st.name, others}); }
   });
   const third = live ? conns.length : (line.launch ? fmtLaunch(line.launch) : t('soonWord'));
+  if(!live){
+    /* A line that is not running: its own panel (11a-planned-panel.js). The connectivity and
+       expansion blocks are about running lines and are hidden rather than filled with filler. */
+    document.getElementById('lpName').textContent = plannedName(line);
+    document.getElementById('lpStats').innerHTML = plannedStats(line);
+    const plan = document.getElementById('lpPlan');
+    plan.innerHTML = plannedPanelHTML(line); plan.style.display = ''; wirePlannedPanel(plan);
+    const mapped = (line.stations||[]).length >= 2;
+    const stripHTML0 = mapped ? lineStripHTML(line) : '';
+    const strip0 = document.getElementById('lpStrip'), stripBt0 = document.getElementById('lpStripBt');
+    strip0.innerHTML = stripHTML0; strip0.style.display = stripHTML0 ? '' : 'none';
+    if(stripBt0) stripBt0.style.display = stripHTML0 ? '' : 'none';
+    ['lpConnBt','lpConn','lpExpBt','lpExp','lpSrcNote'].forEach(id => { const el=document.getElementById(id); if(el) el.style.display='none'; });
+    document.getElementById('linp').classList.add('show');
+    return;
+  }
+  ['lpConnBt','lpConn','lpExpBt','lpExp','lpSrcNote'].forEach(id => { const el=document.getElementById(id); if(el) el.style.display=''; });
+  { const plan=document.getElementById('lpPlan'); if(plan){ plan.style.display='none'; plan.innerHTML=''; } }
   if(line.scope==='intercity'){
     // never derive length from geometry here: an intercity relation stitches with gaps, so
     // _len under-reports badly (İstanbul–Ankara → 244 of 533 km). Curated km or nothing.

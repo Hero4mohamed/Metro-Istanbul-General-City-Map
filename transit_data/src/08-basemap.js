@@ -55,16 +55,23 @@ const ATLAS_PAL = {
     curve: [[0, 0], [.6, .6], [.72, .79], [.82, .91], [.92, .97], [1, 1]],
     tintS: 0,                                 // no tint: by day the source's own hue is left alone
   },
+  /* Night is GRAPHITE: neutral charcoal ground, near-black water, a whisper of green for parks, and
+     main roads in a light grey. The first night palette was a slate blue with teal and brown roads;
+     people found the whole screen too much, and the dark grey-and-black look that came before it
+     was the one they wanted back. A mustard yellow for the main roads was tried and replaced with
+     this: the map is now colourless except for the metro lines, which is what lets them carry it.
+     The grey sits well above the minor streets (white road fill, pulled to ~L 0.31 by the curve
+     below) so the road hierarchy still reads. */
   night: {
-    ground: [28, 35, 49],
+    ground: [30, 31, 34],
     bands: {
-      water: { c: [19, 47, 76],   ref: .86, k: .30 },
-      park:  { c: [30, 58, 52],   ref: .82, k: .18 },
-      land:  { c: [28, 35, 49],   ref: .85, k: .10 },
-      urban: { c: [32, 40, 56],   ref: .82, k: .10 },
-      road:  { c: [92, 79, 58],   ref: .76, k: .20 },     // dimmed twice: amber arterials fought the orange metro lines
+      water: { c: [18, 21, 26],   ref: .86, k: .30 },
+      park:  { c: [30, 43, 35],   ref: .82, k: .18 },
+      land:  { c: [30, 31, 34],   ref: .85, k: .10 },
+      urban: { c: [35, 36, 39],   ref: .82, k: .10 },
+      road:  { c: [130, 132, 138], ref: .76, k: .20 },
     },
-    tintH: 218, tintS: .20,                   // slate, so greys read as part of the ground
+    tintH: 220, tintS: 0,                     // no tint: greys stay grey
     // lightness in -> lightness out. Dark label text (low l) -> light; the halos and casings
     // (high l) -> dark; white road fill (1.0) -> one step above the land.
     curve: [[0, .90], [.25, .78], [.5, .58], [.62, .42], [.78, .17], [.9, .15], [.96, .21], [1, .31]],
@@ -99,6 +106,15 @@ function _neutralTable(pal) {
   return { lo: lo, tint: tint };
 }
 function _clamp255(v) { return v < 0 ? 0 : (v > 255 ? 255 : v); }
+/* Water hue: blue, with enough colour to be blue rather than grey (hue 195-225, measured on the
+   sea at z12-z14: base water is ~210, the ferry ink 200-210). */
+function _waterHued(R, G, B) {
+  const M = Math.max(R, G, B), m = Math.min(R, G, B), dd = M - m;
+  if (dd < 30 || M !== B) return false;
+  const h = 60 * ((R - G) / dd + 4);
+  return h >= 195 && h <= 225;
+}
+const FERRY_RING = [[6, 0], [-6, 0], [0, 6], [0, -6], [6, 6], [-6, 6], [6, -6], [-6, -6]];
 
 /* Regrade an RGBA buffer IN PLACE. Alpha is never touched.
 
@@ -117,11 +133,41 @@ function makeBasemapGrade(pal) {
        boundaries (dark green Turkey beside slate Greece, at night). So the park colour fades
        into the land colour as the map zooms out. `z` is optional: omitted means full strength. */
     const pk = (z === undefined || z === null) ? 1 : _smooth(8, 11, z);
+    /* City-overview zoom (z12 and below) is drawn differently. Measured on real tiles: the
+       built-up area is a SALMON fill (hue 10-30, saturation 0.8-1.0, lightness 0.75-0.90 — e.g.
+       254,182,156) and motorways are a darker orange (236,152,120), where at z13+ the same hues
+       are the roads themselves. Treating them all as "arterial" turned the whole city amber. So
+       down here lightness decides: pale is built-up ground, dark is road. Above z12 nothing
+       changes, so the street-level look is exactly what it was. */
+    const low = (z !== undefined && z !== null && z <= 12);
     const pc0 = La.c[0] + (Pk.c[0] - La.c[0]) * pk, pc1 = La.c[1] + (Pk.c[1] - La.c[1]) * pk,
           pc2 = La.c[2] + (Pk.c[2] - La.c[2]) * pk;
+    /* Esri draws its own ferry routes into the tiles: thin dashed lines across the water with an
+       italic label along each. The app draws the ferry lines itself, properly, from the operator
+       data, so the baked-in ones are a second, fainter, unlabelled-by-us copy that criss-crosses
+       the sea. They are blue ink — water hue, a little darker than the water — and the one thing
+       that tells them from a blue icon or a river is where they are: surrounded by more water.
+       So a pass over the ORIGINAL pixels first marks everything water-hued, and a blue-ink pixel
+       with water on (nearly) every side is painted as plain water. Land is never touched: a blue
+       pixel there has land beside it. (Sea names such as "Marmara Denizi" are the same ink and go
+       with them; the app has its own labels for what matters.) */
+    const side = Math.round(Math.sqrt(d.length / 4)), wm = new Uint8Array(side * side);
+    for (let p = 0, k = 0; p < wm.length; p++, k += 4) wm[p] = _waterHued(d[k], d[k + 1], d[k + 2]) ? 1 : 0;
+    const around = function (p) {                       // how many of 8 points 6px away are water-hued; off the tile counts as water
+      const x = p % side, y = (p - x) / side; let n = 0;
+      for (let q = 0; q < 8; q++) {
+        const xx = x + FERRY_RING[q][0], yy = y + FERRY_RING[q][1];
+        n += (xx < 0 || yy < 0 || xx >= side || yy >= side) ? 1 : wm[yy * side + xx];
+      }
+      return n;
+    };
     for (let i = 0; i < d.length; i += 4) {
       const r = d[i] / 255, g = d[i + 1] / 255, b = d[i + 2] / 255;
       const M = Math.max(r, g, b), m = Math.min(r, g, b), l = (M + m) / 2, dd = M - m;
+      if (wm[i >> 2] && l >= .42 && l < .84 && around(i >> 2) >= 7) {
+        d[i] = W.c[0]; d[i + 1] = W.c[1]; d[i + 2] = W.c[2];      // ferry route or its label, over open water
+        continue;
+      }
       let R0 = d[i], G0 = d[i + 1], B0 = d[i + 2];
       if (NT) {
         const ix = (l * 255 + .5) | 0, sh = NT.lo[ix] - l * 255;
@@ -139,8 +185,13 @@ function makeBasemapGrade(pal) {
         if (chroma >= .002) {
           let h = M === r ? ((g - b) / dd) % 6 : M === g ? (b - r) / dd + 2 : (r - g) / dd + 4;
           h *= 60; if (h < 0) h += 360;
-          const ww = _band(h, 210, 38), wp = _band(h, 76, 15), wl = _band(h, 55, 14),
-                wu = _band(h, 33, 13),  wr = _band(h, 18, 14);
+          const ww = _band(h, 210, 38), wp = _band(h, 76, 15), wl = _band(h, 55, 14);
+          let wu, wr;
+          if (low) {
+            const warm = _band(h, 18, 24), pale = _smooth(.72, .78, l);
+            wu = Math.max(_band(h, 33, 13), warm * pale);       // the salmon fill, and the old built-up tan
+            wr = _band(h, 15, 16) * (1 - pale);                 // only the darker orange is a road
+          } else { wu = _band(h, 33, 13); wr = _band(h, 18, 14); }
           const sum = ww + wp + wl + wu + wr;
           if (sum >= .002) {                             // a hue we have no class for (an icon) stays itself
             const dW = (l - W.ref) * W.k * 255,  dP = (l - Pk.ref) * Pk.k * 255, dL = (l - La.ref) * La.k * 255,
@@ -188,7 +239,7 @@ function _mixRgb(a, b, f) { return a.map(function (v, i) { return v + (b[i] - v)
 function lineCasing(colorHex, tone, ground) {
   const C = hexToRgb(colorHex);
   const G = ground || (tone === 'night' ? ATLAS_PAL.night.ground : ATLAS_PAL.day.ground);
-  const neutral = tone === 'night' ? [10, 15, 23] : [255, 255, 255];
+  const neutral = tone === 'night' ? [8, 9, 11] : [255, 255, 255];
   if (contrastRgb(C, G) >= 3 && contrastRgb(C, neutral) >= 2.2) return rgbToHex(neutral);
   const toward = tone === 'night' ? [255, 255, 255] : [0, 0, 0];
   for (let t = .2; t <= .951; t += .05) {

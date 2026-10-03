@@ -104,16 +104,17 @@ const MUTATIONS = [
     name: 'restore the unanchored rule that rendered "istasyonunda" as "stationnda"',
     expect: 'the disruption translator never welds a Turkish suffix onto an English word',
     apply: h => h
-      .replace("[/[İi]stasyon(?:umuz|u)?nda\\b/gi, 'at the station'], [/[İi]stasyonda\\b/gi, 'at the station'],", '')
-      .replace("[/[İi]stasyon(?:umuz|u)?\\b/gi, 'station'],", "[/[İi]stasyon(?:umuz|u)?/gi, 'station'],"),
+      .replace("[/[İi]stasyon(?:umuz|u)?nda\\b/gi, { en:'at the station'", "[/[İi]stasyonXXnda\\b/gi, { en:'at the station'")
+      .replace("[/[İi]stasyonda\\b/gi, { en:'at the station'", "[/[İi]stasyonXXda\\b/gi, { en:'at the station'")
+      .replace("[/[İi]stasyon(?:umuz|u)?\\b/gi, { en:'station'", "[/[İi]stasyon(?:umuz|u)?/gi, { en:'station'"),
   },
   {
     // a rule that deletes the ending instead of translating it: nothing is mangled, but the
     // meaning is gone — which the mangle check alone would not notice
     name: 'translate a case ending to nothing instead of to English',
     expect: 'the disruption translator resolves the Turkish case endings it claims to',
-    apply: h => h.replace("[/[İi]stasyon(?:umuz|u)?ndan\\b/gi, 'from the station']",
-                          "[/[İi]stasyon(?:umuz|u)?ndan\\b/gi, 'station']"),
+    apply: h => h.replace("[/[İi]stasyon(?:umuz|u)?ndan\\b/gi, { en:'from the station'",
+                          "[/[İi]stasyon(?:umuz|u)?ndan\\b/gi, { en:'station'"),
   },
   /* The four ways the coverage fallback can be got wrong. It decides whether an alert is
      shown in English or in the operator's own Turkish, so both directions of the threshold
@@ -136,7 +137,7 @@ const MUTATIONS = [
     // defect wearing a badge, and invisible to any check that only looks at the label
     name: 'label the hybrid as the Turkish original instead of returning the original',
     expect: 'the Turkish fallback is the untouched original, never a rewrite',
-    apply: h => h.replace("? { text:src, lang:'tr', share:share }", "? { text:en, lang:'tr', share:share }"),
+    apply: h => h.replace("? { text:src, lang:'tr', share:share }", "? { text:out, lang:'tr', share:share }"),
   },
   {
     // station names pass through the translator untouched by design; counting them as
@@ -144,6 +145,65 @@ const MUTATIONS = [
     name: 'count proper nouns as untranslated Turkish',
     expect: 'station and line names do not count against translation coverage',
     apply: h => h.replace('    if(TR_CAPPED.test(w)) continue;', '    if(false) continue;'),
+  },
+
+  /* --- the other two languages -----------------------------------------------------------
+     Every one of these was true of the shipped page until it was fixed: the rules produced
+     English and nothing else, the dictionaries had drifted a fifth of the way behind in
+     Arabic and French, and Arabic was laid out left to right. They are the failure mode this
+     product is most prone to, because all of them look fine to a reader of English. */
+  {
+    // an English-only rule degrades every announcement it matches, in silence
+    name: "add a rule that only says what it produces in English",
+    expect: "every rule says what it produces in every language, not only in English",
+    apply: h => h.replace("{ en:'due to a technical fault,', ar:'بسبب عطل فني،'",
+                          "{ en:'due to a technical fault,', ar:''"),
+  },
+  {
+    // the defect as it shipped: the rules run, but always into English, whoever is reading
+    name: "translate into English whatever language was asked for",
+    expect: "a covered alert is translated into each language, not handed over in English",
+    apply: h => h.replace("for(const [re,rep] of TR_PHRASES) s=s.replace(re, rep[tgt]);",
+                          "for(const [re,rep] of TR_PHRASES) s=s.replace(re, rep.en);"),
+  },
+  {
+    /* Arabic words can only have come from our own replacement tables, so they are what
+       proves an Arabic translation happened. Scoring them as untranslated source text sends
+       every Arabic alert over the fallback threshold, and Arabic readers quietly go back to
+       being shown Turkish for announcements the rules handle perfectly well. */
+    name: "score Arabic script as untranslated source text",
+    expect: "an Arabic conjunction joined to a station name is not read as untranslated Turkish",
+    apply: h => h.replace("if(TR_ARABIC.test(w)){ translated++; continue; }",
+                          "if(false){ translated++; continue; }"),
+  },
+  {
+    // how ar and fr fell 101 keys behind: t() falls back to English without saying so
+    name: "let a language fall behind on keys again",
+    expect: "every language covers the keys English defines",
+    apply: h => h.replace('omniPlaces:"الأماكن", ', ''),
+  },
+  {
+    /* {n} is substituted with .replace(), so a translation that loses it prints the sentence
+       with the number missing rather than failing — invisible to anyone reading English. */
+    name: "drop a placeholder from a translated string",
+    expect: "a translated string keeps every placeholder its English original has",
+    apply: h => h.replace('provDays:"قبل {n} يوم"', 'provDays:"قبل يوم"'),
+  },
+  {
+    // lang without dir: Arabic sentences laid out as English, and mixed runs reordered
+    name: "set the language for Arabic but not the direction",
+    expect: "the page sets a text direction, not just a language",
+    apply: h => h.replace('document.documentElement.dir = (lang === "ar") ? "rtl" : "ltr";', ''),
+  },
+  {
+    /* Each language is scored against the words IT can emit. Judging French output by the
+       English vocabulary marks most of a correct French sentence as untranslated Turkish,
+       pushes it over the fallback threshold, and hands French readers the Turkish original
+       for announcements the rules translate perfectly well. */
+    name: "judge every language by the English vocabulary",
+    expect: "a covered alert is translated into each language, not handed over in English",
+    apply: h => h.replace("if(TR_EMITTED[tgt].has(k)){ translated++; continue; }",
+                          "if(TR_EMITTED.en.has(k)){ translated++; continue; }"),
   },
 
   /* --- timing engine ---------------------------------------------------------------------
@@ -411,14 +471,24 @@ const MUTATIONS = [
   },
   /* --- Atlas: the default experience, the basemap regrade, and the line outlines --- */
   {
-    name: 'make Neon the default experience again',
-    expect: 'Atlas is the default experience, and the others are still selectable',
-    apply: h => h.replace("const DEFAULT_UI_STYLE = 'atlas';", "const DEFAULT_UI_STYLE = 'neon';"),
+    name: 'make Atlas the default experience again',
+    expect: 'Neon is the default experience, and the others are still selectable',
+    apply: h => h.replace("const DEFAULT_UI_STYLE = 'neon';", "const DEFAULT_UI_STYLE = 'atlas';"),
   },
   {
     name: 'let a saved experience be overridden by the default',
-    expect: 'Atlas is the default experience, and the others are still selectable',
+    expect: 'Neon is the default experience, and the others are still selectable',
     apply: h => h.replace('return UI_STYLES.indexOf(v) >= 0 ? v : DEFAULT_UI_STYLE; }catch(e)', 'return DEFAULT_UI_STYLE; }catch(e)'),
+  },
+  {
+    name: 'stop erasing the ferry routes Esri bakes into the sea tiles',
+    expect: 'a ferry route drawn into the sea tile is erased, in both tones',
+    apply: h => h.replace('if (wm[i >> 2] && l >= .42 && l < .84 && around(i >> 2) >= 7) {', 'if (false) {'),
+  },
+  {
+    name: 'erase blue on land as if it were a ferry route',
+    expect: 'blue on land is not mistaken for a ferry route',
+    apply: h => h.replace('n += (xx < 0 || yy < 0 || xx >= side || yy >= side) ? 1 : wm[yy * side + xx];', 'n += 1;'),
   },
   {
     name: 'give every line the same white outline, whatever its colour',
@@ -472,7 +542,7 @@ const MUTATIONS = [
   {
     name: 'let the chrome drift from the ground it sits on',
     expect: "the chrome IS the ground: Atlas panels share the map's colour",
-    apply: h => h.replace('--obsidian:#1C2331; --panel:rgba(22,29,42,.90);', '--obsidian:#1C2332; --panel:rgba(22,29,42,.90);'),
+    apply: h => h.replace('--obsidian:#1E1F22; --panel:rgba(26,27,30,.90);', '--obsidian:#1E1F23; --panel:rgba(26,27,30,.90);'),
   },
   {
     name: 'ship a day --dim that fails AA on the ivory ground',
@@ -492,12 +562,12 @@ const MUTATIONS = [
   {
     name: 'lose the dash on the outline (a suspended line looks ordinary again)',
     expect: 'line outlines replace the glow, and the glow comes back for the other experiences',
-    apply: h => h.replace('dashArray:(o.pair && o.pair.pl.options.dashArray) || null });', 'dashArray:null });'),
+    apply: h => h.replace('dashArray:o.solidCasing ? null : ((o.pair && o.pair.pl.options.dashArray) || null) });', 'dashArray:null });'),
   },
   {
     name: 'leave the outline on when the experience changes (glow never returns)',
     expect: 'line outlines replace the glow, and the glow comes back for the other experiences',
-    apply: h => h.replace('      o.base = o.glowBase;', '      o.base = o.coreBase + CASING_PAD;'),
+    apply: h => h.replace('      o.base = o.glowBase;', '      o.base = o.coreBase + CASING_PAD_PLANNED;'),
   },
   {
     name: 'draw station labels in light-on-dark ink on every basemap',

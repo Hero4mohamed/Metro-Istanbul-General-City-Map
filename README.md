@@ -41,11 +41,31 @@ The map is generated from data in [`transit_data/`](transit_data/):
 |---|---|---|
 | `process.cjs` | `network.json` (Overpass) | `lines.json` (active lines) |
 | `process-ferry.cjs` | `ferry.json`, `piers.json` | `ferry-lines.json` |
-| `process-planned.cjs` | `planned.json` | `planned-lines.json` |
+| `fetch-planned.cjs` | Overpass: ways tagged `railway=construction\|proposed` | `planned-osm-<city>.json` (not committed) |
+| `fetch-planned-facts.cjs` | metro.istanbul project pages | `planned-facts-mi.json` |
+| `process-planned.cjs` | `planned-registry.json` + the two above | `planned-lines.json`, `openings.json` |
 | `process-bus.cjs` | `bus-probe.json` | `bus-directory.json` |
 | `build.cjs` | the JSONs + `app.template.html` | **`index.html`** |
 
-`planned-manual.json` holds the hand-placed (approximate) future lines.
+### The Vision tab and how it stays current
+Future lines are **never hand-drawn**. Three layers are kept apart, and each says where it came from:
+
+- **geometry**: only from OpenStreetMap (planned and under-construction ways). A line that is
+  mapped as a single long straight segment is drawn as *indicative* and says so;
+- **facts** (contractor, cost, station list, capacity): Metro İstanbul's own project pages;
+- **claims** (status, opening target, progress): curated in `transit_data/planned-registry.json`,
+  every one with a source and an *as-of* date. When sources disagree the most recent is shown and
+  the disagreement is written down, never averaged.
+
+A project that someone maps in OpenStreetMap shows up in the tab by itself, marked *not yet
+verified*. To verify it, add it to the registry; the automatic entry then disappears.
+
+```bash
+npm run planned     # refetch OSM + Metro İstanbul, merge, rebuild (writes transit_data/planned-report.json)
+```
+`.github/workflows/planned.yml` does the same every Monday and commits only when something real
+changed. `planned-report.json` lists what a person should look at: registry entries OpenStreetMap no
+longer matches, status disagreements, entries not re-verified in 120 days, and the unverified list.
 
 ### To rebuild after editing the template or data
 ```bash
@@ -63,5 +83,6 @@ node process.cjs && node build.cjs
 ```
 
 ## Data sources
-OpenStreetMap (geometry & stops), Metro İstanbul project pages (future lines),
-İETT (bus directory). Future-line alignments are approximate.
+OpenStreetMap (geometry & stops, including planned alignments), Metro İstanbul project pages
+(future-line facts), İETT (bus directory). Each Vision entry lists its own sources and dates in the panel;
+unverified entries say so.

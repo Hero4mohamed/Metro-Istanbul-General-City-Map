@@ -48,6 +48,11 @@ function fmtLaunch(d){
   const p=d.split('-'); return `${+p[2]} ${M[+p[1]-1]} ${p[0]}`;
 }
 function lineTooltip(line){
+  if(!isLive(line) && line.scope!=='intercity' && typeof phaseLabel==='function'){
+    const km = distStr(((line.km || (line._lenAll||line._len)/1000)));
+    const tg = planTargetText(line.target);
+    return `<b>${svgEsc(line.ref)}</b> · ${svgEsc(phaseLabel(phaseOf(line)))} · ${km}${tg ? ' · '+svgEsc(t('vTarget'))+' '+svgEsc(tg) : ''}`;
+  }
   const km=distStr(line._len/1000);
   const dref = line.partOf || line.ref;
   if(isLive(line)) return `<b>${dref}</b> · ${km} · ${line.stations.length||'–'} stops`;

@@ -1,0 +1,116 @@
+name: Refresh Vision (planned lines)
+
+# The Vision tab is built from three layers that are kept apart on purpose:
+#   geometry  - OpenStreetMap ways tagged railway=construction|proposed        (fetch-planned.cjs)
+#   facts     - Metro İstanbul's own project pages: contractor, cost, stations  (fetch-planned-facts.cjs)
+#   claims    - status, opening targets, progress: curated, each with a source and an as-of date
+#               in transit_data/planned-registry.json. A scraper cannot fill these in, so this job does
+#               not try: it refreshes the other two layers and REPORTS what a person should look at.
+#
+# A new project somebody maps in OpenStreetMap appears in the tab by itself, marked "not yet
+# verified"; promoting it to a curated entry is an edit to the registry.
+#
+# Weekly is plenty: projects change on the scale of months. The job commits only when something real
+# changed (the scripts leave their files alone when only a timestamp moved), and only after the whole
+# suite passes, because a bot commit here is also a deploy.
+
+on:
+  schedule:
+    - cron: '23 5 * * 1'        # Mondays 05:23 UTC
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+  actions:  write               # lets it dispatch pages.yml - see the publish step
+
+concurrency:
+  group: planned
+  cancel-in-progress: false
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0        # provenance dates come from git history, and a shallow clone cannot rebase
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      # The OSM dumps are not committed (large, regenerable), so every run starts by fetching them.
+      # fetch-planned.cjs exits non-zero if any city fails, and the job stops there: processing with a
+      # city missing would drop that city's lines from the map.
+      - name: Fetch planned and under-construction lines from OpenStreetMap
+        run: node transit_data/fetch-planned.cjs
+
+      # A changed page layout must not erase facts that are still true: the script refuses to overwrite
+      # when it parses far fewer projects than before. That is a warning here, not a failure, so the
+      # OSM half of the refresh still lands.
+      - name: Fetch Metro İstanbul project facts
+        id: facts
+        continue-on-error: true
+        run: node transit_data/fetch-planned-facts.cjs
+      - name: Flag a facts scrape that failed
+        if: steps.facts.outcome == 'failure'
+        run: echo "::warning::fetch-planned-facts.cjs failed - Metro İstanbul facts were left as they were. The page layout has probably changed."
+
+      - name: Merge registry + facts + OpenStreetMap
+        run: node transit_data/process-planned.cjs | tee /tmp/planned.txt
+
+      # What a person should look at, as annotations and in the run summary.
+      - name: Report what needs a human
+        run: |
+          node -e '
+            const fs = require("fs");
+            const r = JSON.parse(fs.readFileSync("transit_data/planned-report.json", "utf8"));
+            const out = ["## Vision refresh", ""];
+            for (const k of ["unmatchedRegistry", "clipErrors", "statusDisagreements", "lengthDisagreements", "missingSources", "stale"]) {
+              const v = r[k] || [];
+              out.push("- **" + k + "**: " + v.length);
+              for (const x of v) { out.push("  - " + x); console.log("::warning title=Vision " + k + "::" + x); }
+            }
+            out.push("- **autoEntries** (OpenStreetMap-only, unverified): " + r.autoEntries.length);
+            for (const a of r.autoEntries) out.push("  - " + a.city + " / " + a.ref + " (" + a.km + " km, " + a.osmStatus + ")");
+            fs.appendFileSync(process.env.GITHUB_STEP_SUMMARY, out.join("\n") + "\n");
+          '
+
+      - name: Rebuild the site
+        run: node transit_data/build.cjs
+      - name: Verify the rebuilt artifact
+        run: npm test
+
+      # No [skip ci]: Pages publishes the last artifact uploaded by pages.yml, so a commit that skips CI
+      # rebuilds index.html in the repo and never puts it on the live site.
+      - name: Commit if changed
+        id: commit
+        run: |
+          FILES="transit_data/planned-lines.json transit_data/planned-facts-mi.json transit_data/openings.json index.html sw.js"
+          if git diff --quiet -- $FILES; then
+            echo "No change - the Vision data is already current."
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          git config user.name  "planned-bot"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add $FILES
+          git commit -m "chore: refresh Vision data + rebuild"
+          for attempt in 1 2 3; do
+            if git push; then
+              echo "Vision data refreshed (attempt $attempt)."
+              echo "changed=true" >> "$GITHUB_OUTPUT"
+              exit 0
+            fi
+            echo "Push rejected on attempt $attempt - rebasing onto origin/main"
+            git pull --rebase --autostash origin main || exit 1
+          done
+          echo "::error::could not push the Vision refresh after 3 attempts"
+          exit 1
+
+      # Pushing is not enough: GitHub does not start a workflow from a push made with the default
+      # GITHUB_TOKEN, so pages.yml has to be asked for explicitly (workflow_dispatch is the exception).
+      - name: Publish to Pages
+        if: steps.commit.outputs.changed == 'true' || github.event_name == 'workflow_dispatch'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: gh workflow run pages.yml --ref main
