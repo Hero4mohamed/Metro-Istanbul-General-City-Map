@@ -70,13 +70,13 @@ const ATLAS_PAL = {
       park:  { c: [31, 44, 38],   ref: .82, k: .18 },
       land:  { c: [30, 31, 34],   ref: .85, k: .10 },
       urban: { c: [35, 36, 39],   ref: .82, k: .10 },
-      road:  { c: [208, 206, 200], ref: .76, k: 0 },     // the same off-white as every other road: see roadWhite
+      road:  { c: [150, 152, 158], ref: .76, k: 0 },     // the same light grey as every other road: see roadGrey
     },
-    /* ONE road colour. Every road is this off-white, whatever Esri drew it as — a white street, an
+    /* ONE road colour. Every road is this light grey, whatever Esri drew it as — a white street, an
        orange arterial, a darker orange motorway. A road that sits under a label is the exception: a
        label's halo and a road are both pure white in the tile, so the pixels within a few of a
        letter go dark (roadHalo) and the label stays legible. */
-    roadWhite: [208, 206, 200], roadHalo: [25, 26, 29],
+    roadGrey: [150, 152, 158], roadHalo: [25, 26, 29],
     tintH: 220, tintS: 0,                     // no tint: greys stay grey
     // lightness in -> lightness out. Dark label text (low l) -> light; the halos and casings
     // (high l) -> dark; white road fill (1.0) -> one quiet step above the land. Google's dark map is
@@ -152,7 +152,7 @@ const FERRY_RING = [[6, 0], [-6, 0], [0, 6], [0, -6], [6, 6], [-6, 6], [6, -6], 
    land in a hue class are then blended to that class's colour. */
 function makeBasemapGrade(pal) {
   const B = pal.bands, W = B.water, Pk = B.park, La = B.land, Ur = B.urban, Ro = B.road;
-  const OW = pal.roadWhite || null, OH = pal.roadHalo || null;
+  const OW = pal.roadGrey || null, OH = pal.roadHalo || null;
   const NT = pal.curve ? _neutralTable(pal) : null;
   return function grade(d, z) {
     /* Scale. Above about z11 a green pixel is a park and wants its own colour. Below z9 it is a
