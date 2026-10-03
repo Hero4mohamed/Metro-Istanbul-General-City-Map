@@ -434,6 +434,7 @@ async function resolveGeocodeEndpoints(oTxt, dTxt){
   runRoute();
 }
 function runRoute(){
+  openPlannerCard();                         // the answer renders inside the card
   const o=resolveTyped('O'), d=resolveTyped('D');
   // a field holding TYPED text that matched no local stop/landmark → look it up as a real
   // place/address, then re-run. So "just type where you're going" works without pinning.

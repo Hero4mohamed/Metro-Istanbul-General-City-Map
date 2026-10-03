@@ -1310,6 +1310,13 @@
   .lyr-head[aria-expanded="false"]{padding-bottom:2px;}
   .lyr-body{display:flex;flex-direction:column;}
   .lyr-body.folded{display:none;}
+  /* The Trip Planner card folds the same way the Layers card does: its title is the button. */
+  .plan-head{width:100%;border:none;background:none;cursor:pointer;font-family:var(--font);text-align:left;padding:0;}
+  .plan-head::after{content:"▾";margin-left:auto;font-size:11px;color:var(--dim);transition:transform .18s var(--ease);}
+  .plan-head[aria-expanded="false"]::after{transform:rotate(-90deg);}
+  .plan-head[aria-expanded="false"]{margin-bottom:0;}
+  .plan-head:hover{color:var(--text);}
+  .plan-body.folded{display:none;}
   /* 39 line chips made this section taller than the whole viewport — cap it and scroll inside */
   #legend.vision{max-height:48vh;}   /* the Vision tab lists every project, not a handful of lines */
   #legend{max-height:34vh;overflow-y:auto;overscroll-behavior:contain;padding-right:2px;}
@@ -1816,7 +1823,8 @@
   </div>
 
   <div class="card glass" id="cardPlanner">
-    <div class="sec" data-i18n="tripPlanner">Trip Planner</div>
+    <button class="sec plan-head" id="plannerHead" aria-expanded="true" aria-controls="plannerBody"><span data-i18n="tripPlanner">Trip Planner</span></button>
+    <div class="plan-body" id="plannerBody">
     <div class="seg ptabs" id="plannerTabs">
       <button data-pt="trip" class="active" data-i18n="tripTab">Trip</button>
       <button data-pt="adv" data-i18n="advTab">✦ Adventure</button>
@@ -1910,6 +1918,7 @@
           <div class="plan-list" id="advFavList"></div>
         </div>
       </div>
+    </div>
     </div>
   </div>
 </div>

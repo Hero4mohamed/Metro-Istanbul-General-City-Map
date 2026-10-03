@@ -6,7 +6,7 @@
 <!-- Substituted by build.cjs, which hashes the inline script from the final bytes. Pages
      cannot set headers, so this ships as meta; frame-ancestors and report-uri are
      unavailable that way. -->
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-FUOG4GAzfw89Nty2H5yLTwPsxmuXqHVZZP+IFs/NxxE=' https://unpkg.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://unpkg.com; font-src https://fonts.gstatic.com data:; img-src 'self' data: blob: https://server.arcgisonline.com; connect-src 'self' https://server.arcgisonline.com https://photon.komoot.io https://overpass-api.de https://api.ibb.gov.tr https://api.open-meteo.com https://routing.openstreetmap.de https://api.anthropic.com; worker-src 'self'; manifest-src 'self'; base-uri 'self'; form-action 'none'; object-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-u1lD+w3Xm2WZ27PfecjQPSSS5F46ivm7faxyRyYzJsM=' https://unpkg.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://unpkg.com; font-src https://fonts.gstatic.com data:; img-src 'self' data: blob: https://server.arcgisonline.com; connect-src 'self' https://server.arcgisonline.com https://photon.komoot.io https://overpass-api.de https://api.ibb.gov.tr https://api.open-meteo.com https://routing.openstreetmap.de https://api.anthropic.com; worker-src 'self'; manifest-src 'self'; base-uri 'self'; form-action 'none'; object-src 'none'">
 <title>İSTANBUL RAY-NET · Live Rail Network Map &amp; Simulation</title>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
       integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
@@ -1310,6 +1310,13 @@
   .lyr-head[aria-expanded="false"]{padding-bottom:2px;}
   .lyr-body{display:flex;flex-direction:column;}
   .lyr-body.folded{display:none;}
+  /* The Trip Planner card folds the same way the Layers card does: its title is the button. */
+  .plan-head{width:100%;border:none;background:none;cursor:pointer;font-family:var(--font);text-align:left;padding:0;}
+  .plan-head::after{content:"▾";margin-left:auto;font-size:11px;color:var(--dim);transition:transform .18s var(--ease);}
+  .plan-head[aria-expanded="false"]::after{transform:rotate(-90deg);}
+  .plan-head[aria-expanded="false"]{margin-bottom:0;}
+  .plan-head:hover{color:var(--text);}
+  .plan-body.folded{display:none;}
   /* 39 line chips made this section taller than the whole viewport — cap it and scroll inside */
   #legend.vision{max-height:48vh;}   /* the Vision tab lists every project, not a handful of lines */
   #legend{max-height:34vh;overflow-y:auto;overscroll-behavior:contain;padding-right:2px;}
@@ -1816,7 +1823,8 @@
   </div>
 
   <div class="card glass" id="cardPlanner">
-    <div class="sec" data-i18n="tripPlanner">Trip Planner</div>
+    <button class="sec plan-head" id="plannerHead" aria-expanded="true" aria-controls="plannerBody"><span data-i18n="tripPlanner">Trip Planner</span></button>
+    <div class="plan-body" id="plannerBody">
     <div class="seg ptabs" id="plannerTabs">
       <button data-pt="trip" class="active" data-i18n="tripTab">Trip</button>
       <button data-pt="adv" data-i18n="advTab">✦ Adventure</button>
@@ -1911,6 +1919,7 @@
         </div>
       </div>
     </div>
+    </div>
   </div>
 </div>
 
@@ -1978,7 +1987,7 @@
 
    The report carries the fault, the build, the city, the language and the browser. It never
    carries location, saved places, trip history or the API key. ===== */
-const BUILD = "20261003132130";
+const BUILD = "20261003134210";
 const DIAG_MAX = 20;
 let DIAG = [];
 try { DIAG = JSON.parse(localStorage.getItem("irn_diag") || "[]"); } catch (e) { DIAG = []; }
@@ -7082,6 +7091,7 @@ function renderEndpoints(){
   if(destPt)   L.marker([destPt.lat,destPt.lng],  {icon:epIcon('D'),zIndexOffset:1500,interactive:false}).addTo(endpointLayer);
 }
 function setPoint(which, pt){
+  if(pt) openPlannerCard();                  // a folded planner would hide what was just put in it
   if(which && which[0]==='A'){ const i=+which.slice(1); if(!isNaN(i)){ setAdvStop(i, pt); return; } }  // adventure row pick
   if(which==='O') originPt=pt; else destPt=pt;
   document.getElementById(which==='O'?'selO':'selD').value = pt ? pt.name : '';
@@ -8381,6 +8391,7 @@ async function resolveGeocodeEndpoints(oTxt, dTxt){
   runRoute();
 }
 function runRoute(){
+  openPlannerCard();                         // the answer renders inside the card
   const o=resolveTyped('O'), d=resolveTyped('D');
   // a field holding TYPED text that matched no local stop/landmark → look it up as a real
   // place/address, then re-run. So "just type where you're going" works without pinning.
@@ -9466,6 +9477,15 @@ function setDisruptions(list){
 const IS_MOBILE = matchMedia('(pointer:coarse)').matches && matchMedia('(hover:none)').matches
   || matchMedia('(max-width:720px)').matches;
 let mSheets={}, mNavBtns={};
+/* The planner can be folded, and several things put something INTO it from outside — a station's
+   "route from here", a pin dropped on the map, the assistant, "use my location". The answer of a
+   route appears inside the card too, so a folded planner would swallow it. Anything that sets an
+   endpoint or runs a route opens the card first (without saving that as the person's preference). */
+let plannerSetOpen=null;
+function openPlannerCard(){
+  const head=document.getElementById("plannerHead");
+  if(plannerSetOpen && head && head.getAttribute("aria-expanded")==="false") plannerSetOpen(true,false);
+}
 function mkSheet(id){
   const s=document.createElement('div'); s.className='msheet glass'; s.id='sheet_'+id;
   s.innerHTML='<div class="mgrab"></div>';
@@ -9597,16 +9617,25 @@ function init(){
   /* The Layers header folds its own card — it must not hide the planner or the tabs, which is
      what the old floating button did when it toggled the whole column. Each section keeps its
      own open/closed state, so the panel comes back exactly as it was left. */
-  { const head=document.getElementById("layersHead"), body=document.getElementById("layersBody");
-    if(head && body){
-      const setOpen=(open,save)=>{
-        body.classList.toggle("folded", !open);
-        head.setAttribute("aria-expanded", open?"true":"false");
-        if(save){ try{ localStorage.setItem("irn_layers", open?"1":"0"); }catch(e){} }
-      };
-      setOpen(lsStr("irn_layers","1")!=="0", false);
-      head.addEventListener("click", ()=> setOpen(body.classList.contains("folded"), true));
-    }
+  /* The Trip Planner card folds the same way, and remembers it separately: someone who keeps the
+     layers open but the planner tucked away (or the reverse) gets exactly that back. */
+  const wireFold=(headId, bodyId, key)=>{
+    const head=document.getElementById(headId), body=document.getElementById(bodyId);
+    if(!head || !body) return null;
+    const setOpen=(open,save)=>{
+      body.classList.toggle("folded", !open);
+      head.setAttribute("aria-expanded", open?"true":"false");
+      if(save){ try{ localStorage.setItem(key, open?"1":"0"); }catch(e){} }
+    };
+    setOpen(lsStr(key,"1")!=="0", false);
+    head.addEventListener("click", ()=> setOpen(body.classList.contains("folded"), true));
+    return setOpen;
+  };
+  { wireFold("layersHead","layersBody","irn_layers");
+    plannerSetOpen = wireFold("plannerHead","plannerBody","irn_planner");
+    // the "skip to trip planner" link lands on a card that may be folded: open it first
+    const skip=document.querySelector('.skip-link[href="#cardPlanner"]');
+    if(skip) skip.addEventListener("click", openPlannerCard);
     document.querySelectorAll("#cardLayers .lyr, #cardLines .lyr").forEach(d=>{
       const key="irn_lyr_"+(d.querySelector("summary span")?.getAttribute("data-i18n")||"x");
       const saved=lsStr(key,null);

@@ -11,6 +11,15 @@
 const IS_MOBILE = matchMedia('(pointer:coarse)').matches && matchMedia('(hover:none)').matches
   || matchMedia('(max-width:720px)').matches;
 let mSheets={}, mNavBtns={};
+/* The planner can be folded, and several things put something INTO it from outside — a station's
+   "route from here", a pin dropped on the map, the assistant, "use my location". The answer of a
+   route appears inside the card too, so a folded planner would swallow it. Anything that sets an
+   endpoint or runs a route opens the card first (without saving that as the person's preference). */
+let plannerSetOpen=null;
+function openPlannerCard(){
+  const head=document.getElementById("plannerHead");
+  if(plannerSetOpen && head && head.getAttribute("aria-expanded")==="false") plannerSetOpen(true,false);
+}
 function mkSheet(id){
   const s=document.createElement('div'); s.className='msheet glass'; s.id='sheet_'+id;
   s.innerHTML='<div class="mgrab"></div>';
@@ -142,16 +151,25 @@ function init(){
   /* The Layers header folds its own card — it must not hide the planner or the tabs, which is
      what the old floating button did when it toggled the whole column. Each section keeps its
      own open/closed state, so the panel comes back exactly as it was left. */
-  { const head=document.getElementById("layersHead"), body=document.getElementById("layersBody");
-    if(head && body){
-      const setOpen=(open,save)=>{
-        body.classList.toggle("folded", !open);
-        head.setAttribute("aria-expanded", open?"true":"false");
-        if(save){ try{ localStorage.setItem("irn_layers", open?"1":"0"); }catch(e){} }
-      };
-      setOpen(lsStr("irn_layers","1")!=="0", false);
-      head.addEventListener("click", ()=> setOpen(body.classList.contains("folded"), true));
-    }
+  /* The Trip Planner card folds the same way, and remembers it separately: someone who keeps the
+     layers open but the planner tucked away (or the reverse) gets exactly that back. */
+  const wireFold=(headId, bodyId, key)=>{
+    const head=document.getElementById(headId), body=document.getElementById(bodyId);
+    if(!head || !body) return null;
+    const setOpen=(open,save)=>{
+      body.classList.toggle("folded", !open);
+      head.setAttribute("aria-expanded", open?"true":"false");
+      if(save){ try{ localStorage.setItem(key, open?"1":"0"); }catch(e){} }
+    };
+    setOpen(lsStr(key,"1")!=="0", false);
+    head.addEventListener("click", ()=> setOpen(body.classList.contains("folded"), true));
+    return setOpen;
+  };
+  { wireFold("layersHead","layersBody","irn_layers");
+    plannerSetOpen = wireFold("plannerHead","plannerBody","irn_planner");
+    // the "skip to trip planner" link lands on a card that may be folded: open it first
+    const skip=document.querySelector('.skip-link[href="#cardPlanner"]');
+    if(skip) skip.addEventListener("click", openPlannerCard);
     document.querySelectorAll("#cardLayers .lyr, #cardLines .lyr").forEach(d=>{
       const key="irn_lyr_"+(d.querySelector("summary span")?.getAttribute("data-i18n")||"x");
       const saved=lsStr(key,null);
