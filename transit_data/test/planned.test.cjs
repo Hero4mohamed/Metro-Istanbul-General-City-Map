@@ -239,7 +239,7 @@ test('the page keeps unverified entries flagged and draws indicative alignments 
 
 test('the panel never prints an empty or "unknown" fact, and always shows who said the target and when', () => {
   const script = H.appScript();
-  const fn = /function plannedPanelHTML\(line\)\{[\s\S]*?\n\}\n/.exec(script);
+  const fn = /function plannedPanelHTML\(line\)\{[\s\S]*?\r?\n\}\r?\n/.exec(script);
   assert.ok(fn, 'plannedPanelHTML not found');
   assert.ok(/t\('vAsOf'\)/.test(fn[0]), 'a target must be shown with its as-of day');
   assert.ok(/function planFact\(label, value\)\{\s*if\(value === undefined \|\| value === null \|\| value === '' \|\| value === false\) return '';/.test(script),
