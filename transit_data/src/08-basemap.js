@@ -56,11 +56,12 @@ const ATLAS_PAL = {
     tintS: 0,                                 // no tint: by day the source's own hue is left alone
   },
   /* Night is GRAPHITE: neutral charcoal ground, near-black water, a whisper of green for parks, and
-     main roads in a muted mustard. The first night palette was a slate blue with teal and brown
-     roads; people found the whole screen too much, and the dark grey-and-black look that came
-     before it was the one they wanted back. So the colour here is spent in exactly one place —
-     the main roads — and kept low (about 3.4:1 on the ground, a fifth of the lightness the lines
-     drawn over them have) so it organises the map without competing with the metro lines. */
+     main roads in a light grey. The first night palette was a slate blue with teal and brown roads;
+     people found the whole screen too much, and the dark grey-and-black look that came before it
+     was the one they wanted back. A mustard yellow for the main roads was tried and replaced with
+     this: the map is now colourless except for the metro lines, which is what lets them carry it.
+     The grey sits well above the minor streets (white road fill, pulled to ~L 0.31 by the curve
+     below) so the road hierarchy still reads. */
   night: {
     ground: [30, 31, 34],
     bands: {
@@ -68,7 +69,7 @@ const ATLAS_PAL = {
       park:  { c: [30, 43, 35],   ref: .82, k: .18 },
       land:  { c: [30, 31, 34],   ref: .85, k: .10 },
       urban: { c: [35, 36, 39],   ref: .82, k: .10 },
-      road:  { c: [110, 100, 58], ref: .76, k: .20 },
+      road:  { c: [130, 132, 138], ref: .76, k: .20 },
     },
     tintH: 220, tintS: 0,                     // no tint: greys stay grey
     // lightness in -> lightness out. Dark label text (low l) -> light; the halos and casings

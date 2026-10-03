@@ -6,7 +6,7 @@
 <!-- Substituted by build.cjs, which hashes the inline script from the final bytes. Pages
      cannot set headers, so this ships as meta; frame-ancestors and report-uri are
      unavailable that way. -->
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-Wl2qh/L6fcjB44NAp417WjAWVTe9hUq2RS4HT1XepLo=' https://unpkg.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://unpkg.com; font-src https://fonts.gstatic.com data:; img-src 'self' data: blob: https://server.arcgisonline.com; connect-src 'self' https://server.arcgisonline.com https://photon.komoot.io https://overpass-api.de https://api.ibb.gov.tr https://api.open-meteo.com https://routing.openstreetmap.de https://api.anthropic.com; worker-src 'self'; manifest-src 'self'; base-uri 'self'; form-action 'none'; object-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-hQZteaLL7uVB5cXhRaNvrba6qkKHWaAAkv+vo7tC9kM=' https://unpkg.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://unpkg.com; font-src https://fonts.gstatic.com data:; img-src 'self' data: blob: https://server.arcgisonline.com; connect-src 'self' https://server.arcgisonline.com https://photon.komoot.io https://overpass-api.de https://api.ibb.gov.tr https://api.open-meteo.com https://routing.openstreetmap.de https://api.anthropic.com; worker-src 'self'; manifest-src 'self'; base-uri 'self'; form-action 'none'; object-src 'none'">
 <title>İSTANBUL RAY-NET · Live Rail Network Map &amp; Simulation</title>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
       integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
@@ -349,7 +349,7 @@
      map's ground:
 
          day   ground #F3F0E9   water #AAD3EC   park #CDE5C0   arterial #FADEAA
-         night ground #1E1F22   water #12151A   park #212623   arterial #6E643A
+         night ground #1E1F22   water #12151A   park #212623   arterial #82848A
 
      Lines are drawn with an outline instead of a bloom (applyLineStyle), because a glow is
      invisible on a pale map and a line with no edge disappears into the roads under it.
@@ -1967,7 +1967,7 @@
 
    The report carries the fault, the build, the city, the language and the browser. It never
    carries location, saved places, trip history or the API key. ===== */
-const BUILD = "20261003125127";
+const BUILD = "20261003125724";
 const DIAG_MAX = 20;
 let DIAG = [];
 try { DIAG = JSON.parse(localStorage.getItem("irn_diag") || "[]"); } catch (e) { DIAG = []; }
@@ -5232,11 +5232,12 @@ const ATLAS_PAL = {
     tintS: 0,                                 // no tint: by day the source's own hue is left alone
   },
   /* Night is GRAPHITE: neutral charcoal ground, near-black water, a whisper of green for parks, and
-     main roads in a muted mustard. The first night palette was a slate blue with teal and brown
-     roads; people found the whole screen too much, and the dark grey-and-black look that came
-     before it was the one they wanted back. So the colour here is spent in exactly one place —
-     the main roads — and kept low (about 3.4:1 on the ground, a fifth of the lightness the lines
-     drawn over them have) so it organises the map without competing with the metro lines. */
+     main roads in a light grey. The first night palette was a slate blue with teal and brown roads;
+     people found the whole screen too much, and the dark grey-and-black look that came before it
+     was the one they wanted back. A mustard yellow for the main roads was tried and replaced with
+     this: the map is now colourless except for the metro lines, which is what lets them carry it.
+     The grey sits well above the minor streets (white road fill, pulled to ~L 0.31 by the curve
+     below) so the road hierarchy still reads. */
   night: {
     ground: [30, 31, 34],
     bands: {
@@ -5244,7 +5245,7 @@ const ATLAS_PAL = {
       park:  { c: [30, 43, 35],   ref: .82, k: .18 },
       land:  { c: [30, 31, 34],   ref: .85, k: .10 },
       urban: { c: [35, 36, 39],   ref: .82, k: .10 },
-      road:  { c: [110, 100, 58], ref: .76, k: .20 },
+      road:  { c: [130, 132, 138], ref: .76, k: .20 },
     },
     tintH: 220, tintS: 0,                     // no tint: greys stay grey
     // lightness in -> lightness out. Dark label text (low l) -> light; the halos and casings
