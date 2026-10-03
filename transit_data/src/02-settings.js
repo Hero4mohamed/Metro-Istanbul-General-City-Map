@@ -7,9 +7,9 @@ const lsJSON=(k)=>{ try{ return JSON.parse(localStorage.getItem(k)); }catch(e){ 
 let themePref = (function(){ const s=lsStr('irn_theme'); if(s==='light'||s==='dark'||s==='auto'||s==='split') return s;
   return (window.matchMedia && matchMedia('(prefers-color-scheme: light)').matches) ? 'light' : 'dark'; })();
 let routePref = (function(){ const s=lsStr('irn_routePref'); return (s==='fast'||s==='easy')?s:'fast'; })();
-/* 'split' is the fourth choice: everything light EXCEPT the tabs, which stay dark. For the page it is the light theme
-   (so it resolves to 'light' and the light basemap goes with it); the tabs are the only thing that differs, and that is
-   a body class, not a second palette. */
+/* 'split' is the fourth choice, "Mixed": a light page whose tabs, layers, trip planner and announcements stay dark. For the
+   page it is the light theme (so it resolves to 'light' and the light basemap goes with it); the dark panels are the
+   only thing that differs, and that is a body class (`mixed`), not a second palette. */
 function resolveTheme(pref){ if(pref==='auto'){ const h=new Date().getHours(); return (h>=19||h<7)?'dark':'light'; } return (pref==='light'||pref==='split')?'light':'dark'; }
 /* The browser's address bar / status bar colour, so the page and the chrome around it are one
    surface. Atlas states its ground exactly; the other experiences keep their established values. */
@@ -23,7 +23,7 @@ function applyTheme(pref, syncBase){
   try{ localStorage.setItem('irn_theme', themePref); }catch(e){}
   const actual = resolveTheme(themePref);
   document.body.classList.toggle('light', actual==='light');
-  document.body.classList.toggle('tabs-dark', themePref==='split');
+  document.body.classList.toggle('mixed', themePref==='split');
   syncThemeColor(actual);
   document.querySelectorAll('#themeSeg button').forEach(b=> b.classList.toggle('active', b.dataset.theme===themePref));
   // keep the map basemap in step with the UI theme (unless the user is on Satellite)

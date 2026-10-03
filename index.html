@@ -6,7 +6,7 @@
 <!-- Substituted by build.cjs, which hashes the inline script from the final bytes. Pages
      cannot set headers, so this ships as meta; frame-ancestors and report-uri are
      unavailable that way. -->
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-Mi6i0ldK23aKE0G2rmUJdpP7uKPBAbWyruF3eUQ5h6k=' https://unpkg.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://unpkg.com; font-src https://fonts.gstatic.com data:; img-src 'self' data: blob: https://server.arcgisonline.com; connect-src 'self' https://server.arcgisonline.com https://photon.komoot.io https://overpass-api.de https://api.ibb.gov.tr https://api.open-meteo.com https://routing.openstreetmap.de https://api.anthropic.com; worker-src 'self'; manifest-src 'self'; base-uri 'self'; form-action 'none'; object-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-wpAHp1UEwS4ifZH/SOSA5Ov9JVCKo12JiVPoAq0/ykU=' https://unpkg.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://unpkg.com; font-src https://fonts.gstatic.com data:; img-src 'self' data: blob: https://server.arcgisonline.com; connect-src 'self' https://server.arcgisonline.com https://photon.komoot.io https://overpass-api.de https://api.ibb.gov.tr https://api.open-meteo.com https://routing.openstreetmap.de https://api.anthropic.com; worker-src 'self'; manifest-src 'self'; base-uri 'self'; form-action 'none'; object-src 'none'">
 <title>İSTANBUL RAY-NET · Live Rail Network Map &amp; Simulation</title>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
       integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
@@ -105,12 +105,12 @@
     --gold-ink:#B45309; --violet-ink:#7C3AED; --sky-ink:#0369A1; --crimson-ink:#B4121F;
   }
   body.light .glass,body.light .card,body.light .topbar{box-shadow:0 12px 34px -14px rgba(20,30,55,.35);}
-  /* The fourth theme, "Mixed": everything light EXCEPT the tabs. The page is the light theme (body.light);
-     the tab card (and the phone's bottom tab bar) simply restate the DARK tokens for themselves, so every
-     rule inside them — active tab tints, hover, text — keeps working with no second set of rules. An
-     element's own declaration beats the value it would inherit, so this also holds under Atlas, Calm and
-     Paper, which restate the tokens on the body. */
-  body.tabs-dark #cardTabs,body.tabs-dark .mnav{
+  /* The fourth theme, "Mixed": a light page whose tabs, Layers card, Trip Planner and announcements stay DARK. The
+     page is the light theme (body.light); those panels (and the phone's bottom tab bar) simply restate the DARK
+     tokens for themselves, so every rule inside them — active tab tints, inputs, hover, text — keeps working with
+     no second set of rules. An element's own declaration beats the value it would inherit, so this also holds
+     under Atlas, Calm and Paper, which restate the tokens on the body. */
+  body.mixed #cardTabs,body.mixed #cardLayers,body.mixed #cardPlanner,body.mixed #announce,body.mixed .mnav{
     --obsidian:#070A12; --panel:rgba(13,17,27,0.92); --stroke:rgba(255,255,255,0.08);
     --stroke-2:rgba(255,255,255,0.15); --text:#EEF2F8; --muted:#9AA4B8; --dim:#78849C;
     --accent:#34D399; --accent-2:#2DD4BF; --gold:#FBBF24; --btn-ink:#03130A;
@@ -2006,7 +2006,7 @@
 
    The report carries the fault, the build, the city, the language and the browser. It never
    carries location, saved places, trip history or the API key. ===== */
-const BUILD = "20261003171801";
+const BUILD = "20261003193855";
 const DIAG_MAX = 20;
 let DIAG = [];
 try { DIAG = JSON.parse(localStorage.getItem("irn_diag") || "[]"); } catch (e) { DIAG = []; }
@@ -2223,7 +2223,7 @@ const I18N = {
     prefHint:"“Fewest changes” prefers fewer transfers, even if it's a little slower.",
     dataPrivacy:"Data", resetTrips:"Clear saved trips & favourites", tripsCleared:"Saved trips cleared",
     privacyNote:"Your settings and saved trips stay on this device only.",
-    themeAuto:"Auto", themeSplit:"Mixed", themeSplitTip:"Everything light, except the tabs", textSize:"Text size", textNormal:"Normal", textLarge:"Large",
+    themeAuto:"Auto", themeSplit:"Mixed", themeSplitTip:"Light, but the tabs, layers, trip planner and announcements stay dark", textSize:"Text size", textNormal:"Normal", textLarge:"Large",
     accessibility:"Accessibility", reduceMotion:"Reduce motion", highContrast:"High contrast",
     walkPace:"Walking pace", walkSlow:"Slow", walkNormal:"Normal", walkFast:"Fast",
     avoidFerry:"Avoid ferries", avoidBus:"Avoid buses", distUnit:"Distance", clockFmt:"Clock",
@@ -2398,7 +2398,7 @@ const I18N = {
     prefHint:"“En az aktarma”, biraz daha yavaş olsa bile daha az aktarmalı rotaları tercih eder.",
     dataPrivacy:"Veri", resetTrips:"Kayıtlı yolculukları ve favorileri temizle", tripsCleared:"Kayıtlı yolculuklar temizlendi",
     privacyNote:"Ayarların ve kayıtlı yolculukların yalnızca bu cihazda saklanır.",
-    themeAuto:"Otomatik", themeSplit:"Karma", themeSplitTip:"Sekmeler hariç her şey açık renkli", textSize:"Yazı boyutu", textNormal:"Normal", textLarge:"Büyük",
+    themeAuto:"Otomatik", themeSplit:"Karma", themeSplitTip:"Açık tema; sekmeler, katmanlar, yolculuk planlayıcı ve duyurular koyu kalır", textSize:"Yazı boyutu", textNormal:"Normal", textLarge:"Büyük",
     accessibility:"Erişilebilirlik", reduceMotion:"Hareketi azalt", highContrast:"Yüksek kontrast",
     walkPace:"Yürüme hızı", walkSlow:"Yavaş", walkNormal:"Normal", walkFast:"Hızlı",
     avoidFerry:"Vapurdan kaçın", avoidBus:"Otobüsten kaçın", distUnit:"Mesafe", clockFmt:"Saat",
@@ -2521,7 +2521,7 @@ const I18N = {
     prefHint:"«أقل تبديل» يفضّل المسارات ذات التبديلات الأقل، حتى لو كانت أبطأ قليلًا.",
     dataPrivacy:"البيانات", resetTrips:"مسح الرحلات والمفضلة", tripsCleared:"تم مسح الرحلات المحفوظة",
     privacyNote:"تُحفظ إعداداتك ورحلاتك على هذا الجهاز فقط.",
-    themeAuto:"تلقائي", themeSplit:"مختلط", themeSplitTip:"كل شيء فاتح ما عدا علامات التبويب", textSize:"حجم النص", textNormal:"عادي", textLarge:"كبير",
+    themeAuto:"تلقائي", themeSplit:"مختلط", themeSplitTip:"فاتح، لكن علامات التبويب والطبقات ومخطط الرحلة والإعلانات تبقى داكنة", textSize:"حجم النص", textNormal:"عادي", textLarge:"كبير",
     accessibility:"إمكانية الوصول", reduceMotion:"تقليل الحركة", highContrast:"تباين عالٍ",
     walkPace:"سرعة المشي", walkSlow:"بطيء", walkNormal:"عادي", walkFast:"سريع",
     avoidFerry:"تجنّب العبّارات", avoidBus:"تجنّب الحافلات", distUnit:"المسافة", clockFmt:"الساعة",
@@ -2708,7 +2708,7 @@ const I18N = {
     prefHint:"« Moins de correspondances » privilégie les trajets avec moins de changements, même un peu plus lents.",
     dataPrivacy:"Données", resetTrips:"Effacer trajets et favoris", tripsCleared:"Trajets enregistrés effacés",
     privacyNote:"Vos réglages et trajets restent uniquement sur cet appareil.",
-    themeAuto:"Auto", themeSplit:"Mixte", themeSplitTip:"Tout est clair, sauf les onglets", textSize:"Taille du texte", textNormal:"Normal", textLarge:"Grand",
+    themeAuto:"Auto", themeSplit:"Mixte", themeSplitTip:"Clair, mais les onglets, les calques, le planificateur et les annonces restent sombres", textSize:"Taille du texte", textNormal:"Normal", textLarge:"Grand",
     accessibility:"Accessibilité", reduceMotion:"Réduire les animations", highContrast:"Contraste élevé",
     walkPace:"Vitesse de marche", walkSlow:"Lente", walkNormal:"Normale", walkFast:"Rapide",
     avoidFerry:"Éviter les ferries", avoidBus:"Éviter les bus", distUnit:"Distance", clockFmt:"Heure",
@@ -2852,9 +2852,9 @@ const lsJSON=(k)=>{ try{ return JSON.parse(localStorage.getItem(k)); }catch(e){ 
 let themePref = (function(){ const s=lsStr('irn_theme'); if(s==='light'||s==='dark'||s==='auto'||s==='split') return s;
   return (window.matchMedia && matchMedia('(prefers-color-scheme: light)').matches) ? 'light' : 'dark'; })();
 let routePref = (function(){ const s=lsStr('irn_routePref'); return (s==='fast'||s==='easy')?s:'fast'; })();
-/* 'split' is the fourth choice: everything light EXCEPT the tabs, which stay dark. For the page it is the light theme
-   (so it resolves to 'light' and the light basemap goes with it); the tabs are the only thing that differs, and that is
-   a body class, not a second palette. */
+/* 'split' is the fourth choice, "Mixed": a light page whose tabs, layers, trip planner and announcements stay dark. For the
+   page it is the light theme (so it resolves to 'light' and the light basemap goes with it); the dark panels are the
+   only thing that differs, and that is a body class (`mixed`), not a second palette. */
 function resolveTheme(pref){ if(pref==='auto'){ const h=new Date().getHours(); return (h>=19||h<7)?'dark':'light'; } return (pref==='light'||pref==='split')?'light':'dark'; }
 /* The browser's address bar / status bar colour, so the page and the chrome around it are one
    surface. Atlas states its ground exactly; the other experiences keep their established values. */
@@ -2868,7 +2868,7 @@ function applyTheme(pref, syncBase){
   try{ localStorage.setItem('irn_theme', themePref); }catch(e){}
   const actual = resolveTheme(themePref);
   document.body.classList.toggle('light', actual==='light');
-  document.body.classList.toggle('tabs-dark', themePref==='split');
+  document.body.classList.toggle('mixed', themePref==='split');
   syncThemeColor(actual);
   document.querySelectorAll('#themeSeg button').forEach(b=> b.classList.toggle('active', b.dataset.theme===themePref));
   // keep the map basemap in step with the UI theme (unless the user is on Satellite)
@@ -6166,7 +6166,7 @@ liveLines.forEach(line => line.paths.forEach(path => {
    ring for planned lines, a dark disc for intercity — so the same kind of place looked like four
    different things depending on which line it was on. The line's colour already says which line;
    the dot only has to say "a station is here", the same way everywhere. */
-const STATION_RING = 2.4;
+const STATION_RING = 1.7;
 const stationDot = extra => Object.assign({ color:'#05070A', fillColor:'#FFFFFF', fillOpacity:1, weight:STATION_RING }, extra || {});
 // station markers (merged registry)
 const stationGroup = L.layerGroup();
@@ -6175,7 +6175,7 @@ const stationMarkersArr = [];   // {m, base} for zoom-responsive radius
 stationList.forEach(r => {
   const ix = r.lines.size>1;
   const col = ix ? "#ffffff" : lineByRef[[...r.lines][0]].color;
-  const base = ix?6.2:4.6;          // big enough that the white shows inside the thick black ring
+  const base = ix?4.8:3.5;          // small enough not to clutter a busy centre, big enough that the white shows inside the ring
   const m = L.circleMarker([r.lat, r.lng], {
     renderer:stationRenderer, radius: base, color:'#05070A', weight:STATION_RING, fillColor:'#FFFFFF', fillOpacity:1
   });
@@ -6189,11 +6189,11 @@ stationList.forEach(r => {
 const plannedStationGroup = L.layerGroup();
 plannedStationList.forEach(r => {
   const m = L.circleMarker([r.lat, r.lng], {
-    renderer:stationRenderer, radius:4.6, color:'#05070A', weight:STATION_RING, fillColor:'#FFFFFF', fillOpacity:1
+    renderer:stationRenderer, radius:3.5, color:'#05070A', weight:STATION_RING, fillColor:'#FFFFFF', fillOpacity:1
   });
   m.on('click', (e) => { openLine(lineByRef[r.ref]); L.DomEvent.stop(e); });
   m.addTo(plannedStationGroup);
-  stationMarkersArr.push({ m, base:4.6, refs:new Set([r.ref]), planned:true, color:r.color });
+  stationMarkersArr.push({ m, base:3.5, refs:new Set([r.ref]), planned:true, color:r.color });
 });
 
 // zoom-responsive sizing: thin lines & small dots when zoomed out (de-clutter)
@@ -8615,7 +8615,7 @@ let icReturn = null, icListBuilt = false, icMode = 'all', icSelected = null;
 const intercityStationGroup = L.layerGroup();
 const intercityHi = L.layerGroup();                          // bold overlay for the selected route
 intercityLines.forEach(line => line.stations.forEach(st => {
-  L.circleMarker([st.lat, st.lng], stationDot({ renderer:lineRenderer, radius:4.4 }))
+  L.circleMarker([st.lat, st.lng], stationDot({ renderer:lineRenderer, radius:3.5 }))
     .bindTooltip(`${svgEsc(st.name)} · ${svgEsc(line.ref)}`, { className:'lt', direction:'top' })
     .on('click', ()=> openLine(line))
     .addTo(intercityStationGroup);
@@ -8678,7 +8678,7 @@ function selectIntercity(l, openPanel){
     L.polyline(p, { renderer:lineRenderer, color:l.color, weight:4.5, opacity:1, lineCap:'round', lineJoin:'round' })
       .bindTooltip(l.official, { sticky:true, className:'lt' }).on('click', ()=> openLine(l)).addTo(intercityHi);
   });
-  l.stations.forEach(st => L.circleMarker([st.lat, st.lng], stationDot({ renderer:lineRenderer, radius:4.8 }))
+  l.stations.forEach(st => L.circleMarker([st.lat, st.lng], stationDot({ renderer:lineRenderer, radius:4 }))
       .bindTooltip(svgEsc(st.name), { direction:'top', className:'lt' }).addTo(intercityHi));
   // labelled terminus markers: the route's advertised city names at the two geographic extremes.
   // Label pushed outward (west→left, east→right); flag on the end farther from İstanbul (the
@@ -8688,7 +8688,7 @@ function selectIntercity(l, openPanel){
     const dir = st.lng <= other.lng ? 'left' : 'right';
     const foreign = l.intl && metersBetween([st.lat,st.lng],HALK) > metersBetween([other.lat,other.lng],HALK);
     const flag = (foreign && l.flag) ? l.flag+' ' : '';
-    L.circleMarker([st.lat, st.lng], stationDot({ renderer:lineRenderer, radius:6.5 }))
+    L.circleMarker([st.lat, st.lng], stationDot({ renderer:lineRenderer, radius:5.2 }))
       .bindTooltip(`${flag}${svgEsc(e.city)}`, { permanent:true, direction:dir, className:'ic-lbl' }).addTo(intercityHi); });
   intercityHi.addTo(map);
   fitIntercity([l]);
