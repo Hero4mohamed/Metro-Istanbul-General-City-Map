@@ -185,7 +185,7 @@ liveLines.forEach(line => line.paths.forEach(path => {
    ring for planned lines, a dark disc for intercity — so the same kind of place looked like four
    different things depending on which line it was on. The line's colour already says which line;
    the dot only has to say "a station is here", the same way everywhere. */
-const STATION_RING = 2.4;
+const STATION_RING = 1.7;
 const stationDot = extra => Object.assign({ color:'#05070A', fillColor:'#FFFFFF', fillOpacity:1, weight:STATION_RING }, extra || {});
 // station markers (merged registry)
 const stationGroup = L.layerGroup();
@@ -194,7 +194,7 @@ const stationMarkersArr = [];   // {m, base} for zoom-responsive radius
 stationList.forEach(r => {
   const ix = r.lines.size>1;
   const col = ix ? "#ffffff" : lineByRef[[...r.lines][0]].color;
-  const base = ix?6.2:4.6;          // big enough that the white shows inside the thick black ring
+  const base = ix?4.8:3.5;          // small enough not to clutter a busy centre, big enough that the white shows inside the ring
   const m = L.circleMarker([r.lat, r.lng], {
     renderer:stationRenderer, radius: base, color:'#05070A', weight:STATION_RING, fillColor:'#FFFFFF', fillOpacity:1
   });
@@ -208,11 +208,11 @@ stationList.forEach(r => {
 const plannedStationGroup = L.layerGroup();
 plannedStationList.forEach(r => {
   const m = L.circleMarker([r.lat, r.lng], {
-    renderer:stationRenderer, radius:4.6, color:'#05070A', weight:STATION_RING, fillColor:'#FFFFFF', fillOpacity:1
+    renderer:stationRenderer, radius:3.5, color:'#05070A', weight:STATION_RING, fillColor:'#FFFFFF', fillOpacity:1
   });
   m.on('click', (e) => { openLine(lineByRef[r.ref]); L.DomEvent.stop(e); });
   m.addTo(plannedStationGroup);
-  stationMarkersArr.push({ m, base:4.6, refs:new Set([r.ref]), planned:true, color:r.color });
+  stationMarkersArr.push({ m, base:3.5, refs:new Set([r.ref]), planned:true, color:r.color });
 });
 
 // zoom-responsive sizing: thin lines & small dots when zoomed out (de-clutter)

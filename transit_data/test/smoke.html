@@ -166,7 +166,14 @@ const CHECKS = [
       const ai = d.getElementById('aiIn');
       ai.value = 'Taksim to Kadıköy';
       ai.dispatchEvent(new w.KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
-      const opts = await until(() => d.querySelectorAll('.ropt').length > 0, 14000);
+      /* A route is "produced" when the Trip panel shows an itinerary. The alternatives chips (.ropt) only appear when the
+         router finds MORE THAN ONE option, which depends on the hour: by day Taksim-Kadıköy has several, late in the
+         evening the timetables leave one, and this check used to fail every night for exactly that reason. So accept
+         either the chips or a rendered itinerary (a clock time, and not the "no route" notice). */
+      const steps = d.getElementById('rSteps');
+      const shown = () => d.querySelectorAll('.ropt').length > 0
+        || (steps && !steps.querySelector('.none') && /\d{1,2}:\d{2}/.test(steps.innerText) && steps.innerText.length > 40);
+      const opts = await until(shown, 14000);
       const xb = d.getElementById('aiX'); if (xb) xb.click();
       if (!opts) return 'no route options were produced';
     },
@@ -544,7 +551,7 @@ const CHECKS = [
     },
   },
   {
-    name: 'the Mixed theme is light everywhere except the tabs',
+    name: 'the Mixed theme keeps the tabs, layers, planner and announcements dark, and the rest light',
     why: 'The static suite proves the wiring; only a real page shows the rendered result — that the tab card is genuinely dark '
        + 'while the card under it is genuinely light, and that going back to the saved theme puts everything back.',
     run: async (w) => {
@@ -553,17 +560,25 @@ const CHECKS = [
       const sum = el => rgb(el).reduce((a, b) => a + b, 0);
       try {
         w.applyTheme('split', true);
-        const tabs = w.document.getElementById('cardTabs'), layers = w.document.getElementById('cardLayers');
-        if (!tabs || !layers) return 'the tab card or the layers card is missing';
         if (!w.document.body.classList.contains('light')) return 'Mixed did not make the page light';
-        if (!w.document.body.classList.contains('tabs-dark')) return 'Mixed did not mark the tabs as dark';
-        if (sum(tabs) > 200) return 'the tab card is not dark (' + rgb(tabs) + ')';
-        if (sum(layers) < 600) return 'the layers card is not light (' + rgb(layers) + ')';
+        if (!w.document.body.classList.contains('mixed')) return 'Mixed did not mark the body';
+        // dark: the tabs, Layers, Trip Planner and announcements. light: everything else, e.g. the top bar.
+        for (const id of ['cardTabs', 'cardLayers', 'cardPlanner', 'announce']) {
+          const el = w.document.getElementById(id);
+          if (!el) return id + ' is missing from the page';
+          if (sum(el) > 200) return id + ' is not dark in the Mixed theme (' + rgb(el) + ')';
+        }
+        const top = w.document.querySelector('.topbar');
+        if (top && sum(top) < 600) return 'the top bar should stay light in Mixed (' + rgb(top) + ')';
         const active = w.document.querySelector('#tabs button.active');
         const ink = (w.getComputedStyle(active).color.match(/[\d.]+/g) || [0, 0, 0]).slice(0, 3).map(Number).reduce((a, b) => a + b, 0);
         if (ink < 300) return 'the active tab text is dark on a dark card (' + ink + ')';
+        // text inside a dark panel must be light, or the panel is dark but unreadable
+        const title = w.document.querySelector('#cardPlanner .sec');
+        const planInk = title ? (w.getComputedStyle(title).color.match(/[\d.]+/g) || [0, 0, 0]).slice(0, 3).map(Number).reduce((a, b) => a + b, 0) : 999;
+        if (planInk < 300) return 'the Trip Planner title is dark on the dark card (' + planInk + ')';
         w.applyTheme('dark', true);
-        if (w.document.body.classList.contains('tabs-dark')) return 'leaving Mixed left the dark-tabs marker behind';
+        if (w.document.body.classList.contains('mixed')) return 'leaving Mixed left the marker behind';
       } finally { w.applyTheme(prev, true); }
     },
   },

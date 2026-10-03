@@ -551,13 +551,13 @@ const MUTATIONS = [
     apply: h => h.replace('r="8" fill="#fff" stroke="#05070A" stroke-width="3.4"', 'r="8" fill="var(--svg-hole)" stroke="#05070A" stroke-width="3.4"'),
   },
   {
-    name: 'never mark the body as having dark tabs',
-    expect: 'the fourth theme, Mixed, is offered, remembered and keeps only the tabs dark',
-    apply: h => h.replace("document.body.classList.toggle('tabs-dark', themePref==='split');", ''),
+    name: 'never mark the body as Mixed',
+    expect: 'the fourth theme, Mixed, is offered, remembered and keeps the tabs, layers, planner and announcements dark',
+    apply: h => h.replace("document.body.classList.toggle('mixed', themePref==='split');", ''),
   },
   {
     name: 'let the Mixed theme resolve to the dark page',
-    expect: 'the fourth theme, Mixed, is offered, remembered and keeps only the tabs dark',
+    expect: 'the fourth theme, Mixed, is offered, remembered and keeps the tabs, layers, planner and announcements dark',
     apply: h => h.replace("return (pref==='light'||pref==='split')?'light':'dark'; }", "return (pref==='light')?'light':'dark'; }"),
   },
   {

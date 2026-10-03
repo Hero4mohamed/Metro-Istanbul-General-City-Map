@@ -105,12 +105,12 @@
     --gold-ink:#B45309; --violet-ink:#7C3AED; --sky-ink:#0369A1; --crimson-ink:#B4121F;
   }
   body.light .glass,body.light .card,body.light .topbar{box-shadow:0 12px 34px -14px rgba(20,30,55,.35);}
-  /* The fourth theme, "Mixed": everything light EXCEPT the tabs. The page is the light theme (body.light);
-     the tab card (and the phone's bottom tab bar) simply restate the DARK tokens for themselves, so every
-     rule inside them — active tab tints, hover, text — keeps working with no second set of rules. An
-     element's own declaration beats the value it would inherit, so this also holds under Atlas, Calm and
-     Paper, which restate the tokens on the body. */
-  body.tabs-dark #cardTabs,body.tabs-dark .mnav{
+  /* The fourth theme, "Mixed": a light page whose tabs, Layers card, Trip Planner and announcements stay DARK. The
+     page is the light theme (body.light); those panels (and the phone's bottom tab bar) simply restate the DARK
+     tokens for themselves, so every rule inside them — active tab tints, inputs, hover, text — keeps working with
+     no second set of rules. An element's own declaration beats the value it would inherit, so this also holds
+     under Atlas, Calm and Paper, which restate the tokens on the body. */
+  body.mixed #cardTabs,body.mixed #cardLayers,body.mixed #cardPlanner,body.mixed #announce,body.mixed .mnav{
     --obsidian:#070A12; --panel:rgba(13,17,27,0.92); --stroke:rgba(255,255,255,0.08);
     --stroke-2:rgba(255,255,255,0.15); --text:#EEF2F8; --muted:#9AA4B8; --dim:#78849C;
     --accent:#34D399; --accent-2:#2DD4BF; --gold:#FBBF24; --btn-ink:#03130A;
