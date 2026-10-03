@@ -83,7 +83,7 @@ function setBase(b){
    lines (the day treatment), the way every imagery map draws transit. */
 const MAP_TONES = {
   day:     { casing:'#FFFFFF', casingOp:.96, label:'#1B2433', labelMulti:'#0B1220', halo:'rgba(255,255,255,.95)', ring:'#1B2433', hole:'#FFFFFF' },
-  night:   { casing:'#0A0F17', casingOp:.92, label:'#C3CEE0', labelMulti:'#FFFFFF', halo:'rgba(8,12,20,.92)',    ring:'#0B0F19', hole:'#0B0F19' },
+  night:   { casing:'#08090B', casingOp:.92, label:'#C9CCD2', labelMulti:'#FFFFFF', halo:'rgba(8,9,11,.92)',     ring:'#0A0B0D', hole:'#0A0B0D' },
   imagery: { casing:'#FFFFFF', casingOp:.92, label:'#E6ECF6', labelMulti:'#FFFFFF', halo:'rgba(8,12,20,.88)',    ring:'#0B0F19', hole:'#0B0F19' },
 };
 function mapTone(){ return curBaseKey === 'dark' ? 'night' : (curBaseKey === 'sat' ? 'imagery' : 'day'); }
@@ -170,7 +170,7 @@ NETWORK.forEach(line => {
    the map it now follows the basemap (see GHOST_LOOK / applyMapTone): a pale, thin trace by day. */
 const GHOST_LOOK = {
   day:     { color:'#8C97AB', weight:1.5, opacity:0.34 },
-  night:   { color:'#39414f', weight:2,   opacity:0.55 },
+  night:   { color:'#3b3d42', weight:2,   opacity:0.55 },
   imagery: { color:'#DDE4F0', weight:1.5, opacity:0.45 },
 };
 const ghostGroup = L.layerGroup();

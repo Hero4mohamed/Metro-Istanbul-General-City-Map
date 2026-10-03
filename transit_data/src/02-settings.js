@@ -13,7 +13,7 @@ function resolveTheme(pref){ if(pref==='auto'){ const h=new Date().getHours(); r
 function syncThemeColor(actual){
   const atlas = (typeof uiStyle !== 'undefined' && uiStyle === 'atlas');
   const tc = document.querySelector('meta[name="theme-color"]');
-  if(tc) tc.setAttribute('content', atlas ? (actual==='light' ? '#F3F0E9' : '#1C2331') : (actual==='light' ? '#E9EEF5' : '#070A12'));
+  if(tc) tc.setAttribute('content', atlas ? (actual==='light' ? '#F3F0E9' : '#1E1F22') : (actual==='light' ? '#E9EEF5' : '#070A12'));
 }
 function applyTheme(pref, syncBase){
   themePref = (pref==='light'||pref==='auto') ? pref : 'dark';
@@ -332,11 +332,11 @@ function applyDisplayPrefs(){
    is making a different argument rather than a different palette, a small set of structural
    rules. Kept as a list so adding one is a data change, not a new branch in every consumer. */
 const UI_STYLES = ['atlas', 'neon', 'calm', 'paper'];
-/* Atlas is the default. Neon was, until the basemap and the chrome were redesigned together; it
-   stays selectable, and anyone who picked a style explicitly keeps it — only a device with no
-   saved choice moves. `neon` is the one style with no body class of its own (it IS the base
-   stylesheet), which is why it is special-cased below rather than listed. */
-const DEFAULT_UI_STYLE = 'atlas';
+/* Neon is the default again. Atlas was for a while, and people found it overwhelming — the dark
+   grey-and-black look was the one they wanted. Atlas stays selectable, and anyone who picked a
+   style explicitly keeps it. `neon` is the one style with no body class of its own (it IS the
+   base stylesheet), which is why it is special-cased below rather than listed. */
+const DEFAULT_UI_STYLE = 'neon';
 let uiStyle = (function(){ try{ const v=localStorage.getItem('irn_uistyle');
   return UI_STYLES.indexOf(v) >= 0 ? v : DEFAULT_UI_STYLE; }catch(e){ return DEFAULT_UI_STYLE; } })();
 function setUiStyle(v, save){

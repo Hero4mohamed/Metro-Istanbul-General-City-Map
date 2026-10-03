@@ -55,16 +55,22 @@ const ATLAS_PAL = {
     curve: [[0, 0], [.6, .6], [.72, .79], [.82, .91], [.92, .97], [1, 1]],
     tintS: 0,                                 // no tint: by day the source's own hue is left alone
   },
+  /* Night is GRAPHITE: neutral charcoal ground, near-black water, a whisper of green for parks, and
+     main roads in a muted mustard. The first night palette was a slate blue with teal and brown
+     roads; people found the whole screen too much, and the dark grey-and-black look that came
+     before it was the one they wanted back. So the colour here is spent in exactly one place —
+     the main roads — and kept low (about 3.4:1 on the ground, a fifth of the lightness the lines
+     drawn over them have) so it organises the map without competing with the metro lines. */
   night: {
-    ground: [28, 35, 49],
+    ground: [30, 31, 34],
     bands: {
-      water: { c: [19, 47, 76],   ref: .86, k: .30 },
-      park:  { c: [30, 58, 52],   ref: .82, k: .18 },
-      land:  { c: [28, 35, 49],   ref: .85, k: .10 },
-      urban: { c: [32, 40, 56],   ref: .82, k: .10 },
-      road:  { c: [92, 79, 58],   ref: .76, k: .20 },     // dimmed twice: amber arterials fought the orange metro lines
+      water: { c: [18, 21, 26],   ref: .86, k: .30 },
+      park:  { c: [30, 43, 35],   ref: .82, k: .18 },
+      land:  { c: [30, 31, 34],   ref: .85, k: .10 },
+      urban: { c: [35, 36, 39],   ref: .82, k: .10 },
+      road:  { c: [110, 100, 58], ref: .76, k: .20 },
     },
-    tintH: 218, tintS: .20,                   // slate, so greys read as part of the ground
+    tintH: 220, tintS: 0,                     // no tint: greys stay grey
     // lightness in -> lightness out. Dark label text (low l) -> light; the halos and casings
     // (high l) -> dark; white road fill (1.0) -> one step above the land.
     curve: [[0, .90], [.25, .78], [.5, .58], [.62, .42], [.78, .17], [.9, .15], [.96, .21], [1, .31]],
@@ -200,7 +206,7 @@ function _mixRgb(a, b, f) { return a.map(function (v, i) { return v + (b[i] - v)
 function lineCasing(colorHex, tone, ground) {
   const C = hexToRgb(colorHex);
   const G = ground || (tone === 'night' ? ATLAS_PAL.night.ground : ATLAS_PAL.day.ground);
-  const neutral = tone === 'night' ? [10, 15, 23] : [255, 255, 255];
+  const neutral = tone === 'night' ? [8, 9, 11] : [255, 255, 255];
   if (contrastRgb(C, G) >= 3 && contrastRgb(C, neutral) >= 2.2) return rgbToHex(neutral);
   const toward = tone === 'night' ? [255, 255, 255] : [0, 0, 0];
   for (let t = .2; t <= .951; t += .05) {

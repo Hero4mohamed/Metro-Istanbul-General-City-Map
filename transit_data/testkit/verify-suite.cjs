@@ -411,13 +411,13 @@ const MUTATIONS = [
   },
   /* --- Atlas: the default experience, the basemap regrade, and the line outlines --- */
   {
-    name: 'make Neon the default experience again',
-    expect: 'Atlas is the default experience, and the others are still selectable',
-    apply: h => h.replace("const DEFAULT_UI_STYLE = 'atlas';", "const DEFAULT_UI_STYLE = 'neon';"),
+    name: 'make Atlas the default experience again',
+    expect: 'Neon is the default experience, and the others are still selectable',
+    apply: h => h.replace("const DEFAULT_UI_STYLE = 'neon';", "const DEFAULT_UI_STYLE = 'atlas';"),
   },
   {
     name: 'let a saved experience be overridden by the default',
-    expect: 'Atlas is the default experience, and the others are still selectable',
+    expect: 'Neon is the default experience, and the others are still selectable',
     apply: h => h.replace('return UI_STYLES.indexOf(v) >= 0 ? v : DEFAULT_UI_STYLE; }catch(e)', 'return DEFAULT_UI_STYLE; }catch(e)'),
   },
   {
@@ -472,7 +472,7 @@ const MUTATIONS = [
   {
     name: 'let the chrome drift from the ground it sits on',
     expect: "the chrome IS the ground: Atlas panels share the map's colour",
-    apply: h => h.replace('--obsidian:#1C2331; --panel:rgba(22,29,42,.90);', '--obsidian:#1C2332; --panel:rgba(22,29,42,.90);'),
+    apply: h => h.replace('--obsidian:#1E1F22; --panel:rgba(26,27,30,.90);', '--obsidian:#1E1F23; --panel:rgba(26,27,30,.90);'),
   },
   {
     name: 'ship a day --dim that fails AA on the ivory ground',

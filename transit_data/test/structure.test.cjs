@@ -554,13 +554,13 @@ test('every basemap is keyless and depth-capped', () => {
    filter over it. These guard what is easy to lose: that it IS the default, that it restates
    its palette completely, that it meets AA on its own surface, and that it is a structural
    argument and not a recolour. */
-test('Atlas is the default experience, and the others are still selectable', () => {
+test('Neon is the default experience, and the others are still selectable', () => {
   const script = H.appScript(), html = H.html();
-  assert.ok(/const DEFAULT_UI_STYLE = 'atlas';/.test(script), 'Atlas is no longer the default');
+  assert.ok(/const DEFAULT_UI_STYLE = 'neon';/.test(script), 'Neon (the dark grey-and-black look) is no longer the default');
   const m = /const UI_STYLES = \[([^\]]+)\]/.exec(script);
   const styles = [...m[1].matchAll(/'([a-z]+)'/g)].map(x => x[1]);
   for (const s of ['atlas', 'neon', 'calm', 'paper'])
-    assert.ok(styles.includes(s), s + ' is gone from the experiences — nothing is to be removed, only the default moved');
+    assert.ok(styles.includes(s), s + ' is gone from the experiences — nothing is to be removed, only the default moves');
   assert.ok(html.indexOf('data-uis="atlas"') >= 0 && html.indexOf('data-uis="neon"') >= 0, 'a control is missing');
   // a saved choice always wins: only a device with NO saved style moves to the new default
   /* Pin the INITIALISER itself. The same ternary also appears in setUiStyle(), so matching it
