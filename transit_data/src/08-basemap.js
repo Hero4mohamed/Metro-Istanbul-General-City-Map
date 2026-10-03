@@ -70,8 +70,13 @@ const ATLAS_PAL = {
       park:  { c: [31, 44, 38],   ref: .82, k: .18 },
       land:  { c: [30, 31, 34],   ref: .85, k: .10 },
       urban: { c: [35, 36, 39],   ref: .82, k: .10 },
-      road:  { c: [82, 86, 95],   ref: .76, k: .20 },
+      road:  { c: [208, 206, 200], ref: .76, k: 0 },     // the same off-white as every other road: see roadWhite
     },
+    /* ONE road colour. Every road is this off-white, whatever Esri drew it as — a white street, an
+       orange arterial, a darker orange motorway. A road that sits under a label is the exception: a
+       label's halo and a road are both pure white in the tile, so the pixels within a few of a
+       letter go dark (roadHalo) and the label stays legible. */
+    roadWhite: [208, 206, 200], roadHalo: [25, 26, 29],
     tintH: 220, tintS: 0,                     // no tint: greys stay grey
     // lightness in -> lightness out. Dark label text (low l) -> light; the halos and casings
     // (high l) -> dark; white road fill (1.0) -> one quiet step above the land. Google's dark map is
@@ -109,6 +114,25 @@ function _neutralTable(pal) {
   return { lo: lo, tint: tint };
 }
 function _clamp255(v) { return v < 0 ? 0 : (v > 255 ? 255 : v); }
+/* 1 where a pixel is within `r` pixels of dark ink (text, an icon, a shield): any pixel darker than
+   mid-grey in the ORIGINAL tile. Esri's roads and its label halos are the same pure white, so
+   distance from ink is the only thing that tells them apart. A separable max filter. */
+function _nearInk(d, side, r) {
+  const n = side * side, a = new Uint8Array(n), b = new Uint8Array(n);
+  for (let p = 0, k = 0; p < n; p++, k += 4)
+    a[p] = (Math.max(d[k], d[k + 1], d[k + 2]) + Math.min(d[k], d[k + 1], d[k + 2])) < 255 ? 1 : 0;
+  for (let y = 0; y < side; y++) for (let x = 0; x < side; x++) {
+    let v = 0;
+    for (let q = Math.max(0, x - r), e = Math.min(side - 1, x + r); q <= e; q++) if (a[y * side + q]) { v = 1; break; }
+    b[y * side + x] = v;
+  }
+  for (let x = 0; x < side; x++) for (let y = 0; y < side; y++) {
+    let v = 0;
+    for (let q = Math.max(0, y - r), e = Math.min(side - 1, y + r); q <= e; q++) if (b[q * side + x]) { v = 1; break; }
+    a[y * side + x] = v;
+  }
+  return a;
+}
 /* Water hue: blue, with enough colour to be blue rather than grey (hue 195-225, measured on the
    sea at z12-z14: base water is ~210, the ferry ink 200-210). */
 function _waterHued(R, G, B) {
@@ -128,6 +152,7 @@ const FERRY_RING = [[6, 0], [-6, 0], [0, 6], [0, -6], [6, 6], [-6, 6], [6, -6], 
    land in a hue class are then blended to that class's colour. */
 function makeBasemapGrade(pal) {
   const B = pal.bands, W = B.water, Pk = B.park, La = B.land, Ur = B.urban, Ro = B.road;
+  const OW = pal.roadWhite || null, OH = pal.roadHalo || null;
   const NT = pal.curve ? _neutralTable(pal) : null;
   return function grade(d, z) {
     /* Scale. Above about z11 a green pixel is a park and wants its own colour. Below z9 it is a
@@ -164,6 +189,7 @@ function makeBasemapGrade(pal) {
       }
       return n;
     };
+    const near = OW ? _nearInk(d, side, 3) : null;
     for (let i = 0; i < d.length; i += 4) {
       const r = d[i] / 255, g = d[i + 1] / 255, b = d[i + 2] / 255;
       const M = Math.max(r, g, b), m = Math.min(r, g, b), l = (M + m) / 2, dd = M - m;
@@ -194,18 +220,30 @@ function makeBasemapGrade(pal) {
             const warm = _band(h, 18, 24), pale = _smooth(.72, .78, l);
             wu = Math.max(_band(h, 33, 13), warm * pale);       // the salmon fill, and the old built-up tan
             wr = _band(h, 15, 16) * (1 - pale);                 // only the darker orange is a road
-          } else { wu = _band(h, 33, 13); wr = _band(h, 18, 14); }
+          } else {
+            /* With one road colour an arterial must come out as ALL road. Measured arterials sit at hue 20-25,
+               a little past the old band's centre, so they came out half road, half built-up: a grey that
+               matched nothing. Both bands are narrowed and re-centred (the built-up fill measures 33-36). */
+            if (OW) { wu = _band(h, 35, 6); wr = _band(h, 19, 13); }       // two narrow bands that no longer overlap: no grey in between
+            else { wu = _band(h, 33, 13); wr = _band(h, 18, 14); }
+          }
           const sum = ww + wp + wl + wu + wr;
           if (sum >= .002) {                             // a hue we have no class for (an icon) stays itself
+            const rc = (OW && near[i >> 2]) ? OH : Ro.c;               // a road under a label is the label's halo
             const dW = (l - W.ref) * W.k * 255,  dP = (l - Pk.ref) * Pk.k * 255, dL = (l - La.ref) * La.k * 255,
                   dU = (l - Ur.ref) * Ur.k * 255, dR = (l - Ro.ref) * Ro.k * 255;
-            const R  = (ww * (W.c[0] + dW) + wp * (pc0 + dP) + wl * (La.c[0] + dL) + wu * (Ur.c[0] + dU) + wr * (Ro.c[0] + dR)) / sum;
-            const G  = (ww * (W.c[1] + dW) + wp * (pc1 + dP) + wl * (La.c[1] + dL) + wu * (Ur.c[1] + dU) + wr * (Ro.c[1] + dR)) / sum;
-            const Bl = (ww * (W.c[2] + dW) + wp * (pc2 + dP) + wl * (La.c[2] + dL) + wu * (Ur.c[2] + dU) + wr * (Ro.c[2] + dR)) / sum;
+            const R  = (ww * (W.c[0] + dW) + wp * (pc0 + dP) + wl * (La.c[0] + dL) + wu * (Ur.c[0] + dU) + wr * (rc[0] + dR)) / sum;
+            const G  = (ww * (W.c[1] + dW) + wp * (pc1 + dP) + wl * (La.c[1] + dL) + wu * (Ur.c[1] + dU) + wr * (rc[1] + dR)) / sum;
+            const Bl = (ww * (W.c[2] + dW) + wp * (pc2 + dP) + wl * (La.c[2] + dL) + wu * (Ur.c[2] + dU) + wr * (rc[2] + dR)) / sum;
             const a = chroma * Math.min(1, sum * 1.6);
             oR = R0 + (R - R0) * a; oG = G0 + (G - G0) * a; oB = B0 + (Bl - B0) * a;
           }
         }
+      }
+      if (OW && dd < .045 && l > .93 && !near[i >> 2]) {          // a white street, away from any label: the one road colour
+        // by how white it is, between the land (L .93) and pure white, so a street's anti-aliased edge fades instead of breaking up
+        const w = _smooth(.93, .995, l);
+        oR += (OW[0] - oR) * w; oG += (OW[1] - oG) * w; oB += (OW[2] - oB) * w;
       }
       d[i] = _clamp255(oR); d[i + 1] = _clamp255(oG); d[i + 2] = _clamp255(oB);
     }
