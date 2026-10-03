@@ -526,6 +526,24 @@ const CHECKS = [
     },
   },
   {
+    name: 'the trip planner folds away and opens again',
+    why: 'The static suite proves the markup and the wiring; only a real page shows that the click hides the body, that a second click '
+       + 'brings it back, and that the arrow state follows. The planner is the card people live in, so a fold that sticks shut is a dead app.',
+    run: async (w) => {
+      const head = w.document.getElementById('plannerHead'), body = w.document.getElementById('plannerBody');
+      if (!head || !body) return 'the planner title or body is missing from the page';
+      const shown = () => w.getComputedStyle(body).display !== 'none';
+      if (!shown()) head.click();                        // start from open, whatever was remembered
+      if (!shown()) return 'could not open the planner to begin with';
+      head.click();
+      if (shown()) return 'clicking the planner title did not fold it';
+      if (head.getAttribute('aria-expanded') !== 'false') return 'the title does not say it is folded';
+      head.click();
+      if (!shown()) return 'a second click did not open it again';
+      if (head.getAttribute('aria-expanded') !== 'true') return 'the title does not say it is open';
+    },
+  },
+  {
     name: 'the service worker registers',
     run: async (w) => {
       if (w.location.protocol === 'file:') return { skip: 'workers need http(s)' };

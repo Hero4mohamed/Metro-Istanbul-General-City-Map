@@ -491,6 +491,26 @@ const MUTATIONS = [
     apply: h => h.replace('n += (xx < 0 || yy < 0 || xx >= side || yy >= side) ? 1 : wm[yy * side + xx];', 'n += 1;'),
   },
   {
+    name: 'let a folded planner swallow a dropped pin (setPoint no longer opens it)',
+    expect: 'putting something into a folded planner opens it',
+    apply: h => h.replace('if(pt) openPlannerCard();', ''),
+  },
+  {
+    name: 'let a folded planner swallow the route answer (runRoute no longer opens it)',
+    expect: 'putting something into a folded planner opens it',
+    apply: h => h.replace('  openPlannerCard();                         // the answer renders inside the card', ''),
+  },
+  {
+    name: 'point the planner title at a body that is not there',
+    expect: 'the planner title is a button wired to a body that exists and can fold',
+    apply: h => h.replace('aria-controls="plannerBody"', 'aria-controls="plannerBodyX"'),
+  },
+  {
+    name: 'make the planner share the Layers card fold memory',
+    expect: 'the planner remembers its own fold, apart from the Layers card',
+    apply: h => h.replace('wireFold("plannerHead","plannerBody","irn_planner")', 'wireFold("plannerHead","plannerBody","irn_layers")'),
+  },
+  {
     name: 'give every line the same white outline, whatever its colour',
     expect: 'every line colour stays visible on the land, in both tones',
     apply: h => h.replace('if (contrastRgb(C, G) >= 3 && contrastRgb(C, neutral) >= 2.2) return rgbToHex(neutral);',

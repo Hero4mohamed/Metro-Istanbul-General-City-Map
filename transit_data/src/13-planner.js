@@ -23,6 +23,7 @@ function renderEndpoints(){
   if(destPt)   L.marker([destPt.lat,destPt.lng],  {icon:epIcon('D'),zIndexOffset:1500,interactive:false}).addTo(endpointLayer);
 }
 function setPoint(which, pt){
+  if(pt) openPlannerCard();                  // a folded planner would hide what was just put in it
   if(which && which[0]==='A'){ const i=+which.slice(1); if(!isNaN(i)){ setAdvStop(i, pt); return; } }  // adventure row pick
   if(which==='O') originPt=pt; else destPt=pt;
   document.getElementById(which==='O'?'selO':'selD').value = pt ? pt.name : '';
