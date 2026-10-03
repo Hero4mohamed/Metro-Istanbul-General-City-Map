@@ -457,8 +457,9 @@ const CHECKS = [
           if (!q || q.canvasTiles < 4) failure = 'the day basemap never produced canvas tiles — the regrade layer is not in use';
           else {
             const g = q.ground.match(/\d+/g).map(Number);
-            const off = Math.max.apply(null, q.tile.map((v, i) => Math.abs(v - g[i])));
-            if (off > 28) failure = 'the most common tile colour ' + q.tile + ' is not the ivory ground ' + g + ' — tiles are not being regraded';
+            const nearGround = c => Math.max.apply(null, c.map((v, i) => Math.abs(v - g[i]))) <= 28;
+            // the view can be half sea, so the land need not be THE most common colour, but it must be one of the top few
+            if (!q.common.some(nearGround)) failure = 'none of the most common tile colours ' + JSON.stringify(q.common) + ' is the ivory ground ' + g + ' — tiles are not being regraded';
           }
         }
       } finally {

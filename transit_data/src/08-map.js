@@ -351,23 +351,27 @@ function viewMap(lat, lng, z){ map.setView([lat, lng], z, { animate:false }); re
 // Open a line's panel by ref, for the same reason: `lineByRef` is not reachable from outside.
 function viewLine(ref){ const l = lineByRef[ref]; if(l) openLine(l); return !!l; }
 function atlasProbe(){
-  const cs = [...map.getContainer().querySelectorAll('.leaflet-tile-pane canvas')].filter(c => c.width > 0).slice(0, 6);
+  const cs = [...map.getContainer().querySelectorAll('.leaflet-tile-pane canvas')].filter(c => c.width > 0);
   const m = new Map();
   cs.forEach(c => {
     try{
       const d = c.getContext('2d').getImageData(0, 0, c.width, c.height).data;
-      for(let i = 0; i < d.length; i += 16){
+      for(let i = 0; i < d.length; i += 64){
+        if(d[i+3] < 200) continue;                                     // not painted yet: a fresh canvas reads as transparent black
         if(d[i] >= 246 && d[i+1] >= 246 && d[i+2] >= 246) continue;     // road fill, not ground
         const k = ((d[i] >> 3) << 10) | ((d[i+1] >> 3) << 5) | (d[i+2] >> 3); m.set(k, (m.get(k) || 0) + 1);
       }
     }catch(e){}
   });
-  const top = [...m].sort((a, b) => b[1] - a[1])[0];
+  const ranked = [...m].sort((a, b) => b[1] - a[1]);
+  const top = ranked[0];
+  const rgb = k => [((k >> 10) & 31) * 8 + 4, ((k >> 5) & 31) * 8 + 4, (k & 31) * 8 + 4];
   const gl = linePolys.filter(o => o.glow)[0];
   return { style: uiStyle, base: curBaseKey, tone: mapTone(),
            ground: map.getContainer().style.background,
            canvasTiles: cs.length,
-           tile: top ? [((top[0] >> 10) & 31) * 8 + 4, ((top[0] >> 5) & 31) * 8 + 4, (top[0] & 31) * 8 + 4] : null,
+           tile: top ? rgb(top[0]) : null,
+           common: ranked.slice(0, 5).map(e => rgb(e[0])),     // the five most common colours: on a map half sea, the land is second
            outline: gl ? { color: gl.pl.options.color, opacity: gl.pl.options.opacity, base: gl.base,
                            coreBase: gl.coreBase, glowBase: gl.glowBase } : null };
 }
