@@ -1,0 +1,402 @@
+{
+ "fetched": "2026-10-02T11:33:56.414Z",
+ "source": "https://www.metro.istanbul/Hatlarimiz/ProjeHalindekiHatlar",
+ "note": "As published by Metro İstanbul. phase: construction = \"İnşa Halindeki\", project = \"Proje Halindeki\".",
+ "projects": [
+  {
+   "id": 7,
+   "phase": "construction",
+   "url": "https://www.metro.istanbul/Hatlarimiz/ProjeHalindekiHatlar?projeInsaat=0&q=7",
+   "title": "M12 Göztepe-Ümraniye Metro Hattı",
+   "contractor": "Gülermak-Nurol-Makyol Metro Yapım Adi Ortaklığı",
+   "startDate": "2017-04-28",
+   "contractValue": "2.469.924.400,00",
+   "summary": "Tam otomatik s&uuml;r&uuml;c&uuml;s&uuml;z (UTO) olarak inşa edilmektedir. T&uuml;m otomatik sistemlerde olduğu gibi Peron Ayırıcı Kapı Sistemleri PAKS ile yolcu g&uuml;venliği sağlanacaktır.",
+   "stations": [
+    "60.Yıl Parkı",
+    "Tütüncü Mehmet Efendi",
+    "Sahrayıcedit",
+    "Yeni Sahra",
+    "Ataşehir",
+    "Finans Merkezi",
+    "Site",
+    "Atakent",
+    "Çarşı",
+    "SBÜ Hastanesi",
+    "Kazım Karabekir"
+   ],
+   "stationsUnnamed": 0,
+   "integrations": [
+    "Kuzey-g&uuml;ney doğrultusunda ulaşım sağlayacak olan hat;",
+    "&Ccedil;arşı istasyonunda M5 &Uuml;sk&uuml;dar-Sultanbeyli Metro Hattı,",
+    "Yenisahra istasyonunda M4 Kadık&ouml;y-Sabiha G&ouml;k&ccedil;en Havalimanı Metro Hattı,",
+    "T&uuml;t&uuml;nc&uuml; Mehmet Efendi istasyonunda ise Marmaray işletmesi ile entegre olacaktır."
+   ],
+   "lengthKm": 13,
+   "capacityPphpd": 44000,
+   "vehicles": 420,
+   "travelMin": 21,
+   "tbm": 5,
+   "staff": 1900
+  },
+  {
+   "id": 10,
+   "phase": "construction",
+   "url": "https://www.metro.istanbul/Hatlarimiz/ProjeHalindekiHatlar?projeInsaat=0&q=10",
+   "title": "M10 Pendik-SGH Metro Hattı, Pendik-Fevzi Çakmak Etabı",
+   "contractor": "Özgün İnşaat Taahhüt San. Ve Tic. A.Ş.",
+   "startDate": "2022-10-10",
+   "contractValue": "2.896.691.026,14 ₺ + KDV",
+   "summary": "Hat M10 Pendik-Sabiha G&ouml;k&ccedil;en Havalimanı metro hattının Pendik Merkez ile Fevzi &Ccedil;akmak-Hastane arasındaki kesimini kapsamaktadır.",
+   "stations": [
+    "Pendik Merkez",
+    "Kaynarca Merkez"
+   ],
+   "stationsUnnamed": 0,
+   "integrations": [
+    "Pendik istasyonunda Marmaray işletmesi ve Y&uuml;ksek Hızlı Tren hatları ile,",
+    "Kaynarca Merkez istasyonunda M4 Kadık&ouml;y-Tuzla metro hattı ile entegre olacaktır."
+   ],
+   "lengthKm": 3.9,
+   "capacityPphpd": 70000,
+   "vehicles": null,
+   "travelMin": 11,
+   "tbm": 2,
+   "staff": null
+  },
+  {
+   "id": 13,
+   "phase": "construction",
+   "url": "https://www.metro.istanbul/Hatlarimiz/ProjeHalindekiHatlar?projeInsaat=0&q=13",
+   "title": "M7 Kabataş-Yıldız Metro Hattı",
+   "contractor": "Alsim Alarko San. ve Tic. Tes. AŞ",
+   "startDate": "2015-05-27",
+   "contractValue": "369.000.000,00 €",
+   "summary": "Kabataş ile Esenyurt arasında Avrupa yakasının ilk tam otomatik s&uuml;r&uuml;c&uuml;s&uuml;z metro hattı olarak projelendirilen hattın 2. etabı olarak inşa edilmektedir. Hali hazırda &uuml;lkemizin en y&uuml;ksek yolcu kapasitesine sahip metro hattı olacaktır. Hattın Mahmutbey-Esenyurt arasındaki kesimi ise 3. etap olarak ihale edilecektir.",
+   "stations": [
+    "Beşiktaş",
+    "Kabataş"
+   ],
+   "stationsUnnamed": 0,
+   "integrations": [
+    "Bu etap &uuml;zerindeki istasyonlar aracılığı ile,",
+    "Kabataş istasyonunda T1 Bağcılar-Kabataş tramvay hattı, F1 Taksim-Kabataş f&uuml;nik&uuml;ler hattı ve deniz işletmeleri ile,",
+    "Beşiktaş istasyonunda deniz işletmeleri ile,",
+    "Mecidiyek&ouml;y istasyonunda M2 Yenikapı-Hacıosman metro hattı ve metrob&uuml;s işletmesi ile entegrasyon sağlanacaktır."
+   ],
+   "lengthKm": 3.2,
+   "capacityPphpd": 86400,
+   "vehicles": 191,
+   "travelMin": 7,
+   "tbm": 2,
+   "staff": 1448
+  },
+  {
+   "id": 24,
+   "phase": "construction",
+   "url": "https://www.metro.istanbul/Hatlarimiz/ProjeHalindekiHatlar?projeInsaat=0&q=24",
+   "title": "T7 Eyüpsultan-Bayrampaşa Tramvay Hattı",
+   "contractor": "Antaş Altyapı Anonim Şirketi - Gelişim Yapı San. ve Tic. AŞ İş Ortaklığı",
+   "startDate": "2024-03-25",
+   "contractValue": "3.278.000,00 TL",
+   "summary": "Hat, Ey&uuml;p Meydanı'ndan ge&ccedil;erek Hali&ccedil; kıyısı ile Bayrampaşa Meydanı arasında bağlantı sağlayacaktır.",
+   "stations": [
+    "Feshane",
+    "Eyüpsultan",
+    "Belediye",
+    "Demirkapı",
+    "Bayrampaşa Maltepe",
+    "Bayrampaşa Meydan"
+   ],
+   "stationsUnnamed": 0,
+   "integrations": [
+    "Feshane istasyonunda T5 Emin&ouml;n&uuml;-Alibeyk&ouml;y tramvay hattı ile,",
+    "Demirkapı istasyonunda T4 Topkapı-Mescid-i Selam tramvay hattı ile,",
+    "Bayrampaşa Maltepe istasyonunda M1A Yenikapı-Atat&uuml;rk Havalimanı ve M1B Yenikapı-Kirazlı metro hatları ile entegrasyonu planlanmaktadır."
+   ],
+   "lengthKm": 3.1,
+   "capacityPphpd": 25000,
+   "vehicles": null,
+   "travelMin": 20,
+   "tbm": null,
+   "staff": null
+  },
+  {
+   "id": 32,
+   "phase": "construction",
+   "url": "https://www.metro.istanbul/Hatlarimiz/ProjeHalindekiHatlar?projeInsaat=0&q=32",
+   "title": "M1B Kirazlı-Halkalı Metro Hattı",
+   "contractor": "-",
+   "startDate": "2017-04-28",
+   "contractValue": "2.414.401.632 ₺",
+   "summary": "M1B Yenikapı-Kirazlı hattının uzatması olarak inşa edilmektedir.",
+   "stations": [
+    "Kirazlı",
+    "Barbaros",
+    "Malazgirt",
+    "Mimar Sinan",
+    "Fatih",
+    "Halkalı Merkez",
+    "Hastane",
+    "Toplu Konut",
+    "Yarımburgaz",
+    "Halkalı"
+   ],
+   "stationsUnnamed": 0,
+   "integrations": [
+    "Kirazlı istasyonunda M3 Kirazlı-Metrokent/Başakşehir metro hattı ile,",
+    "Mimar Sinan istasyonunda M9 Atak&ouml;y-Olimpiyat metro hattı ile,",
+    "Halkalı istasyonunda Marmaray ve planlanan Hızlı Tren garı ile entegrasyon sağlanacaktır.",
+    "Ayrıca, bağlantısı yapılan M1B hattının t&uuml;m aktarma se&ccedil;enekleri de kullanılabilecektir."
+   ],
+   "lengthKm": 9.7,
+   "capacityPphpd": 52000,
+   "vehicles": null,
+   "travelMin": 15,
+   "tbm": 5,
+   "staff": 215
+  },
+  {
+   "id": 35,
+   "phase": "construction",
+   "url": "https://www.metro.istanbul/Hatlarimiz/ProjeHalindekiHatlar?projeInsaat=0&q=35",
+   "title": "M7 Mahmutbey-Esenyurt Metro Hattı",
+   "contractor": "IC İçtaş İnşaat San. ve Tic. AŞ.",
+   "startDate": "2017-08-21",
+   "contractValue": "3.043.994.729,00 ₺",
+   "summary": "Bu hat M7 Kabataş-Mahmutbey metro hattının 3. etabı olarak inşa edilmektedir. Hat, Mahmutbey İstasyonu'ndan sonra Bah&ccedil;eşehir'i ge&ccedil;erek Esenyurt y&ouml;n&uuml;ne doğru inşa edilmektedir.",
+   "stations": [
+    "Mahmutbey",
+    "Bölge Parkı",
+    "Atatürk Mahallesi",
+    "Toplu Konut",
+    "Tema Park",
+    "Hastane",
+    "Tahtakale",
+    "Ispartakule",
+    "Bahçeşehir",
+    "Esenkent",
+    "Ardıçlı",
+    "Esenyurt"
+   ],
+   "stationsUnnamed": 0,
+   "integrations": [
+    "M7 hattının t&uuml;m entegrasyonlarının kullanılabileceği hattın bu etabında Atat&uuml;rk Mahallesi istasyonunda M9 Atak&ouml;y-Olimpiyat metro hattı ile, Tema Park istasyonunda M11 Gayrettepe-İstanbul Havalimanı-Halkalı metro hattı ile entegrasyon sağlanacaktır."
+   ],
+   "lengthKm": 18.6,
+   "capacityPphpd": 70000,
+   "vehicles": null,
+   "travelMin": 27,
+   "tbm": 6,
+   "staff": null
+  },
+  {
+   "id": 16,
+   "phase": "project",
+   "url": "https://www.metro.istanbul/Hatlarimiz/ProjeHalindekiHatlar?projeInsaat=1&q=16",
+   "title": "M Vezneciler-Sultangazi Metro Hattı",
+   "contractor": "Idom Consulting Engıneering Architecture SAU",
+   "startDate": "2014-10-13",
+   "contractValue": "4.539.108,79 €",
+   "summary": "Hat Vezneciler b&ouml;lgesinde tarihi suri&ccedil;inde başlayarak Fatih il&ccedil;esini doğu batı istikametinde ge&ccedil;mekte, Ey&uuml;p ve Gaziosmanpaşa il&ccedil;elerinden ge&ccedil;erek Mescid-i Selam istasyonunda sonlanmaktadır.",
+   "stations": [
+    "Vezneciler",
+    "Saraçhane",
+    "Fatih Camii",
+    "Edirnekapı",
+    "Ayvansaray",
+    "Eyüp Sultan",
+    "Rami Kışlası",
+    "Gaziosmanpaşa",
+    "Şemsipaşa",
+    "Küçükköy",
+    "Yenimahalle",
+    "Esentepe",
+    "Sultangazi",
+    "Cebeci",
+    "Mescid-i Selam"
+   ],
+   "stationsUnnamed": 0,
+   "integrations": [
+    "Vezneciler istasyonunda M2 Yenikapı-Hacıosman metro hattı ve T1 Bağcılar-Kabataş tramvay hattı ile,",
+    "Edirnekapı istasyonunda T4 Topkapı-Mescid-i Selam tramvay hattı ve metrob&uuml;s işletmesi ile,",
+    "Yenimahalle istasyonunda M7 Kabataş-Mahmutbey-Esenyurt metro hattı ile entegrasyonu planlanmaktadır."
+   ],
+   "lengthKm": 17.35,
+   "capacityPphpd": 45000,
+   "vehicles": null,
+   "travelMin": 26.5,
+   "tbm": null,
+   "staff": null
+  },
+  {
+   "id": 17,
+   "phase": "project",
+   "url": "https://www.metro.istanbul/Hatlarimiz/ProjeHalindekiHatlar?projeInsaat=1&q=17",
+   "title": "M Sultangazi-Arnavutköy Metro Hattı",
+   "contractor": "Metro İstanbul A.Ş.",
+   "startDate": "2016-01-19",
+   "contractValue": "6.050.000,00 TL",
+   "summary": "Hat Vezneciler-Sultan&ccedil;iftliği metro hattının devamı olarak planlanmaktadır.",
+   "stations": [
+    "Mescid-i Selam",
+    "Habibler",
+    "Fenertepe",
+    "Arnavutköy",
+    "Taşoluk"
+   ],
+   "stationsUnnamed": 0,
+   "integrations": [
+    "Mescid-i Selam istasyonunda T4 Topkapı-Mescid-i Selam tramvay hattı ile,",
+    "Taşoluk istasyonunda M11 Gayrettepe-Yeni Havalimanı-Halkalı metro hattı ile entegrasyonu planlanmaktadır."
+   ],
+   "lengthKm": 15,
+   "capacityPphpd": 45000,
+   "vehicles": null,
+   "travelMin": 16,
+   "tbm": null,
+   "staff": null
+  },
+  {
+   "id": 18,
+   "phase": "project",
+   "url": "https://www.metro.istanbul/Hatlarimiz/ProjeHalindekiHatlar?projeInsaat=1&q=18",
+   "title": "M İTÜ-Kağıthane Metro Hattı",
+   "contractor": "Tecnimont Civil Construction SPA",
+   "startDate": "2016-05-12",
+   "contractValue": "4.500.000,00 TL",
+   "summary": "İT&Uuml;-Maslak b&ouml;lgesinden başlayacak hat Ayazağa ve Cendere b&ouml;lgesinden ge&ccedil;erek Kağıthane'ye ulaşması planlanmaktadır. Hattın daha &ouml;nce İstinye'den başlanması planlana etabı f&uuml;nik&uuml;ler projesine &ccedil;evrilerek bu kapsamdan ayrılmıştır.",
+   "stations": [
+    "İTÜ",
+    "Maslak",
+    "Ayazağa Köyü",
+    "Stadyum",
+    "Şirintepe",
+    "Cendere",
+    "Kağıthane"
+   ],
+   "stationsUnnamed": 0,
+   "integrations": [
+    "İT&Uuml; istasyonunda M2 Yenikapı-Hacıosman metro hattı ile,",
+    "Kağıthane istasyonunda M7 Kabataş-Mahmutbey-Esenyurt, M11 Gayrettepe-İstanbul Havalimanı-Halkalı ve M34 Hızray metro hatları ile entegrasyonu planlanmaktadır."
+   ],
+   "lengthKm": 12,
+   "capacityPphpd": 35000,
+   "vehicles": null,
+   "travelMin": 23,
+   "tbm": null,
+   "staff": null
+  },
+  {
+   "id": 19,
+   "phase": "project",
+   "url": "https://www.metro.istanbul/Hatlarimiz/ProjeHalindekiHatlar?projeInsaat=1&q=19",
+   "title": "M Sabiha Gökçen Havalimanı-Kurtköy Kavşağı Uzatma Hattı",
+   "contractor": "Yüksel Proje Uluslararası A.Ş.",
+   "startDate": "2016-08-08",
+   "contractValue": "2.120.000,00 TL",
+   "summary": "Hat sahil b&ouml;lgesinden Sabiha G&ouml;k&ccedil;en Havalimanı'na ulaşacak olan M4 Kadık&ouml;y-SGH ve M10 Pendik-SGH hatlarının devamı olarak planlanmaktadır.",
+   "stations": [
+    "Sabiha Gökçen Havalimanı",
+    "Teknopark",
+    "Yenişehir",
+    "Kurtköy"
+   ],
+   "stationsUnnamed": 0,
+   "integrations": [
+    "Uzatması olarak inşa edildiği hatlar aracılığı ile Marmaray, Pendik Hızlı Tren Garı ve M4 Kadık&ouml;y-Tuzla metro hattı ile entegrasyonu olacaktır."
+   ],
+   "lengthKm": 6,
+   "capacityPphpd": null,
+   "vehicles": null,
+   "travelMin": 8.5,
+   "tbm": null,
+   "staff": 70000
+  },
+  {
+   "id": 20,
+   "phase": "project",
+   "url": "https://www.metro.istanbul/Hatlarimiz/ProjeHalindekiHatlar?projeInsaat=1&q=20",
+   "title": "M Seyrantepe-Alibeyköy Metro Hattı",
+   "contractor": "Metro İstanbul A.Ş.",
+   "startDate": "2016-09-28",
+   "contractValue": "2.199.000,00 TL",
+   "summary": "Hattın Seyrantepe metro istasyonu b&ouml;lgesinden Cendere &uuml;zerinden ge&ccedil;erek Alibeyk&ouml;y Cep Otogarı' na entegre olması planlanmaktadır.",
+   "stations": [
+    "Seyrantepe",
+    "Hamidiye",
+    "Alibeyköy Cep Otogarı",
+    "Çırçır"
+   ],
+   "stationsUnnamed": 0,
+   "integrations": [
+    "Seyrantepe istasyonunda M2 Yenikapı-Hacıosman metro hattı ile,",
+    "Alibeyk&ouml;y Cep Otogarı istasyonunda T5 Emin&ouml;n&uuml;-Alibeyk&ouml;y tramvay hattı ile,",
+    "&Ccedil;ır&ccedil;ır istasyonunda M7 Kabataş-Mahmutbey-Esenyurt metro hattı ile entegrasyonu planlanmaktadır."
+   ],
+   "lengthKm": 7,
+   "capacityPphpd": 45000,
+   "vehicles": null,
+   "travelMin": 8.5,
+   "tbm": null,
+   "staff": null
+  },
+  {
+   "id": 25,
+   "phase": "project",
+   "url": "https://www.metro.istanbul/Hatlarimiz/ProjeHalindekiHatlar?projeInsaat=1&q=25",
+   "title": "T Esenler-Davutpaşa Tramvay Hattı",
+   "contractor": "Ove Arup Partner Int. Ltd.",
+   "startDate": "2017-07-20",
+   "contractValue": "2.950.000,00 TL",
+   "summary": "Hattın M1B Menderes istasyonu b&ouml;lgesinden başlayıp Esenler yaya yolundan ge&ccedil;erek YT&Uuml; Davutpaşa kamp&uuml;s&uuml;ne kadar uzatılması planlanmaktadır.",
+   "stations": [],
+   "stationsUnnamed": 9,
+   "integrations": [
+    "Hat M1B Yenikapı-Kirazlı hattının Menderes istasyonu ile entegre olacak şekilde planlanmaktadır."
+   ],
+   "lengthKm": 2.2,
+   "capacityPphpd": 3000,
+   "vehicles": null,
+   "travelMin": 20,
+   "tbm": null,
+   "staff": null
+  },
+  {
+   "id": 27,
+   "phase": "project",
+   "url": "https://www.metro.istanbul/Hatlarimiz/ProjeHalindekiHatlar?projeInsaat=1&q=27",
+   "title": "M2 Yenikapı-Sefaköy Metro Hattı Uzatması",
+   "contractor": "-",
+   "startDate": "2018-03-01",
+   "contractValue": "-",
+   "summary": "Hat mevcut M2 Yenikapı-Hacıosman hattının devamı olarak inşa edilecektir. Proje s&uuml;reci tamamlanmış olup AYGM tarafından yatırım kapsamına alınarak ihale edilecektir.",
+   "stations": [
+    "Yenikapı",
+    "Kocamustafapaşa",
+    "Silivrikapı",
+    "Zeytinburnu",
+    "Osmaniye",
+    "İncirli",
+    "Adnan Kahveci",
+    "Siyavuşpaşa",
+    "Zafer",
+    "Çobançeşme",
+    "Sefaköy"
+   ],
+   "stationsUnnamed": 0,
+   "integrations": [
+    "Yenikapı istasyonunda M1A Yenikapı-Atat&uuml;rk Havalimanı ve M1B Yenikapı-Kirazlı metro hatları ve Marmaray ile,",
+    "İncirli istasyonunda M1A Yenikapı-Atat&uuml;rk Havalimanı ve M3 Başakşehir-Bakırk&ouml;y İDO metro hatları ve metrob&uuml;s işletmesi ile,",
+    "&Ccedil;oban&ccedil;eşme istasyonunda M9 Atak&ouml;y-İkitelli metro hattı ile entegrasyonu planlanmıştır.",
+    "Ayrıca mevcut M2 hattının uzatması olarak işletileceği i&ccedil;in M2 Yenikapı-Hacıosman hattının mevcut entegrasyonları da kullanılabilecektir."
+   ],
+   "lengthKm": 14,
+   "capacityPphpd": 70000,
+   "vehicles": null,
+   "travelMin": 21,
+   "tbm": null,
+   "staff": null
+  }
+ ]
+}

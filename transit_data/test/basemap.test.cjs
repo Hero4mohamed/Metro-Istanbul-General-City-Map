@@ -213,3 +213,45 @@ test('at country scale a green pixel is land cover, not a park: the park colour 
   const full = px(B, 'night', ESRI.park);
   assert.ok(full.slice(0, 3).every((v, i) => Math.abs(v - g('night', 14)[i]) <= 1), 'an omitted zoom is not full strength');
 });
+
+/* Esri bakes its own ferry routes into the sea tiles: thin dashed lines and an italic label along
+   each. The app draws the ferry lines itself, so the baked-in ones were a second, fainter copy
+   criss-crossing the water. They are blue ink a little darker than the water, so the regrade
+   erases blue ink that has water on every side — and must NEVER touch blue on land. */
+function tile(B, tone, paint, side = 40, z = 13) {
+  const d = new Float64Array(side * side * 4);
+  for (let y = 0; y < side; y++) for (let x = 0; x < side; x++) {
+    const c = paint(x, y), i = (y * side + x) * 4;
+    d[i] = c[0]; d[i + 1] = c[1]; d[i + 2] = c[2]; d[i + 3] = 255;
+  }
+  B.makeBasemapGrade(B.ATLAS_PAL[tone])(d, z);
+  return (x, y) => { const i = (y * side + x) * 4; return [d[i], d[i + 1], d[i + 2]]; };
+}
+const SEA = [191, 217, 242], FERRY_INK = [150, 181, 210], LABEL_INK = [110, 140, 173];
+
+test('a ferry route drawn into the sea tile is erased, in both tones', () => {
+  const B = basemap();
+  for (const tone of ['day', 'night']) {
+    const out = tile(B, tone, (x, y) => (y === 20 && x % 4 < 2 ? FERRY_INK : (x === 8 && y === 12 ? LABEL_INK : SEA)));
+    const water = out(30, 5);
+    assert.ok(near(out(10, 20), water, 2), tone + ': the dashed ferry line is still there: ' + out(10, 20) + ' vs water ' + water);
+    assert.ok(near(out(9, 20), water, 2), tone + ': the gaps of the ferry line differ from the water');
+    assert.ok(near(out(8, 12), water, 2), tone + ': the ferry label ink is still there: ' + out(8, 12));
+  }
+});
+
+test('blue on land is not mistaken for a ferry route', () => {
+  const B = basemap();
+  const LAND = [239, 235, 200], BLUE_ICON = [82, 138, 192];
+  const out = tile(B, 'day', (x, y) => (x === 20 && y === 20 ? BLUE_ICON : LAND));
+  const kept = out(20, 20), sea = B.ATLAS_PAL.day.bands.water.c;
+  assert.ok(!near(kept, sea, 14), 'a blue icon on land was painted over as sea, like a ferry route: ' + kept);
+});
+
+test('a river is still a river: water ink beside land stays', () => {
+  const B = basemap();
+  // a 4px-wide river: its ink has land within 6px, so it is not "open water"
+  const out = tile(B, 'day', (x, y) => (Math.abs(x - 20) <= 2 ? (y === 20 ? FERRY_INK : SEA) : [239, 235, 200]));
+  const water = out(20, 5);
+  assert.ok(!near(out(20, 20), water, 6), 'ink inside a narrow river was erased as if it were open sea');
+});

@@ -54,3 +54,13 @@ transit_data/izmir-guzergah.csv
 # generated into the Pages artifact at deploy time; never committed, so the dashboard
 # is always as fresh as the deploy and the repo stays free of churn
 status.json
+
+# raw OSM planned/under-construction dumps (re-fetch via fetch-planned.cjs; processed into planned-lines.json)
+transit_data/planned-osm-*.json
+
+# temporary screenshot harness
+transit_data/test/_shot.html
+transit_data/test/_stats.html
+
+# regenerated report of unmatched / stale / disagreeing Vision entries (stamped every run; the weekly job prints it instead)
+transit_data/planned-report.json

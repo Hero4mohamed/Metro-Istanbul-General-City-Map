@@ -1,6 +1,83 @@
 [
-  {"ref":"M12","name":"Göztepe – Ümraniye (İFM)","open":"2026-10-29","disp":"29 Oct 2026","km":13,"stations":11},
-  {"ref":"M14","name":"Altunizade – Bosna Bulvarı","color":"#9B59B6","open":"2026-12-15","disp":"Dec 2026","km":4.5,"stations":4},
-  {"ref":"M10","name":"Pendik – Fevzi Çakmak","open":"2027-02-15","disp":"early 2027","km":4.8,"stations":3},
-  {"ref":"M4","name":"Tavşantepe – Kaynarca","open":"2027-02-15","disp":"early 2027","km":1.1,"stations":1}
+ {
+  "ref": "M12",
+  "name": "60. Yıl Parkı – Kazım Karabekir",
+  "color": "#C8CB2D",
+  "open": "2026-12-19",
+  "disp": "19 Dec 2026",
+  "km": 13,
+  "stations": 11
+ },
+ {
+  "ref": "M13",
+  "name": "Emek – Yenidoğan",
+  "color": "#FF4B58",
+  "open": "2026-12-24",
+  "disp": "24 Dec 2026 (listed; unconfirmed)",
+  "km": 6.6,
+  "stations": 5
+ },
+ {
+  "ref": "M10",
+  "name": "Pendik Merkez – Fevzi Çakmak",
+  "color": "#51AB3C",
+  "open": "2027-03-31",
+  "disp": "Q1 2027 (İBB: 'end of 2026 or first half of 2027')",
+  "km": 3.9,
+  "stations": 2
+ },
+ {
+  "ref": "M4 Kaynarca",
+  "name": "Tavşantepe – Kaynarca Merkez",
+  "color": "#E81E77",
+  "open": "2027-03-31",
+  "disp": "Early 2027",
+  "km": 1.1,
+  "stations": 1
+ },
+ {
+  "ref": "M14",
+  "name": "Altunizade – Bosna Bulvarı",
+  "color": "#B16400",
+  "open": "2027-04-30",
+  "disp": "Late 2026 (ministry); April 2027 (Wikipedia)",
+  "km": 4.5,
+  "stations": 4
+ },
+ {
+  "ref": "M7 Hastane",
+  "name": "Mahmutbey – Kanuni Sultan Süleyman Hastanesi",
+  "color": "#F490B3",
+  "open": "2027-12-31",
+  "disp": "2027 (İBB; 'end of 2027')",
+  "km": 18.6,
+  "stations": 5
+ },
+ {
+  "ref": "T7",
+  "name": "Eyüpsultan – Bayrampaşa",
+  "color": "#2A9D8F",
+  "open": "2027-12-31",
+  "disp": "End of 2027",
+  "km": 3.1,
+  "stations": 6
+ },
+ {
+  "ref": "M7 Kabataş",
+  "name": "Yıldız – Kabataş",
+  "color": "#F490B3",
+  "open": "2028-12-31",
+  "disp": "2028 (Wikipedia)",
+  "km": 3.2,
+  "stations": 2
+ },
+ {
+  "ref": "M1B Halkalı",
+  "name": "Kirazlı – Halkalı Üniversite",
+  "color": "#EE2229",
+  "open": "2029-12-31",
+  "disp": "2029",
+  "km": 9.7,
+  "stations": 5
+ }
 ]

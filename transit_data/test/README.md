@@ -3,7 +3,7 @@
 Zero dependencies. Node's built-in runner, nothing to install, works offline.
 
 ```bash
-npm test              # the suite (43 checks, ~2s)
+npm test              # the suite (95 checks, ~2s)
 npm run test:mutation # prove the suite can still fail
 npm run verify        # build + suite + mutation check
 ```
@@ -35,8 +35,8 @@ a stale file.
 | `../testkit/helpers.cjs` | Loads the built page; `codeOnly()` strips comments and string bodies while keeping `${...}` interpolations, so scanners do not mistake prose for source |
 | `structure.test.cjs` | Parse, CSS integrity, build tokens, DOM ids, undefined globals, SRI, secrets |
 | `data.test.cjs` | i18n key coverage, station/bus coordinates, fares, disruption shape, translation quality |
-| `translator.test.cjs` | TR→EN disruption translator: no welded suffixes, case endings resolved, and the coverage fallback that shows the Turkish original rather than a hybrid |
-| `../testkit/verify-suite.cjs` | Mutation check — breaks a copy of the build 17 ways and requires the right test to fail |
+| `translator.test.cjs` | Turkish→English/Arabic/French disruption translator: no welded suffixes, case endings resolved, every rule complete in all three languages, and the coverage fallback that shows the Turkish original rather than a hybrid |
+| `../testkit/verify-suite.cjs` | Mutation check — breaks a copy of the build 66 ways and requires the right test to fail |
 
 ## The mutation check is not optional
 
@@ -74,9 +74,10 @@ This is a static suite. It cannot catch a runtime fault in a real browser — th
 is the tier static analysis cannot reach: a runtime throw, a dead boot, a map that never
 renders. Open it directly, or press **Run browser tests** on `/status.html`.
 
-Eleven checks: boot, uncaught errors, map size, tile loading, animated counters, search, the
+Fourteen checks: boot, uncaught errors, map size, tile loading, animated counters, search, the
 planner, the assistant answering from local data, an untranslatable alert falling back to
-labelled Turkish, service-worker registration — and the one that matters most:
+labelled Turkish, Arabic laying out right-to-left with each language getting its own alert
+text, service-worker registration — and the one that matters most:
 
 **A never-laid-out map must not cost the user an answer.** `dropPin` used to call `flyTo`
 unconditionally; a container that never laid out projects to `NaN`, `flyTo` threw, and the
@@ -175,6 +176,38 @@ into the crowd fails rather than becoming a coin-flip.
 
 Station and line names are passed in and excluded from the count — they survive translation by
 design, and an alert should not score worse for naming more places.
+
+### Four languages, not one with three decorations
+
+The app offers English, Turkish, Arabic and French, and for a long time only the first two were
+real. Two mechanisms hid it. `t()` falls back to English without saying so, and under that
+fallback `ar` and `fr` drifted **101 keys** behind — about a fifth of the interface, including
+the whole interchange vocabulary, the whole assistant, provenance and diagnostics. And the
+disruption rules carried a single English replacement each, so an Arabic or French reader got
+the English sentence or the untranslated Turkish, but never their own language.
+
+Both are now checked rather than trusted:
+
+- **`every language covers the keys English defines`** — no language may rely on the fallback.
+- **`a translated string keeps every placeholder its English original has`** — `{n}` is
+  substituted with `.replace()`, so a translation that drops it prints a sentence with the
+  number silently missing rather than failing.
+- **`the Arabic dictionary is in Arabic`** — an entry left as the English string is a
+  translation nobody did, and it looks identical to one that was.
+- **`every rule says what it produces in every language`** — a rule added with only an English
+  replacement would degrade Arabic and French for every announcement it matched, in silence.
+- **`a covered alert is translated into each language`**, and the three outputs must differ:
+  identical text means one table is a copy of another.
+
+The fallback to the Turkish original is decided **per language**, because the rules can cover an
+announcement well in one and badly in another, and each reader is owed the honest answer for the
+language they are actually reading.
+
+Arabic also needs `dir="rtl"`, which the page never set — it set `lang` alone, so Arabic
+sentences were laid out as English and, because the bidi algorithm takes its base direction from
+exactly that attribute, a mixed run like `M2 إلى Kadıköy` came out with its parts in the wrong
+order. Latin names that must keep their own direction (the masthead, the bus operator tag) are
+isolated in the `[dir="rtl"]` block in the stylesheet.
 
 When the original is shown, the UI says so: an `ann-tr` badge reading “Turkish original”, with
 the reason in its `title`. It appears only for readers who are *not* reading Turkish, since a

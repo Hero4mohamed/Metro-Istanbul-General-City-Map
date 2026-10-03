@@ -45,31 +45,26 @@ function cities() {
   return (_cities = eval('(' + m[1] + ')'));   // our own build output, not third-party input
 }
 
-/** Every i18n dictionary in the built page, keyed by language code. */
-function i18n() {
+/** Every i18n dictionary in the built page as {lang:{key:value}} — values, not just names.
+ *  The literal is read out of the SHIPPED page and evaluated, so what gets asserted is what a
+ *  reader is handed rather than what the source meant to say. */
+function i18nValues() {
   const s = appScript();
-  const start = s.indexOf('const I18N');
-  if (start < 0) throw new Error('I18N not found');
+  const m = s.match(/const I18N = \{[\s\S]*?\n\};/);
+  if (!m) throw new Error('I18N literal not found in the built page');
+  return new Function('return ' + m[0].replace('const I18N = ', '').replace(/;$/, ''))();
+}
+
+/** Every i18n dictionary in the built page, keyed by language code, as Sets of key names.
+ *  Built on i18nValues rather than on a regex sweep of the source. The old scanner keyed off
+ *  the comma before each entry, so it could not see a key that followed a block comment, and
+ *  it skipped quoted keys ("ttl:Service suspended") altogether. Both surfaced as keys missing
+ *  from a dictionary that in fact had them, and a coverage test is worth nothing if the gaps
+ *  it reports are not real. */
+function i18n() {
+  const values = i18nValues();
   const out = {};
-  // each dictionary opens with `  en:{` / `  tr:{` at a known indent inside I18N
-  const re = /\n\s{2,4}([a-z]{2}):\s*\{/g;
-  re.lastIndex = start;
-  let m;
-  while ((m = re.exec(s))) {
-    const lang = m[1];
-    let i = s.indexOf('{', m.index + m[0].length - 1), depth = 0, end = -1;
-    for (let j = i; j < s.length; j++) {
-      const c = s[j];
-      if (c === '{') depth++;
-      else if (c === '}') { depth--; if (depth === 0) { end = j; break; } }
-    }
-    if (end < 0) break;
-    const body = s.slice(i + 1, end);
-    const keys = new Set();
-    for (const km of body.matchAll(/(?:^|[,{]\s*)\n?\s*([A-Za-z_][A-Za-z0-9_]*)\s*:/g)) keys.add(km[1]);
-    out[lang] = keys;
-    if (Object.keys(out).length > 12) break;      // I18N holds a handful of languages, not dozens
-  }
+  for (const lang of Object.keys(values)) out[lang] = new Set(Object.keys(values[lang]));
   return out;
 }
 
@@ -136,4 +131,4 @@ function codeOnly(src) {
   return out;
 }
 
-module.exports = { ROOT, DATA, read, readData, json, exists, html, appScript, appStyle, cities, i18n, codeOnly };
+module.exports = { ROOT, DATA, read, readData, json, exists, html, appScript, appStyle, cities, i18n, i18nValues, codeOnly };

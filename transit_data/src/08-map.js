@@ -83,7 +83,7 @@ function setBase(b){
    lines (the day treatment), the way every imagery map draws transit. */
 const MAP_TONES = {
   day:     { casing:'#FFFFFF', casingOp:.96, label:'#1B2433', labelMulti:'#0B1220', halo:'rgba(255,255,255,.95)', ring:'#1B2433', hole:'#FFFFFF' },
-  night:   { casing:'#0A0F17', casingOp:.92, label:'#C3CEE0', labelMulti:'#FFFFFF', halo:'rgba(8,12,20,.92)',    ring:'#0B0F19', hole:'#0B0F19' },
+  night:   { casing:'#08090B', casingOp:.92, label:'#C9CCD2', labelMulti:'#FFFFFF', halo:'rgba(8,9,11,.92)',     ring:'#0A0B0D', hole:'#0A0B0D' },
   imagery: { casing:'#FFFFFF', casingOp:.92, label:'#E6ECF6', labelMulti:'#FFFFFF', halo:'rgba(8,12,20,.88)',    ring:'#0B0F19', hole:'#0B0F19' },
 };
 function mapTone(){ return curBaseKey === 'dark' ? 'night' : (curBaseKey === 'sat' ? 'imagery' : 'day'); }
@@ -92,6 +92,21 @@ const MAP_T = () => MAP_TONES[mapTone()];
 const lineRenderer = L.canvas({ padding:0.5 });
 const stationRenderer = L.canvas({ padding:0.5 });
 
+/* The stages of a project that is not running yet. They are declared HERE, with the way each is
+   drawn, rather than next to the panel that also uses them (11a-planned-panel.js): the line
+   tooltips are built while the map is being constructed in this file, and a `const` in a LATER
+   file is still in its temporal dead zone at that moment — which stopped the whole app booting. */
+const PHASE_STATUS = { construction:'Under construction', planned:'Planned', hold:'On hold', vision:'Long-term plan' };
+const PHASE_ORDER = ['construction', 'planned', 'hold', 'vision'];
+/* How each stage is drawn. dw widens or thins the line; op is its opacity. */
+const PHASE_LOOK = {
+  construction: { dash:'11,5', dw: 1.2, op:1    },
+  planned:      { dash:'5,6',  dw: 0.6, op:0.95 },
+  hold:         { dash:'3,7',  dw:-0.1, op:0.7  },
+  /* round dots with no outline: a 1px butt-capped dot inside a pale halo was invisible, and the halo
+     alone read as a white line */
+  vision:       { dash:'0.1,8', dw:0, op:0.8, cap:'round', bare:true },
+};
 const lineLayers = {};      // ref -> {group, on, live}
 const lineByRef = {};
 const linePolys = [];       // {pl, base} for zoom-responsive weight
@@ -100,10 +115,22 @@ NETWORK.forEach(line => {
   const km = KIND[line.kind];
   const live = isLive(line);
   const grp = L.layerGroup();
-  // planned lines dashed; hand-placed "approximate" lines use a finer dotted style
-  const dash = !live ? (line.approx ? '1,5' : '2,8') : (km.dash || (line.branch ? '5,7' : null));
-  const wt = live ? km.weight : Math.max(2.2, km.weight-1);
-  const tip = lineTooltip(line);
+  /* A line that is not running says how far along it is by how it is drawn, because the map is
+     where this gets read: long bold dashes for a tunnel being dug, finer dashes for a project
+     that is only planned, sparse dots for one that is on hold, and the faintest dots for a
+     long-term idea. The old rule gave every planned line the same dots, so a line under
+     construction and a sketch from a master plan looked identical. `approx` (an alignment that
+     is only an estimate) still wins, with the finest dots of all. */
+  const dash = !live ? ((line.approx || (line.geometry && line.geometry.schematic)) ? '1,5' : (PHASE_LOOK[line.phase] || PHASE_LOOK.planned).dash)
+                     : (km.dash || (line.branch ? '5,7' : null));
+  const look = !live ? (PHASE_LOOK[line.phase] || PHASE_LOOK.planned) : null;
+  const wt = live ? km.weight : Math.max(2.2, km.weight - 1 + look.dw);
+  const coreOp = live ? 0.95 : look.op;
+  /* Lazy, on purpose. A tooltip built here would run while the map is still being constructed,
+     before the files that come after this one have initialised their `const`s, and the planned-line
+     version needs helpers from them (a temporal-dead-zone crash that stopped the app booting,
+     twice). Leaflet calls a content function when the tooltip opens, when everything exists. */
+  const tip = () => lineTooltip(line);
   const isFerry = line.kind === 'ferry';
   line.paths.forEach(path => {
     if(isFerry){
@@ -119,7 +146,7 @@ NETWORK.forEach(line => {
     const glow = L.polyline(path, { renderer:lineRenderer, color:line.color, weight:gw,
                             opacity: live?0.16:0.10, lineCap:'round', lineJoin:'round' });
     const core = L.polyline(path, { renderer:lineRenderer, color:line.color, weight:wt,
-                            opacity: live?0.95:0.9, lineCap:'round', lineJoin:'round', dashArray:dash });
+                            opacity: coreOp, lineCap:look ? (look.cap || 'butt') : 'round', lineJoin:'round', dashArray:dash });
     [glow,core].forEach(pl => {
       pl.bindTooltip(tip, { sticky:true, className:'lt' });
       pl.on('click', e => { openLine(line); L.DomEvent.stop(e); });
@@ -129,18 +156,29 @@ NETWORK.forEach(line => {
        Atlas wants a narrow solid outline, and both are "the thing drawn just under the core". So
        the entry remembers both widths and applyLineStyle() decides which this experience gets —
        no second polyline per path, which on 95 lines would have doubled the canvas work. */
-    const coreE = { pl:core, base:wt, baseOp:(live?0.95:0.9), ref:line.ref };
+    const coreE = { pl:core, base:wt, baseOp:coreOp, ref:line.ref };
     const glowE = { pl:glow, base:gw, glow:true, baseOp:(live?0.16:0.10), ref:line.ref,
-                    color:line.color, glowBase:gw, coreBase:wt, pair:coreE };
+                    color:line.color, glowBase:gw, coreBase:wt, pair:coreE, solidCasing:!live, bare:!!(look && look.bare) };
     linePolys.push(glowE, coreE);
   });
   lineLayers[line.ref] = { group:grp, on:true, live };
 });
 
-// grey ghost of the live network for geographic context behind the Vision tab
+/* A grey ghost of the live network, for geographic context behind the Vision tab. It was a fixed
+   dark slate, chosen for the dark map; drawn on the light one it became the heaviest thing on
+   screen and competed with the very lines the tab exists to show. Like everything else drawn on
+   the map it now follows the basemap (see GHOST_LOOK / applyMapTone): a pale, thin trace by day. */
+const GHOST_LOOK = {
+  day:     { color:'#8C97AB', weight:1.5, opacity:0.34 },
+  night:   { color:'#3b3d42', weight:2,   opacity:0.55 },
+  imagery: { color:'#DDE4F0', weight:1.5, opacity:0.45 },
+};
 const ghostGroup = L.layerGroup();
-liveLines.forEach(line => line.paths.forEach(path =>
-  L.polyline(path, { renderer:lineRenderer, color:'#39414f', weight:2, opacity:0.55, interactive:false }).addTo(ghostGroup)));
+const ghostLines = [];
+liveLines.forEach(line => line.paths.forEach(path => {
+  const g = L.polyline(path, Object.assign({ renderer:lineRenderer, interactive:false }, GHOST_LOOK.night));
+  ghostLines.push(g); g.addTo(ghostGroup);
+}));
 
 // station markers (merged registry)
 const stationGroup = L.layerGroup();
@@ -228,6 +266,11 @@ function casingFor(color, tone){
   return v;
 }
 const CASING_PAD = 3.0;       // total extra width: 1.5px of outline each side of the core
+/* A line that is not running is DASHED, and the outline under dashes has to be slimmer than the
+   outline under a solid line: at city scale a full-width halo is wider than the thin dashes it
+   frames and swallows their colour, which is how the first version of this looked — a pale,
+   broken scribble. A slim halo keeps the dashes legible on a busy map without hiding them. */
+const CASING_PAD_PLANNED = 1.6;
 function applyLineStyle(){
   const atlas = (typeof uiStyle !== 'undefined' && uiStyle === 'atlas');
   const tone = mapTone(), T = MAP_TONES[tone];
@@ -235,11 +278,15 @@ function applyLineStyle(){
   linePolys.forEach(o => {
     if(!o.glow) return;
     if(atlas){
-      o.base = o.coreBase + CASING_PAD;
+      o.base = o.coreBase + (o.solidCasing ? CASING_PAD_PLANNED : CASING_PAD);
       // a dashed line (planned, branch, suspended) gets a dashed outline, or the solid outline
       // under it would turn "not in normal service" back into an ordinary line
-      o.pl.setStyle({ color:casingFor(o.color, tone), opacity:T.casingOp,
-                      dashArray:(o.pair && o.pair.pl.options.dashArray) || null });
+      /* A live line that has been suspended is dashed, and its outline must follow the dash or the
+         solid halo would turn it back into an ordinary line. A line that is NOT YET RUNNING is
+         dashed by design and has no such ambiguity, so its outline stays continuous: dashes drawn
+         straight on a busy map are hard to follow, dashes on a continuous halo are not. */
+      o.pl.setStyle({ color:casingFor(o.color, tone), opacity:o.bare ? 0 : (o.solidCasing ? T.casingOp * .6 : T.casingOp),
+                      dashArray:o.solidCasing ? null : ((o.pair && o.pair.pl.options.dashArray) || null) });
     } else {
       o.base = o.glowBase;
       o.pl.setStyle({ color:o.color, opacity: glowOp == null ? o.baseOp : glowOp, dashArray:null });
@@ -281,6 +328,8 @@ function applyMapTone(){
   if(c) c.style.background = pal ? 'rgb(' + pal.ground.join(',') + ')' : '';
   applyLineStyle();
   applyStationStyle();
+  const gl = GHOST_LOOK[tone];
+  ghostLines.forEach(g => g.setStyle(gl));
 }
 
 let routeLayer = L.layerGroup().addTo(map);
@@ -295,24 +344,34 @@ applyMapTone();   // the first paint already matches the basemap it is on
    White is excluded because in a dense district the road fill outnumbers any single shade of
    land, and the first version of this reported (252,252,252) by day: a reading that an
    un-regraded tile would have produced too, so it proved nothing. */
+/* Move the map from outside this script's scope. `map` is a script-level const, so it is not a
+   property of window, and the CSP forbids the eval that would otherwise reach it; the smoke
+   suite and the screenshot harness both need to point the map at something. */
+function viewMap(lat, lng, z){ map.setView([lat, lng], z, { animate:false }); return map.getZoom(); }
+// Open a line's panel by ref, for the same reason: `lineByRef` is not reachable from outside.
+function viewLine(ref){ const l = lineByRef[ref]; if(l) openLine(l); return !!l; }
 function atlasProbe(){
-  const cs = [...map.getContainer().querySelectorAll('.leaflet-tile-pane canvas')].filter(c => c.width > 0).slice(0, 6);
+  const cs = [...map.getContainer().querySelectorAll('.leaflet-tile-pane canvas')].filter(c => c.width > 0);
   const m = new Map();
   cs.forEach(c => {
     try{
       const d = c.getContext('2d').getImageData(0, 0, c.width, c.height).data;
-      for(let i = 0; i < d.length; i += 16){
+      for(let i = 0; i < d.length; i += 64){
+        if(d[i+3] < 200) continue;                                     // not painted yet: a fresh canvas reads as transparent black
         if(d[i] >= 246 && d[i+1] >= 246 && d[i+2] >= 246) continue;     // road fill, not ground
         const k = ((d[i] >> 3) << 10) | ((d[i+1] >> 3) << 5) | (d[i+2] >> 3); m.set(k, (m.get(k) || 0) + 1);
       }
     }catch(e){}
   });
-  const top = [...m].sort((a, b) => b[1] - a[1])[0];
+  const ranked = [...m].sort((a, b) => b[1] - a[1]);
+  const top = ranked[0];
+  const rgb = k => [((k >> 10) & 31) * 8 + 4, ((k >> 5) & 31) * 8 + 4, (k & 31) * 8 + 4];
   const gl = linePolys.filter(o => o.glow)[0];
   return { style: uiStyle, base: curBaseKey, tone: mapTone(),
            ground: map.getContainer().style.background,
            canvasTiles: cs.length,
-           tile: top ? [((top[0] >> 10) & 31) * 8 + 4, ((top[0] >> 5) & 31) * 8 + 4, (top[0] & 31) * 8 + 4] : null,
+           tile: top ? rgb(top[0]) : null,
+           common: ranked.slice(0, 5).map(e => rgb(e[0])),     // the five most common colours: on a map half sea, the land is second
            outline: gl ? { color: gl.pl.options.color, opacity: gl.pl.options.opacity, base: gl.base,
                            coreBase: gl.coreBase, glowBase: gl.glowBase } : null };
 }
