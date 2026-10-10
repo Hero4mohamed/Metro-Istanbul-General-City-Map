@@ -25,14 +25,16 @@
     "messageLang": "en"
   },
   {
-    "id": "t3-al-m-yor",
-    "ref": "T3",
+    "id": "t1-yavuzselim",
+    "ref": "T1",
     "source": "metro.istanbul",
-    "scope": "line",
-    "severity": "minor",
-    "title": "Service notice",
-    "messageTr": "İstanbul Emniyeti’nin talebi doğrultusunda seferler yapılamamaktadır.",
-    "message": "At the request of İstanbul Police, services cannot operate.",
+    "scope": "segment",
+    "from": "Yavuzselim",
+    "to": "Bağcılar",
+    "severity": "partial",
+    "title": "Section affected",
+    "messageTr": "Teknik bir arıza nedeniyle seferler Kabataş-Soğanlı istasyonları arasında yapılmaktadır.",
+    "message": "Due to a technical fault, trains operate between Kabataş and Soğanlı.",
     "messageLang": "en"
   }
 ]
