@@ -23,18 +23,5 @@
     "messageTr": "Onarım çalışması nedeniyle seferler Yıldız-Mecidiyeköy ve Nurtepe istasyonundan aktarmalı olarak Çağlayan-Mahmutbey istasyonları arasında yapılmaktadır.",
     "message": "Due to maintenance works, trains operate between Çağlayan and Mahmutbey, with a transfer at Yıldız-Mecidiyeköy and Nurtepe.",
     "messageLang": "en"
-  },
-  {
-    "id": "t1-yavuzselim",
-    "ref": "T1",
-    "source": "metro.istanbul",
-    "scope": "segment",
-    "from": "Yavuzselim",
-    "to": "Bağcılar",
-    "severity": "partial",
-    "title": "Section affected",
-    "messageTr": "Teknik bir arıza nedeniyle seferler Kabataş-Soğanlı istasyonları arasında yapılmaktadır.",
-    "message": "Due to a technical fault, trains operate between Kabataş and Soğanlı.",
-    "messageLang": "en"
   }
 ]
