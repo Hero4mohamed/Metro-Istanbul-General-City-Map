@@ -20,8 +20,8 @@
     ],
     "severity": "partial",
     "title": "Section affected",
-    "messageTr": "Onarım çalışması nedeniyle seferler Yıldız-Mecidiyeköy ve Nurtepe istasyonundan aktarmalı olarak Çağlayan-Mahmutbey istasyonları arasında yapılmaktadır.",
-    "message": "Due to maintenance works, trains operate between Çağlayan and Mahmutbey, with a transfer at Yıldız-Mecidiyeköy and Nurtepe.",
+    "messageTr": "Teknik bir arıza nedeniyle seferler Nurtepe-Mahmutbey arasında normal işletme döngüsünde, Nurtepe-Kağıthane arasında ise mekik seferi olarak yapılmaktadır.",
+    "message": "Due to a technical fault, trains Nurtepe-Mahmutbey between normal işletme döngüsünde, Nurtepe-Kağıthane between while mekik seferi as are operating.",
     "messageLang": "en"
   },
   {
