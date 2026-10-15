@@ -25,43 +25,6 @@
     "messageLang": "en"
   },
   {
-    "id": "m9-atak-y",
-    "ref": "M9",
-    "source": "metro.istanbul",
-    "scope": "segment",
-    "from": "Ataköy",
-    "to": "Yenibosna",
-    "severity": "partial",
-    "title": "Section affected",
-    "messageTr": "Teknik bir arıza nedeniyle seferler Çobançeşme-Olimpiyat arasında yapılmaktadır.",
-    "message": "Due to a technical fault, trains Çobançeşme-Olimpiyat operate between.",
-    "messageLang": "en"
-  },
-  {
-    "id": "t1-emin-n",
-    "ref": "T1",
-    "source": "metro.istanbul",
-    "scope": "segment",
-    "from": "Eminönü",
-    "to": "Gülhane",
-    "severity": "partial",
-    "title": "Section affected",
-    "messageTr": "Teknik bir arıza nedeniyle seferler Kabataş-Karaköy ve Sultanahmet-Bağcılar istasyonları arasında yapılmaktadır.",
-    "message": "Due to a technical fault, trains Kabataş-Karaköy and operate between Sultanahmet and Bağcılar.",
-    "messageLang": "en"
-  },
-  {
-    "id": "t3-al-m-yor",
-    "ref": "T3",
-    "source": "metro.istanbul",
-    "scope": "line",
-    "severity": "minor",
-    "title": "Service notice",
-    "messageTr": "Hava muhalefeti nedeniyle seferler yapılamamaktadır.",
-    "message": "Due to adverse weather, services cannot operate.",
-    "messageLang": "en"
-  },
-  {
     "id": "tf1-al-m-yor",
     "ref": "TF1",
     "source": "metro.istanbul",
