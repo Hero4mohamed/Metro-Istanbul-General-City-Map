@@ -23,5 +23,27 @@
     "messageTr": "Teknik bir arıza nedeniyle seferler Nurtepe-Mahmutbey arasında normal işletme döngüsünde, Nurtepe-Kağıthane arasında ise mekik seferi olarak yapılmaktadır.",
     "message": "Due to a technical fault, trains Nurtepe-Mahmutbey between normal işletme döngüsünde, Nurtepe-Kağıthane between while mekik seferi as are operating.",
     "messageLang": "en"
+  },
+  {
+    "id": "tf1-al-m-yor",
+    "ref": "TF1",
+    "source": "metro.istanbul",
+    "scope": "line",
+    "severity": "minor",
+    "title": "Service notice",
+    "messageTr": "Hava muhalefeti nedeniyle seferler yapılamamaktadır.",
+    "message": "Due to adverse weather, services cannot operate.",
+    "messageLang": "en"
+  },
+  {
+    "id": "tf2-al-m-yor",
+    "ref": "TF2",
+    "source": "metro.istanbul",
+    "scope": "line",
+    "severity": "minor",
+    "title": "Service notice",
+    "messageTr": "Hava muhalefeti nedeniyle seferler yapılamamaktadır.",
+    "message": "Due to adverse weather, services cannot operate.",
+    "messageLang": "en"
   }
 ]
