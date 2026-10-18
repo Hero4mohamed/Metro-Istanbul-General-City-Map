@@ -40,6 +40,7 @@ const disruptionLayer = L.layerGroup().addTo(map);   // shown on the Active tab 
 const hazardRenderer = L.svg({ padding:0.5 });       // SVG so the dash animation (CSS) works
 // affected coord path(s) to grey-out: a segment between two stations, or the whole line
 function disruptionPaths(d){
+  if(d.mode === 'bus') return [];                 // a bus notice is drawn on the bus route (16-intercity.js), never on a rail line that shares its code
   const line = lineByRef[d.ref]; if(!line) return [];
   if(d.scope==='segment' && d.from && d.to){
     const a = line.stations.find(s=>fold(s.name)===fold(d.from));
@@ -50,6 +51,7 @@ function disruptionPaths(d){
   return [];
 }
 function disruptionPoints(d){
+  if(d.mode === 'bus') return [];
   const line = lineByRef[d.ref]; const pts = [];
   if(d.scope==='stations' && d.stations && line){
     d.stations.forEach(nm=>{ const st=line.stations.find(s=>fold(s.name)===fold(nm))||stationList.find(c=>fold(c.name)===fold(nm)); if(st) pts.push([st.lat,st.lng]); });
@@ -72,6 +74,7 @@ function disrTip(d){
   return `<b>⚠ ${d.ref?d.ref+' · ':''}${disTitle(d)}</b><br>${disTrTag(d)}${disMsg(d)}${d.until?'<br>⏱ '+untilText(d):''}`;
 }
 function openDisruption(d){
+  if(d.mode === 'bus'){ openBusRoute(d.ref); return; }
   const pts = disruptionPoints(d);
   if(pts.length) map.flyTo(pts[0], Math.max(map.getZoom(),13), { duration:0.6 });
 }
@@ -190,23 +193,60 @@ function openOpening(o){
   const line = lineByRef[o.ref];
   if(line) openLine(line);                             // focus it if we already draw it (M12/M10…)
 }
-function renderAnnouncements(){
-  const ops = upcomingOpenings();
-  // the same list the map marks: a fault whose `until` has passed is over, and a badge counting
-  // it kept sending people to an entry that read "ended" and to a line that was running fine
-  const live = activeDisruptions();
-  document.getElementById('annCount').textContent = live.length + ops.length;
-  const rows = live.map(d=>{
-    const col = SEV_COLOR[d.severity] || SEV_COLOR.major;
-    return `<div class="ann-item" data-id="${d.id}" style="border-left-color:${col};cursor:pointer">
+/* One announcement row. Rail and ferry notices are one row each; bus notices arrive in their dozens and
+   most of them are the same sentence on several lines, so those are grouped (see busGroups). */
+function annRowHTML(d){
+  const col = SEV_COLOR[d.severity] || SEV_COLOR.major;
+  const chipCol = d.mode === 'bus' ? BUS_COLOR : (d.mode === 'ferry' ? '#4AB8E8' : colorForLine(d.ref));
+  const glyph = d.mode === 'bus' ? '🚌 ' : (d.mode === 'ferry' ? '⛴ ' : '');
+  return `<div class="ann-item" data-id="${attrEsc(d.id)}" style="border-left-color:${col};cursor:pointer">
       <div class="ann-row1">
-        <span class="ann-line" style="background:${colorForLine(d.ref)}">${d.ref||'📣'}</span>
+        <span class="ann-line" style="background:${chipCol}">${d.ref ? glyph + svgEsc(d.ref) : '📣'}</span>
         <span class="ann-sev" style="background:${col}">${sevLabel(d.severity)}</span>
         <span class="ann-ttl">${disTitle(d)}</span>
       </div>
       <div class="ann-msg">${disTrTag(d)}${disMsg(d)}</div>
       ${d.until?`<div class="ann-until">⏱ ${untilText(d)}</div>`:''}</div>`;
-  }).join('');
+}
+/* Bus notices, grouped. The same sentence on twelve lines is one announcement with twelve line chips, not
+   twelve announcements; and a day's cancelled departures (a line each, forty-odd of them) collapse to a
+   single row of chips, each opening its own line. */
+function busGroups(list){
+  const groups = [], byKey = {};
+  list.forEach(d => {
+    const k = d.kind === 'trips' ? 'trips' : d.kind + '|' + (d.tpl ? JSON.stringify(d.tpl) : (d.messageTr || ''));
+    let g = byKey[k];
+    if(!g){ g = byKey[k] = { key:k, d, items:[] }; groups.push(g); }
+    g.items.push(d);
+  });
+  // what could be checked against the route comes first, then what could not, then the rest
+  const rank = g => g.d.kind === 'detour' ? (g.d.tpl ? 0 : 1) : { shortturn:2, delay:3, info:4, trips:5 }[g.d.kind];
+  return groups.sort((x, y) => (rank(x) - rank(y)) || String(x.d.ref).localeCompare(String(y.d.ref), 'tr', { numeric:true }));
+}
+function annBusGroupHTML(g){
+  const d = g.d, col = SEV_COLOR[d.severity] || SEV_COLOR.minor, SHOW = 8;
+  const chips = g.items.slice(0, SHOW).map(x =>
+    `<button class="ann-chip" data-ref="${attrEsc(x.ref)}" title="${attrEsc(x.route || '')}">${svgEsc(x.ref)}${x.kind==='trips'?`<small>×${x.tpl.n}</small>`:''}</button>`).join('');
+  const more = g.items.length - SHOW;
+  const msg = d.kind === 'trips'
+    ? svgEsc(t('nTripsSummary').replace('{n}', g.items.reduce((n, x) => n + x.tpl.n, 0)).replace('{k}', g.items.length))
+    : disTrTag(d) + svgEsc(disMsg(d));
+  return `<div class="ann-item ann-bus" data-key="${attrEsc(g.key)}" style="border-left-color:${col}">
+      <div class="ann-row1"><span class="ann-sev" style="background:${col}">${sevLabel(d.severity)}</span><span class="ann-ttl">${disTitle(d)}</span></div>
+      <div class="ann-chips">${chips}${more>0?`<span class="ann-more-n">+${more}</span>`:''}</div>
+      <div class="ann-msg">${msg}</div></div>`;
+}
+let _annBusOpen = false, _annBusAll = false;
+const ANN_BUS_SHOWN = 6;       // bus groups shown before "show more": a bad day has fifty
+function renderAnnouncements(){
+  const ops = upcomingOpenings();
+  // the same list the map marks: a fault whose `until` has passed is over, and a badge counting
+  // it kept sending people to an entry that read "ended" and to a line that was running fine
+  const live = activeDisruptions();
+  const rail = live.filter(d => !d.mode), ferry = live.filter(d => d.mode === 'ferry'), bus = live.filter(d => d.mode === 'bus');
+  const groups = busGroups(bus);
+  // the badge counts what the card SHOWS: a notice per rail fault and ferry notice, a row per bus group
+  document.getElementById('annCount').textContent = rail.length + ferry.length + groups.length + ops.length;
   const opRows = ops.map((o,i)=>{
     const col = o.color || colorForLine(o.ref);
     const rel = opensRel(o);
@@ -219,17 +259,32 @@ function renderAnnouncements(){
       <div class="ann-msg">${[o.name, o.km ? o.km+' '+t('kmU') : '', o.stations ? o.stations+' '+t('stnU') : ''].filter(Boolean).join(' · ')}</div>
       <div class="ann-until">🗓 ${t('opensOn')} ${o.disp}${rel?' · '+rel:''}</div></div>`;
   }).join('');
+  const nothing = !rail.length && !ferry.length && !groups.length;
   const body = document.getElementById('annBody');
-  body.innerHTML = (live.length ? rows : `<div class="ann-none">${t('annNone')}</div>`)
+  body.innerHTML = (nothing ? `<div class="ann-none">${t('annNone')}</div>` : rail.map(annRowHTML).join(''))
+    + (ferry.length ? `<div class="ann-sub">⛴ ${t('annFerrySub')} · ${ferry.length}</div>${ferry.map(annRowHTML).join('')}` : '')
+    + (groups.length ? `<button class="ann-sec" id="annBusSec" aria-expanded="${_annBusOpen}">🚌 ${t('annBusSub')} · ${groups.length}<span class="ann-caret"></span></button>
+         <div class="ann-busbox" id="annBusBox"${_annBusOpen?'':' hidden'}>${(_annBusAll ? groups : groups.slice(0, ANN_BUS_SHOWN)).map(annBusGroupHTML).join('')}
+           ${groups.length > ANN_BUS_SHOWN ? `<button class="ann-moreb" id="annBusMore">${_annBusAll ? t('annLess') : t('annMore').replace('{n}', groups.length - ANN_BUS_SHOWN)}</button>` : ''}</div>` : '')
     + (opRows ? `<div class="ann-sub">🚈 ${t('openHdr')}</div>${opRows}<div class="ann-note">${t('openFoot')}</div>` : '')
     + `<div class="ann-foot">${t('annFoot')} <a href="https://www.metro.istanbul/SeferDurumlari/SeferDetaylari" target="_blank" rel="noopener">metro.istanbul ↗</a>
-       · <a href="https://github.com/Hero4mohamed/Metro-Istanbul-General-City-Map/issues/new" target="_blank" rel="noopener">🐞 ${t('reportProblem')}</a></div>`;
+       · <a href="https://github.com/Hero4mohamed/Metro-Istanbul-General-City-Map/issues/new" target="_blank" rel="noopener">🐞 ${t('reportProblem')}</a>
+       ${(ferry.length || groups.length || (CITY_ID === 'istanbul' && HAS.bus)) ? `<div>${t('annFootExtra')}</div>` : ''}</div>`;
   body.querySelectorAll('.ann-item[data-id]').forEach(el => el.addEventListener('click', ()=>{
     const d = live.find(x=>x.id===el.dataset.id); if(d) openDisruption(d);
   }));
   body.querySelectorAll('.ann-open').forEach(el => el.addEventListener('click', ()=>{
     const o = ops[+el.dataset.open]; if(o) openOpening(o);
   }));
+  const sec = document.getElementById('annBusSec');
+  if(sec) sec.addEventListener('click', ()=>{
+    _annBusOpen = !_annBusOpen;
+    sec.setAttribute('aria-expanded', String(_annBusOpen));
+    document.getElementById('annBusBox').hidden = !_annBusOpen;
+  });
+  const moreB = document.getElementById('annBusMore');
+  if(moreB) moreB.addEventListener('click', ()=>{ _annBusAll = !_annBusAll; renderAnnouncements(); });
+  body.querySelectorAll('.ann-chip').forEach(b => b.addEventListener('click', e => { e.stopPropagation(); openBusRoute(b.dataset.ref); }));
 }
 document.getElementById('annHead').addEventListener('click', ()=>
   document.getElementById('announce').classList.toggle('collapsed'));

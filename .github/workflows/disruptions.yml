@@ -1,8 +1,9 @@
 name: Update live disruptions
 
 # Pulls live service disruptions from the official Metro İstanbul status page (and the
-# official X accounts, only if an X_BEARER_TOKEN secret is set), writes transit_data/
-# disruptions.json, and commits it. The map fetches that file at runtime, so the
+# official X accounts, only if an X_BEARER_TOKEN secret is set) and the Şehir Hatları ferry
+# announcements (scrape-ferry.cjs), writes transit_data/disruptions.json, and commits it.
+# (Bus notices are NOT here: İETT's change every few minutes and are read live in the browser.) The map fetches that file at runtime, so the
 # Announcements panel + map warnings update without rebuilding index.html.
 #
 # The commit deliberately does NOT carry [skip ci]. It used to, from when Pages served files

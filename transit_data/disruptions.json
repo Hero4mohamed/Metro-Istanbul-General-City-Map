@@ -21,7 +21,39 @@
     "severity": "partial",
     "title": "Section affected",
     "messageTr": "Teknik bir arıza nedeniyle seferler Nurtepe-Mahmutbey arasında normal işletme döngüsünde, Nurtepe-Kağıthane arasında ise mekik seferi olarak yapılmaktadır.",
-    "message": "Due to a technical fault, trains Nurtepe-Mahmutbey between normal işletme döngüsünde, Nurtepe-Kağıthane between while mekik seferi as are operating.",
+    "message": "Due to a technical fault, trains run normally between Nurtepe and Mahmutbey, and as a shuttle between Nurtepe and Kağıthane.",
     "messageLang": "en"
+  },
+  {
+    "id": "ferry-3788",
+    "mode": "ferry",
+    "ref": null,
+    "scope": "note",
+    "severity": "minor",
+    "title": "Seasonal timetable",
+    "message": "İstanbul Büyükşehir Belediyesi iştiraki Şehir Hatları AŞ’nin yaz tarifesi sona eriyor. Yeni düzenlenen kış tarifesi 7 Eylül 2026 ile 27 Haziran 2027 tarihleri arasında uygulanacak. Avrupa’nın en büyük toplu deniz ulaşım sağlayıcısı olan ve Şirket-i Hayriye’den bu yana 175 yıldır İstanbul’da deniz ulaşımı hizmeti veren Şehir Hatları, 7 Eylül Pazartesi gününden itibaren kış tarifesine geçiyor.",
+    "messageTr": "İstanbul Büyükşehir Belediyesi iştiraki Şehir Hatları AŞ’nin yaz tarifesi sona eriyor. Yeni düzenlenen kış tarifesi 7 Eylül 2026 ile 27 Haziran 2027 tarihleri arasında uygulanacak. Avrupa’nın en büyük toplu deniz ulaşım sağlayıcısı olan ve Şirket-i Hayriye’den bu yana 175 yıldır İstanbul’da deniz ulaşımı hizmeti veren Şehir Hatları, 7 Eylül Pazartesi gününden itibaren kış tarifesine geçiyor.",
+    "messageLang": "tr",
+    "translatedBy": "none",
+    "source": "sehirhatlari.istanbul",
+    "url": "https://sehirhatlari.istanbul/tr/duyurular/sehir-hatlari-kis-tarifesine-geciyor-3788",
+    "published": "2026-09-03",
+    "until": "2027-06-27"
+  },
+  {
+    "id": "ferry-3811",
+    "mode": "ferry",
+    "ref": null,
+    "scope": "note",
+    "severity": "minor",
+    "title": "Timetable change",
+    "message": "Maltepe-Adalar Hattı’ndaki Heybeliada-Büyükada-Maltepe seferinin saatleri, 12 Ekim 2026 tarihinden itibaren aşağıdaki şekilde güncellenecektir: Heybeliada kalkış saati: 15.40 yerine 16.10; Büyükada kalkış saati: 15.55 yerine 16.25; Maltepe varış saati: 16.15 yerine 16.45; Güncel sefer saatleri aşağıda belirtilmiştir.",
+    "messageTr": "Maltepe-Adalar Hattı’ndaki Heybeliada-Büyükada-Maltepe seferinin saatleri, 12 Ekim 2026 tarihinden itibaren aşağıdaki şekilde güncellenecektir: Heybeliada kalkış saati: 15.40 yerine 16.10; Büyükada kalkış saati: 15.55 yerine 16.25; Maltepe varış saati: 16.15 yerine 16.45; Güncel sefer saatleri aşağıda belirtilmiştir.",
+    "messageLang": "tr",
+    "translatedBy": "none",
+    "source": "sehirhatlari.istanbul",
+    "url": "https://sehirhatlari.istanbul/tr/duyurular/maltepeadalar-hatti-sefer-duzenlemesi-3811",
+    "published": "2026-10-11",
+    "until": "2026-11-02"
   }
 ]

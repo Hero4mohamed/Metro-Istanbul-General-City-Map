@@ -328,3 +328,18 @@ test('an Arabic conjunction joined to a station name is not read as untranslated
   assert.strictEqual(share, 0,
     'a fused conjunction+name token was counted against translation coverage (share ' + share + ')');
 });
+
+test('a partial closure ("normal on one stretch, a shuttle on the other") reads as a sentence, in every language', () => {
+  const { translateTR, bestEffortTranslation } = shippedTranslator();
+  // the M7 notice as metro.istanbul worded it, which the rules used to turn into "trains Nurtepe-Mahmutbey between normal işletme döngüsünde"
+  const src = 'Teknik bir arıza nedeniyle seferler Nurtepe-Mahmutbey arasında normal işletme döngüsünde, Nurtepe-Kağıthane arasında ise mekik seferi olarak yapılmaktadır.';
+  const en = translateTR(src, 'en');
+  assert.ok(/trains run normally between Nurtepe and Mahmutbey/.test(en) && /and as a shuttle between Nurtepe and Kağıthane/.test(en), 'English: ' + en);
+  assert.ok(!/işletme|döngü|mekik|yapılmaktadır/i.test(en), 'English still holds Turkish: ' + en);
+  const fr = translateTR(src, 'fr');
+  assert.ok(/les trains circulent normalement entre Nurtepe et Mahmutbey/.test(fr) && /en navette entre Nurtepe et Kağıthane/.test(fr), 'French: ' + fr);
+  const ar = translateTR(src, 'ar');
+  assert.ok(/بين Nurtepe و?Mahmutbey/.test(ar) && /المكوك/.test(ar) && !/işletme|mekik/i.test(ar), 'Arabic: ' + ar);
+  // and the coverage check now accepts it as translated rather than falling back to the Turkish
+  assert.strictEqual(bestEffortTranslation(src, ['Nurtepe', 'Mahmutbey', 'Kağıthane', 'M7'], 'en').lang, 'en');
+});

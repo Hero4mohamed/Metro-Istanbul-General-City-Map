@@ -54,6 +54,15 @@ const TR_PHRASES = [
     { en:'with a transfer at $1,', ar:'مع تحويل في $1،', fr:'avec correspondance à $1,' }],
   [/([^\s,]+)\s*[-–]\s*([^\s,]+)\s+istasyonları\s+arasında/gi,
     { en:'between $1 and $2', ar:'بين $1 و$2', fr:'entre $1 et $2' }],
+  /* A partial closure is announced as two clauses — normal running on one stretch, a shuttle on the other:
+     "seferler A-B arasında normal işletme döngüsünde, C-D arasında ise mekik seferi olarak yapılmaktadır".
+     Neither clause names the stations as "istasyonları", so the rules above missed them, and the word-level map
+     turned the sentence into "trains Nurtepe-Mahmutbey between normal işletme döngüsünde …" — a real M7 alert
+     that sat in the Announcements panel like that. Each clause is spelled out, in the reader's own word order. */
+  [/(?:seferler(?:imiz)?\s+)?([^\s,]+)\s*[-–]\s*([^\s,]+)\s+arasında\s+normal\s+işletme\s+döngüsünde/gi,
+    { en:'trains run normally between $1 and $2', ar:'تسير القطارات بشكل طبيعي بين $1 و$2', fr:'les trains circulent normalement entre $1 et $2' }],
+  [/([^\s,]+)\s*[-–]\s*([^\s,]+)\s+arasında\s+ise\s+mekik\s+seferi\s+olarak(?:\s+yapılmaktadır)?/gi,
+    { en:'and as a shuttle between $1 and $2', ar:'وبنظام المكوك بين $1 و$2', fr:'et en navette entre $1 et $2' }],
   // reasons — lowercase so they read correctly mid-sentence (first letter re-capitalised at end)
   [/planlı\s+bakım\s+(?:ve\s+onarım\s+)?çalış(?:ması|maları)?\s*(?:nedeniyle)?/gi,
     { en:'due to planned maintenance,', ar:'بسبب أعمال صيانة مخطّطة،', fr:'en raison de travaux de maintenance programmés,' }],
@@ -510,12 +519,28 @@ async function main(){
   if(!fetchOk){ console.error('Source unreachable — leaving disruptions.json unchanged.'); return; }
   await llmRefine(metro);   // optional high-quality translation for anything the phrase map missed
   const x=await parseX();
+  /* Şehir Hatları (the city ferries) publishes announcements of its own: timetable changes, extra and cancelled
+     trips. They are read from the operator's site by scrape-ferry.cjs and travel the same road the rail faults do.
+     That page is not an interface — its text is inside an ASP.NET view-state — so a failure here must never cost the
+     rail notices, and must not make the ferry ones vanish either: they are carried over from the current file and
+     expire by their own end date. */
+  let ferry=[], ferryOk=false;
+  try{
+    const { fetchFerryNotices } = require('./scrape-ferry.cjs');
+    const lines=JSON.parse(fs.readFileSync(path.join(__dirname,'ferry-lines.json'),'utf8'));
+    const today=new Date().toLocaleDateString('en-CA',{ timeZone:'Europe/Istanbul' });
+    ferry=await fetchFerryNotices(today, lines); ferryOk=true;
+  }catch(e){ console.error('ferry notices failed:', e.message); }
+  if(!ferryOk){
+    try{ ferry=JSON.parse(fs.readFileSync(OUT,'utf8')).filter(e=>e.mode==='ferry'); }catch(e){ ferry=[]; }
+    if(ferry.length) console.error('kept', ferry.length, 'ferry notice(s) from the current file');
+  }
   // merge curated manual entries (lines the metro.istanbul page does NOT cover — Marmaray/B2/
   // ferries/buses). Live parse wins for any ref it actually reports.
   let manual=[]; try{ manual=JSON.parse(fs.readFileSync(path.join(__dirname,'disruptions-manual.json'),'utf8')); }catch(e){}
   const liveRefs=new Set(metro.map(e=>e.ref));
   const keptManual=manual.filter(m=> !liveRefs.has(m.ref));
-  const all=keptManual.concat(metro, x);
+  const all=keptManual.concat(metro, x, ferry);
   // keep a stable, readable order
   all.sort((a,b)=> (a.ref||'zzz').localeCompare(b.ref||'zzz','tr') || a.id.localeCompare(b.id));
   if(!metro.length && !process.env.ALLOW_EMPTY){
