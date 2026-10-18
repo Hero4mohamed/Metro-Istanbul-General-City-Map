@@ -103,7 +103,8 @@ self.addEventListener('fetch', e => {
   // bus-geom-* is matched too: road geometry used to travel inside bus-data-*, and splitting it
   // out for the payload win would otherwise have silently dropped it from the offline cache,
   // leaving saved-area users with straight lines where a route shape used to be.
-  if (/\/transit_data\/bus-(?:data|geom)-[a-z]+\.json$/.test(url.pathname)) {
+  // landuse-* (forests, parks, airports) is the same kind of file: large, static, per city
+  if (/\/transit_data\/(?:bus-(?:data|geom)|landuse)-[a-z]+\.json$/.test(url.pathname)) {
     e.respondWith((async () => {
       const cached = await caches.match(e.request);
       const fresh = fetch(e.request).then(r => {

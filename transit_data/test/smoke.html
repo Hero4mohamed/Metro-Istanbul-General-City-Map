@@ -533,6 +533,30 @@ const CHECKS = [
     },
   },
   {
+    name: 'forests, parks and airports are painted from OpenStreetMap polygons, and not over the sea',
+    why: 'The static suite proves the arithmetic and the file format; only a real canvas shows that a polygon lands where it belongs on a tile. '
+       + 'Istanbul Airport must come out as the airport colour, Belgrad Forest as the forest colour, and a point in the Marmara sea as nothing at all — '
+       + 'a projection that is off by a tile, or a polygon list read in the wrong order, fails one of the three.',
+    run: async (w) => {
+      if (typeof w.landuseProbe !== 'function') return 'landuseProbe is gone from the page';
+      const t0 = Date.now(); let p = w.landuseProbe();
+      while (Date.now() - t0 < 15000 && !(p.loaded && p.polygons > 0)) { await sleep(300); p = w.landuseProbe(); }
+      if (!p.loaded || p.polygons < 500) return 'the land-use file did not load (' + p.polygons + ' polygons)';
+      const near = (a, b, tol) => a && a.slice(0, 3).every((v, i) => Math.abs(v - b[i]) <= tol);
+      const air = w.landuseProbe({ lat: 41.262, lng: 28.742, z: 13, tone: 'night' });
+      if (!air.covered) return 'a tile over Istanbul Airport has no land-use mask: the box the file covers is wrong';
+      if (!air.rgba || air.rgba[3] < 200) return 'nothing is painted at the middle of Istanbul Airport';
+      if (!near(air.rgba, air.expected.airport, 6)) return 'the airport is painted ' + air.rgba + ', not the airport colour ' + air.expected.airport;
+      const wood = w.landuseProbe({ lat: 41.18, lng: 28.93, z: 13, tone: 'night' });
+      if (!wood.rgba || wood.rgba[3] < 200) return 'nothing is painted in the middle of Belgrad Forest';
+      if (!near(wood.rgba, wood.expected.forest, 6)) return 'Belgrad Forest is painted ' + wood.rgba + ', not the forest colour ' + wood.expected.forest;
+      const sea = w.landuseProbe({ lat: 40.85, lng: 28.75, z: 13, tone: 'night' });
+      if (sea.rgba && sea.rgba[3] > 0) return 'land use is painted over the Marmara sea: ' + sea.rgba;
+      const day = w.landuseProbe({ lat: 41.18, lng: 28.93, z: 13, tone: 'day' });
+      if (!near(day.rgba, day.expected.forest, 6)) return 'the day forest colour is wrong: ' + day.rgba;
+    },
+  },
+  {
     name: 'the trip planner folds away and opens again',
     why: 'The static suite proves the markup and the wiring; only a real page shows that the click hides the body, that a second click '
        + 'brings it back, and that the arrow state follows. The planner is the card people live in, so a fold that sticks shut is a dead app.',

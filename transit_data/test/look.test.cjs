@@ -13,7 +13,7 @@ test('every station dot is the same white disc with a thick black outline', () =
   assert.ok(/const stationDot = /.test(s), 'the shared stationDot style is gone');
   // the live-line markers and the planned-line markers
   const live = /renderer:stationRenderer, radius: base, color:'#05070A', weight:STATION_RING, fillColor:'#FFFFFF'/.test(s);
-  const planned = /renderer:stationRenderer, radius:3\.5, color:'#05070A', weight:STATION_RING, fillColor:'#FFFFFF'/.test(s);
+  const planned = /renderer:stationRenderer, radius:3\.0, color:'#05070A', weight:STATION_RING, fillColor:'#FFFFFF'/.test(s);
   assert.ok(live, 'live station markers are not a white disc with the black ring');
   assert.ok(planned, 'planned-line station markers are not the same dot');
   assert.ok(!/fillColor: col\b/.test(s), 'a station marker is still filled with its line colour');
@@ -41,4 +41,19 @@ test('the fourth theme, Mixed, is offered, remembered and keeps the tabs, layers
   const rule = /body\.mixed #cardTabs,body\.mixed #cardLayers,body\.mixed #cardPlanner,body\.mixed #announce,body\.mixed \.mnav\{([^}]*)\}/.exec(css);
   assert.ok(rule, 'the dark-panels rule is missing, or does not cover the tabs, Layers, Trip Planner and announcements');
   assert.ok(/--panel:rgba\(13,17,27/.test(rule[1]) && /--text:#EEF2F8/.test(rule[1]), 'the tabs do not restate the dark palette');
+});
+
+test('station dots are small with a thin ring, and a plain stop is only drawn once the map is zoomed in', () => {
+  const s = H.appScript();
+  const ring = +/const STATION_RING = ([\d.]+);/.exec(s)[1];
+  assert.ok(ring >= 1 && ring <= 1.5, 'the black outline is ' + ring + ' px: it is meant to be thin');
+  const base = /const base = ix\?([\d.]+):([\d.]+);/.exec(s);
+  assert.ok(base, 'the dot sizes are not where they were');
+  assert.ok(+base[1] <= 4.4 && +base[2] <= 3.2, 'dots are bigger than the decluttered size: interchange ' + base[1] + ', stop ' + base[2]);
+  assert.ok(+base[1] > +base[2], 'an interchange must stay bigger than an ordinary stop');
+  const minZ = +/const STOP_MIN_ZOOM = (\d+);/.exec(s)[1];
+  assert.ok(minZ >= 11 && minZ <= 13, 'plain stops must hide on a city-wide view and show once zoomed in: ' + minZ);
+  // hidden by leaving the layer: a transparent canvas marker would still take clicks
+  assert.ok(/o\.group\.removeLayer\(o\.m\)/.test(s), 'a hidden stop is no longer taken off its layer');
+  assert.ok(/if\(o\.group && !o\.ix\)/.test(s), 'interchanges must stay drawn at every zoom');
 });

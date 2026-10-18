@@ -1,0 +1,81 @@
+name: Refresh map land use (forests, parks, airports)
+
+# The basemap paints forests, parks, campuses and airports under the streets, from OpenStreetMap polygons
+# (fetch-landuse.cjs -> process-landuse.cjs -> transit_data/landuse-<city>.json). The Esri raster does not
+# draw those distinctions at all, so this is the only place they come from.
+#
+# Monthly is plenty: a forest does not move. The download is the slow part (an hour or more for İstanbul,
+# which is why the Overpass queries are split into small boxes and paced), and it is a courtesy to a free
+# public service, so it is deliberately not more frequent than that.
+#
+# The raw dump is not committed. Only the processed file is, and only when its POLYGONS changed (the
+# processor leaves the file alone when only the fetch timestamp moved).
+
+on:
+  schedule:
+    - cron: '41 3 1 * *'        # the 1st of each month, 03:41 UTC
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+  actions:  write               # lets it dispatch pages.yml - see the publish step
+
+concurrency:
+  group: landuse
+  cancel-in-progress: false
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    timeout-minutes: 300
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      # Exits non-zero if ANY city fails, and the job stops there: a half-refreshed set would give one city
+      # forests and leave its neighbour without.
+      - name: Fetch land use from OpenStreetMap
+        run: node transit_data/fetch-landuse.cjs
+      - name: Process
+        run: node transit_data/process-landuse.cjs
+      - name: Rebuild the site
+        run: node transit_data/build.cjs
+      - name: Verify the rebuilt artifact
+        run: npm test
+
+      - name: Commit if changed
+        id: commit
+        run: |
+          FILES="transit_data/landuse-istanbul.json transit_data/landuse-ankara.json transit_data/landuse-izmir.json transit_data/landuse-bursa.json transit_data/landuse-antalya.json transit_data/landuse-kocaeli.json index.html sw.js"
+          if git diff --quiet -- $FILES; then
+            echo "No change - the land use is already current."
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          git config user.name  "landuse-bot"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add $FILES
+          git commit -m "chore: refresh map land use + rebuild"
+          for attempt in 1 2 3; do
+            if git push; then
+              echo "Land use refreshed (attempt $attempt)."
+              echo "changed=true" >> "$GITHUB_OUTPUT"
+              exit 0
+            fi
+            echo "Push rejected on attempt $attempt - rebasing onto origin/main"
+            git pull --rebase --autostash origin main || exit 1
+          done
+          echo "::error::could not push the land-use refresh after 3 attempts"
+          exit 1
+
+      # Pushing is not enough: GitHub does not start a workflow from a push made with the default
+      # GITHUB_TOKEN, so pages.yml has to be asked for explicitly.
+      - name: Publish to Pages
+        if: steps.commit.outputs.changed == 'true' || github.event_name == 'workflow_dispatch'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: gh workflow run pages.yml --ref main

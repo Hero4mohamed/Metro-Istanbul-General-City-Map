@@ -81,7 +81,7 @@ const BROWSER_GLOBALS = new Set([
   'KeyboardEvent', 'MouseEvent', 'TouchEvent', 'PointerEvent', 'Image', 'Audio', 'Worker',
   'Notification', 'navigator', 'document', 'window', 'console', 'localStorage', 'sessionStorage',
   'history', 'location', 'performance', 'screen', 'caches', 'crypto', 'DOMParser', 'XMLSerializer',
-  'Uint8Array', 'Float32Array', 'Int32Array', 'ArrayBuffer', 'DataView', 'TextEncoder', 'TextDecoder',
+  'Uint8Array', 'Float32Array', 'Float64Array', 'Int32Array', 'ArrayBuffer', 'DataView', 'TextEncoder', 'TextDecoder',
   'Proxy', 'Reflect', 'globalThis', 'isSecureContext', 'ServiceWorkerRegistration', 'Element',
   'HTMLElement', 'Node', 'NodeList', 'FormData', 'Option',
   'L',                       // Leaflet, loaded from the CDN before this script
@@ -158,7 +158,7 @@ test('no reference to an undefined shared data table', () => {
   const KNOWN = new Set(['NaN', 'Infinity', 'JSON', 'Math', 'Object', 'Array', 'String', 'Number',
     'Boolean', 'Date', 'RegExp', 'Error', 'Map', 'Set', 'WeakMap', 'WeakSet', 'Promise', 'Symbol',
     'Intl', 'URL', 'Blob', 'FormData', 'Headers', 'Request', 'Response', 'AbortController',
-    'TextEncoder', 'TextDecoder', 'Uint8Array', 'Int16Array', 'Int32Array', 'Float32Array',
+    'TextEncoder', 'TextDecoder', 'Uint8Array', 'Int16Array', 'Int32Array', 'Float32Array', 'Float64Array',
     'Float64Array', 'ArrayBuffer', 'DataView', 'Function', 'Proxy', 'Reflect', 'BigInt',
     'DOMParser', 'XMLHttpRequest', 'WebSocket', 'Worker', 'Notification', 'Image', 'Audio',
     'CustomEvent', 'Event', 'KeyboardEvent', 'MouseEvent', 'L', 'GET', 'POST', 'PUT', 'DELETE',

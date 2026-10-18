@@ -11,7 +11,7 @@ redistribute it.
 
 | Source | Used for | Stated terms | Attribution shown in-app |
 |---|---|---|---|
-| **OpenStreetMap** (via Overpass) | Rail, tram, ferry and funicular geometry; station positions; Ankara/İzmir/Bursa/Antalya bus routes; POI and category search via Photon | ODbL 1.0 — attribution **and share-alike** | yes, map credit |
+| **OpenStreetMap** (via Overpass) | Rail, tram, ferry and funicular geometry; station positions; Ankara/İzmir/Bursa/Antalya bus routes; POI and category search via Photon; **forest, park, campus and airport outlines** painted into the basemap (`landuse-<city>.json`, refreshed monthly by `landuse.yml`) | ODbL 1.0 — attribution **and share-alike** | yes, map credit |
 | **Esri** World Street Map | The day and night basemaps. The tiles are **recoloured in the browser** into the app's own palette (see `transit_data/src/08-basemap.js`); only Esri's original tiles are fetched and cached, never the recoloured result | Esri's published terms for its basemap tile services; the keyless endpoint is used as published | yes, map credit: © Esri, HERE, Garmin, USGS, © OpenStreetMap contributors |
 | **Esri / Maxar / Earthstar** | Satellite imagery layer | Esri World Imagery terms of use | yes, map credit |
 | **İETT** (via İBB Open Data) | İstanbul bus routes, stops and GTFS timetables | İBB Open Data portal terms | yes, "İETT GTFS" on the bus panel |

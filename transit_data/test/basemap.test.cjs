@@ -267,7 +267,7 @@ const ESRI_WHITE = [255, 255, 255], ESRI_ARTERIAL = [244, 194, 162], ESRI_MOTORW
 
 test('every road is the same light grey at night, whatever Esri drew it as', () => {
   const B = basemap(), road = B.ATLAS_PAL.night.roadGrey;
-  assert.ok(road && road.every(v => v > 110 && v < 200), 'the road colour must be a light grey, not near-white and not dark: ' + road);
+  assert.ok(road && road.every(v => v > 70 && v < 200), 'the road colour must be a quiet mid-grey, not near-white and not nearly the ground: ' + road);
   const out = tile(B, 'night', (x, y) => (x === 20 ? ESRI_WHITE : (x === 30 ? ESRI_ARTERIAL : (x === 10 ? ESRI_MOTORWAY : ESRI_LAND))), 41, 14);
   for (const [name, x] of [['white street', 20], ['orange arterial', 30], ['motorway', 10]])
     assert.ok(near(out(x, 20), road, 14), name + ' is ' + out(x, 20).map(Math.round) + ', not the one road colour ' + road);
@@ -288,7 +288,8 @@ test('a street under a label goes dark, so the letters stay readable', () => {
   const road = B.ATLAS_PAL.night.roadGrey;
   assert.ok(near(out(5, 20), road, 14), 'the street far from the label should be the road colour');
   const beside = out(24, 20);                                  // 3px from the nearest ink (x 21)
-  assert.ok(B.contrastRgb(beside, [255, 255, 255]) > 6, 'a street pixel beside a label is still bright (' + beside.map(Math.round) + '): the label would sit on a white halo');
+  // against the ROAD colour, not against white: the road is a quiet mid-grey now, and "darker than white" no longer tells a halo from a road
+  assert.ok(B.contrastRgb(beside, road) > 2, 'a street pixel beside a label is still the road colour (' + beside.map(Math.round) + '): the label would sit on a road-coloured halo');
 });
 
 /* Quiet map. The base is a picture with its labels, road shields and pictograms baked in, so they cannot be made

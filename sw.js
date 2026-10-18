@@ -2,7 +2,7 @@
    so every deploy activates immediately and the installed app self-updates.
    Strategy: NETWORK-FIRST for the page (updates always win; cached copy only when offline),
    stale-while-revalidate for static assets/CDNs, and NO caching for live data APIs. */
-const VERSION = '20261003193855';
+const VERSION = '20261018123727';
 const SHELL  = 'raynet-shell-' + VERSION;
 const STATIC = 'raynet-static-v1';
 const STATIC_HOSTS = ['unpkg.com', 'fonts.googleapis.com', 'fonts.gstatic.com'];
@@ -103,7 +103,8 @@ self.addEventListener('fetch', e => {
   // bus-geom-* is matched too: road geometry used to travel inside bus-data-*, and splitting it
   // out for the payload win would otherwise have silently dropped it from the offline cache,
   // leaving saved-area users with straight lines where a route shape used to be.
-  if (/\/transit_data\/bus-(?:data|geom)-[a-z]+\.json$/.test(url.pathname)) {
+  // landuse-* (forests, parks, airports) is the same kind of file: large, static, per city
+  if (/\/transit_data\/(?:bus-(?:data|geom)|landuse)-[a-z]+\.json$/.test(url.pathname)) {
     e.respondWith((async () => {
       const cached = await caches.match(e.request);
       const fresh = fetch(e.request).then(r => {
