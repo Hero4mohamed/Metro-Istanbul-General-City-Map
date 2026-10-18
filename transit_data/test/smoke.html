@@ -533,6 +533,67 @@ const CHECKS = [
     },
   },
   {
+    name: 'a bus notice shows in the announcements, opens its route, and a verified detour is drawn on it',
+    why: 'The static suite proves the parser and the markup; only a real page shows the chain a person walks: the notice is in the card, its line '
+       + 'chip opens that bus line, the route is drawn, the detour between the two verified stops is a dashed band on it, the line\'s panel '
+       + 'repeats the notice, and the list marks the line. The feed is built here from a REAL route\'s own stops, so it does not depend on İETT having a detour today.',
+    run: async (w) => {
+      if (typeof w.setSurfaceNotices !== 'function') return 'setSurfaceNotices is gone from the page';
+      const doc = w.document;
+      // the bus data arrives lazily; a route with a long, unambiguous stop list is the ground for the detour
+      w.renderBusList('');
+      const refs = [...doc.querySelectorAll('#busList .bus-row')].map(r => r.dataset.ref);
+      let pick = null;
+      for (let t = 0; t < 40 && !pick; t++) {
+        for (const ref of refs.slice(0, 60)) {
+          const dirs = w.busDirs(ref);
+          const d = dirs && dirs[0];
+          if (!d || d.stops.length < 14) continue;
+          const names = d.stops.map(x => x[2]), once = n => names.filter(y => y === n).length === 1;
+          if (once(names[4]) && once(names[9])) { pick = { ref, a: names[4], b: names[9], at: 4, bt: 9, dir: d.dir }; break; }
+        }
+        if (!pick) await sleep(250);
+      }
+      if (!pick) return { skip: 'no bus route with an unambiguous stop list is loaded (the bus data did not arrive)' };
+      const up = x => x.toLocaleUpperCase('tr');
+      const rows = [
+        { HATKODU: pick.ref, HAT: 'TEST', TIP: 'Günlük', GUNCELLEME_SAATI: 'Kayit Saati: 10:00',
+          MESAJ: 'YOGUN TRAFIK NEDENIYLE ARAÇLARIMIZ ' + up(pick.a) + ' DURAGINDAN GÜZERGAH DISINA ÇIKARAK ' + up(pick.b) + ' DURAGINDAN GÜZERGAHA GIRECEKTIR.' },
+        { HATKODU: 'ZZ1', HAT: 'TEST', TIP: 'Günlük', GUNCELLEME_SAATI: 'Kayit Saati: 10:00', MESAJ: 'BIR SEYLER OLDU AMA KIMSE ANLAMADI' },
+      ];
+      const list = w.parseIettNotices(rows, w.busDirs, 0);
+      const det = list.find(e => e.ref === pick.ref);
+      if (!det || !det.detour) return 'a detour between two stops of ' + pick.ref + ' was not verified: ' + JSON.stringify(list.map(e => [e.ref, e.kind, !!e.detour]));
+      if (det.detour.ia !== pick.at || det.detour.ib !== pick.bt) return 'the detour was placed at stops ' + det.detour.ia + '-' + det.detour.ib + ', expected ' + pick.at + '-' + pick.bt;
+      const raw = list.find(e => e.ref === 'ZZ1');
+      if (!raw || raw.detour || raw.tpl) return 'a sentence nobody can check was given a structure';
+      const act = doc.querySelector('#tabs button.active'), keep = act ? act.dataset.tab : 'active';
+      try {
+        w.setSurfaceNotices(list);
+        const sec = doc.getElementById('annBusSec');
+        if (!sec) return 'the announcements have no bus section';
+        if (sec.getAttribute('aria-expanded') !== 'false') sec.click();                 // start collapsed
+        if (!doc.getElementById('annBusBox').hidden) return 'the bus section is not collapsed to begin with';
+        sec.click();
+        if (doc.getElementById('annBusBox').hidden) return 'clicking the bus section did not open it';
+        const chip = [...doc.querySelectorAll('.ann-chip')].find(c => c.dataset.ref === pick.ref);
+        if (!chip) return 'the notice for ' + pick.ref + ' has no chip';
+        const lc = x => x.toLocaleLowerCase('tr');
+        if (!lc(doc.getElementById('annBusBox').innerText).includes(lc(pick.a).slice(0, 5))) return 'the notice does not name the stop buses leave at (' + pick.a + ')';
+        chip.click();
+        const shown = await until(() => doc.querySelector('#tabs button.active') && doc.querySelector('#tabs button.active').dataset.tab === 'bus' && w.busNoticeProbe().layers > 3, 12000);
+        if (!shown) return 'clicking the chip did not open the bus line and draw its route';
+        const probe = w.busNoticeProbe();
+        if (probe.dashed < 1) return 'the verified detour is not drawn as a dashed band on the route (' + probe.layers + ' layers, none dashed)';
+        if (!/detour|Detour|Güzergâh/.test(doc.getElementById('busDetail').innerText)) return 'the line\'s own panel does not repeat the notice';
+        w.renderBusList(pick.ref);
+        if (!doc.querySelector('#busList .bus-row[data-ref="' + pick.ref + '"] .bn-warn')) return 'the line carries no marker in the list';
+      } finally {
+        try { w.setSurfaceNotices([]); w.setTab(keep); } catch (e) { /* leave it as it is */ }
+      }
+    },
+  },
+  {
     name: 'the trip planner folds away and opens again',
     why: 'The static suite proves the markup and the wiring; only a real page shows that the click hides the body, that a second click '
        + 'brings it back, and that the arrow state follows. The planner is the card people live in, so a fold that sticks shut is a dead app.',

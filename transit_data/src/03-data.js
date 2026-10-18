@@ -13,6 +13,7 @@ const BUS_OPERATOR = CITY.busOperator || '';      // İETT, UlaşımPark, …
 const BUS_DIR = HAS.bus ? (BUS_ALL[CITY_ID] || []) : [];
 /* --- Live disruptions: faults / closures / suspensions (editable transit_data/disruptions.json) --- */
 let DISRUPTIONS = HAS.disruptions ? __DISRUPTIONS_JSON__ : [];   // baked-in fallback; overridden by the live fetch below
+let SURFACE_NOTICES = [];       // live İETT bus notices (İstanbul only); empty until the feed and the bus data have both arrived
 /* --- Upcoming line openings: curated İBB projected launch dates (subject to change). Shown as
        "coming soon" cards in the announcements panel; auto-hide once the projected date passes. --- */
 const OPENINGS = HAS.openings ? __OPENINGS_JSON__ : [];
@@ -143,7 +144,9 @@ function disruptionActive(d){
   if(Number.isNaN(end)) return true;                         // unparseable date → never silently drop a fault
   return end >= Date.now();
 }
-function activeDisruptions(){ return (DISRUPTIONS||[]).filter(disruptionActive); }
+/* Rail and ferry notices come from disruptions.json (DISRUPTIONS); bus notices are read live from İETT in the browser
+   (SURFACE_NOTICES, see 14a-surface-notices.js). Everything that asks "what is wrong right now" gets both. */
+function activeDisruptions(){ return (DISRUPTIONS||[]).concat(SURFACE_NOTICES).filter(disruptionActive); }
 function lineHours(ref){
   const hit = _lineHoursMemo[ref];
   if(hit) return hit;

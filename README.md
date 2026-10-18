@@ -33,6 +33,7 @@ bus-route lookups).
 - Trip planner (Dijkstra over the whole network) with refresh-safe history & favourites.
 - **Tabs:** Active Network · Vision & Expansion (official + İBB projects, dashed) · Bus Directory (855 İETT lines, click to draw the real route).
 - Light/Dark/Satellite basemaps, zoom-responsive line thickness, station service hours.
+- **Announcements for rail, ferries and buses.** Rail faults and ferry notices are scraped into `disruptions.json` (every 30 minutes); İETT's bus notices are read live in the browser. A bus detour that can be checked against the route's stops is drawn on that route; the rest are shown in the operator's own words, never guessed at.
 
 ## How it's built
 The map is generated from data in [`transit_data/`](transit_data/):

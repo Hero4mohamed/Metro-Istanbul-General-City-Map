@@ -36,6 +36,61 @@ const SRI_ON_SCRIPT = new RegExp('(<script[^>]+unpkg\\.com[^>]*?)\\s+integrity="
 
 const MUTATIONS = [
   {
+    name: 'let the stop that is shut be the stop buses leave the route at',
+    expect: 'a stop that is SHUT is not the stop buses leave at',
+    apply: h => h.replace('const A = ms.filter(function (h) { return h.end <= leave.index && leave.index - h.end <= 30; }).pop();', 'const A = ms[0];'),
+  },
+  {
+    name: 'draw a detour from a stop name that is two different stops',
+    expect: 'a leave stop that is two different stops is a guess, so nothing is drawn',
+    apply: h => h.replace('if (ia.length !== 1) continue;', 'if (!ia.length) continue;'),
+  },
+  {
+    name: 'let buses rejoin the route BEHIND where they left it',
+    expect: 'a detour is read only between two stops that are on the route, in travel order',
+    apply: h => h.replace('.filter(function (i) { return i > ia[0]; });', '.filter(function (i) { return i !== ia[0]; });'),
+  },
+  {
+    name: 'announce a departure that has already gone as cancelled',
+    expect: 'cancelled departures: one entry per line, in time order, and a departure that has already gone is not listed',
+    apply: h => h.replace('if (nowMin != null && at < nowMin - 2) continue;', ''),
+  },
+  {
+    name: 'push an unread bus notice through the Turkish translator',
+    expect: 'bus notices join the same active list as rail faults, and raw ones skip the Turkish translator',
+    apply: h => h.replace("if(d.mode === 'bus') return { text:d.messageTr || d.message || '', lang:'tr' };", ''),
+  },
+  {
+    name: 'draw a detour nobody checked',
+    expect: 'a verified detour is drawn on the route, dashed, only from a stored direction and stop range',
+    apply: h => h.replace("d.mode === 'bus' && d.ref === ref && d.detour", "d.mode === 'bus' && d.ref === ref"),
+  },
+  {
+    name: 'leave the live bus notices out of the active list',
+    expect: 'bus notices join the same active list as rail faults, and raw ones skip the Turkish translator',
+    apply: h => h.replace('.concat(SURFACE_NOTICES).filter(disruptionActive)', '.filter(disruptionActive)'),
+  },
+  {
+    name: 'let a bus notice be painted on a rail line that shares its code',
+    expect: 'bus notices join the same active list as rail faults, and raw ones skip the Turkish translator',
+    apply: h => h.replace("  if(d.mode === 'bus') return [];                 // a bus notice is drawn on the bus route (16-intercity.js), never on a rail line that shares its code", ''),
+  },
+  {
+    name: 'show every bus group at once on a bad day',
+    expect: 'the announcements card groups bus notices, collapses them, and caps what it shows at first',
+    apply: h => h.replace('const ANN_BUS_SHOWN = 6;', 'const ANN_BUS_SHOWN = 600;'),
+  },
+  {
+    name: 'forget the Arabic wording for a delay',
+    expect: 'every sentence a notice can be made of exists in all four languages, and fills every hole',
+    apply: h => h.replace('nDelay:"الرحلات متأخرة {m} دقيقة أو أكثر.", ', ''),
+  },
+  {
+    name: 'stop showing bus and ferry notices on the trip legs they affect',
+    expect: 'a trip leg on a line with a notice says so',
+    apply: h => h.replace('const ns = noticesForRide(s);', 'const ns = [];'),
+  },
+  {
     name: 'corrupt a statement (the "$&" splice that killed the whole app)',
     expect: 'the inline application script parses',
     apply: h => h.replace('const svgEsc = s =>', 'const svgEsc = s => ) BROKEN'),

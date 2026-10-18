@@ -244,9 +244,10 @@ function renderBusList(q){
        Say so, rather than let a partial directory read as the whole network. */
     (CITY.busSource === 'osm'
       ? '<div class="sp-note" style="margin-top:5px">' + svgEsc(t('busOsmNote')) + '</div>' : '');
+  const noticed = new Set(activeDisruptions().filter(x => x.mode === 'bus').map(x => x.ref));
   document.getElementById('busList').innerHTML = shown.length
     ? shown.map(d => `<div class="bus-row" data-id="${d.id}" data-ref="${(d.ref||'').replace(/"/g,'&quot;')}">
-        <span class="bn">${d.ref}</span><span class="br">${d.from} <small>↔</small> ${d.to}${d.op?` <small>· ${d.op}</small>`:''}</span></div>`).join('')
+        <span class="bn">${d.ref}</span><span class="br">${d.from} <small>↔</small> ${d.to}${d.op?` <small>· ${d.op}</small>`:''}</span>${noticed.has(d.ref)?`<span class="bn-warn" title="${attrEsc(t('busNotices'))}">⚠</span>`:''}</div>`).join('')
     : `<div class="none">${t('noLines')}</div>`;
   document.querySelectorAll('#busList .bus-row').forEach(row =>
     row.addEventListener('click', () => selectBus(row.dataset.id, row)));
@@ -368,6 +369,40 @@ function drawBusDirs(dirs, chains){
       .bindTooltip(svgEsc(s[2]||''),{className:'lt',direction:'top'}).addTo(busLayer)));
   return all;
 }
+/* The detours that were VERIFIED against this route's stop list (see 14a-surface-notices.js), drawn on the road
+   between the stop buses leave it at and the stop they rejoin it at. Dashed amber over the route: dashed is this
+   map's word for "not in normal service". Only a verified detour has a `detour` to draw; the rest are text. */
+function drawBusNotices(ref, dirs, chains){
+  activeDisruptions().filter(d => d.mode === 'bus' && d.ref === ref && d.detour).forEach(d => {
+    const dir = dirs.find(x => x.dir === d.detour.dir); if(!dir) return;
+    const stops = dir.stops.slice(d.detour.ia, d.detour.ib + 1);
+    const pts = busDirPath({ stops }, chains); if(pts.length < 2) return;
+    const col = SEV_COLOR.partial;
+    L.polyline(pts, { color:col, weight:9, opacity:.22, lineCap:'round', lineJoin:'round', interactive:false }).addTo(busLayer);
+    L.polyline(pts, { color:col, weight:3.4, opacity:1, dashArray:'2,7', lineCap:'round', lineJoin:'round' })
+      .bindTooltip(disrTip(d), { sticky:true, className:'lt' }).addTo(busLayer);
+    [stops[0], stops[stops.length - 1]].forEach(s => L.circleMarker([s[0], s[1]], { radius:4.6, color:col, weight:2, fillColor:'#12161f', fillOpacity:1 })
+      .bindTooltip(svgEsc(s[2] || ''), { className:'lt', direction:'top' }).addTo(busLayer));
+  });
+}
+// the notices that bear on one bus line, at the top of its panel
+function busNoticesHTML(ref){
+  const ns = activeDisruptions().filter(d => d.mode === 'bus' && d.ref === ref);
+  if(!ns.length) return '';
+  return `<div class="bd-h">${svgEsc(t('busNotices'))}</div>` + ns.map(d => {
+    const col = SEV_COLOR[d.severity] || SEV_COLOR.minor;
+    return `<div class="bn-item" style="border-left-color:${col}"><b>${svgEsc(disTitle(d))}</b> ${disTrTag(d)}${svgEsc(disMsg(d))}`
+         + `${d.detour ? `<div class="bn-hint">${svgEsc(t('detourDrawn'))}</div>` : ''}${d.recorded ? `<div class="bn-hint">🕒 ${svgEsc(d.recorded)}</div>` : ''}</div>`;
+  }).join('');
+}
+/* Open one bus line on the Bus tab, the way picking it from the list does, so the route and its notices draw. */
+function openBusRoute(ref){
+  setTab('bus');
+  const box = document.getElementById('busSearch'); if(box) box.value = ref;
+  renderBusList(ref);
+  const row = [...document.querySelectorAll('#busList .bus-row')].find(r => r.dataset.ref === ref);
+  if(row) selectBus(row.dataset.id, row);
+}
 // the stop list for each direction, so a route's own stations are readable in the catalogue
 function busStopsHTML(dirs){
   if(!dirs || !dirs.length) return '';
@@ -425,14 +460,15 @@ async function selectBus(id, row){
     await ensureBusGeom();
     const chains = (BUS_GEOM && BUS_GEOM[ref]) ? BUS_GEOM[ref] : null;
     let all = drawBusDirs(dirs, chains);
-    detail.innerHTML = busFareHTML(ref) + busScheduleHTML(ref) + busStopsHTML(dirs);
+    drawBusNotices(ref, dirs, chains);
+    detail.innerHTML = busNoticesHTML(ref) + busFareHTML(ref) + busScheduleHTML(ref) + busStopsHTML(dirs);
     countEl.textContent = ref+' · '+dl;
     if(all.length) map.fitBounds(L.latLngBounds(all).pad(0.2));
     if(!chains){                                 // no baked shape (2 of 855) → try Overpass once
       countEl.textContent = ref+' · '+dl+' · '+t('loadingGeom');
       const shapes = await busOsmShapes(ref);
       if(tok!==busSelToken) return;
-      if(shapes && shapes[0]){ all = drawBusDirs(dirs, shapes[0]);
+      if(shapes && shapes[0]){ all = drawBusDirs(dirs, shapes[0]); drawBusNotices(ref, dirs, shapes[0]);
         if(all.length) map.fitBounds(L.latLngBounds(all).pad(0.2)); }
       countEl.textContent = ref+' · '+dl;
     }
