@@ -44,6 +44,8 @@ The map is generated from data in [`transit_data/`](transit_data/):
 | `fetch-planned.cjs` | Overpass: ways tagged `railway=construction\|proposed` | `planned-osm-<city>.json` (not committed) |
 | `fetch-planned-facts.cjs` | metro.istanbul project pages | `planned-facts-mi.json` |
 | `process-planned.cjs` | `planned-registry.json` + the two above | `planned-lines.json`, `openings.json` |
+| `fetch-landuse.cjs` | Overpass: forests, parks, campuses, airports (per city, in small boxes) | `landuse-osm-<city>.json` (not committed) |
+| `process-landuse.cjs` | the dump above | `landuse-<city>.json` (painted into the basemap tiles; monthly by `landuse.yml`) |
 | `process-bus.cjs` | `bus-probe.json` | `bus-directory.json` |
 | `build.cjs` | the JSONs + `app.template.html` | **`index.html`** |
 

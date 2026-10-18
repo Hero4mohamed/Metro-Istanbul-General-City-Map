@@ -57,6 +57,7 @@ status.json
 
 # raw OSM planned/under-construction dumps (re-fetch via fetch-planned.cjs; processed into planned-lines.json)
 transit_data/planned-osm-*.json
+transit_data/landuse-osm-*.json
 
 # temporary screenshot harness
 transit_data/test/_shot.html

@@ -541,6 +541,46 @@ const MUTATIONS = [
     apply: h => h.replace('if (gain < 1 && l < .45 && dd < .12) {', 'if (false) {'),
   },
   {
+    name: 'let land use recolour streets and labels (drop the ground gate)',
+    expect: 'a street, a label and the sea come through a polygon unchanged',
+    apply: h => h.replace('const c = dl >= 0 ? 1 - dl / LU.bright : 1 + dl / LU.dark;', 'const c = 1;'),
+  },
+  {
+    name: 'let land use paint over the sea',
+    expect: 'a street, a label and the sea come through a polygon unchanged',
+    apply: h => h.replace('if (luA && luA[i + 3] && !wm[i >> 2]) paintLanduse(d, i, luA);', 'if (luA && luA[i + 3]) paintLanduse(d, i, luA);'),
+  },
+  {
+    name: 'ignore how much of a pixel the polygon covers (hard edges)',
+    expect: 'a polygon edge is a blend, not a step',
+    apply: h => h.replace('const w = m * (c > 1 ? 1 : c);', 'const w = (m > 0 ? 1 : 0) * (c > 1 ? 1 : c);'),
+  },
+  {
+    name: "keep Esri's park tint inside the city (it doubles the polygons)",
+    expect: "a tile with no land-use data is graded exactly as before; one inside the city drops the raster's own park tint",
+    apply: h => h.replace('const pk = covered ? 0 : (z === undefined', 'const pk = (z === undefined'),
+  },
+  {
+    name: 'read every polygon as the same class',
+    expect: 'the page decodes a processed file back onto the right Web-Mercator spot',
+    apply: h => h.replace('c: LANDUSE_CLASSES.indexOf(cls[p[0]]),', 'c: 1,'),
+  },
+  {
+    name: 'draw polygons a quarter as small at every zoom (a speck at z8)',
+    expect: 'small polygons are left out when zoomed out, and the cut-off halves in each dimension per zoom',
+    apply: h => h.replace('const mpp = 118000 / Math.pow(2, z);', 'const mpp = 118000 / Math.pow(2, z) / 4;'),
+  },
+  {
+    name: 'draw every plain station dot at every zoom',
+    expect: 'station dots are small with a thin ring, and a plain stop is only drawn once the map is zoomed in',
+    apply: h => h.replace('const STOP_MIN_ZOOM = 12;', 'const STOP_MIN_ZOOM = 0;'),
+  },
+  {
+    name: 'thicken the station outline again',
+    expect: 'station dots are small with a thin ring, and a plain stop is only drawn once the map is zoomed in',
+    apply: h => h.replace('const STATION_RING = 1.4;', 'const STATION_RING = 2.4;'),
+  },
+  {
     name: 'fill a station dot with its line colour again',
     expect: 'every station dot is the same white disc with a thick black outline',
     apply: h => h.replace("renderer:stationRenderer, radius: base, color:'#05070A', weight:STATION_RING, fillColor:'#FFFFFF'", "renderer:stationRenderer, radius: base, color:'#05070A', weight:STATION_RING, fillColor: col"),
@@ -581,12 +621,12 @@ const MUTATIONS = [
   {
     name: 'invert the night road hierarchy (roads darker than land, as CSS invert() does)',
     expect: 'by night a road is brighter than the land, not darker',
-    apply: h => h.replace('roadGrey: [150, 152, 158], roadHalo: [25, 26, 29],', 'roadGrey: [12, 12, 14], roadHalo: [25, 26, 29],'),
+    apply: h => h.replace('roadGrey: [92, 98, 112], roadHalo: [21, 25, 35],', 'roadGrey: [12, 12, 14], roadHalo: [21, 25, 35],'),
   },
   {
     name: 'let night label text stay dark',
     expect: 'place names survive the regrade',
-    apply: h => h.replace('curve: [[0, .82], [.2, .70], [.35, .52], [.5, .38], [.62, .28],', 'curve: [[0, .10], [.2, .12], [.35, .16], [.5, .20], [.62, .30],'),
+    apply: h => h.replace('curve: [[0, .82], [.2, .72], [.35, .55], [.5, .42], [.62, .30],', 'curve: [[0, .10], [.2, .12], [.35, .16], [.5, .20], [.62, .30],'),
   },
   {
     name: 'make the ground differ from the land colour (every tile seam shows)',
@@ -602,7 +642,7 @@ const MUTATIONS = [
   {
     name: 'keep the park colour at country scale',
     expect: 'at country scale a green pixel is land cover, not a park: the park colour fades out by z8',
-    apply: h => h.replace('const pk = (z === undefined || z === null) ? 1 : _smooth(8, 11, z);', 'const pk = 1;'),
+    apply: h => h.replace('const pk = covered ? 0 : (z === undefined || z === null) ? 1 : _smooth(8, 11, z);', 'const pk = covered ? 0 : 1;'),
   },
   {
     name: 'let the regrade write past 255',
@@ -612,7 +652,7 @@ const MUTATIONS = [
   {
     name: 'let the chrome drift from the ground it sits on',
     expect: "the chrome IS the ground: Atlas panels share the map's colour",
-    apply: h => h.replace('--obsidian:#1E1F22; --panel:rgba(26,27,30,.90);', '--obsidian:#1E1F23; --panel:rgba(26,27,30,.90);'),
+    apply: h => h.replace('--obsidian:#1B1F2A; --panel:rgba(24,28,38,.90);', '--obsidian:#1B1F2B; --panel:rgba(24,28,38,.90);'),
   },
   {
     name: 'ship a day --dim that fails AA on the ivory ground',

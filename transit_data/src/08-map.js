@@ -41,10 +41,10 @@ const ESRI_ATTR = '&copy; Esri, HERE, Garmin, USGS, &copy; OpenStreetMap contrib
 const BASES = {
   dark:    new AtlasTiles(ESRI_STREETS,
             Object.assign({ maxZoom:20, maxNativeZoom:19, attribution:ESRI_ATTR,
-              grade:makeBasemapGrade(ATLAS_PAL.night) }, TILE_OPTS)),
+              grade:makeBasemapGrade(ATLAS_PAL.night), landuse:makeLanduseMask(ATLAS_PAL.night) }, TILE_OPTS)),
   voyager: new AtlasTiles(ESRI_STREETS,
             Object.assign({ maxZoom:20, maxNativeZoom:19, attribution:ESRI_ATTR,
-              grade:makeBasemapGrade(ATLAS_PAL.day) }, TILE_OPTS)),
+              grade:makeBasemapGrade(ATLAS_PAL.day), landuse:makeLanduseMask(ATLAS_PAL.day) }, TILE_OPTS)),
   sat:     L.tileLayer(ESRI + 'World_Imagery/MapServer/tile/{z}/{y}/{x}',
             Object.assign({ maxZoom:20, maxNativeZoom:19,
               attribution:'&copy; Esri, Vantor, Earthstar Geographics' }, TILE_OPTS))
@@ -185,7 +185,7 @@ liveLines.forEach(line => line.paths.forEach(path => {
    ring for planned lines, a dark disc for intercity — so the same kind of place looked like four
    different things depending on which line it was on. The line's colour already says which line;
    the dot only has to say "a station is here", the same way everywhere. */
-const STATION_RING = 1.7;
+const STATION_RING = 1.4;
 const stationDot = extra => Object.assign({ color:'#05070A', fillColor:'#FFFFFF', fillOpacity:1, weight:STATION_RING }, extra || {});
 // station markers (merged registry)
 const stationGroup = L.layerGroup();
@@ -194,31 +194,36 @@ const stationMarkersArr = [];   // {m, base} for zoom-responsive radius
 stationList.forEach(r => {
   const ix = r.lines.size>1;
   const col = ix ? "#ffffff" : lineByRef[[...r.lines][0]].color;
-  const base = ix?4.8:3.5;          // small enough not to clutter a busy centre, big enough that the white shows inside the ring
+  const base = ix?4.2:3.0;          // small enough not to clutter a busy centre, big enough that the white shows inside the ring
   const m = L.circleMarker([r.lat, r.lng], {
     renderer:stationRenderer, radius: base, color:'#05070A', weight:STATION_RING, fillColor:'#FFFFFF', fillOpacity:1
   });
   m.on('click', (e) => { openStation(r); L.DomEvent.stop(e); });
   m.addTo(stationGroup);
   stationMarkers[fold(r.name)] = m;
-  stationMarkersArr.push({ m, base, refs:r.lines, ix, color:lineByRef[[...r.lines][0]].color });
+  stationMarkersArr.push({ m, base, refs:r.lines, ix, color:lineByRef[[...r.lines][0]].color, group:stationGroup });
 });
 
 // hollow markers for planned-line stops (Vision tab only)
 const plannedStationGroup = L.layerGroup();
 plannedStationList.forEach(r => {
   const m = L.circleMarker([r.lat, r.lng], {
-    renderer:stationRenderer, radius:3.5, color:'#05070A', weight:STATION_RING, fillColor:'#FFFFFF', fillOpacity:1
+    renderer:stationRenderer, radius:3.0, color:'#05070A', weight:STATION_RING, fillColor:'#FFFFFF', fillOpacity:1
   });
   m.on('click', (e) => { openLine(lineByRef[r.ref]); L.DomEvent.stop(e); });
   m.addTo(plannedStationGroup);
-  stationMarkersArr.push({ m, base:3.5, refs:new Set([r.ref]), planned:true, color:r.color });
+  stationMarkersArr.push({ m, base:3.0, refs:new Set([r.ref]), planned:true, color:r.color, group:plannedStationGroup });
 });
 
 // zoom-responsive sizing: thin lines & small dots when zoomed out (de-clutter)
 const busLayer = L.layerGroup().addTo(map);   // holds the selected bus route
 function lineScale(z){ return z>=14 ? 1 : z<=9 ? 0.34 : 0.34 + (z-9)*0.132; }
 function markerScale(z){ return z>=14 ? 1 : z<=10 ? 0.42 : 0.42 + (z-10)*0.145; }
+/* Station dots are the clutter on a city-wide view, so they get their own, steeper scale and their own
+   rule: a plain stop is only drawn from z12 (a view about 20 km across); interchanges, which are the
+   places that matter at that scale, are always drawn. Full size only from z15. */
+const STOP_MIN_ZOOM = 12;
+function dotScale(z){ return z>=15 ? 1 : z<=11 ? 0.42 : 0.42 + (z-11)*0.145; }
 /* Route focus: while a planned route is selected the rest of the network comes OFF the map,
    leaving only the journey drawn in routeLayer — which is already just the ridden section,
    not the whole of every line it uses. Carriages, station dots and labels, and the disruption
@@ -254,10 +259,18 @@ function clearRouteFocus(){
   setTab(currentTab);                 // rebuilds the map from the tab + the user's toggles
 }
 function applyZoomStyling(){
-  const z = map.getZoom(), ls = lineScale(z), ms = markerScale(z);
+  const z = map.getZoom(), ls = lineScale(z);
   linePolys.forEach(o => o.pl.setStyle({ weight: Math.max(0.5, o.base*ls) }));
   // the black ring shrinks with the dot, or a tiny zoomed-out station would be nothing but ring
-  stationMarkersArr.forEach(o => { o.m.setRadius(Math.max(1, o.base*ms)); o.m.setStyle({ weight: Math.max(1, STATION_RING*ms) }); });
+  const ds = dotScale(z), plainOn = z >= STOP_MIN_ZOOM;
+  stationMarkersArr.forEach(o => {
+    o.m.setRadius(Math.max(1, o.base*ds)); o.m.setStyle({ weight: Math.max(1, STATION_RING*ds) });
+    // a plain stop leaves the layer rather than going transparent: a transparent canvas marker still takes clicks
+    if(o.group && !o.ix){
+      const on = o.group.hasLayer(o.m);
+      if(plainOn && !on) o.group.addLayer(o.m); else if(!plainOn && on) o.group.removeLayer(o.m);
+    }
+  });
 }
 map.on('zoomend', applyZoomStyling);
 

@@ -16,7 +16,7 @@ function resolveTheme(pref){ if(pref==='auto'){ const h=new Date().getHours(); r
 function syncThemeColor(actual){
   const atlas = (typeof uiStyle !== 'undefined' && uiStyle === 'atlas');
   const tc = document.querySelector('meta[name="theme-color"]');
-  if(tc) tc.setAttribute('content', atlas ? (actual==='light' ? '#F3F0E9' : '#1E1F22') : (actual==='light' ? '#E9EEF5' : '#070A12'));
+  if(tc) tc.setAttribute('content', atlas ? (actual==='light' ? '#F3F0E9' : '#1B1F2A') : (actual==='light' ? '#E9EEF5' : '#070A12'));
 }
 function applyTheme(pref, syncBase){
   themePref = (pref==='light'||pref==='auto'||pref==='split') ? pref : 'dark';
