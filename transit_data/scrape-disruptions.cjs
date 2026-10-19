@@ -63,6 +63,27 @@ const TR_PHRASES = [
     { en:'trains run normally between $1 and $2', ar:'تسير القطارات بشكل طبيعي بين $1 و$2', fr:'les trains circulent normalement entre $1 et $2' }],
   [/([^\s,]+)\s*[-–]\s*([^\s,]+)\s+arasında\s+ise\s+mekik\s+seferi\s+olarak(?:\s+yapılmaktadır)?/gi,
     { en:'and as a shuttle between $1 and $2', ar:'وبنظام المكوك بين $1 و$2', fr:'et en navette entre $1 et $2' }],
+  /* A line closed for works with a replacement service, as metro.istanbul words it (the T3 notice):
+     "Hat bakım ve ray yenileme çalışmaları nedeniyle hattımız işletmeye kapalıdır. Çalışma süresince
+     İETT’ye ait elektrikli araçlar ile hizmet verilecektir." Neither sentence was in the table, so the
+     notice reached the Announcements panel in Turkish. The leading "Hat" only names the subject (the next
+     clause says "hattımız"), so the reason rule swallows it. "Çalışma süresince" opens its own sentence, so
+     it captures the full stop before it and keeps its capital — the reason rules around it are lowercase
+     because they sit mid-sentence, and nothing else here capitalises a second sentence. */
+  [/^\s*(?:Hat\s+)?bakım\s+ve\s+ray\s+yenileme\s+çalışmaları\s+(?:nedeniyle|sebebiyle)/i,
+    { en:'due to maintenance and track renewal works,', ar:'بسبب أعمال الصيانة وتجديد السكك،',
+      fr:'en raison de travaux d’entretien et de renouvellement des voies,' }],
+  [/ray\s+yenileme\s+çalışma(?:sı|ları)\s+(?:nedeniyle|sebebiyle)/gi,
+    { en:'due to track renewal works,', ar:'بسبب أعمال تجديد السكك،', fr:'en raison de travaux de renouvellement des voies,' }],
+  [/hattımız\s+[İi]şletmeye\s+kapalıdır/gi,
+    { en:'our line is closed to service', ar:'خطنا مغلق أمام الخدمة', fr:'notre ligne est fermée à l’exploitation' }],
+  [/[İi]şletmeye\s+kapalıdır/gi,
+    { en:'is closed to service', ar:'مغلق أمام الخدمة', fr:'est fermé à l’exploitation' }],
+  [/(^\s*|[.!?]\s+)[Çç]alışma\s+süresince/g,
+    { en:'$1For the duration of the works,', ar:'$1خلال فترة الأعمال،', fr:'$1Pendant la durée des travaux,' }],
+  [/([A-Za-zÇĞİÖŞÜçğıöşü]+)['’]\s*y?[ea]\s+ait\s+elektrikli\s+araçlar\s+ile\s+hizmet\s+verilecektir/gi,
+    { en:'service will be provided by $1 electric vehicles', ar:'ستُقدَّم الخدمة بمركبات كهربائية تابعة لـ$1',
+      fr:'le service sera assuré par des véhicules électriques de $1' }],
   // reasons — lowercase so they read correctly mid-sentence (first letter re-capitalised at end)
   [/planlı\s+bakım\s+(?:ve\s+onarım\s+)?çalış(?:ması|maları)?\s*(?:nedeniyle)?/gi,
     { en:'due to planned maintenance,', ar:'بسبب أعمال صيانة مخطّطة،', fr:'en raison de travaux de maintenance programmés,' }],

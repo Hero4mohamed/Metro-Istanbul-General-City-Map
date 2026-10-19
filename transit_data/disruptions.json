@@ -25,6 +25,17 @@
     "messageLang": "en"
   },
   {
+    "id": "t3-al-m-yor",
+    "ref": "T3",
+    "source": "metro.istanbul",
+    "scope": "line",
+    "severity": "major",
+    "title": "Service suspended",
+    "messageTr": "Hat bakım ve ray yenileme çalışmaları nedeniyle hattımız işletmeye kapalıdır. Çalışma süresince İETT’ye ait elektrikli araçlar ile hizmet verilecektir.",
+    "message": "Due to maintenance and track renewal works, our line is closed to service. For the duration of the works, service will be provided by İETT electric vehicles.",
+    "messageLang": "en"
+  },
+  {
     "id": "ferry-3788",
     "mode": "ferry",
     "ref": null,

@@ -234,6 +234,9 @@ const COVERED_ALL = [
   ['Olumsuz hava koşulları nedeniyle seferler geçici süreyle durdurulmuştur.', []],
   ['Kadıköy istasyonu kapalıdır.', ['Kadıköy']],
   ['Seferler normale dönmüştür.', []],
+  // the T3 notice: a line closed for works, with the operator's replacement buses (it shipped in Turkish)
+  ['Hat bakım ve ray yenileme çalışmaları nedeniyle hattımız işletmeye kapalıdır. Çalışma süresince İETT’ye ait elektrikli araçlar ile hizmet verilecektir.',
+   ['T3', 'İETT']],
 ];
 
 test('every rule says what it produces in every language, not only in English', () => {
@@ -342,4 +345,18 @@ test('a partial closure ("normal on one stretch, a shuttle on the other") reads 
   assert.ok(/بين Nurtepe و?Mahmutbey/.test(ar) && /المكوك/.test(ar) && !/işletme|mekik/i.test(ar), 'Arabic: ' + ar);
   // and the coverage check now accepts it as translated rather than falling back to the Turkish
   assert.strictEqual(bestEffortTranslation(src, ['Nurtepe', 'Mahmutbey', 'Kağıthane', 'M7'], 'en').lang, 'en');
+});
+
+test('a line closed for works with replacement buses (the T3 notice) is translated, with a capital on its second sentence', () => {
+  const { translateTR } = shippedTranslator();
+  const src = 'Hat bakım ve ray yenileme çalışmaları nedeniyle hattımız işletmeye kapalıdır. Çalışma süresince İETT’ye ait elektrikli araçlar ile hizmet verilecektir.';
+  const en = translateTR(src, 'en');
+  assert.strictEqual(en, 'Due to maintenance and track renewal works, our line is closed to service. ' +
+                         'For the duration of the works, service will be provided by İETT electric vehicles.');
+  const fr = translateTR(src, 'fr');
+  assert.ok(/^En raison de travaux d’entretien et de renouvellement des voies, notre ligne est fermée à l’exploitation\. Pendant la durée des travaux, le service sera assuré par des véhicules électriques de İETT\.$/.test(fr), 'French: ' + fr);
+  const ar = translateTR(src, 'ar');
+  assert.ok(/خطنا مغلق أمام الخدمة/.test(ar) && /خلال فترة الأعمال/.test(ar) && !/[çğışöü]/i.test(ar.replace(/İETT/g, '')), 'Arabic: ' + ar);
+  // the rules sit above the generic "works" rule: with the order wrong a stem is eaten and a suffix stranded
+  assert.ok(!/çalış|nedeniyle|kapalı|hizmet/i.test(en + fr), 'Turkish left behind: ' + en + ' / ' + fr);
 });
