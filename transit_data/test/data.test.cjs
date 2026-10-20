@@ -153,7 +153,8 @@ test('no disruption describes a zero-length segment', () => {
 });
 
 test('disruption scope and severity are values the renderer understands', () => {
-  const SCOPES = new Set(['line', 'segment', 'stations']);
+  // 'note' is a notice that is not about a stretch of one rail line: a ferry operator's timetable announcement
+  const SCOPES = new Set(['line', 'segment', 'stations', 'note']);
   const SEVS = new Set(['major', 'partial', 'minor']);
   const bad = [];
   for (const d of H.json('disruptions.json')) {

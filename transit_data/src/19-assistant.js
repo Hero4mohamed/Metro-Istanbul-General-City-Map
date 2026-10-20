@@ -710,8 +710,11 @@ function transportTool(name, args){
                accessibility_known: !!acc };
     }
     if(name === "service_alerts"){
-      const live = activeDisruptions();
-      return { count:live.length,
+      /* Bus notices come in their dozens (a bad day has a hundred) and would swamp the model's context, so a
+         general question gets rail and ferry notices plus a count of the bus ones; asking about a BUS LINE is
+         what returns that line's own notices (see line_info). */
+      const all = activeDisruptions(), live = all.filter(d => d.mode !== 'bus');
+      return { count:live.length, bus_notices:all.length - live.length,
                alerts:live.map(d => ({ line:d.ref, scope:d.scope, severity:d.severity,
                  title:d.title, detail:d.message, until:d.until || null })) };
     }
@@ -831,7 +834,8 @@ function transportTool(name, args){
        /(aksakl|arıza|ariza|gecikme|kapalı|kapali|çalışıyor mu|calisiyor mu|sefer var m|sorun var m)/i.test(q)){
       const all = activeDisruptions();
       const ref = findRef(q);
-      const mine = ref ? all.filter(d => String(d.ref).toUpperCase() === ref.toUpperCase()) : all;
+      // a question about "disruptions" in general is about rail and ferries; the bus notices are many, and belong to the line asked about
+      const mine = ref ? all.filter(d => String(d.ref).toUpperCase() === ref.toUpperCase()) : all.filter(d => d.mode !== 'bus');
       if(!mine.length){
         aiSay(svgEsc(t(ref ? "aiAlertsLineOk" : "aiAlertsNone")) +
               (ref ? ' <b>' + svgEsc(ref) + '</b>' : ''));

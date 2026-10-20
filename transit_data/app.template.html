@@ -860,6 +860,27 @@
   .ann-soon{background:#2FBF71 !important;}
   .ann-sub{font-size:var(--fs-5);font-weight:800;letter-spacing:.8px;text-transform:uppercase;color:var(--dim);margin:10px 2px 2px;display:flex;align-items:center;gap:5px;}
   .ann-note{font-size:var(--fs-4);color:var(--dim);margin:3px 2px 0;font-style:italic;line-height:1.5;}
+  /* bus and ferry notices: a collapsed section, with the line chips of each group on one row */
+  .ann-sec{display:flex;align-items:center;justify-content:space-between;width:100%;margin:8px 0 2px;padding:7px 9px;border-radius:10px;border:1px solid var(--stroke);background:var(--surface);
+    color:var(--text);font:inherit;font-size:var(--fs-5);font-weight:800;letter-spacing:.8px;text-transform:uppercase;cursor:pointer;}
+  .ann-sec:hover{background:var(--surface-2);}
+  .ann-caret::after{content:"▾";display:inline-block;transition:transform .2s var(--ease);margin-left:8px;color:var(--muted);}
+  .ann-sec[aria-expanded="false"] .ann-caret::after{transform:rotate(-90deg);}
+  .ann-busbox{display:flex;flex-direction:column;gap:6px;}
+  .ann-busbox[hidden]{display:none;}
+  .ann-chips{display:flex;flex-wrap:wrap;gap:4px;margin:2px 0 4px;}
+  .ann-chip{border:1px solid rgba(var(--gold-rgb),.5);background:rgba(var(--gold-rgb),.12);color:var(--gold);font:inherit;font-family:var(--mono);font-weight:700;font-size:var(--fs-5);
+    padding:2px 7px;border-radius:7px;cursor:pointer;}
+  .ann-chip:hover{background:rgba(var(--gold-rgb),.25);}
+  .ann-chip small{margin-left:3px;color:var(--muted);font-weight:600;}
+  .ann-more-n{font-size:var(--fs-5);color:var(--dim);align-self:center;padding:0 3px;}
+  .ann-bus{cursor:default;}
+  .ann-bus .ann-msg{overflow-wrap:anywhere;}
+  .ann-moreb{align-self:flex-start;border:none;background:none;color:var(--accent);font:inherit;font-size:var(--fs-6);font-weight:700;cursor:pointer;padding:3px 2px;}
+  .ann-moreb:hover{text-decoration:underline;}
+  .bus-row .bn-warn{flex:none;color:var(--warn-ink);font-size:12px;}
+  .bn-item{margin:0 0 6px;padding:7px 9px;border-radius:9px;background:var(--surface);border:1px solid var(--stroke);border-left:3px solid var(--muted);font-size:var(--fs-7);line-height:1.45;color:var(--text);}
+  .bn-hint{margin-top:3px;font-size:var(--fs-6);color:var(--muted);}
   
   /* map warning markers for disruptions — clean static signage plate */
   .warn-icon span{display:flex;align-items:center;justify-content:center;width:21px;height:21px;border-radius:7px;
@@ -1381,6 +1402,8 @@
   .rw{display:flex;align-items:flex-start;gap:7px;padding:7px 10px;border-radius:11px;font-size:var(--fs-8);font-weight:600;line-height:1.45;}
   .rw.last{background:rgba(var(--warn-rgb),.1);border:1px solid rgba(var(--warn-rgb),.4);color:#F5C36A;}
   .rw.closed{background:rgba(var(--danger-rgb),.1);border:1px solid rgba(var(--danger-rgb),.45);color:var(--danger-ink);}
+  .rw.notice{background:rgba(var(--warn-rgb),.1);border:1px solid rgba(var(--warn-rgb),.4);color:#F5C36A;}
+  body.light .rw.notice{color:var(--warn-ink);}
   body.light .rw.last{color:var(--warn-ink);}
   
   .rf-ico{font-size:14px;} .rf-main{font-family:var(--mono);font-weight:800;font-size:14px;color:var(--text);}

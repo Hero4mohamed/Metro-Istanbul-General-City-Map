@@ -234,6 +234,9 @@ const COVERED_ALL = [
   ['Olumsuz hava koşulları nedeniyle seferler geçici süreyle durdurulmuştur.', []],
   ['Kadıköy istasyonu kapalıdır.', ['Kadıköy']],
   ['Seferler normale dönmüştür.', []],
+  // the T3 notice: a line closed for works, with the operator's replacement buses (it shipped in Turkish)
+  ['Hat bakım ve ray yenileme çalışmaları nedeniyle hattımız işletmeye kapalıdır. Çalışma süresince İETT’ye ait elektrikli araçlar ile hizmet verilecektir.',
+   ['T3', 'İETT']],
 ];
 
 test('every rule says what it produces in every language, not only in English', () => {
@@ -327,4 +330,33 @@ test('an Arabic conjunction joined to a station name is not read as untranslated
   const share = turkishShare('تسير الرحلات بين Çağlayan وMahmutbey.', ['Çağlayan', 'Mahmutbey'], 'ar');
   assert.strictEqual(share, 0,
     'a fused conjunction+name token was counted against translation coverage (share ' + share + ')');
+});
+
+test('a partial closure ("normal on one stretch, a shuttle on the other") reads as a sentence, in every language', () => {
+  const { translateTR, bestEffortTranslation } = shippedTranslator();
+  // the M7 notice as metro.istanbul worded it, which the rules used to turn into "trains Nurtepe-Mahmutbey between normal işletme döngüsünde"
+  const src = 'Teknik bir arıza nedeniyle seferler Nurtepe-Mahmutbey arasında normal işletme döngüsünde, Nurtepe-Kağıthane arasında ise mekik seferi olarak yapılmaktadır.';
+  const en = translateTR(src, 'en');
+  assert.ok(/trains run normally between Nurtepe and Mahmutbey/.test(en) && /and as a shuttle between Nurtepe and Kağıthane/.test(en), 'English: ' + en);
+  assert.ok(!/işletme|döngü|mekik|yapılmaktadır/i.test(en), 'English still holds Turkish: ' + en);
+  const fr = translateTR(src, 'fr');
+  assert.ok(/les trains circulent normalement entre Nurtepe et Mahmutbey/.test(fr) && /en navette entre Nurtepe et Kağıthane/.test(fr), 'French: ' + fr);
+  const ar = translateTR(src, 'ar');
+  assert.ok(/بين Nurtepe و?Mahmutbey/.test(ar) && /المكوك/.test(ar) && !/işletme|mekik/i.test(ar), 'Arabic: ' + ar);
+  // and the coverage check now accepts it as translated rather than falling back to the Turkish
+  assert.strictEqual(bestEffortTranslation(src, ['Nurtepe', 'Mahmutbey', 'Kağıthane', 'M7'], 'en').lang, 'en');
+});
+
+test('a line closed for works with replacement buses (the T3 notice) is translated, with a capital on its second sentence', () => {
+  const { translateTR } = shippedTranslator();
+  const src = 'Hat bakım ve ray yenileme çalışmaları nedeniyle hattımız işletmeye kapalıdır. Çalışma süresince İETT’ye ait elektrikli araçlar ile hizmet verilecektir.';
+  const en = translateTR(src, 'en');
+  assert.strictEqual(en, 'Due to maintenance and track renewal works, our line is closed to service. ' +
+                         'For the duration of the works, service will be provided by İETT electric vehicles.');
+  const fr = translateTR(src, 'fr');
+  assert.ok(/^En raison de travaux d’entretien et de renouvellement des voies, notre ligne est fermée à l’exploitation\. Pendant la durée des travaux, le service sera assuré par des véhicules électriques de İETT\.$/.test(fr), 'French: ' + fr);
+  const ar = translateTR(src, 'ar');
+  assert.ok(/خطنا مغلق أمام الخدمة/.test(ar) && /خلال فترة الأعمال/.test(ar) && !/[çğışöü]/i.test(ar.replace(/İETT/g, '')), 'Arabic: ' + ar);
+  // the rules sit above the generic "works" rule: with the order wrong a stem is eaten and a suffix stranded
+  assert.ok(!/çalış|nedeniyle|kapalı|hizmet/i.test(en + fr), 'Turkish left behind: ' + en + ' / ' + fr);
 });

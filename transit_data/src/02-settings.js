@@ -540,7 +540,13 @@ function renderRouteWarnings(it){
   el.innerHTML='';
   const seen=new Set(); let html='';
   (it.steps||[]).forEach(s=>{
-    if(s.type!=='ride' || s.bus || seen.has(s.ref)) return;
+    if(s.type!=='ride' || seen.has(s.ref)) return;
+    // buses and ferries have notices of their own: say so on the leg they affect, in the trip, where it is read
+    const ns = noticesForRide(s);
+    if(ns.length){
+      html += `<div class="rw notice">⚠ <span><b>${svgEsc(s.ref)}</b> ${svgEsc(disMsg(ns[0]))}${ns.length>1?` <i>(+${ns.length-1})</i>`:''}</span></div>`;
+    }
+    if(s.bus) return;
     seen.add(s.ref);
     const c=lineClosedNow(s.ref);
     if(c){
@@ -675,6 +681,15 @@ function disTitle(d){ const k='ttl:'+(d.title||''); return I18N[lang][k]!==undef
    another, and each reader is owed the honest answer for the language they are reading. */
 function disText(d){
   if(!d) return { text:'', lang:'en' };
+  /* A bus notice that was read into structure (a verified detour, a delay, a cancelled departure) is written
+     from a template in the reader's own language, Turkish included: its words are ours, its names are the
+     operator's. One that was NOT read stays the operator's own sentence, flagged as Turkish below. */
+  if(d.tpl){ const m = noticeMessage(d, lang); if(m) return { text:m, lang:lang }; }
+  /* A bus notice that was NOT read into structure is shown as İETT wrote it. It must not go through the Turkish
+     translator below: the feed is in capitals, the translator takes a capitalised word for a proper noun and
+     leaves it out of its count, so an untranslated sentence in capitals scores as fully translated and comes back
+     as the half-English hybrid the coverage check exists to prevent. */
+  if(d.mode === 'bus') return { text:d.messageTr || d.message || '', lang:'tr' };
   if(lang === 'tr') return { text:d.messageTr || d.message || '', lang:'tr' };
   if(!d._i18n) d._i18n = {};
   if(d._i18n[lang]) return d._i18n[lang];

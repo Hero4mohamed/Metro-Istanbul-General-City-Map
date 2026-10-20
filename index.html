@@ -6,7 +6,7 @@
 <!-- Substituted by build.cjs, which hashes the inline script from the final bytes. Pages
      cannot set headers, so this ships as meta; frame-ancestors and report-uri are
      unavailable that way. -->
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-IHZMCBlFSLcL5H+2GIEdLy2/BYKf/An1TqsaPDB9e6c=' https://unpkg.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://unpkg.com; font-src https://fonts.gstatic.com data:; img-src 'self' data: blob: https://server.arcgisonline.com; connect-src 'self' https://server.arcgisonline.com https://photon.komoot.io https://overpass-api.de https://api.ibb.gov.tr https://api.open-meteo.com https://routing.openstreetmap.de https://api.anthropic.com; worker-src 'self'; manifest-src 'self'; base-uri 'self'; form-action 'none'; object-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-L+Iq99coCQOGXdmZWFpiRjc4FDYPLktR4CV6Pi9UrOI=' https://unpkg.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://unpkg.com; font-src https://fonts.gstatic.com data:; img-src 'self' data: blob: https://server.arcgisonline.com; connect-src 'self' https://server.arcgisonline.com https://photon.komoot.io https://overpass-api.de https://api.ibb.gov.tr https://api.open-meteo.com https://routing.openstreetmap.de https://api.anthropic.com; worker-src 'self'; manifest-src 'self'; base-uri 'self'; form-action 'none'; object-src 'none'">
 <title>İSTANBUL RAY-NET · Live Rail Network Map &amp; Simulation</title>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
       integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
@@ -860,6 +860,27 @@
   .ann-soon{background:#2FBF71 !important;}
   .ann-sub{font-size:var(--fs-5);font-weight:800;letter-spacing:.8px;text-transform:uppercase;color:var(--dim);margin:10px 2px 2px;display:flex;align-items:center;gap:5px;}
   .ann-note{font-size:var(--fs-4);color:var(--dim);margin:3px 2px 0;font-style:italic;line-height:1.5;}
+  /* bus and ferry notices: a collapsed section, with the line chips of each group on one row */
+  .ann-sec{display:flex;align-items:center;justify-content:space-between;width:100%;margin:8px 0 2px;padding:7px 9px;border-radius:10px;border:1px solid var(--stroke);background:var(--surface);
+    color:var(--text);font:inherit;font-size:var(--fs-5);font-weight:800;letter-spacing:.8px;text-transform:uppercase;cursor:pointer;}
+  .ann-sec:hover{background:var(--surface-2);}
+  .ann-caret::after{content:"▾";display:inline-block;transition:transform .2s var(--ease);margin-left:8px;color:var(--muted);}
+  .ann-sec[aria-expanded="false"] .ann-caret::after{transform:rotate(-90deg);}
+  .ann-busbox{display:flex;flex-direction:column;gap:6px;}
+  .ann-busbox[hidden]{display:none;}
+  .ann-chips{display:flex;flex-wrap:wrap;gap:4px;margin:2px 0 4px;}
+  .ann-chip{border:1px solid rgba(var(--gold-rgb),.5);background:rgba(var(--gold-rgb),.12);color:var(--gold);font:inherit;font-family:var(--mono);font-weight:700;font-size:var(--fs-5);
+    padding:2px 7px;border-radius:7px;cursor:pointer;}
+  .ann-chip:hover{background:rgba(var(--gold-rgb),.25);}
+  .ann-chip small{margin-left:3px;color:var(--muted);font-weight:600;}
+  .ann-more-n{font-size:var(--fs-5);color:var(--dim);align-self:center;padding:0 3px;}
+  .ann-bus{cursor:default;}
+  .ann-bus .ann-msg{overflow-wrap:anywhere;}
+  .ann-moreb{align-self:flex-start;border:none;background:none;color:var(--accent);font:inherit;font-size:var(--fs-6);font-weight:700;cursor:pointer;padding:3px 2px;}
+  .ann-moreb:hover{text-decoration:underline;}
+  .bus-row .bn-warn{flex:none;color:var(--warn-ink);font-size:12px;}
+  .bn-item{margin:0 0 6px;padding:7px 9px;border-radius:9px;background:var(--surface);border:1px solid var(--stroke);border-left:3px solid var(--muted);font-size:var(--fs-7);line-height:1.45;color:var(--text);}
+  .bn-hint{margin-top:3px;font-size:var(--fs-6);color:var(--muted);}
   
   /* map warning markers for disruptions — clean static signage plate */
   .warn-icon span{display:flex;align-items:center;justify-content:center;width:21px;height:21px;border-radius:7px;
@@ -1381,6 +1402,8 @@
   .rw{display:flex;align-items:flex-start;gap:7px;padding:7px 10px;border-radius:11px;font-size:var(--fs-8);font-weight:600;line-height:1.45;}
   .rw.last{background:rgba(var(--warn-rgb),.1);border:1px solid rgba(var(--warn-rgb),.4);color:#F5C36A;}
   .rw.closed{background:rgba(var(--danger-rgb),.1);border:1px solid rgba(var(--danger-rgb),.45);color:var(--danger-ink);}
+  .rw.notice{background:rgba(var(--warn-rgb),.1);border:1px solid rgba(var(--warn-rgb),.4);color:#F5C36A;}
+  body.light .rw.notice{color:var(--warn-ink);}
   body.light .rw.last{color:var(--warn-ink);}
   
   .rf-ico{font-size:14px;} .rf-main{font-family:var(--mono);font-weight:800;font-size:14px;color:var(--text);}
@@ -2006,7 +2029,7 @@
 
    The report carries the fault, the build, the city, the language and the browser. It never
    carries location, saved places, trip history or the API key. ===== */
-const BUILD = "20261018123727";
+const BUILD = "20261019185803";
 const DIAG_MAX = 20;
 let DIAG = [];
 try { DIAG = JSON.parse(localStorage.getItem("irn_diag") || "[]"); } catch (e) { DIAG = []; }
@@ -2191,6 +2214,18 @@ const I18N = {
     icBook:"Book & live times · TCDD ↗",
     sevMajor:"Major", sevPartial:"Partial", sevMinor:"Minor",
     "ttl:Service suspended":"Service suspended", "ttl:Section affected":"Section affected", "ttl:Service notice":"Service notice",
+    annRailSub:"Rail", annBusSub:"Bus notices", annFerrySub:"Ferry notices", annMore:"Show {n} more", annLess:"Show fewer",
+    annFootExtra:"Bus notices are read live from İETT; ferry notices come from Şehir Hatları.",
+    "ttl:Detour":"Detour", "ttl:Delays":"Delays", "ttl:Terminal change":"Terminal change", "ttl:Trips cancelled":"Trips cancelled",
+    "ttl:Timetable change":"Timetable change", "ttl:Extra trips":"Extra trips", "ttl:Ferry notice":"Ferry notice", "ttl:Seasonal timetable":"Seasonal timetable",
+    nDetour:"Buses leave the route at {a} and rejoin it at {b}.", nRoad:"{road} is closed.", nRoadWhy:"{road} is closed ({cause}).", nWhyOnly:"Cause: {cause}.",
+    nDelay:"Departures are running {m} minutes or more late.", nDelayFrom:"Departures from {from} are running {m} minutes or more late.",
+    nDelayBoth:"Both directions are running {m} minutes or more late.",
+    nShort:"Buses end their trips at {a}.", nShortB:"Buses end their trips at {a} and start again from {b}.",
+    nTrips:"{n} departure(s) cancelled today: {list}.", nMore:"+{n} more", nTripsSummary:"{n} departures are cancelled today on {k} lines. Open a line for the times.",
+    nCause_match:"a match", nCause_traffic:"heavy traffic", nCause_works:"road works", nCause_utility:"utility works", nCause_underpass:"underpass works",
+    nCause_asphalt:"asphalt works", nCause_slippery:"slippery road", nCause_parking:"parked vehicles", nCause_event:"an event",
+    busNotices:"Notices for this line", detourDrawn:"The detour is drawn on the map as a dashed amber line.",
     serviceHours:"Service hours", every:"every", hours24:"24 hours", interchange:"Interchange", transferWord:"transfer",
     schedDep:"Scheduled departures", official:"OFFICIAL", schedLoading:"Loading official timetable…",
     schedNone:"No more departures today.", firstDep:"first", lastDep:"last", alternatives:"Alternatives",
@@ -2366,6 +2401,18 @@ const I18N = {
     icBook:"Bilet & canlı saatler · TCDD ↗",
     sevMajor:"Büyük", sevPartial:"Kısmi", sevMinor:"Hafif",
     "ttl:Service suspended":"Seferler durduruldu", "ttl:Section affected":"Etkilenen kesim", "ttl:Service notice":"Servis bildirimi",
+    annRailSub:"Raylı sistem", annBusSub:"Otobüs duyuruları", annFerrySub:"Vapur duyuruları", annMore:"{n} tane daha göster", annLess:"Daha az göster",
+    annFootExtra:"Otobüs duyuruları İETT'den canlı okunur; vapur duyuruları Şehir Hatları'ndan alınır.",
+    "ttl:Detour":"Güzergâh değişikliği", "ttl:Delays":"Gecikmeler", "ttl:Terminal change":"Son durak değişikliği", "ttl:Trips cancelled":"İptal edilen seferler",
+    "ttl:Timetable change":"Sefer saati değişikliği", "ttl:Extra trips":"Ek seferler", "ttl:Ferry notice":"Vapur duyurusu", "ttl:Seasonal timetable":"Mevsimlik tarife",
+    nDetour:"Araçlar güzergâhtan {a} durağında çıkıp {b} durağında güzergâha girer.", nRoad:"{road} kapalı.", nRoadWhy:"{road} kapalı ({cause}).", nWhyOnly:"Neden: {cause}.",
+    nDelay:"Seferler {m} dakika veya daha fazla gecikmeli.", nDelayFrom:"{from} kalkışlı seferler {m} dakika veya daha fazla gecikmeli.",
+    nDelayBoth:"Her iki yönde seferler {m} dakika veya daha fazla gecikmeli.",
+    nShort:"Araçlar seferlerini {a} durağında bitirir.", nShortB:"Araçlar seferlerini {a} durağında bitirir, {b} durağından yeniden başlar.",
+    nTrips:"Bugün iptal edilen {n} sefer: {list}.", nMore:"+{n} sefer daha", nTripsSummary:"Bugün {k} hatta toplam {n} sefer iptal edildi. Saatler için hatta dokunun.",
+    nCause_match:"maç", nCause_traffic:"yoğun trafik", nCause_works:"yol çalışması", nCause_utility:"altyapı çalışması", nCause_underpass:"altgeçit çalışması",
+    nCause_asphalt:"asfalt çalışması", nCause_slippery:"kaygan zemin", nCause_parking:"park halindeki araçlar", nCause_event:"etkinlik",
+    busNotices:"Bu hat için duyurular", detourDrawn:"Güzergâh değişikliği haritada kesikli turuncu çizgiyle gösterilir.",
     serviceHours:"Servis saatleri", every:"her", hours24:"24 saat", interchange:"Aktarma noktası", transferWord:"aktarma",
     schedDep:"Planlı kalkışlar", official:"RESMÎ", schedLoading:"Resmî tarife yükleniyor…",
     schedNone:"Bugün başka sefer yok.", firstDep:"ilk", lastDep:"son", alternatives:"Alternatifler",
@@ -2491,6 +2538,18 @@ const I18N = {
     icBook:"الحجز والمواعيد المباشرة · TCDD ↗",
     sevMajor:"كبير", sevPartial:"جزئي", sevMinor:"طفيف",
     "ttl:Service suspended":"الخدمة متوقفة", "ttl:Section affected":"قسم متأثر", "ttl:Service notice":"إشعار خدمة",
+    annRailSub:"السكك الحديدية", annBusSub:"إشعارات الحافلات", annFerrySub:"إشعارات العبّارات", annMore:"عرض {n} إضافية", annLess:"عرض أقل",
+    annFootExtra:"إشعارات الحافلات تُقرأ مباشرة من İETT، وإشعارات العبّارات من Şehir Hatları.",
+    "ttl:Detour":"تحويل المسار", "ttl:Delays":"تأخيرات", "ttl:Terminal change":"تغيير المحطة الأخيرة", "ttl:Trips cancelled":"رحلات ملغاة",
+    "ttl:Timetable change":"تغيير في الجدول", "ttl:Extra trips":"رحلات إضافية", "ttl:Ferry notice":"إشعار عبّارات", "ttl:Seasonal timetable":"جدول موسمي",
+    nDetour:"تغادر الحافلات المسار عند {a} وتعود إليه عند {b}.", nRoad:"{road} مغلق.", nRoadWhy:"{road} مغلق ({cause}).", nWhyOnly:"السبب: {cause}.",
+    nDelay:"الرحلات متأخرة {m} دقيقة أو أكثر.", nDelayFrom:"الرحلات المنطلقة من {from} متأخرة {m} دقيقة أو أكثر.",
+    nDelayBoth:"الرحلات في الاتجاهين متأخرة {m} دقيقة أو أكثر.",
+    nShort:"تنهي الحافلات رحلاتها عند {a}.", nShortB:"تنهي الحافلات رحلاتها عند {a} وتبدأ من جديد من {b}.",
+    nTrips:"رحلات ملغاة اليوم ({n}): {list}.", nMore:"+{n} أخرى", nTripsSummary:"أُلغيت اليوم {n} رحلة على {k} خطًا. افتح الخط لمعرفة الأوقات.",
+    nCause_match:"مباراة", nCause_traffic:"ازدحام مروري شديد", nCause_works:"أعمال طرق", nCause_utility:"أعمال مرافق", nCause_underpass:"أعمال النفق",
+    nCause_asphalt:"أعمال سفلتة", nCause_slippery:"طريق زلق", nCause_parking:"مركبات متوقفة", nCause_event:"فعالية",
+    busNotices:"إشعارات هذا الخط", detourDrawn:"يظهر التحويل على الخريطة كخط برتقالي متقطع.",
     serviceHours:"ساعات الخدمة", every:"كل", hours24:"على مدار الساعة", interchange:"محطة تحويل", transferWord:"تحويل",
     schedDep:"المغادرات المجدولة", official:"رسمي", schedLoading:"جارٍ تحميل الجدول الرسمي…",
     schedNone:"لا مغادرات أخرى اليوم.", firstDep:"الأولى", lastDep:"الأخيرة", alternatives:"البدائل",
@@ -2678,6 +2737,18 @@ const I18N = {
     icBook:"Réserver &amp; horaires en direct · TCDD ↗",
     sevMajor:"Majeure", sevPartial:"Partielle", sevMinor:"Mineure",
     "ttl:Service suspended":"Service suspendu", "ttl:Section affected":"Section affectée", "ttl:Service notice":"Avis de service",
+    annRailSub:"Rail", annBusSub:"Avis bus", annFerrySub:"Avis bateaux", annMore:"Afficher {n} de plus", annLess:"Afficher moins",
+    annFootExtra:"Les avis bus sont lus en direct auprès d’İETT ; les avis bateaux viennent de Şehir Hatları.",
+    "ttl:Detour":"Déviation", "ttl:Delays":"Retards", "ttl:Terminal change":"Changement de terminus", "ttl:Trips cancelled":"Départs supprimés",
+    "ttl:Timetable change":"Changement d’horaires", "ttl:Extra trips":"Départs supplémentaires", "ttl:Ferry notice":"Avis bateaux", "ttl:Seasonal timetable":"Horaires saisonniers",
+    nDetour:"Les bus quittent l’itinéraire à {a} et le rejoignent à {b}.", nRoad:"Route fermée : {road}.", nRoadWhy:"Route fermée : {road} ({cause}).", nWhyOnly:"Cause : {cause}.",
+    nDelay:"Les départs ont {m} minutes de retard ou plus.", nDelayFrom:"Les départs de {from} ont {m} minutes de retard ou plus.",
+    nDelayBoth:"Les deux sens ont {m} minutes de retard ou plus.",
+    nShort:"Les bus terminent leur trajet à {a}.", nShortB:"Les bus terminent leur trajet à {a} et repartent de {b}.",
+    nTrips:"Départs supprimés aujourd’hui ({n}) : {list}.", nMore:"+{n} autres", nTripsSummary:"{n} départs sont supprimés aujourd’hui sur {k} lignes. Ouvrez une ligne pour les horaires.",
+    nCause_match:"un match", nCause_traffic:"forte circulation", nCause_works:"travaux routiers", nCause_utility:"travaux de réseaux", nCause_underpass:"travaux de passage inférieur",
+    nCause_asphalt:"travaux d’asphaltage", nCause_slippery:"chaussée glissante", nCause_parking:"véhicules stationnés", nCause_event:"un événement",
+    busNotices:"Avis pour cette ligne", detourDrawn:"La déviation est tracée sur la carte en pointillés orange.",
     serviceHours:"Horaires de service", every:"toutes les", hours24:"24h/24", interchange:"Pôle d'échange", transferWord:"correspondance",
     schedDep:"Départs programmés", official:"OFFICIEL", schedLoading:"Chargement des horaires officiels…",
     schedNone:"Plus de départs aujourd'hui.", firstDep:"premier", lastDep:"dernier", alternatives:"Alternatives",
@@ -3385,7 +3456,13 @@ function renderRouteWarnings(it){
   el.innerHTML='';
   const seen=new Set(); let html='';
   (it.steps||[]).forEach(s=>{
-    if(s.type!=='ride' || s.bus || seen.has(s.ref)) return;
+    if(s.type!=='ride' || seen.has(s.ref)) return;
+    // buses and ferries have notices of their own: say so on the leg they affect, in the trip, where it is read
+    const ns = noticesForRide(s);
+    if(ns.length){
+      html += `<div class="rw notice">⚠ <span><b>${svgEsc(s.ref)}</b> ${svgEsc(disMsg(ns[0]))}${ns.length>1?` <i>(+${ns.length-1})</i>`:''}</span></div>`;
+    }
+    if(s.bus) return;
     seen.add(s.ref);
     const c=lineClosedNow(s.ref);
     if(c){
@@ -3520,6 +3597,36 @@ const TR_PHRASES = [
     { en:'with a transfer at $1,', ar:'مع تحويل في $1،', fr:'avec correspondance à $1,' }],
   [/([^\s,]+)\s*[-–]\s*([^\s,]+)\s+istasyonları\s+arasında/gi,
     { en:'between $1 and $2', ar:'بين $1 و$2', fr:'entre $1 et $2' }],
+  /* A partial closure is announced as two clauses — normal running on one stretch, a shuttle on the other:
+     "seferler A-B arasında normal işletme döngüsünde, C-D arasında ise mekik seferi olarak yapılmaktadır".
+     Neither clause names the stations as "istasyonları", so the rules above missed them, and the word-level map
+     turned the sentence into "trains Nurtepe-Mahmutbey between normal işletme döngüsünde …" — a real M7 alert
+     that sat in the Announcements panel like that. Each clause is spelled out, in the reader's own word order. */
+  [/(?:seferler(?:imiz)?\s+)?([^\s,]+)\s*[-–]\s*([^\s,]+)\s+arasında\s+normal\s+işletme\s+döngüsünde/gi,
+    { en:'trains run normally between $1 and $2', ar:'تسير القطارات بشكل طبيعي بين $1 و$2', fr:'les trains circulent normalement entre $1 et $2' }],
+  [/([^\s,]+)\s*[-–]\s*([^\s,]+)\s+arasında\s+ise\s+mekik\s+seferi\s+olarak(?:\s+yapılmaktadır)?/gi,
+    { en:'and as a shuttle between $1 and $2', ar:'وبنظام المكوك بين $1 و$2', fr:'et en navette entre $1 et $2' }],
+  /* A line closed for works with a replacement service, as metro.istanbul words it (the T3 notice):
+     "Hat bakım ve ray yenileme çalışmaları nedeniyle hattımız işletmeye kapalıdır. Çalışma süresince
+     İETT’ye ait elektrikli araçlar ile hizmet verilecektir." Neither sentence was in the table, so the
+     notice reached the Announcements panel in Turkish. The leading "Hat" only names the subject (the next
+     clause says "hattımız"), so the reason rule swallows it. "Çalışma süresince" opens its own sentence, so
+     it captures the full stop before it and keeps its capital — the reason rules around it are lowercase
+     because they sit mid-sentence, and nothing else here capitalises a second sentence. */
+  [/^\s*(?:Hat\s+)?bakım\s+ve\s+ray\s+yenileme\s+çalışmaları\s+(?:nedeniyle|sebebiyle)/i,
+    { en:'due to maintenance and track renewal works,', ar:'بسبب أعمال الصيانة وتجديد السكك،',
+      fr:'en raison de travaux d’entretien et de renouvellement des voies,' }],
+  [/ray\s+yenileme\s+çalışma(?:sı|ları)\s+(?:nedeniyle|sebebiyle)/gi,
+    { en:'due to track renewal works,', ar:'بسبب أعمال تجديد السكك،', fr:'en raison de travaux de renouvellement des voies,' }],
+  [/hattımız\s+[İi]şletmeye\s+kapalıdır/gi,
+    { en:'our line is closed to service', ar:'خطنا مغلق أمام الخدمة', fr:'notre ligne est fermée à l’exploitation' }],
+  [/[İi]şletmeye\s+kapalıdır/gi,
+    { en:'is closed to service', ar:'مغلق أمام الخدمة', fr:'est fermé à l’exploitation' }],
+  [/(^\s*|[.!?]\s+)[Çç]alışma\s+süresince/g,
+    { en:'$1For the duration of the works,', ar:'$1خلال فترة الأعمال،', fr:'$1Pendant la durée des travaux,' }],
+  [/([A-Za-zÇĞİÖŞÜçğıöşü]+)['’]\s*y?[ea]\s+ait\s+elektrikli\s+araçlar\s+ile\s+hizmet\s+verilecektir/gi,
+    { en:'service will be provided by $1 electric vehicles', ar:'ستُقدَّم الخدمة بمركبات كهربائية تابعة لـ$1',
+      fr:'le service sera assuré par des véhicules électriques de $1' }],
   // reasons — lowercase so they read correctly mid-sentence (first letter re-capitalised at end)
   [/planlı\s+bakım\s+(?:ve\s+onarım\s+)?çalış(?:ması|maları)?\s*(?:nedeniyle)?/gi,
     { en:'due to planned maintenance,', ar:'بسبب أعمال صيانة مخطّطة،', fr:'en raison de travaux de maintenance programmés,' }],
@@ -3881,6 +3988,15 @@ function disTitle(d){ const k='ttl:'+(d.title||''); return I18N[lang][k]!==undef
    another, and each reader is owed the honest answer for the language they are reading. */
 function disText(d){
   if(!d) return { text:'', lang:'en' };
+  /* A bus notice that was read into structure (a verified detour, a delay, a cancelled departure) is written
+     from a template in the reader's own language, Turkish included: its words are ours, its names are the
+     operator's. One that was NOT read stays the operator's own sentence, flagged as Turkish below. */
+  if(d.tpl){ const m = noticeMessage(d, lang); if(m) return { text:m, lang:lang }; }
+  /* A bus notice that was NOT read into structure is shown as İETT wrote it. It must not go through the Turkish
+     translator below: the feed is in capitals, the translator takes a capitalised word for a proper noun and
+     leaves it out of its count, so an untranslated sentence in capitals scores as fully translated and comes back
+     as the half-English hybrid the coverage check exists to prevent. */
+  if(d.mode === 'bus') return { text:d.messageTr || d.message || '', lang:'tr' };
   if(lang === 'tr') return { text:d.messageTr || d.message || '', lang:'tr' };
   if(!d._i18n) d._i18n = {};
   if(d._i18n[lang]) return d._i18n[lang];
@@ -3939,7 +4055,8 @@ const BUS_ALL = {"istanbul":[{"ref":"1","from":"Kirazlıtepe","to":"Acıbadem/Ka
 const BUS_OPERATOR = CITY.busOperator || '';      // İETT, UlaşımPark, …
 const BUS_DIR = HAS.bus ? (BUS_ALL[CITY_ID] || []) : [];
 /* --- Live disruptions: faults / closures / suspensions (editable transit_data/disruptions.json) --- */
-let DISRUPTIONS = HAS.disruptions ? [{"id":"b2-works-2026","ref":"B2","scope":"line","severity":"major","title":"Service suspended","message":"B2 Halkalı–Bahçeşehir is not operating due to engineering works.","messageTr":"B2 Halkalı–Bahçeşehir hattı altyapı çalışmaları nedeniyle çalışmamaktadır.","until":"2026-08-31","source":"manual"},{"id":"m7-mecidiyek-y","ref":"M7","source":"metro.istanbul","scope":"stations","stations":["Mecidiyeköy"],"severity":"partial","title":"Section affected","messageTr":"Teknik bir arıza nedeniyle seferler Nurtepe-Mahmutbey arasında normal işletme döngüsünde, Nurtepe-Kağıthane arasında ise mekik seferi olarak yapılmaktadır.","message":"Due to a technical fault, trains Nurtepe-Mahmutbey between normal işletme döngüsünde, Nurtepe-Kağıthane between while mekik seferi as are operating.","messageLang":"en"}] : [];   // baked-in fallback; overridden by the live fetch below
+let DISRUPTIONS = HAS.disruptions ? [{"id":"b2-works-2026","ref":"B2","scope":"line","severity":"major","title":"Service suspended","message":"B2 Halkalı–Bahçeşehir is not operating due to engineering works.","messageTr":"B2 Halkalı–Bahçeşehir hattı altyapı çalışmaları nedeniyle çalışmamaktadır.","until":"2026-08-31","source":"manual"},{"id":"m7-mecidiyek-y","ref":"M7","source":"metro.istanbul","scope":"stations","stations":["Mecidiyeköy"],"severity":"partial","title":"Section affected","messageTr":"Teknik bir arıza nedeniyle seferler Nurtepe-Mahmutbey arasında normal işletme döngüsünde, Nurtepe-Kağıthane arasında ise mekik seferi olarak yapılmaktadır.","message":"Due to a technical fault, trains run normally between Nurtepe and Mahmutbey, and as a shuttle between Nurtepe and Kağıthane.","messageLang":"en"},{"id":"t3-al-m-yor","ref":"T3","source":"metro.istanbul","scope":"line","severity":"major","title":"Service suspended","messageTr":"Hat bakım ve ray yenileme çalışmaları nedeniyle hattımız işletmeye kapalıdır. Çalışma süresince İETT’ye ait elektrikli araçlar ile hizmet verilecektir.","message":"Due to maintenance and track renewal works, our line is closed to service. For the duration of the works, service will be provided by İETT electric vehicles.","messageLang":"en"},{"id":"ferry-3788","mode":"ferry","ref":null,"scope":"note","severity":"minor","title":"Seasonal timetable","message":"İstanbul Büyükşehir Belediyesi iştiraki Şehir Hatları AŞ’nin yaz tarifesi sona eriyor. Yeni düzenlenen kış tarifesi 7 Eylül 2026 ile 27 Haziran 2027 tarihleri arasında uygulanacak. Avrupa’nın en büyük toplu deniz ulaşım sağlayıcısı olan ve Şirket-i Hayriye’den bu yana 175 yıldır İstanbul’da deniz ulaşımı hizmeti veren Şehir Hatları, 7 Eylül Pazartesi gününden itibaren kış tarifesine geçiyor.","messageTr":"İstanbul Büyükşehir Belediyesi iştiraki Şehir Hatları AŞ’nin yaz tarifesi sona eriyor. Yeni düzenlenen kış tarifesi 7 Eylül 2026 ile 27 Haziran 2027 tarihleri arasında uygulanacak. Avrupa’nın en büyük toplu deniz ulaşım sağlayıcısı olan ve Şirket-i Hayriye’den bu yana 175 yıldır İstanbul’da deniz ulaşımı hizmeti veren Şehir Hatları, 7 Eylül Pazartesi gününden itibaren kış tarifesine geçiyor.","messageLang":"tr","translatedBy":"none","source":"sehirhatlari.istanbul","url":"https://sehirhatlari.istanbul/tr/duyurular/sehir-hatlari-kis-tarifesine-geciyor-3788","published":"2026-09-03","until":"2027-06-27"},{"id":"ferry-3811","mode":"ferry","ref":null,"scope":"note","severity":"minor","title":"Timetable change","message":"Maltepe-Adalar Hattı’ndaki Heybeliada-Büyükada-Maltepe seferinin saatleri, 12 Ekim 2026 tarihinden itibaren aşağıdaki şekilde güncellenecektir: Heybeliada kalkış saati: 15.40 yerine 16.10; Büyükada kalkış saati: 15.55 yerine 16.25; Maltepe varış saati: 16.15 yerine 16.45; Güncel sefer saatleri aşağıda belirtilmiştir.","messageTr":"Maltepe-Adalar Hattı’ndaki Heybeliada-Büyükada-Maltepe seferinin saatleri, 12 Ekim 2026 tarihinden itibaren aşağıdaki şekilde güncellenecektir: Heybeliada kalkış saati: 15.40 yerine 16.10; Büyükada kalkış saati: 15.55 yerine 16.25; Maltepe varış saati: 16.15 yerine 16.45; Güncel sefer saatleri aşağıda belirtilmiştir.","messageLang":"tr","translatedBy":"none","source":"sehirhatlari.istanbul","url":"https://sehirhatlari.istanbul/tr/duyurular/maltepeadalar-hatti-sefer-duzenlemesi-3811","published":"2026-10-11","until":"2026-11-02"}] : [];   // baked-in fallback; overridden by the live fetch below
+let SURFACE_NOTICES = [];       // live İETT bus notices (İstanbul only); empty until the feed and the bus data have both arrived
 /* --- Upcoming line openings: curated İBB projected launch dates (subject to change). Shown as
        "coming soon" cards in the announcements panel; auto-hide once the projected date passes. --- */
 const OPENINGS = HAS.openings ? [{"ref":"M12","name":"60. Yıl Parkı – Kazım Karabekir","color":"#C8CB2D","open":"2026-12-19","disp":"19 Dec 2026","km":13,"stations":11},{"ref":"M13","name":"Emek – Yenidoğan","color":"#FF4B58","open":"2026-12-24","disp":"24 Dec 2026 (listed; unconfirmed)","km":6.6,"stations":5},{"ref":"M10","name":"Pendik Merkez – Fevzi Çakmak","color":"#51AB3C","open":"2027-03-31","disp":"Q1 2027 (İBB: 'end of 2026 or first half of 2027')","km":3.9,"stations":2},{"ref":"M4 Kaynarca","name":"Tavşantepe – Kaynarca Merkez","color":"#E81E77","open":"2027-03-31","disp":"Early 2027","km":1.1,"stations":1},{"ref":"M14","name":"Altunizade – Bosna Bulvarı","color":"#B16400","open":"2027-04-30","disp":"Late 2026 (ministry); April 2027 (Wikipedia)","km":4.5,"stations":4},{"ref":"M7 Hastane","name":"Mahmutbey – Kanuni Sultan Süleyman Hastanesi","color":"#F490B3","open":"2027-12-31","disp":"2027 (İBB; 'end of 2027')","km":18.6,"stations":5},{"ref":"T7","name":"Eyüpsultan – Bayrampaşa","color":"#2A9D8F","open":"2027-12-31","disp":"End of 2027","km":3.1,"stations":6},{"ref":"M7 Kabataş","name":"Yıldız – Kabataş","color":"#F490B3","open":"2028-12-31","disp":"2028 (Wikipedia)","km":3.2,"stations":2},{"ref":"M1B Halkalı","name":"Kirazlı – Halkalı Üniversite","color":"#EE2229","open":"2029-12-31","disp":"2029","km":9.7,"stations":5}] : [];
@@ -3985,7 +4102,7 @@ const ACCESS_RAW = HAS.access ? [{"name":"4.LEVENT","elevators":5,"escalators":2
 /* Where every shipped dataset came from and when, measured at build time. The app uses this
    to say what it knows and how well it knows it, rather than presenting a community-mapped
    route and an operator timetable with the same confidence. */
-const PROVENANCE = {"note":"Where every shipped dataset comes from and how far it can be trusted. build.cjs adds each file's real modification time, so freshness is measured rather than claimed. kind drives how the app words itself: 'operator' data may be stated plainly, 'community' and 'scraped' must be labelled.","kinds":{"operator":"Published by the transport operator. Exact; may be stated without qualification.","official":"Published by a public authority, but not the operator's own timetable.","community":"OpenStreetMap. Real, but coverage is uneven and there are no timetables — must be labelled.","scraped":"Read from a provider's web page with no open-data licence. Accurate when fetched, no guarantee of continuity.","curated":"Compiled by hand for this project from published sources. Subject to human error and to change."},"datasets":{"lines.json":{"kind":"community","source":"OpenStreetMap via Overpass","licence":"ODbL 1.0","covers":"İstanbul rail geometry and stations","covers_tr":"İstanbul raylı sistem geometrisi ve istasyonları","covers_ar":"هندسة شبكة السكك في إسطنبول ومحطاتها","covers_fr":"Géométrie et stations du réseau ferré d’İstanbul","present":true,"updated":"2026-07-16T14:54:42+03:00","updatedFrom":"commit"},"b2-line.json":{"kind":"community","source":"OpenStreetMap via Overpass","licence":"ODbL 1.0","covers":"B2 suburban line","covers_tr":"B2 banliyö hattı","covers_ar":"خط الضواحي B2","covers_fr":"Ligne de banlieue B2","present":true,"updated":"2026-07-20T16:49:38+03:00","updatedFrom":"commit"},"ferry-lines.json":{"kind":"community","source":"OpenStreetMap + hand-drawn Bosphorus shore lines","licence":"ODbL 1.0","covers":"İstanbul ferries; two shore routes have no OSM geometry and are approximated","covers_tr":"İstanbul vapurları; iki kıyı hattının OSM geometrisi yok, yaklaşık çizildi","covers_ar":"عبّارات إسطنبول؛ خطان ساحليان بلا هندسة في OpenStreetMap ورُسما تقريبيًا","covers_fr":"Ferries d’İstanbul ; deux lignes côtières sans géométrie OSM, tracées approximativement","present":true,"updated":"2026-07-20T22:07:41+03:00","updatedFrom":"commit"},"cable-lines.json":{"kind":"community","source":"OpenStreetMap via Overpass","licence":"ODbL 1.0","covers":"TF1/TF2 aerial cable cars","covers_tr":"TF1/TF2 teleferik hatları","covers_ar":"خطا التلفريك TF1/TF2","covers_fr":"Téléphériques TF1/TF2","present":true,"updated":"2026-07-05T05:29:15+03:00","updatedFrom":"commit"},"planned-lines.json":{"kind":"curated","source":"Generated by process-planned.cjs: OpenStreetMap alignments and stations + Metro İstanbul project pages + planned-registry.json","licence":"ODbL 1.0 (geometry); claims carry their own sources","covers":"Vision tab: projects under construction, planned, on hold or long-term, in all six cities","covers_tr":"Vision sekmesi: altı kentte yapım aşamasındaki, planlanan, askıdaki veya uzun vadeli projeler","covers_ar":"تبويب الرؤية: مشاريع قيد الإنشاء أو مخطَّطة أو متوقفة أو بعيدة المدى في ست مدن","covers_fr":"Onglet Vision : projets en construction, planifiés, suspendus ou à long terme, dans six villes","present":true,"updated":"2026-10-02T17:22:10+03:00","updatedFrom":"commit"},"ankara-lines.json":{"kind":"community","source":"OpenStreetMap via Overpass","licence":"ODbL 1.0","covers":"EGO metro, Ankaray, Başkentray","covers_tr":"EGO metrosu, Ankaray, Başkentray","covers_ar":"مترو EGO وAnkaray وBaşkentray","covers_fr":"Métro EGO, Ankaray, Başkentray","present":true,"updated":"2026-07-31T04:36:15+03:00","updatedFrom":"commit"},"izmir-lines.json":{"kind":"community","source":"OpenStreetMap via Overpass","licence":"ODbL 1.0","covers":"İzmir Metro, İZBAN, trams","covers_tr":"İzmir Metrosu, İZBAN, tramvaylar","covers_ar":"مترو İzmir وİZBAN والترام","covers_fr":"Métro d’İzmir, İZBAN, tramways","present":true,"updated":"2026-08-03T16:55:04+03:00","updatedFrom":"commit"},"bursa-lines.json":{"kind":"community","source":"OpenStreetMap via Overpass","licence":"ODbL 1.0","covers":"BursaRay and trams","covers_tr":"BursaRay ve tramvaylar","covers_ar":"BursaRay والترام","covers_fr":"BursaRay et tramways","present":true,"updated":"2026-07-30T02:25:56+03:00","updatedFrom":"commit"},"antalya-lines.json":{"kind":"community","source":"OpenStreetMap via Overpass","licence":"ODbL 1.0","covers":"AntRay tram lines","covers_tr":"AntRay tramvay hatları","covers_ar":"خطوط ترام AntRay","covers_fr":"Lignes de tramway AntRay","present":true,"updated":"2026-07-29T21:16:25+03:00","updatedFrom":"commit"},"kocaeli-lines.json":{"kind":"community","source":"OpenStreetMap via Overpass","licence":"ODbL 1.0","covers":"Akçaray trams and projects","covers_tr":"Akçaray tramvayları ve projeleri","covers_ar":"ترام Akçaray ومشاريعه","covers_fr":"Tramways Akçaray et projets","present":true,"updated":"2026-08-05T14:12:06+03:00","updatedFrom":"commit"},"intercity-lines.json":{"kind":"curated","source":"TCDD Taşımacılık published routes","licence":"n/a","covers":"National rail, YHT and main line","covers_tr":"Ulusal demiryolu, YHT ve ana hat","covers_ar":"السكك الوطنية وقطارات YHT السريعة والخط الرئيسي","covers_fr":"Réseau ferré national, YHT et ligne principale","present":true,"updated":"2026-07-22T21:30:59+03:00","updatedFrom":"commit"},"bus-directory.json":{"kind":"operator","source":"İETT line list","licence":"İBB Open Data terms","covers":"İstanbul bus routes; 40 rows are reconstructed from the GTFS graph because the line list omits them","covers_tr":"İstanbul otobüs güzergâhları; hat listesinde yer almayan 40 kayıt GTFS grafiğinden yeniden oluşturuldu","covers_ar":"خطوط حافلات إسطنبول؛ أُعيد بناء 40 سجلًا من رسم GTFS لأن قائمة الخطوط تغفلها","covers_fr":"Itinéraires de bus d’İstanbul ; 40 entrées reconstituées depuis le graphe GTFS, absentes de la liste des lignes","present":true,"updated":"2026-06-23T00:10:50+03:00","updatedFrom":"commit"},"bus-graph.json":{"kind":"operator","source":"İETT GTFS","licence":"İBB Open Data terms","covers":"İstanbul bus stops in order","covers_tr":"İstanbul otobüs durakları, sırasıyla","covers_ar":"مواقف حافلات إسطنبول بالترتيب","covers_fr":"Arrêts de bus d’İstanbul, dans l’ordre","present":true,"updated":"2026-07-12T07:42:46+03:00","updatedFrom":"commit"},"bus-schedules.json":{"kind":"operator","source":"İETT GTFS","licence":"İBB Open Data terms","covers":"İstanbul bus first/last/headway per day type — exact","covers_tr":"İstanbul otobüs ilk/son sefer ve sefer sıklığı, gün tipine göre — kesin","covers_ar":"أول وآخر رحلة ووتيرة حافلات إسطنبول حسب نوع اليوم — بيانات دقيقة","covers_fr":"Premier/dernier départ et fréquence des bus d’İstanbul par type de jour — exact","present":true,"updated":"2026-07-12T07:42:46+03:00","updatedFrom":"commit"},"bus-geom.json":{"kind":"operator","source":"İETT GTFS shapes","licence":"İBB Open Data terms","covers":"İstanbul bus road geometry","covers_tr":"İstanbul otobüs güzergâh geometrisi","covers_ar":"هندسة مسارات حافلات إسطنبول","covers_fr":"Tracé routier des bus d’İstanbul","present":true,"updated":"2026-08-01T09:35:58+03:00","updatedFrom":"commit"},"kocaeli-bus-directory.json":{"kind":"scraped","source":"Kocaeli BB / UlaşımPark route pages","licence":"no open-data licence","covers":"Kocaeli bus routes","covers_tr":"Kocaeli otobüs güzergâhları","covers_ar":"خطوط حافلات Kocaeli","covers_fr":"Itinéraires de bus de Kocaeli","present":true,"updated":"2026-08-04T20:54:32+03:00","updatedFrom":"commit"},"kocaeli-bus-graph.json":{"kind":"scraped","source":"Kocaeli BB / UlaşımPark route pages","licence":"no open-data licence","covers":"Kocaeli bus stops in order","covers_tr":"Kocaeli otobüs durakları, sırasıyla","covers_ar":"مواقف حافلات Kocaeli بالترتيب","covers_fr":"Arrêts de bus de Kocaeli, dans l’ordre","present":true,"updated":"2026-08-04T20:54:32+03:00","updatedFrom":"commit"},"kocaeli-bus-schedules.json":{"kind":"scraped","source":"Kocaeli BB / UlaşımPark route pages","licence":"no open-data licence","covers":"Kocaeli bus timetables","covers_tr":"Kocaeli otobüs tarifeleri","covers_ar":"جداول مواعيد حافلات Kocaeli","covers_fr":"Horaires des bus de Kocaeli","present":true,"updated":"2026-08-04T20:54:32+03:00","updatedFrom":"commit"},"ankara-bus-directory.json":{"kind":"community","source":"OpenStreetMap via Overpass","licence":"ODbL 1.0","covers":"264 EGO routes; coverage may be incomplete and there are NO timetables","covers_tr":"264 EGO güzergâhı; kapsam eksik olabilir ve tarife YOKTUR","covers_ar":"264 خط EGO؛ قد تكون التغطية ناقصة ولا تتوفّر جداول مواعيد إطلاقًا","covers_fr":"264 itinéraires EGO ; couverture possiblement incomplète, AUCUN horaire","present":true,"updated":"2026-08-14T23:45:42+03:00","updatedFrom":"commit"},"ankara-bus-graph.json":{"kind":"community","source":"OpenStreetMap via Overpass","licence":"ODbL 1.0","covers":"Ankara bus stops in order","covers_tr":"Ankara otobüs durakları, sırasıyla","covers_ar":"مواقف حافلات Ankara بالترتيب","covers_fr":"Arrêts de bus d’Ankara, dans l’ordre","present":true,"updated":"2026-08-14T23:45:42+03:00","updatedFrom":"commit"},"ankara-bus-schedules.json":{"kind":"community","source":"none — OSM has no timetables","licence":"n/a","covers":"Deliberately empty rather than invented","covers_tr":"Uydurmak yerine bilerek boş bırakıldı","covers_ar":"تُرك فارغًا عمدًا بدل اختلاق البيانات","covers_fr":"Volontairement vide plutôt qu’inventé","present":true,"updated":"2026-08-14T23:45:42+03:00","updatedFrom":"commit"},"disruptions.json":{"kind":"scraped","source":"metro.istanbul service status","licence":"no open-data licence","covers":"Live faults and closures; refreshed every 30 min","covers_tr":"Anlık arıza ve kapanmalar; 30 dakikada bir yenilenir","covers_ar":"الأعطال والإغلاقات المباشرة؛ تُحدَّث كل 30 دقيقة","covers_fr":"Pannes et fermetures en direct ; actualisé toutes les 30 min","present":true,"updated":"2026-10-18T09:49:08Z","updatedFrom":"commit"},"accessibility.json":{"kind":"official","source":"İBB Open Data, enriched with OSM wheelchair tags","licence":"İBB Open Data terms + ODbL","covers":"Lift and escalator counts, step-free flags — İstanbul only","covers_tr":"Asansör ve yürüyen merdiven sayıları, basamaksız erişim işaretleri — yalnızca İstanbul","covers_ar":"أعداد المصاعد والسلالم المتحركة ومؤشرات الوصول بلا درجات — إسطنبول فقط","covers_fr":"Nombre d’ascenseurs et d’escaliers mécaniques, accès sans marches — İstanbul uniquement","present":true,"updated":"2026-07-12T01:58:53+03:00","updatedFrom":"commit"},"mi-stations.json":{"kind":"official","source":"Metro İstanbul station registry","licence":"İBB Open Data terms","covers":"Official station ids used for exact departures","covers_tr":"Kesin sefer saatleri için kullanılan resmî istasyon kimlikleri","covers_ar":"معرّفات المحطات الرسمية المستخدَمة لمواعيد المغادرة الدقيقة","covers_fr":"Identifiants officiels de stations utilisés pour les départs exacts","present":true,"updated":"2026-07-02T01:08:31+03:00","updatedFrom":"commit"},"attractions.json":{"kind":"curated","source":"Compiled for this project","licence":"n/a","covers":"İstanbul landmarks for the Explore layer","covers_tr":"Keşfet katmanı için İstanbul simge yapıları","covers_ar":"معالم إسطنبول لطبقة الاستكشاف","covers_fr":"Lieux remarquables d’İstanbul pour la couche Explorer","present":true,"updated":"2026-07-13T09:31:56+03:00","updatedFrom":"commit"},"openings.json":{"kind":"curated","source":"Derived from planned-registry.json: projects under construction with a stated target","licence":"n/a","covers":"Announced targets, which slip; a quarter or year is shown as the END of that period","covers_tr":"Açıklanan hedef tarihler; değişebilir. Bir çeyrek veya yıl, o dönemin SONU olarak gösterilir","covers_ar":"المواعيد المعلنة، وهي عرضة للتأجيل؛ يُعرض الربع أو العام على أنه نهاية تلك الفترة","covers_fr":"Échéances annoncées, sujettes à report ; un trimestre ou une année est affiché comme la FIN de cette période","present":true,"updated":"2026-10-02T17:22:10+03:00","updatedFrom":"commit"},"card-images.json":{"kind":"curated","source":"Wikimedia Commons (public domain / Belbim)","licence":"see Commons per file","covers":"Fare card artwork","covers_tr":"Bilet kartı görselleri","covers_ar":"صور بطاقات الأجرة","covers_fr":"Visuels des cartes de transport","present":true,"updated":"2026-08-04T10:08:51+03:00","updatedFrom":"commit"},"cities.json":{"kind":"curated","source":"Operator tariffs and published figures","licence":"n/a","covers":"Per-city centre, bounds, fares, feature flags","covers_tr":"Şehir bazında merkez, sınırlar, ücretler ve özellik ayarları","covers_ar":"مركز كل مدينة وحدودها وأجورها وخياراتها","covers_fr":"Centre, limites, tarifs et options par ville","present":true,"updated":"2026-08-22T17:47:29+03:00","updatedFrom":"commit"},"izmir-bus-directory.json":{"kind":"official","source":"İzmir Büyükşehir open data (ESHOT)","licence":"İzmir açık veri terms","covers":"441 ESHOT bus lines with endpoints","covers_tr":"Uç noktalarıyla birlikte 441 ESHOT otobüs hattı","covers_ar":"441 خط حافلات ESHOT مع نقاط بدايتها ونهايتها","covers_fr":"441 lignes de bus ESHOT avec leurs terminus","present":true,"updated":"2026-08-22T17:47:29+03:00","updatedFrom":"commit"},"izmir-bus-graph.json":{"kind":"official","source":"İzmir Büyükşehir open data (ESHOT)","licence":"İzmir açık veri terms","covers":"İzmir bus stops in order, derived by projecting stops onto each line’s published route geometry","covers_tr":"İzmir otobüs durakları, sırasıyla; duraklar her hattın yayımlanan güzergâh geometrisine izdüşürülerek elde edildi","covers_ar":"مواقف حافلات İzmir بالترتيب، مستنتجة بإسقاط المواقف على هندسة المسار المنشورة لكل خط","covers_fr":"Arrêts de bus d’İzmir, dans l’ordre, obtenus en projetant les arrêts sur le tracé publié de chaque ligne","present":true,"updated":"2026-08-22T17:47:29+03:00","updatedFrom":"commit"},"izmir-bus-schedules.json":{"kind":"official","source":"none — İzmir publishes no bus timetable","licence":"n/a","covers":"Deliberately empty rather than invented","covers_tr":"Uydurmak yerine bilerek boş bırakıldı","covers_ar":"تُرك فارغًا عمدًا بدل اختلاق البيانات","covers_fr":"Volontairement vide plutôt qu’inventé","present":true,"updated":"2026-08-14T23:45:42+03:00","updatedFrom":"commit"},"izmir-bus-geom.json":{"kind":"official","source":"İzmir Büyükşehir open data (ESHOT)","licence":"İzmir açık veri terms","covers":"İzmir bus road geometry, simplified to 12 m","covers_tr":"İzmir otobüs güzergâh geometrisi, 12 m’ye sadeleştirildi","covers_ar":"هندسة مسارات حافلات İzmir، مبسّطة إلى 12 م","covers_fr":"Tracé routier des bus d’İzmir, simplifié à 12 m","present":true,"updated":"2026-08-22T17:47:29+03:00","updatedFrom":"commit"},"planned-registry.json":{"kind":"curated","source":"Compiled for this project from dated public statements, each with its source","licence":"n/a","covers":"Status, opening targets and progress figures for Vision projects, and the rules that match them to OpenStreetMap","covers_tr":"Vision projelerinin durumu, açılış hedefleri ve ilerleme oranları; OpenStreetMap ile eşleştirme kuralları","covers_ar":"حالة مشاريع الرؤية ومواعيد افتتاحها ونسب الإنجاز، وقواعد مطابقتها مع OpenStreetMap","covers_fr":"État, échéances d’ouverture et avancement des projets Vision, et règles de mise en correspondance avec OpenStreetMap","present":true,"updated":"2026-10-02T17:22:10+03:00","updatedFrom":"commit"},"planned-facts-mi.json":{"kind":"scraped","source":"metro.istanbul project pages (Proje Halindeki / İnşa Halindeki Hatlar)","licence":"No published open-data licence","covers":"Official length, station list, contractor, capacity and journey time for İstanbul projects","covers_tr":"İstanbul projeleri için resmî uzunluk, istasyon listesi, yüklenici, kapasite ve yolculuk süresi","covers_ar":"الطول الرسمي وقائمة المحطات والمقاول والسعة ومدة الرحلة لمشاريع إسطنبول","covers_fr":"Longueur officielle, liste des stations, entrepreneur, capacité et temps de trajet des projets d’İstanbul","present":true,"updated":"2026-10-02T17:22:10+03:00","updatedFrom":"commit"},"t6-line.json":{"kind":"community","source":"OpenStreetMap via Overpass","licence":"ODbL 1.0","covers":"T6 Sirkeci–Kazlıçeşme tram (operational since 26 Feb 2024)","covers_tr":"T6 Sirkeci–Kazlıçeşme tramvayı (26 Şubat 2024’ten beri hizmette)","covers_ar":"ترام T6 سيركجي–قازليتشيشمه (قيد التشغيل منذ 26 فبراير 2024)","covers_fr":"Tramway T6 Sirkeci–Kazlıçeşme (en service depuis le 26 février 2024)","present":true,"updated":"2026-10-02T17:22:10+03:00","updatedFrom":"commit"}}};
+const PROVENANCE = {"note":"Where every shipped dataset comes from and how far it can be trusted. build.cjs adds each file's real modification time, so freshness is measured rather than claimed. kind drives how the app words itself: 'operator' data may be stated plainly, 'community' and 'scraped' must be labelled.","kinds":{"operator":"Published by the transport operator. Exact; may be stated without qualification.","official":"Published by a public authority, but not the operator's own timetable.","community":"OpenStreetMap. Real, but coverage is uneven and there are no timetables — must be labelled.","scraped":"Read from a provider's web page with no open-data licence. Accurate when fetched, no guarantee of continuity.","curated":"Compiled by hand for this project from published sources. Subject to human error and to change."},"datasets":{"lines.json":{"kind":"community","source":"OpenStreetMap via Overpass","licence":"ODbL 1.0","covers":"İstanbul rail geometry and stations","covers_tr":"İstanbul raylı sistem geometrisi ve istasyonları","covers_ar":"هندسة شبكة السكك في إسطنبول ومحطاتها","covers_fr":"Géométrie et stations du réseau ferré d’İstanbul","present":true,"updated":"2026-07-16T14:54:42+03:00","updatedFrom":"commit"},"b2-line.json":{"kind":"community","source":"OpenStreetMap via Overpass","licence":"ODbL 1.0","covers":"B2 suburban line","covers_tr":"B2 banliyö hattı","covers_ar":"خط الضواحي B2","covers_fr":"Ligne de banlieue B2","present":true,"updated":"2026-07-20T16:49:38+03:00","updatedFrom":"commit"},"ferry-lines.json":{"kind":"community","source":"OpenStreetMap + hand-drawn Bosphorus shore lines","licence":"ODbL 1.0","covers":"İstanbul ferries; two shore routes have no OSM geometry and are approximated","covers_tr":"İstanbul vapurları; iki kıyı hattının OSM geometrisi yok, yaklaşık çizildi","covers_ar":"عبّارات إسطنبول؛ خطان ساحليان بلا هندسة في OpenStreetMap ورُسما تقريبيًا","covers_fr":"Ferries d’İstanbul ; deux lignes côtières sans géométrie OSM, tracées approximativement","present":true,"updated":"2026-07-20T22:07:41+03:00","updatedFrom":"commit"},"cable-lines.json":{"kind":"community","source":"OpenStreetMap via Overpass","licence":"ODbL 1.0","covers":"TF1/TF2 aerial cable cars","covers_tr":"TF1/TF2 teleferik hatları","covers_ar":"خطا التلفريك TF1/TF2","covers_fr":"Téléphériques TF1/TF2","present":true,"updated":"2026-07-05T05:29:15+03:00","updatedFrom":"commit"},"planned-lines.json":{"kind":"curated","source":"Generated by process-planned.cjs: OpenStreetMap alignments and stations + Metro İstanbul project pages + planned-registry.json","licence":"ODbL 1.0 (geometry); claims carry their own sources","covers":"Vision tab: projects under construction, planned, on hold or long-term, in all six cities","covers_tr":"Vision sekmesi: altı kentte yapım aşamasındaki, planlanan, askıdaki veya uzun vadeli projeler","covers_ar":"تبويب الرؤية: مشاريع قيد الإنشاء أو مخطَّطة أو متوقفة أو بعيدة المدى في ست مدن","covers_fr":"Onglet Vision : projets en construction, planifiés, suspendus ou à long terme, dans six villes","present":true,"updated":"2026-10-02T17:22:10+03:00","updatedFrom":"commit"},"ankara-lines.json":{"kind":"community","source":"OpenStreetMap via Overpass","licence":"ODbL 1.0","covers":"EGO metro, Ankaray, Başkentray","covers_tr":"EGO metrosu, Ankaray, Başkentray","covers_ar":"مترو EGO وAnkaray وBaşkentray","covers_fr":"Métro EGO, Ankaray, Başkentray","present":true,"updated":"2026-07-31T04:36:15+03:00","updatedFrom":"commit"},"izmir-lines.json":{"kind":"community","source":"OpenStreetMap via Overpass","licence":"ODbL 1.0","covers":"İzmir Metro, İZBAN, trams","covers_tr":"İzmir Metrosu, İZBAN, tramvaylar","covers_ar":"مترو İzmir وİZBAN والترام","covers_fr":"Métro d’İzmir, İZBAN, tramways","present":true,"updated":"2026-08-03T16:55:04+03:00","updatedFrom":"commit"},"bursa-lines.json":{"kind":"community","source":"OpenStreetMap via Overpass","licence":"ODbL 1.0","covers":"BursaRay and trams","covers_tr":"BursaRay ve tramvaylar","covers_ar":"BursaRay والترام","covers_fr":"BursaRay et tramways","present":true,"updated":"2026-07-30T02:25:56+03:00","updatedFrom":"commit"},"antalya-lines.json":{"kind":"community","source":"OpenStreetMap via Overpass","licence":"ODbL 1.0","covers":"AntRay tram lines","covers_tr":"AntRay tramvay hatları","covers_ar":"خطوط ترام AntRay","covers_fr":"Lignes de tramway AntRay","present":true,"updated":"2026-07-29T21:16:25+03:00","updatedFrom":"commit"},"kocaeli-lines.json":{"kind":"community","source":"OpenStreetMap via Overpass","licence":"ODbL 1.0","covers":"Akçaray trams and projects","covers_tr":"Akçaray tramvayları ve projeleri","covers_ar":"ترام Akçaray ومشاريعه","covers_fr":"Tramways Akçaray et projets","present":true,"updated":"2026-08-05T14:12:06+03:00","updatedFrom":"commit"},"intercity-lines.json":{"kind":"curated","source":"TCDD Taşımacılık published routes","licence":"n/a","covers":"National rail, YHT and main line","covers_tr":"Ulusal demiryolu, YHT ve ana hat","covers_ar":"السكك الوطنية وقطارات YHT السريعة والخط الرئيسي","covers_fr":"Réseau ferré national, YHT et ligne principale","present":true,"updated":"2026-07-22T21:30:59+03:00","updatedFrom":"commit"},"bus-directory.json":{"kind":"operator","source":"İETT line list","licence":"İBB Open Data terms","covers":"İstanbul bus routes; 40 rows are reconstructed from the GTFS graph because the line list omits them","covers_tr":"İstanbul otobüs güzergâhları; hat listesinde yer almayan 40 kayıt GTFS grafiğinden yeniden oluşturuldu","covers_ar":"خطوط حافلات إسطنبول؛ أُعيد بناء 40 سجلًا من رسم GTFS لأن قائمة الخطوط تغفلها","covers_fr":"Itinéraires de bus d’İstanbul ; 40 entrées reconstituées depuis le graphe GTFS, absentes de la liste des lignes","present":true,"updated":"2026-06-23T00:10:50+03:00","updatedFrom":"commit"},"bus-graph.json":{"kind":"operator","source":"İETT GTFS","licence":"İBB Open Data terms","covers":"İstanbul bus stops in order","covers_tr":"İstanbul otobüs durakları, sırasıyla","covers_ar":"مواقف حافلات إسطنبول بالترتيب","covers_fr":"Arrêts de bus d’İstanbul, dans l’ordre","present":true,"updated":"2026-07-12T07:42:46+03:00","updatedFrom":"commit"},"bus-schedules.json":{"kind":"operator","source":"İETT GTFS","licence":"İBB Open Data terms","covers":"İstanbul bus first/last/headway per day type — exact","covers_tr":"İstanbul otobüs ilk/son sefer ve sefer sıklığı, gün tipine göre — kesin","covers_ar":"أول وآخر رحلة ووتيرة حافلات إسطنبول حسب نوع اليوم — بيانات دقيقة","covers_fr":"Premier/dernier départ et fréquence des bus d’İstanbul par type de jour — exact","present":true,"updated":"2026-07-12T07:42:46+03:00","updatedFrom":"commit"},"bus-geom.json":{"kind":"operator","source":"İETT GTFS shapes","licence":"İBB Open Data terms","covers":"İstanbul bus road geometry","covers_tr":"İstanbul otobüs güzergâh geometrisi","covers_ar":"هندسة مسارات حافلات إسطنبول","covers_fr":"Tracé routier des bus d’İstanbul","present":true,"updated":"2026-08-01T09:35:58+03:00","updatedFrom":"commit"},"kocaeli-bus-directory.json":{"kind":"scraped","source":"Kocaeli BB / UlaşımPark route pages","licence":"no open-data licence","covers":"Kocaeli bus routes","covers_tr":"Kocaeli otobüs güzergâhları","covers_ar":"خطوط حافلات Kocaeli","covers_fr":"Itinéraires de bus de Kocaeli","present":true,"updated":"2026-08-04T20:54:32+03:00","updatedFrom":"commit"},"kocaeli-bus-graph.json":{"kind":"scraped","source":"Kocaeli BB / UlaşımPark route pages","licence":"no open-data licence","covers":"Kocaeli bus stops in order","covers_tr":"Kocaeli otobüs durakları, sırasıyla","covers_ar":"مواقف حافلات Kocaeli بالترتيب","covers_fr":"Arrêts de bus de Kocaeli, dans l’ordre","present":true,"updated":"2026-08-04T20:54:32+03:00","updatedFrom":"commit"},"kocaeli-bus-schedules.json":{"kind":"scraped","source":"Kocaeli BB / UlaşımPark route pages","licence":"no open-data licence","covers":"Kocaeli bus timetables","covers_tr":"Kocaeli otobüs tarifeleri","covers_ar":"جداول مواعيد حافلات Kocaeli","covers_fr":"Horaires des bus de Kocaeli","present":true,"updated":"2026-08-04T20:54:32+03:00","updatedFrom":"commit"},"ankara-bus-directory.json":{"kind":"community","source":"OpenStreetMap via Overpass","licence":"ODbL 1.0","covers":"264 EGO routes; coverage may be incomplete and there are NO timetables","covers_tr":"264 EGO güzergâhı; kapsam eksik olabilir ve tarife YOKTUR","covers_ar":"264 خط EGO؛ قد تكون التغطية ناقصة ولا تتوفّر جداول مواعيد إطلاقًا","covers_fr":"264 itinéraires EGO ; couverture possiblement incomplète, AUCUN horaire","present":true,"updated":"2026-08-14T23:45:42+03:00","updatedFrom":"commit"},"ankara-bus-graph.json":{"kind":"community","source":"OpenStreetMap via Overpass","licence":"ODbL 1.0","covers":"Ankara bus stops in order","covers_tr":"Ankara otobüs durakları, sırasıyla","covers_ar":"مواقف حافلات Ankara بالترتيب","covers_fr":"Arrêts de bus d’Ankara, dans l’ordre","present":true,"updated":"2026-08-14T23:45:42+03:00","updatedFrom":"commit"},"ankara-bus-schedules.json":{"kind":"community","source":"none — OSM has no timetables","licence":"n/a","covers":"Deliberately empty rather than invented","covers_tr":"Uydurmak yerine bilerek boş bırakıldı","covers_ar":"تُرك فارغًا عمدًا بدل اختلاق البيانات","covers_fr":"Volontairement vide plutôt qu’inventé","present":true,"updated":"2026-08-14T23:45:42+03:00","updatedFrom":"commit"},"disruptions.json":{"kind":"scraped","source":"metro.istanbul service status","licence":"no open-data licence","covers":"Live faults and closures; refreshed every 30 min","covers_tr":"Anlık arıza ve kapanmalar; 30 dakikada bir yenilenir","covers_ar":"الأعطال والإغلاقات المباشرة؛ تُحدَّث كل 30 دقيقة","covers_fr":"Pannes et fermetures en direct ; actualisé toutes les 30 min","present":true,"updated":"2026-10-19T21:58:00+03:00","updatedFrom":"commit"},"accessibility.json":{"kind":"official","source":"İBB Open Data, enriched with OSM wheelchair tags","licence":"İBB Open Data terms + ODbL","covers":"Lift and escalator counts, step-free flags — İstanbul only","covers_tr":"Asansör ve yürüyen merdiven sayıları, basamaksız erişim işaretleri — yalnızca İstanbul","covers_ar":"أعداد المصاعد والسلالم المتحركة ومؤشرات الوصول بلا درجات — إسطنبول فقط","covers_fr":"Nombre d’ascenseurs et d’escaliers mécaniques, accès sans marches — İstanbul uniquement","present":true,"updated":"2026-07-12T01:58:53+03:00","updatedFrom":"commit"},"mi-stations.json":{"kind":"official","source":"Metro İstanbul station registry","licence":"İBB Open Data terms","covers":"Official station ids used for exact departures","covers_tr":"Kesin sefer saatleri için kullanılan resmî istasyon kimlikleri","covers_ar":"معرّفات المحطات الرسمية المستخدَمة لمواعيد المغادرة الدقيقة","covers_fr":"Identifiants officiels de stations utilisés pour les départs exacts","present":true,"updated":"2026-07-02T01:08:31+03:00","updatedFrom":"commit"},"attractions.json":{"kind":"curated","source":"Compiled for this project","licence":"n/a","covers":"İstanbul landmarks for the Explore layer","covers_tr":"Keşfet katmanı için İstanbul simge yapıları","covers_ar":"معالم إسطنبول لطبقة الاستكشاف","covers_fr":"Lieux remarquables d’İstanbul pour la couche Explorer","present":true,"updated":"2026-07-13T09:31:56+03:00","updatedFrom":"commit"},"openings.json":{"kind":"curated","source":"Derived from planned-registry.json: projects under construction with a stated target","licence":"n/a","covers":"Announced targets, which slip; a quarter or year is shown as the END of that period","covers_tr":"Açıklanan hedef tarihler; değişebilir. Bir çeyrek veya yıl, o dönemin SONU olarak gösterilir","covers_ar":"المواعيد المعلنة، وهي عرضة للتأجيل؛ يُعرض الربع أو العام على أنه نهاية تلك الفترة","covers_fr":"Échéances annoncées, sujettes à report ; un trimestre ou une année est affiché comme la FIN de cette période","present":true,"updated":"2026-10-02T17:22:10+03:00","updatedFrom":"commit"},"card-images.json":{"kind":"curated","source":"Wikimedia Commons (public domain / Belbim)","licence":"see Commons per file","covers":"Fare card artwork","covers_tr":"Bilet kartı görselleri","covers_ar":"صور بطاقات الأجرة","covers_fr":"Visuels des cartes de transport","present":true,"updated":"2026-08-04T10:08:51+03:00","updatedFrom":"commit"},"cities.json":{"kind":"curated","source":"Operator tariffs and published figures","licence":"n/a","covers":"Per-city centre, bounds, fares, feature flags","covers_tr":"Şehir bazında merkez, sınırlar, ücretler ve özellik ayarları","covers_ar":"مركز كل مدينة وحدودها وأجورها وخياراتها","covers_fr":"Centre, limites, tarifs et options par ville","present":true,"updated":"2026-08-22T17:47:29+03:00","updatedFrom":"commit"},"izmir-bus-directory.json":{"kind":"official","source":"İzmir Büyükşehir open data (ESHOT)","licence":"İzmir açık veri terms","covers":"441 ESHOT bus lines with endpoints","covers_tr":"Uç noktalarıyla birlikte 441 ESHOT otobüs hattı","covers_ar":"441 خط حافلات ESHOT مع نقاط بدايتها ونهايتها","covers_fr":"441 lignes de bus ESHOT avec leurs terminus","present":true,"updated":"2026-08-22T17:47:29+03:00","updatedFrom":"commit"},"izmir-bus-graph.json":{"kind":"official","source":"İzmir Büyükşehir open data (ESHOT)","licence":"İzmir açık veri terms","covers":"İzmir bus stops in order, derived by projecting stops onto each line’s published route geometry","covers_tr":"İzmir otobüs durakları, sırasıyla; duraklar her hattın yayımlanan güzergâh geometrisine izdüşürülerek elde edildi","covers_ar":"مواقف حافلات İzmir بالترتيب، مستنتجة بإسقاط المواقف على هندسة المسار المنشورة لكل خط","covers_fr":"Arrêts de bus d’İzmir, dans l’ordre, obtenus en projetant les arrêts sur le tracé publié de chaque ligne","present":true,"updated":"2026-08-22T17:47:29+03:00","updatedFrom":"commit"},"izmir-bus-schedules.json":{"kind":"official","source":"none — İzmir publishes no bus timetable","licence":"n/a","covers":"Deliberately empty rather than invented","covers_tr":"Uydurmak yerine bilerek boş bırakıldı","covers_ar":"تُرك فارغًا عمدًا بدل اختلاق البيانات","covers_fr":"Volontairement vide plutôt qu’inventé","present":true,"updated":"2026-08-14T23:45:42+03:00","updatedFrom":"commit"},"izmir-bus-geom.json":{"kind":"official","source":"İzmir Büyükşehir open data (ESHOT)","licence":"İzmir açık veri terms","covers":"İzmir bus road geometry, simplified to 12 m","covers_tr":"İzmir otobüs güzergâh geometrisi, 12 m’ye sadeleştirildi","covers_ar":"هندسة مسارات حافلات İzmir، مبسّطة إلى 12 م","covers_fr":"Tracé routier des bus d’İzmir, simplifié à 12 m","present":true,"updated":"2026-08-22T17:47:29+03:00","updatedFrom":"commit"},"planned-registry.json":{"kind":"curated","source":"Compiled for this project from dated public statements, each with its source","licence":"n/a","covers":"Status, opening targets and progress figures for Vision projects, and the rules that match them to OpenStreetMap","covers_tr":"Vision projelerinin durumu, açılış hedefleri ve ilerleme oranları; OpenStreetMap ile eşleştirme kuralları","covers_ar":"حالة مشاريع الرؤية ومواعيد افتتاحها ونسب الإنجاز، وقواعد مطابقتها مع OpenStreetMap","covers_fr":"État, échéances d’ouverture et avancement des projets Vision, et règles de mise en correspondance avec OpenStreetMap","present":true,"updated":"2026-10-02T17:22:10+03:00","updatedFrom":"commit"},"planned-facts-mi.json":{"kind":"scraped","source":"metro.istanbul project pages (Proje Halindeki / İnşa Halindeki Hatlar)","licence":"No published open-data licence","covers":"Official length, station list, contractor, capacity and journey time for İstanbul projects","covers_tr":"İstanbul projeleri için resmî uzunluk, istasyon listesi, yüklenici, kapasite ve yolculuk süresi","covers_ar":"الطول الرسمي وقائمة المحطات والمقاول والسعة ومدة الرحلة لمشاريع إسطنبول","covers_fr":"Longueur officielle, liste des stations, entrepreneur, capacité et temps de trajet des projets d’İstanbul","present":true,"updated":"2026-10-02T17:22:10+03:00","updatedFrom":"commit"},"t6-line.json":{"kind":"community","source":"OpenStreetMap via Overpass","licence":"ODbL 1.0","covers":"T6 Sirkeci–Kazlıçeşme tram (operational since 26 Feb 2024)","covers_tr":"T6 Sirkeci–Kazlıçeşme tramvayı (26 Şubat 2024’ten beri hizmette)","covers_ar":"ترام T6 سيركجي–قازليتشيشمه (قيد التشغيل منذ 26 فبراير 2024)","covers_fr":"Tramway T6 Sirkeci–Kazlıçeşme (en service depuis le 26 février 2024)","present":true,"updated":"2026-10-02T17:22:10+03:00","updatedFrom":"commit"}}};
 /* --- curated İstanbul landmarks for the "Explore" layer (real places; the app computes the
        nearest station + walk). {name,cat,lat,lng} --- */
 const ATTRACTIONS = CITY.attractions || [{"name":"Hagia Sophia","cat":"historic","lat":41.0086,"lng":28.9802},{"name":"Blue Mosque","cat":"mosque","lat":41.0054,"lng":28.9768},{"name":"Topkapı Palace","cat":"palace","lat":41.0115,"lng":28.9833},{"name":"Basilica Cistern","cat":"historic","lat":41.0084,"lng":28.9779},{"name":"Hippodrome (Sultanahmet Sq.)","cat":"historic","lat":41.006,"lng":28.9754},{"name":"Gülhane Park","cat":"park","lat":41.0134,"lng":28.9814},{"name":"Grand Bazaar","cat":"market","lat":41.0106,"lng":28.968},{"name":"Spice Bazaar","cat":"market","lat":41.0165,"lng":28.9705},{"name":"Süleymaniye Mosque","cat":"mosque","lat":41.0165,"lng":28.9639},{"name":"Galata Bridge","cat":"landmark","lat":41.0201,"lng":28.9737},{"name":"Galata Tower","cat":"viewpoint","lat":41.0256,"lng":28.9744},{"name":"İstiklal Avenue","cat":"market","lat":41.0335,"lng":28.9778},{"name":"Taksim Square","cat":"landmark","lat":41.037,"lng":28.9857},{"name":"İstanbul Modern","cat":"museum","lat":41.0264,"lng":28.9805},{"name":"Dolmabahçe Palace","cat":"palace","lat":41.0391,"lng":29.0006},{"name":"Yıldız Park","cat":"park","lat":41.049,"lng":29.011},{"name":"Ortaköy Mosque","cat":"mosque","lat":41.0475,"lng":29.027},{"name":"Bebek Bay","cat":"waterfront","lat":41.0776,"lng":29.0433},{"name":"Rumeli Fortress","cat":"historic","lat":41.0847,"lng":29.0566},{"name":"Emirgan Park","cat":"park","lat":41.1085,"lng":29.0546},{"name":"Maiden's Tower","cat":"viewpoint","lat":41.0211,"lng":29.0041},{"name":"Kadıköy & Moda","cat":"waterfront","lat":40.988,"lng":29.027},{"name":"Beylerbeyi Palace","cat":"palace","lat":41.0428,"lng":29.0419},{"name":"Büyük Çamlıca Hill","cat":"viewpoint","lat":41.0289,"lng":29.0686},{"name":"Çamlıca Mosque","cat":"mosque","lat":41.0275,"lng":29.0669},{"name":"Üsküdar Waterfront","cat":"waterfront","lat":41.0256,"lng":29.015},{"name":"Chora (Kariye) Mosque","cat":"historic","lat":41.0312,"lng":28.9391},{"name":"Eyüp Sultan Mosque","cat":"mosque","lat":41.0479,"lng":28.9337},{"name":"Pierre Loti Hill","cat":"viewpoint","lat":41.049,"lng":28.9337},{"name":"Balat & Fener","cat":"landmark","lat":41.0296,"lng":28.949},{"name":"Miniatürk","cat":"park","lat":41.062,"lng":28.9497},{"name":"Panorama 1453","cat":"museum","lat":41.0186,"lng":28.92},{"name":"Zorlu Center","cat":"market","lat":41.0668,"lng":29.017},{"name":"Vialand / İsfanbul","cat":"park","lat":41.073,"lng":28.933},{"name":"Princes' Islands (ferry)","cat":"waterfront","lat":40.876,"lng":29.129}];
@@ -4070,7 +4187,9 @@ function disruptionActive(d){
   if(Number.isNaN(end)) return true;                         // unparseable date → never silently drop a fault
   return end >= Date.now();
 }
-function activeDisruptions(){ return (DISRUPTIONS||[]).filter(disruptionActive); }
+/* Rail and ferry notices come from disruptions.json (DISRUPTIONS); bus notices are read live from İETT in the browser
+   (SURFACE_NOTICES, see 14a-surface-notices.js). Everything that asks "what is wrong right now" gets both. */
+function activeDisruptions(){ return (DISRUPTIONS||[]).concat(SURFACE_NOTICES).filter(disruptionActive); }
 function lineHours(ref){
   const hit = _lineHoursMemo[ref];
   if(hit) return hit;
@@ -8728,6 +8847,317 @@ function runRoute(){
 }
 
 /* ===========================================================================
+   BUS ANNOUNCEMENTS — İETT's own service notices, read live in the browser.
+
+   The Announcements card used to know about rail only (Metro İstanbul's status page, scraped
+   every 30 minutes into disruptions.json). Buses and ferries are most of what people ride, and
+   both publish notices of their own. İETT's is the better of the two for a static site: an
+   open-data SOAP method on api.ibb.gov.tr (the host the app already uses for Metro İstanbul
+   timetables) that answers with Access-Control-Allow-Origin: *, so the page can ask İETT
+   directly. That is also the right design for the data: it is today's notices and it changes all
+   day — the cancelled departures alone come and go every few minutes — which would have been one
+   commit and one deploy every 30 minutes if it went through the repository the way rail does.
+
+   WHAT THE FEED IS
+   A list of { HATKODU, HAT, TIP, GUNCELLEME_SAATI, MESAJ }, in capital-letter Turkish with the
+   diacritics half stripped ("IHLAMUR", "ÇIFTLIK", "YOGUN"). TIP is "Sefer" for one cancelled
+   departure and "Günlük" for everything else: detours, delays, a terminal that has moved.
+
+   WHAT IS DONE WITH IT
+   Nothing is guessed. A notice is turned into structure only where it can be CHECKED:
+     - a detour names the stop buses leave the route at and the stop they rejoin it at. Both must
+       be found, by name, in that route's real stop list (the İETT GTFS graph) and in travel
+       order, or the notice stays what it is — the original Turkish, flagged as such — and nothing is
+       drawn. When both are found the stretch between them is drawn on the route;
+     - a delay, a terminal change and a cancelled departure have a fixed shape, so they are read
+       by it;
+     - everything else is shown in the operator's own words.
+   There is no translation of free text here: every sentence in English, Arabic or French comes
+   from a template filled with names that were verified or copied, never composed.
+   =========================================================================== */
+/* ==NOTICES-PURE-START== */
+const _NOTICE_MAP = { 'Ç': 'C', 'Ğ': 'G', 'İ': 'I', 'Ö': 'O', 'Ş': 'S', 'Ü': 'U', 'Â': 'A', 'Î': 'I', 'Û': 'U' };
+/* Capital ASCII, one character for one character, so an index into the folded text is an index into
+   the original (the original is what gets displayed). */
+function noticeAscii(s) {
+  return String(s == null ? '' : s).toUpperCase().replace(/[ÇĞİÖŞÜÂÎÛ]/g, function (c) { return _NOTICE_MAP[c]; });
+}
+/* A stop's name as it is compared: ASCII capitals, punctuation to single spaces, and the word for
+   "stop" removed, because the feed's prose says "KADIKÖY DURAGINDAN" where the stop list says
+   "KADIKÖY". */
+function noticeStopKey(name) {
+  return noticeAscii(name).replace(/[^A-Z0-9]+/g, ' ').replace(/\s+(DURAGI|DURAK|DUR)$/, '').trim();
+}
+/* The names a stop answers to. The stop list is exact ("KADIKÖY ÇARŞI", "BOZKURT - ŞEHİT VOLKAN DUYSAK",
+   "ŞİŞLİ MERKEZ") and the prose is how people talk ("KADIKÖY", "BOZKURT"), so a stop also answers to its
+   name before a dash and to its name without a generic last word. The exact name always counts too. */
+const _GENERIC_TAIL = /\s+(CARSI|MERKEZ|ISKELE|ISKELESI|PERON|PERONLAR|PERONU|GARAJI|MEYDAN|KAVSAGI)$/;
+function noticeStopKeys(name) {
+  const full = noticeStopKey(name), set = [full];
+  const dash = noticeAscii(name).split(/\s+-\s+/)[0];
+  if (dash && dash !== noticeAscii(name)) set.push(noticeStopKey(dash));
+  set.slice().forEach(function (k) { const t = k.replace(_GENERIC_TAIL, ''); if (t !== k && t.length >= 4) set.push(t); });
+  return set.filter(function (k, i) { return k.length >= 3 && set.indexOf(k) === i; });
+}
+const _STOP_WORD = '(?:DURAGINDAN|DURAGINDA|DURAGINA|DURAGI|DURAKTAN|DURAGINI|DUR)(?![A-Z0-9])';
+function _reEsc(s) { return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); }
+
+/* Where in `text` (already noticeAscii'd) a stop of this route is NAMED AS A STOP: a name it answers to, then
+   a word for stop. The stop word is required: without it a place inside the road's name ("ULUDAG CADDESI")
+   would be taken for a stop. Returns [{ at, end, key }] in text order; where two names overlap the longer one
+   wins ("KADIKÖY ISKELE" over "KADIKÖY"). */
+function noticeMentions(text, dirs) {
+  const keys = {};
+  dirs.forEach(function (d) { (d.stops || []).forEach(function (st) { noticeStopKeys(st[2]).forEach(function (k) { keys[k] = 1; }); }); });
+  const all = [];
+  Object.keys(keys).sort(function (a, b) { return b.length - a.length; }).forEach(function (key) {
+    const re = new RegExp('(?:^|[^A-Z0-9])((?:\\d{1,3}\\s*\\.\\s*)?' + _reEsc(key).replace(/ /g, '[ .]+') + ')\\s*\\.?\\s*' + _STOP_WORD, 'g');
+    let m;
+    while ((m = re.exec(text))) {
+      const at = m.index + m[0].indexOf(m[1]), end = m.index + m[0].length;
+      if (!all.some(function (h) { return at < h.end && end > h.at; })) all.push({ at: at, end: end, key: key });   // the longer name was tried first
+      if (m.index === re.lastIndex) re.lastIndex++;
+    }
+  });
+  return all.sort(function (a, b) { return a.at - b.at; });
+}
+/* the indices, in one direction of the route, of every stop that answers to `key` */
+function noticeStopsNamed(dir, key) {
+  const out = [];
+  (dir.stops || []).forEach(function (st, i) { if (noticeStopKeys(st[2]).indexOf(key) >= 0) out.push(i); });
+  return out;
+}
+
+/* The two stops of a detour and where they sit on the route, or null when they cannot be verified.
+   Buses LEAVE the route at the first stop the text names and REJOIN it at the last stop named before
+   "GÜZERGAHA GİRECEKTİR". On some direction of the route the leave stop must be named by exactly ONE stop
+   (a name that is two different stops is a guess), the rejoin stop must come after it in travel order, and
+   the two must be close enough to be a detour — a notice that names the route's two termini is a misread. */
+function noticeDetour(text, dirs) {
+  const rejoin = /GUZERGAH\w*\s+(?:GIR|DON|KATIL)/.exec(text);
+  if (!rejoin) return null;
+  /* The stop buses LEAVE at is the one named just before the leaving verb. Not simply the first stop the
+     text names: "TAKSIM DURAGI KAPALIDIR. ARAÇLARIMIZ ... BEŞİKTAŞ STADYUMU DURAĞINDAN GÜZERGAH DIŞINA
+     ÇIKARAK" opens with the stop that is SHUT, which is not where they leave. */
+  const leave = /GUZERGAH\w*\s+DISINA\s+CIK|GUZERGAH\w*\s+(?:CIK|AYRIL)|\b(?:CIKARAK|CIKIP|CIKAR|CIKARLAR|AYRILARAK|AYRILACAK|AYRILIR|AYRILIP)\b/.exec(text);
+  if (!leave || leave.index > rejoin.index) return null;
+  const ms = noticeMentions(text, dirs);
+  const A = ms.filter(function (h) { return h.end <= leave.index && leave.index - h.end <= 30; }).pop();
+  const B = ms.filter(function (h) { return h.at > leave.index && h.end <= rejoin.index + 1; }).pop();
+  if (!A || !B || A.key === B.key) return null;
+  for (let d = 0; d < dirs.length; d++) {
+    const ia = noticeStopsNamed(dirs[d], A.key);
+    if (ia.length !== 1) continue;
+    const ib = noticeStopsNamed(dirs[d], B.key).filter(function (i) { return i > ia[0]; });
+    if (!ib.length) continue;
+    const a = ia[0], b = ib[0];
+    if (b - a <= 40) return { dir: dirs[d].dir, ia: a, ib: b, a: dirs[d].stops[a], b: dirs[d].stops[b] };
+  }
+  return null;
+}
+
+/* Why a road is shut, as a key the templates know. Only what is stated is reported. */
+function noticeCause(text) {
+  if (/\bMAC\b.{0,30}(?:NEDEN|SEBEB|DOLAYI)/.test(text) || /^MAC /.test(text)) return 'match';
+  if (/ISKI\s+CALISMA/.test(text)) return 'utility';
+  if (/ALT\s*GECIT\s+CALISMA/.test(text)) return 'underpass';
+  if (/ASFALT/.test(text)) return 'asphalt';
+  if (/KAYGAN\s+ZEMIN/.test(text)) return 'slippery';
+  if (/PARKLANMA|ARAC\s+PARK/.test(text)) return 'parking';
+  if (/PROVA|TOREN|KUTLAMA|YURUYUS|MITING/.test(text)) return 'event';
+  if (/YOGUN\s+TRAFIK|TRAFIK\s+YOGUNLUGU/.test(text)) return 'traffic';
+  if (/CALISMA|INSAAT|ONARIM|BAKIM/.test(text)) return 'works';
+  return null;
+}
+/* "MAÇ NEDENIYLE RECEP PEKER CADDESI KAPALIDIR" -> "RECEP PEKER CADDESI": the words just before a road-type
+   word, never reaching back into the reason, cut from the ORIGINAL so the diacritics survive. null when the
+   text names no road. */
+const _ROAD_TYPE = '(?:CADDESI|CADDE|CAD\\.?|SOKAK|SOKAGI|SK\\.|BULVARI|BLV\\.?|YOLU|OTOYOLU|KOPRUSU|TUNELI|YANYOLU)';
+const _ROAD_STOP = /^(?:NEDENIYLE|NEDENI|NEDEN|ILE|SEBEBI|SEBEBIYLE|DOLAYI|YONU|YONUNE|YONUNDE|MAHALLESI|GIDIS|GIDISTE|GIDISLERDE|DONUS|DONUSTE|DONUSLERDE|VE|ISKI|CALISMASI|CALISMASINDAN|ASFALT|ALTGECIT|KAYGAN|ZEMIN|YOGUN|TRAFIK|MAC|PROVASI|ARACLARIMIZ|OTOBUSLERIMIZ|OTOLARIMIZ|KAPALI|KAPALIDIR|\d+)$/;
+function noticeRoad(orig, text) {
+  const re = new RegExp("((?:[A-Z0-9.'-]+\\s+){1,3})(" + _ROAD_TYPE + ')(?=[\\s.][^.]{0,70}?KAPALI)', 'g');
+  let m;
+  while ((m = re.exec(text))) {
+    const words = m[1].trim().split(/\s+/), keep = [];
+    for (let i = words.length - 1; i >= 0; i--) { if (_ROAD_STOP.test(words[i].replace(/\.$/, ''))) break; keep.unshift(words[i]); }
+    if (!keep.length) continue;
+    const typeAt = m.index + m[1].length;                                  // where the road-type word starts
+    const nameLen = keep.join(' ').length, nameAt = typeAt - 1 - nameLen;   // one space between name and type
+    return orig.slice(nameAt, typeAt + m[2].length).replace(/\s+/g, ' ').trim();
+  }
+  return null;
+}
+/* Capitalised for display. A name that was verified against the stop list keeps the stop list's own spelling
+   and is cased by Turkish rules (its "İ" and "I" are real, so "KİRAZLITEPE" -> "Kirazlıtepe"). A name taken
+   from the notice's prose has lost which was which — the feed writes "ISKI" for İSKİ — so the plain rule is
+   used there: more often right, and never a stray combining dot. */
+function noticeTitle(s, turkish) {
+  const low = turkish ? String(s || '').toLocaleLowerCase('tr') : String(s || '').replace(/İ/g, 'i').toLowerCase();
+  return low.replace(/(^|[\s'’(/-])([a-zçğıöşüâ])/g, function (_, a, b) { return a + (turkish ? b.toLocaleUpperCase('tr') : b.toUpperCase()); }).replace(/\s+/g, ' ').trim();
+}
+function noticeStopName(s) { return noticeTitle(String(s || '').replace(/\s*\bDUR\.?$/i, '')); }
+
+function _hash(s) { let h = 5381; for (let i = 0; i < s.length; i++) h = ((h << 5) + h + s.charCodeAt(i)) | 0; return (h >>> 0).toString(36); }
+function _hhmm(s) { const m = /(\d{1,2})[:.](\d{2})/.exec(s || ''); return m ? (+m[1]) * 60 + (+m[2]) : null; }
+function _pad2(n) { return (n < 10 ? '0' : '') + n; }
+
+/* The whole feed -> notices. `dirsOf(ref)` returns the route's directions [{dir, head, stops:[[lat,lng,name]]}]
+   (empty before the bus data has loaded, which only costs the map band); `nowMin` is the minute of the
+   day in İstanbul, so a departure that has already gone is not announced as cancelled. */
+function parseIettNotices(rows, dirsOf, nowMin) {
+  const out = [], trips = {};
+  for (const r of (rows || [])) {
+    if (!r || !r.HATKODU || !r.MESAJ) continue;
+    const ref = String(r.HATKODU).trim(), orig = String(r.MESAJ).replace(/\s+/g, ' ').trim(), N = noticeAscii(orig);
+    const rec = (/(\d{1,2}[:.]\d{2})/.exec(r.GUNCELLEME_SAATI || '') || [])[1] || null;
+    const base = { mode: 'bus', ref: ref, scope: 'note', source: 'iett', route: r.HAT ? String(r.HAT).replace(/\s+/g, ' ').trim() : null, recorded: rec, messageTr: orig };
+    if (/NORMALE\s+DON/.test(N)) continue;                                   // "the route is back to normal": nothing to announce
+    // ---- one cancelled departure
+    let m = /^(.*?)\s*DAN\s+SAAT\s+(\d{1,2})[:.](\d{2})\s+DE\s+HAREKET\s+ETMESI\s+PLANLANAN\s+SEFERIMIZ/.exec(N);
+    if (m) {
+      const at = (+m[2]) * 60 + (+m[3]);
+      if (nowMin != null && at < nowMin - 2) continue;                       // already gone
+      const t = trips[ref] = trips[ref] || { ref: ref, route: base.route, times: [] };
+      const from = noticeStopName(orig.slice(0, m[1].length));
+      if (!t.times.some(function (x) { return x.at === at && x.from === from; })) t.times.push({ at: at, from: from });
+      continue;
+    }
+    // ---- a delay
+    m = /(\d{1,3})\s*(?:DAKIKA|DK)\s+(?:VE\s+)?UZERI\s+ROTAR/.exec(N);
+    if (m) {
+      const f = /ARACLARIMIZ\s+(.+?)\s+KALKISLI/.exec(N), both = /HER\s+IKI\s+YONDE/.test(N);
+      const tpl = { k: 'delay', min: +m[1], from: f ? noticeStopName(orig.slice(f.index + f[0].indexOf(f[1]), f.index + f[0].indexOf(f[1]) + f[1].length)) : null,
+                    both: both, cause: noticeCause(N) };
+      out.push(Object.assign({}, base, { id: 'bus:' + ref + ':delay:' + _hash(N), kind: 'delay', severity: 'minor', title: 'Delays', tpl: tpl }));
+      continue;
+    }
+    // ---- a terminal that moved: trips end at one stop (and, if said, start again from another)
+    const endAt = /DURAG\w*\s+(?:SEFERLERINI\s+BITIR|BITIS\s+YAP)/.exec(N);
+    if (endAt) {
+      const dirsT = typeof dirsOf === 'function' ? dirsOf(ref) : [], ms = dirsT.length ? noticeMentions(N, dirsT) : [];
+      const A = ms.filter(function (h) { return h.end <= endAt.index + 12 && h.end >= endAt.index; }).pop();      // the mention that IS the ending phrase's stop
+      if (A) {
+        const nameOf = function (h) { for (const d of dirsT) { const ix = noticeStopsNamed(d, h.key); if (ix.length) return noticeTitle(d.stops[ix[0]][2], true); } return noticeTitle(h.key); };
+        const restart = /AYNI\s+DURAKTAN/.test(N) ? null : ms.filter(function (h) { return h.at > endAt.index + endAt[0].length; })[0];
+        out.push(Object.assign({}, base, { id: 'bus:' + ref + ':short:' + _hash(N), kind: 'shortturn', severity: 'partial', title: 'Terminal change',
+          tpl: { k: 'short', a: nameOf(A), b: restart ? nameOf(restart) : null, cause: noticeCause(N) } }));
+        continue;
+      }
+    }
+    // ---- a detour
+    const dirs = typeof dirsOf === 'function' ? dirsOf(ref) : [];
+    const det = dirs.length ? noticeDetour(N, dirs) : null;
+    if (det) {
+      out.push(Object.assign({}, base, { id: 'bus:' + ref + ':detour:' + _hash(N), kind: 'detour', severity: 'partial', title: 'Detour',
+        detour: { dir: det.dir, ia: det.ia, ib: det.ib },
+        tpl: { k: 'detour', a: noticeTitle(det.a[2], true), b: noticeTitle(det.b[2], true), road: noticeRoad(orig, N) ? noticeTitle(noticeRoad(orig, N)) : null, cause: noticeCause(N) } }));
+      continue;
+    }
+    // ---- anything else: the operator's words, as they are
+    const isDetour = /GUZERGAH/.test(N) && /(?:CIK|AYRIL|GIR)/.test(N);
+    out.push(Object.assign({}, base, { id: 'bus:' + ref + ':' + (isDetour ? 'detour' : 'info') + ':' + _hash(N), kind: isDetour ? 'detour' : 'info',
+      severity: isDetour ? 'partial' : 'minor', title: isDetour ? 'Detour' : 'Service notice' }));
+  }
+  const seen = {}, uniq = [];
+  out.forEach(function (e) { if (!seen[e.id]) { seen[e.id] = 1; uniq.push(e); } });     // the feed lists the same notice more than once
+  out.length = 0; uniq.forEach(function (e) { out.push(e); });
+  for (const ref in trips) {
+    const t = trips[ref]; t.times.sort(function (a, b) { return a.at - b.at; });
+    const key = t.times.map(function (x) { return x.at + x.from; }).join('|');
+    out.push({ id: 'bus:' + ref + ':trips:' + _hash(key), mode: 'bus', ref: ref, scope: 'note', source: 'iett', route: t.route, kind: 'trips', severity: 'minor',
+      title: 'Trips cancelled', tpl: { k: 'trips', n: t.times.length, list: t.times.map(function (x) { return _pad2(Math.floor(x.at / 60)) + ':' + _pad2(x.at % 60) + (x.from ? ' ' + x.from : ''); }) },
+      messageTr: t.times.length + ' sefer: ' + t.times.map(function (x) { return _pad2(Math.floor(x.at / 60)) + ':' + _pad2(x.at % 60) + (x.from ? ' ' + x.from : ''); }).join(', ') });
+  }
+  return out;
+}
+/* ==NOTICES-PURE-END== */
+
+/* ---- the words ------------------------------------------------------------------------------
+   Every sentence comes from the I18N table in the reader's language, filled with names that were
+   verified against the route (or copied from the operator's text). {a} {b} {road} {cause} {m} {from}
+   {list} {n} are the only holes. */
+function noticeMessage(d, L) {
+  const p = d && d.tpl; if (!p) return null;
+  const T = I18N[L] || I18N.en, tt = function (k) { return T[k] !== undefined ? T[k] : I18N.en[k]; };
+  const fill = function (k, o) { return String(tt(k)).replace(/\{(\w+)\}/g, function (m, x) { return o[x] != null ? o[x] : m; }); };
+  const why = p.cause ? tt('nCause_' + p.cause) : '';
+  const parts = [];
+  if (p.k === 'detour') {
+    if (p.road) parts.push(why ? fill('nRoadWhy', { road: p.road, cause: why }) : fill('nRoad', { road: p.road }));
+    else if (why) parts.push(fill('nWhyOnly', { cause: why }));
+    parts.push(fill('nDetour', { a: p.a, b: p.b }));
+  } else if (p.k === 'delay') {
+    parts.push(p.both ? fill('nDelayBoth', { m: p.min }) : p.from ? fill('nDelayFrom', { m: p.min, from: p.from }) : fill('nDelay', { m: p.min }));
+    if (why) parts.push(fill('nWhyOnly', { cause: why }));
+  } else if (p.k === 'short') {
+    parts.push(p.b ? fill('nShortB', { a: p.a, b: p.b }) : fill('nShort', { a: p.a }));
+    if (why) parts.push(fill('nWhyOnly', { cause: why }));
+  } else if (p.k === 'trips') {
+    const shown = p.list.slice(0, 6), more = p.list.length - shown.length;
+    parts.push(fill('nTrips', { n: p.n, list: shown.join(', ') + (more > 0 ? ' ' + fill('nMore', { n: more }) : '') }));
+  } else return null;
+  return parts.join(' ');
+}
+/* The active notices that bear on one ride of a trip: a bus by its line code, a ferry by the line it names. */
+function noticesForRide(s) {
+  if (!s || s.type !== 'ride') return [];
+  return activeDisruptions().filter(function (d) {
+    if (s.bus) return d.mode === 'bus' && d.ref === s.ref;
+    return d.mode === 'ferry' && ((d.lines || []).indexOf(s.ref) >= 0 || d.ref === s.ref);
+  });
+}
+
+/* ---- fetching ------------------------------------------------------------------------------- */
+const IETT_NOTICES_URL = 'https://api.ibb.gov.tr/iett/UlasimDinamikVeri/Duyurular.asmx';
+let IETT_ROWS = null;                      // the last good answer, kept so the notices can be re-derived when the bus data lands
+let _iettBusy = false;
+async function fetchIettRows() {
+  const body = '<?xml version="1.0" encoding="utf-8"?><soap:Envelope xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/">' +
+               '<soap:Body><GetDuyurular_json xmlns="http://tempuri.org/" /></soap:Body></soap:Envelope>';
+  const r = await fetch(IETT_NOTICES_URL, { method: 'POST', cache: 'no-store',
+    headers: { 'Content-Type': 'text/xml; charset=utf-8', 'SOAPAction': '"http://tempuri.org/GetDuyurular_json"' }, body: body });
+  if (!r.ok) throw new Error('HTTP ' + r.status);
+  const xml = new DOMParser().parseFromString(await r.text(), 'text/xml');
+  const el = xml.getElementsByTagName('GetDuyurular_jsonResult')[0];
+  if (!el) throw new Error('no result element');
+  const rows = JSON.parse(el.textContent || '[]');
+  if (!Array.isArray(rows)) throw new Error('not a list');
+  return rows;
+}
+function nowIstanbulMinutes() {
+  const p = new Intl.DateTimeFormat('en-GB', { timeZone: 'Europe/Istanbul', hour: '2-digit', minute: '2-digit', hour12: false }).formatToParts(new Date());
+  const h = +p.find(function (x) { return x.type === 'hour'; }).value % 24, m = +p.find(function (x) { return x.type === 'minute'; }).value;
+  return h * 60 + m;
+}
+function deriveBusNotices() {
+  if (!IETT_ROWS) return;
+  SURFACE_NOTICES = parseIettNotices(IETT_ROWS, function (ref) { return busDirs(ref); }, nowIstanbulMinutes());
+  SURFACE_NOTICES.forEach(function (e) { const en = noticeMessage(e, 'en'); if (en) { e.message = en; e.messageLang = 'en'; } });
+  if (typeof applyDisruptionFeed === 'function') applyDisruptionFeed();
+}
+async function refreshBusNotices() {
+  if (_iettBusy || !HAS.bus || CITY_ID !== 'istanbul') return;
+  _iettBusy = true;
+  try { IETT_ROWS = await fetchIettRows(); deriveBusNotices(); }
+  catch (e) { /* offline or İETT is down: keep what we have; the rail notices are unaffected */ }
+  _iettBusy = false;
+}
+// İETT updates through the day; five minutes is as fresh as it is useful, and nothing is polled in a hidden tab
+setInterval(function () { if (document.visibilityState === 'visible') refreshBusNotices(); }, 5 * 60 * 1000);
+document.addEventListener('visibilitychange', function () { if (document.visibilityState === 'visible' && IETT_ROWS) deriveBusNotices(); });
+/* Named entry points for the browser smoke suite, in the spirit of setDisruptions(): the page's state is script-scoped, not on
+   window, so what a test needs to drive has to be published on purpose. Client-side only and gone on reload. */
+function setSurfaceNotices(list) { SURFACE_NOTICES = Array.isArray(list) ? list : []; applyDisruptionFeed(); return SURFACE_NOTICES.length; }
+// the dashed detour bands currently drawn on the bus layer, and how many layers it holds
+function busNoticeProbe() {
+  let dashed = 0, all = 0;
+  busLayer.eachLayer(function (l) { all++; if (l.options && l.options.dashArray === '2,7') dashed++; });
+  return { dashed: dashed, layers: all };
+}
+// first read shortly after boot (the page is interactive first), and again as soon as the bus data lands: a detour can only be VERIFIED against the route's stops
+setTimeout(refreshBusNotices, 800);
+busDataPromise.then(function () { deriveBusNotices(); });
+/* ===========================================================================
    8. UI WIRING
    =========================================================================== */
 let showTrains=true, showStations=true, simSpeed=3, currentTab='active';
@@ -9038,9 +9468,10 @@ function renderBusList(q){
        Say so, rather than let a partial directory read as the whole network. */
     (CITY.busSource === 'osm'
       ? '<div class="sp-note" style="margin-top:5px">' + svgEsc(t('busOsmNote')) + '</div>' : '');
+  const noticed = new Set(activeDisruptions().filter(x => x.mode === 'bus').map(x => x.ref));
   document.getElementById('busList').innerHTML = shown.length
     ? shown.map(d => `<div class="bus-row" data-id="${d.id}" data-ref="${(d.ref||'').replace(/"/g,'&quot;')}">
-        <span class="bn">${d.ref}</span><span class="br">${d.from} <small>↔</small> ${d.to}${d.op?` <small>· ${d.op}</small>`:''}</span></div>`).join('')
+        <span class="bn">${d.ref}</span><span class="br">${d.from} <small>↔</small> ${d.to}${d.op?` <small>· ${d.op}</small>`:''}</span>${noticed.has(d.ref)?`<span class="bn-warn" title="${attrEsc(t('busNotices'))}">⚠</span>`:''}</div>`).join('')
     : `<div class="none">${t('noLines')}</div>`;
   document.querySelectorAll('#busList .bus-row').forEach(row =>
     row.addEventListener('click', () => selectBus(row.dataset.id, row)));
@@ -9162,6 +9593,40 @@ function drawBusDirs(dirs, chains){
       .bindTooltip(svgEsc(s[2]||''),{className:'lt',direction:'top'}).addTo(busLayer)));
   return all;
 }
+/* The detours that were VERIFIED against this route's stop list (see 14a-surface-notices.js), drawn on the road
+   between the stop buses leave it at and the stop they rejoin it at. Dashed amber over the route: dashed is this
+   map's word for "not in normal service". Only a verified detour has a `detour` to draw; the rest are text. */
+function drawBusNotices(ref, dirs, chains){
+  activeDisruptions().filter(d => d.mode === 'bus' && d.ref === ref && d.detour).forEach(d => {
+    const dir = dirs.find(x => x.dir === d.detour.dir); if(!dir) return;
+    const stops = dir.stops.slice(d.detour.ia, d.detour.ib + 1);
+    const pts = busDirPath({ stops }, chains); if(pts.length < 2) return;
+    const col = SEV_COLOR.partial;
+    L.polyline(pts, { color:col, weight:9, opacity:.22, lineCap:'round', lineJoin:'round', interactive:false }).addTo(busLayer);
+    L.polyline(pts, { color:col, weight:3.4, opacity:1, dashArray:'2,7', lineCap:'round', lineJoin:'round' })
+      .bindTooltip(disrTip(d), { sticky:true, className:'lt' }).addTo(busLayer);
+    [stops[0], stops[stops.length - 1]].forEach(s => L.circleMarker([s[0], s[1]], { radius:4.6, color:col, weight:2, fillColor:'#12161f', fillOpacity:1 })
+      .bindTooltip(svgEsc(s[2] || ''), { className:'lt', direction:'top' }).addTo(busLayer));
+  });
+}
+// the notices that bear on one bus line, at the top of its panel
+function busNoticesHTML(ref){
+  const ns = activeDisruptions().filter(d => d.mode === 'bus' && d.ref === ref);
+  if(!ns.length) return '';
+  return `<div class="bd-h">${svgEsc(t('busNotices'))}</div>` + ns.map(d => {
+    const col = SEV_COLOR[d.severity] || SEV_COLOR.minor;
+    return `<div class="bn-item" style="border-left-color:${col}"><b>${svgEsc(disTitle(d))}</b> ${disTrTag(d)}${svgEsc(disMsg(d))}`
+         + `${d.detour ? `<div class="bn-hint">${svgEsc(t('detourDrawn'))}</div>` : ''}${d.recorded ? `<div class="bn-hint">🕒 ${svgEsc(d.recorded)}</div>` : ''}</div>`;
+  }).join('');
+}
+/* Open one bus line on the Bus tab, the way picking it from the list does, so the route and its notices draw. */
+function openBusRoute(ref){
+  setTab('bus');
+  const box = document.getElementById('busSearch'); if(box) box.value = ref;
+  renderBusList(ref);
+  const row = [...document.querySelectorAll('#busList .bus-row')].find(r => r.dataset.ref === ref);
+  if(row) selectBus(row.dataset.id, row);
+}
 // the stop list for each direction, so a route's own stations are readable in the catalogue
 function busStopsHTML(dirs){
   if(!dirs || !dirs.length) return '';
@@ -9219,14 +9684,15 @@ async function selectBus(id, row){
     await ensureBusGeom();
     const chains = (BUS_GEOM && BUS_GEOM[ref]) ? BUS_GEOM[ref] : null;
     let all = drawBusDirs(dirs, chains);
-    detail.innerHTML = busFareHTML(ref) + busScheduleHTML(ref) + busStopsHTML(dirs);
+    drawBusNotices(ref, dirs, chains);
+    detail.innerHTML = busNoticesHTML(ref) + busFareHTML(ref) + busScheduleHTML(ref) + busStopsHTML(dirs);
     countEl.textContent = ref+' · '+dl;
     if(all.length) map.fitBounds(L.latLngBounds(all).pad(0.2));
     if(!chains){                                 // no baked shape (2 of 855) → try Overpass once
       countEl.textContent = ref+' · '+dl+' · '+t('loadingGeom');
       const shapes = await busOsmShapes(ref);
       if(tok!==busSelToken) return;
-      if(shapes && shapes[0]){ all = drawBusDirs(dirs, shapes[0]);
+      if(shapes && shapes[0]){ all = drawBusDirs(dirs, shapes[0]); drawBusNotices(ref, dirs, shapes[0]);
         if(all.length) map.fitBounds(L.latLngBounds(all).pad(0.2)); }
       countEl.textContent = ref+' · '+dl;
     }
@@ -9513,6 +9979,7 @@ const disruptionLayer = L.layerGroup().addTo(map);   // shown on the Active tab 
 const hazardRenderer = L.svg({ padding:0.5 });       // SVG so the dash animation (CSS) works
 // affected coord path(s) to grey-out: a segment between two stations, or the whole line
 function disruptionPaths(d){
+  if(d.mode === 'bus') return [];                 // a bus notice is drawn on the bus route (16-intercity.js), never on a rail line that shares its code
   const line = lineByRef[d.ref]; if(!line) return [];
   if(d.scope==='segment' && d.from && d.to){
     const a = line.stations.find(s=>fold(s.name)===fold(d.from));
@@ -9523,6 +9990,7 @@ function disruptionPaths(d){
   return [];
 }
 function disruptionPoints(d){
+  if(d.mode === 'bus') return [];
   const line = lineByRef[d.ref]; const pts = [];
   if(d.scope==='stations' && d.stations && line){
     d.stations.forEach(nm=>{ const st=line.stations.find(s=>fold(s.name)===fold(nm))||stationList.find(c=>fold(c.name)===fold(nm)); if(st) pts.push([st.lat,st.lng]); });
@@ -9545,6 +10013,7 @@ function disrTip(d){
   return `<b>⚠ ${d.ref?d.ref+' · ':''}${disTitle(d)}</b><br>${disTrTag(d)}${disMsg(d)}${d.until?'<br>⏱ '+untilText(d):''}`;
 }
 function openDisruption(d){
+  if(d.mode === 'bus'){ openBusRoute(d.ref); return; }
   const pts = disruptionPoints(d);
   if(pts.length) map.flyTo(pts[0], Math.max(map.getZoom(),13), { duration:0.6 });
 }
@@ -9663,23 +10132,60 @@ function openOpening(o){
   const line = lineByRef[o.ref];
   if(line) openLine(line);                             // focus it if we already draw it (M12/M10…)
 }
-function renderAnnouncements(){
-  const ops = upcomingOpenings();
-  // the same list the map marks: a fault whose `until` has passed is over, and a badge counting
-  // it kept sending people to an entry that read "ended" and to a line that was running fine
-  const live = activeDisruptions();
-  document.getElementById('annCount').textContent = live.length + ops.length;
-  const rows = live.map(d=>{
-    const col = SEV_COLOR[d.severity] || SEV_COLOR.major;
-    return `<div class="ann-item" data-id="${d.id}" style="border-left-color:${col};cursor:pointer">
+/* One announcement row. Rail and ferry notices are one row each; bus notices arrive in their dozens and
+   most of them are the same sentence on several lines, so those are grouped (see busGroups). */
+function annRowHTML(d){
+  const col = SEV_COLOR[d.severity] || SEV_COLOR.major;
+  const chipCol = d.mode === 'bus' ? BUS_COLOR : (d.mode === 'ferry' ? '#4AB8E8' : colorForLine(d.ref));
+  const glyph = d.mode === 'bus' ? '🚌 ' : (d.mode === 'ferry' ? '⛴ ' : '');
+  return `<div class="ann-item" data-id="${attrEsc(d.id)}" style="border-left-color:${col};cursor:pointer">
       <div class="ann-row1">
-        <span class="ann-line" style="background:${colorForLine(d.ref)}">${d.ref||'📣'}</span>
+        <span class="ann-line" style="background:${chipCol}">${d.ref ? glyph + svgEsc(d.ref) : '📣'}</span>
         <span class="ann-sev" style="background:${col}">${sevLabel(d.severity)}</span>
         <span class="ann-ttl">${disTitle(d)}</span>
       </div>
       <div class="ann-msg">${disTrTag(d)}${disMsg(d)}</div>
       ${d.until?`<div class="ann-until">⏱ ${untilText(d)}</div>`:''}</div>`;
-  }).join('');
+}
+/* Bus notices, grouped. The same sentence on twelve lines is one announcement with twelve line chips, not
+   twelve announcements; and a day's cancelled departures (a line each, forty-odd of them) collapse to a
+   single row of chips, each opening its own line. */
+function busGroups(list){
+  const groups = [], byKey = {};
+  list.forEach(d => {
+    const k = d.kind === 'trips' ? 'trips' : d.kind + '|' + (d.tpl ? JSON.stringify(d.tpl) : (d.messageTr || ''));
+    let g = byKey[k];
+    if(!g){ g = byKey[k] = { key:k, d, items:[] }; groups.push(g); }
+    g.items.push(d);
+  });
+  // what could be checked against the route comes first, then what could not, then the rest
+  const rank = g => g.d.kind === 'detour' ? (g.d.tpl ? 0 : 1) : { shortturn:2, delay:3, info:4, trips:5 }[g.d.kind];
+  return groups.sort((x, y) => (rank(x) - rank(y)) || String(x.d.ref).localeCompare(String(y.d.ref), 'tr', { numeric:true }));
+}
+function annBusGroupHTML(g){
+  const d = g.d, col = SEV_COLOR[d.severity] || SEV_COLOR.minor, SHOW = 8;
+  const chips = g.items.slice(0, SHOW).map(x =>
+    `<button class="ann-chip" data-ref="${attrEsc(x.ref)}" title="${attrEsc(x.route || '')}">${svgEsc(x.ref)}${x.kind==='trips'?`<small>×${x.tpl.n}</small>`:''}</button>`).join('');
+  const more = g.items.length - SHOW;
+  const msg = d.kind === 'trips'
+    ? svgEsc(t('nTripsSummary').replace('{n}', g.items.reduce((n, x) => n + x.tpl.n, 0)).replace('{k}', g.items.length))
+    : disTrTag(d) + svgEsc(disMsg(d));
+  return `<div class="ann-item ann-bus" data-key="${attrEsc(g.key)}" style="border-left-color:${col}">
+      <div class="ann-row1"><span class="ann-sev" style="background:${col}">${sevLabel(d.severity)}</span><span class="ann-ttl">${disTitle(d)}</span></div>
+      <div class="ann-chips">${chips}${more>0?`<span class="ann-more-n">+${more}</span>`:''}</div>
+      <div class="ann-msg">${msg}</div></div>`;
+}
+let _annBusOpen = false, _annBusAll = false;
+const ANN_BUS_SHOWN = 6;       // bus groups shown before "show more": a bad day has fifty
+function renderAnnouncements(){
+  const ops = upcomingOpenings();
+  // the same list the map marks: a fault whose `until` has passed is over, and a badge counting
+  // it kept sending people to an entry that read "ended" and to a line that was running fine
+  const live = activeDisruptions();
+  const rail = live.filter(d => !d.mode), ferry = live.filter(d => d.mode === 'ferry'), bus = live.filter(d => d.mode === 'bus');
+  const groups = busGroups(bus);
+  // the badge counts what the card SHOWS: a notice per rail fault and ferry notice, a row per bus group
+  document.getElementById('annCount').textContent = rail.length + ferry.length + groups.length + ops.length;
   const opRows = ops.map((o,i)=>{
     const col = o.color || colorForLine(o.ref);
     const rel = opensRel(o);
@@ -9692,17 +10198,32 @@ function renderAnnouncements(){
       <div class="ann-msg">${[o.name, o.km ? o.km+' '+t('kmU') : '', o.stations ? o.stations+' '+t('stnU') : ''].filter(Boolean).join(' · ')}</div>
       <div class="ann-until">🗓 ${t('opensOn')} ${o.disp}${rel?' · '+rel:''}</div></div>`;
   }).join('');
+  const nothing = !rail.length && !ferry.length && !groups.length;
   const body = document.getElementById('annBody');
-  body.innerHTML = (live.length ? rows : `<div class="ann-none">${t('annNone')}</div>`)
+  body.innerHTML = (nothing ? `<div class="ann-none">${t('annNone')}</div>` : rail.map(annRowHTML).join(''))
+    + (ferry.length ? `<div class="ann-sub">⛴ ${t('annFerrySub')} · ${ferry.length}</div>${ferry.map(annRowHTML).join('')}` : '')
+    + (groups.length ? `<button class="ann-sec" id="annBusSec" aria-expanded="${_annBusOpen}">🚌 ${t('annBusSub')} · ${groups.length}<span class="ann-caret"></span></button>
+         <div class="ann-busbox" id="annBusBox"${_annBusOpen?'':' hidden'}>${(_annBusAll ? groups : groups.slice(0, ANN_BUS_SHOWN)).map(annBusGroupHTML).join('')}
+           ${groups.length > ANN_BUS_SHOWN ? `<button class="ann-moreb" id="annBusMore">${_annBusAll ? t('annLess') : t('annMore').replace('{n}', groups.length - ANN_BUS_SHOWN)}</button>` : ''}</div>` : '')
     + (opRows ? `<div class="ann-sub">🚈 ${t('openHdr')}</div>${opRows}<div class="ann-note">${t('openFoot')}</div>` : '')
     + `<div class="ann-foot">${t('annFoot')} <a href="https://www.metro.istanbul/SeferDurumlari/SeferDetaylari" target="_blank" rel="noopener">metro.istanbul ↗</a>
-       · <a href="https://github.com/Hero4mohamed/Metro-Istanbul-General-City-Map/issues/new" target="_blank" rel="noopener">🐞 ${t('reportProblem')}</a></div>`;
+       · <a href="https://github.com/Hero4mohamed/Metro-Istanbul-General-City-Map/issues/new" target="_blank" rel="noopener">🐞 ${t('reportProblem')}</a>
+       ${(ferry.length || groups.length || (CITY_ID === 'istanbul' && HAS.bus)) ? `<div>${t('annFootExtra')}</div>` : ''}</div>`;
   body.querySelectorAll('.ann-item[data-id]').forEach(el => el.addEventListener('click', ()=>{
     const d = live.find(x=>x.id===el.dataset.id); if(d) openDisruption(d);
   }));
   body.querySelectorAll('.ann-open').forEach(el => el.addEventListener('click', ()=>{
     const o = ops[+el.dataset.open]; if(o) openOpening(o);
   }));
+  const sec = document.getElementById('annBusSec');
+  if(sec) sec.addEventListener('click', ()=>{
+    _annBusOpen = !_annBusOpen;
+    sec.setAttribute('aria-expanded', String(_annBusOpen));
+    document.getElementById('annBusBox').hidden = !_annBusOpen;
+  });
+  const moreB = document.getElementById('annBusMore');
+  if(moreB) moreB.addEventListener('click', ()=>{ _annBusAll = !_annBusAll; renderAnnouncements(); });
+  body.querySelectorAll('.ann-chip').forEach(b => b.addEventListener('click', e => { e.stopPropagation(); openBusRoute(b.dataset.ref); }));
 }
 document.getElementById('annHead').addEventListener('click', ()=>
   document.getElementById('announce').classList.toggle('collapsed'));
@@ -10734,8 +11255,11 @@ function transportTool(name, args){
                accessibility_known: !!acc };
     }
     if(name === "service_alerts"){
-      const live = activeDisruptions();
-      return { count:live.length,
+      /* Bus notices come in their dozens (a bad day has a hundred) and would swamp the model's context, so a
+         general question gets rail and ferry notices plus a count of the bus ones; asking about a BUS LINE is
+         what returns that line's own notices (see line_info). */
+      const all = activeDisruptions(), live = all.filter(d => d.mode !== 'bus');
+      return { count:live.length, bus_notices:all.length - live.length,
                alerts:live.map(d => ({ line:d.ref, scope:d.scope, severity:d.severity,
                  title:d.title, detail:d.message, until:d.until || null })) };
     }
@@ -10855,7 +11379,8 @@ function transportTool(name, args){
        /(aksakl|arıza|ariza|gecikme|kapalı|kapali|çalışıyor mu|calisiyor mu|sefer var m|sorun var m)/i.test(q)){
       const all = activeDisruptions();
       const ref = findRef(q);
-      const mine = ref ? all.filter(d => String(d.ref).toUpperCase() === ref.toUpperCase()) : all;
+      // a question about "disruptions" in general is about rail and ferries; the bus notices are many, and belong to the line asked about
+      const mine = ref ? all.filter(d => String(d.ref).toUpperCase() === ref.toUpperCase()) : all.filter(d => d.mode !== 'bus');
       if(!mine.length){
         aiSay(svgEsc(t(ref ? "aiAlertsLineOk" : "aiAlertsNone")) +
               (ref ? ' <b>' + svgEsc(ref) + '</b>' : ''));

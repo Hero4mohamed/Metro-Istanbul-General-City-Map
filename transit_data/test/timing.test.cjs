@@ -415,8 +415,11 @@ test('a fault with no end date, or an unreadable one, is never silently dropped'
 test('everything that shows a fault reads the same active list', () => {
   const src = H.appScript();
   // the panel, its badge, the map overlay, the follow-alerts and the assistant all filter
-  assert.ok(/const live = activeDisruptions\(\);\s*\n\s*document\.getElementById\('annCount'\)\.textContent = live\.length \+ ops\.length;/.test(src),
+  // the badge counts what the card shows, and every list it counts from is a slice of the ACTIVE one
+  assert.ok(/const live = activeDisruptions\(\);[\s\S]{0,400}?document\.getElementById\('annCount'\)\.textContent = rail\.length \+ ferry\.length \+ groups\.length \+ ops\.length;/.test(src),
     'the announcements badge counts faults that have ended');
+  assert.ok(/const rail = live\.filter\(d => !d\.mode\), ferry = live\.filter\(d => d\.mode === 'ferry'\), bus = live\.filter\(d => d\.mode === 'bus'\);/.test(src),
+    'the announcement sections are not slices of the active list');
   assert.ok(/activeDisruptions\(\)\.forEach\(d=>\{/.test(src), 'the map overlay draws faults that have ended');
   assert.ok(/for\(const d of activeDisruptions\(\)\)/.test(src), 'follow-alerts fire for faults that have ended');
   assert.ok(/const al = activeDisruptions\(\)\.filter\(x => x\.ref === ref\)/.test(src),
