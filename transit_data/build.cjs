@@ -218,7 +218,7 @@ const CSP = [
   ["connect-src 'self'",
    'https://server.arcgisonline.com',
    'https://photon.komoot.io', 'https://overpass-api.de', 'https://api.ibb.gov.tr',
-   'https://api.open-meteo.com', 'https://routing.openstreetmap.de',
+   'https://api.open-meteo.com', 'https://air-quality-api.open-meteo.com', 'https://routing.openstreetmap.de',
    'https://api.anthropic.com'].join(' '),
   "worker-src 'self'",
   "manifest-src 'self'",

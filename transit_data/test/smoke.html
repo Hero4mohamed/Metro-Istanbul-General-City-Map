@@ -618,6 +618,71 @@ const CHECKS = [
     },
   },
   {
+    name: 'the weather tab shows the selected place, its day and week, every district, and follows the mode and the selection',
+    why: 'The static suite proves the arithmetic; only a real page shows that the pieces are wired together. This feeds the tab a set of places '
+       + 'with no network, then drives it the way a person does: it must draw a hero, 24 hours, a week and a row per district; picking a district '
+       + 'must turn the hero to it and offer the way back; each mode must change what the map badges say; a rainy hour must produce a hint; and the '
+       + 'search box must narrow the list.',
+    run: async (w, d) => {
+      if (typeof w.setWeather !== 'function') return 'setWeather is gone from the page';
+      const places = w.WX_PLACES ? w.WX_PLACES : null;
+      const n = (places && places.length) || 40;
+      const mk = i => {
+        const hour = { time: [], temperature_2m: [], precipitation_probability: [], weather_code: [], wind_gusts_10m: [], is_day: [] };
+        for (let h = 0; h < 24; h++) {
+          hour.time.push('2026-10-18T' + String(h).padStart(2, '0') + ':00'); hour.temperature_2m.push(14 + (i % 7) + (h % 5)); hour.precipitation_probability.push(h === 3 ? 85 : 5);
+          hour.weather_code.push(h === 3 ? 61 : 2); hour.wind_gusts_10m.push(20 + (i % 9)); hour.is_day.push(h > 6 && h < 18 ? 1 : 0);
+        }
+        const day = { time: [], weather_code: [], temperature_2m_max: [], temperature_2m_min: [], precipitation_probability_max: [], precipitation_sum: [], wind_gusts_10m_max: [], uv_index_max: [], sunrise: [], sunset: [] };
+        for (let k = 0; k < 7; k++) {
+          day.time.push('2026-10-' + (18 + k)); day.weather_code.push(k % 2 ? 3 : 61); day.temperature_2m_max.push(20 + k); day.temperature_2m_min.push(10 + (i % 4));
+          day.precipitation_probability_max.push(k * 10); day.precipitation_sum.push(k / 2); day.wind_gusts_10m_max.push(30 + k); day.uv_index_max.push(4);
+          day.sunrise.push('2026-10-' + (18 + k) + 'T07:18'); day.sunset.push('2026-10-' + (18 + k) + 'T18:19');
+        }
+        return { cur: { temperature_2m: 12 + i % 15, apparent_temperature: 10 + i % 15, relative_humidity_2m: 60 + i % 30, is_day: 1, precipitation: 0, weather_code: 2, cloud_cover: 50,
+                        pressure_msl: 1015, wind_speed_10m: 8 + i % 20, wind_direction_10m: (i * 40) % 360, wind_gusts_10m: 20 + i % 9 }, hourly: hour, daily: day };
+      };
+      const data = []; for (let i = 0; i < n; i++) data.push(mk(i));
+      const air = data.map((_, i) => ({ european_aqi: 10 + (i % 8) * 10, pm10: 12, pm2_5: 6 }));
+      const act = w.document.querySelector('#tabs button.active'), keepTab = act ? act.dataset.tab : 'active';
+      let failure = null;
+      try {
+        w.setTab('weather');
+        const info = w.setWeather(data, air);
+        const doc = w.document;
+        const hero = doc.getElementById('wxHero').innerText;
+        if (!/°/.test(hero) || !/km\/h/.test(hero)) return 'the hero shows no temperature or no wind: ' + hero.slice(0, 120);
+        if (doc.querySelectorAll('#wxHourlyBox .wx-hr').length !== 24) return 'the hourly strip does not hold 24 hours';
+        if (doc.querySelectorAll('#wxDailyBox .wx-dy').length !== 7) return 'the week does not hold 7 days';
+        const rows = doc.querySelectorAll('#wxList .wx-row').length;
+        if (rows !== n - 1) return 'the list has ' + rows + ' districts, expected ' + (n - 1);
+        if (!/rain|Rain|yağ|Yağ/i.test(doc.getElementById('wxHintsBox').innerText)) return 'a 85% chance of rain in hour 3 produced no hint: ' + doc.getElementById('wxHintsBox').innerText.slice(0, 120);
+        if (info.badges !== n - 1) return 'the map shows ' + info.badges + ' badges, expected one per district (' + (n - 1) + ')';
+        // picking a district turns the hero to it and offers the way back
+        const first = doc.querySelector('#wxList .wx-row'); const name = first.querySelector('.wx-nm').firstChild.textContent.trim();
+        first.click();
+        if (!doc.getElementById('wxHero').innerText.includes(name)) return 'the hero did not turn to ' + name;
+        if (!doc.getElementById('wxBack')) return 'there is no way back to the city once a district is picked';
+        doc.getElementById('wxBack').click();
+        if (doc.getElementById('wxBack')) return 'going back to the city left the back button up';
+        // each mode changes what the badges say
+        const badgeText = () => w.weatherProbe().badges.map(h => h.replace(/<[^>]+>/g, '')).join('|');
+        const modes = {};
+        for (const m of ['temp', 'rain', 'wind', 'air']) { doc.querySelector('#wxModes button[data-m="' + m + '"]').click(); modes[m] = badgeText(); }
+        if (new Set(Object.values(modes)).size < 4) return 'the four modes do not all show different things on the map: ' + JSON.stringify(Object.fromEntries(Object.entries(modes).map(([k, v]) => [k, v.slice(0, 40)])));
+        if (!/%/.test(modes.rain)) return 'the rain mode shows no chance of rain';
+        // the search narrows the list
+        doc.querySelector('#wxModes button[data-m="temp"]').click();
+        const box = doc.getElementById('wxSearch'); box.value = name.slice(0, 3); box.dispatchEvent(new w.Event('input', { bubbles: true }));
+        const left = doc.querySelectorAll('#wxList .wx-row').length;
+        box.value = ''; box.dispatchEvent(new w.Event('input', { bubbles: true }));
+        if (left >= rows || left < 1) return 'searching for "' + name.slice(0, 3) + '" left ' + left + ' of ' + rows + ' rows';
+      } finally {
+        try { w.setTab(keepTab); } catch (e) { /* leave the tab as it is */ }
+      }
+    },
+  },
+  {
     name: 'the trip planner folds away and opens again',
     why: 'The static suite proves the markup and the wiring; only a real page shows that the click hides the body, that a second click '
        + 'brings it back, and that the arrow state follows. The planner is the card people live in, so a fold that sticks shut is a dead app.',
