@@ -36,18 +36,6 @@
     "messageLang": "en"
   },
   {
-    "id": "tf1-al-m-yor",
-    "ref": "TF1",
-    "source": "metro.istanbul",
-    "scope": "line",
-    "severity": "minor",
-    "title": "Service notice",
-    "messageTr": "Elektrik dağıtım kurumu kaynaklı yaşanan enerji kesintisi nedeniyle seferler yapılamamaktadır.",
-    "message": "Elektrik dağıtım kurumu kaynaklı yaşanan enerji kesintisi nedeniyle seferler yapılamamaktadır.",
-    "messageLang": "tr",
-    "translatedBy": "none"
-  },
-  {
     "id": "ferry-3788",
     "mode": "ferry",
     "ref": null,
