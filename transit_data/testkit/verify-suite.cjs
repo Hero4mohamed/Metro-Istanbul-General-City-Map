@@ -876,6 +876,43 @@ const MUTATIONS = [
     apply: h => h.replace('    const bands = suspended ? [] : disruptionPaths(d).filter(c=>c && c.length>=2);',
       '    const bands = disruptionPaths(d).filter(c=>c && c.length>=2);'),
   },
+  // ---- ferry announcements, translated ----
+  {
+    name: 'put the old and new times the wrong way round in a ferry timetable change',
+    expect: 'a ferry timetable change keeps every time on the right side of "instead of"',
+    apply: h => h.replace("{ en:'$1 departure: $3 instead of $2',", "{ en:'$1 departure: $2 instead of $3',"),
+  },
+  {
+    name: 'show a translation whose numbers differ from the original',
+    expect: 'a translation whose numbers differ from the original is not shown',
+    apply: h => h.replace('trNumbers(out) !== trNumbers(src)', 'false'),
+  },
+  {
+    name: 'stop running the ferry templates for a ferry notice',
+    expect: 'every ferry notice the templates cover reads in all three languages',
+    apply: h => h.replace("const ferry = mode === 'ferry';", 'const ferry = false;'),
+  },
+  {
+    name: 'run a ferry notice through the reorder pass that moves a "due to" across a full stop',
+    expect: 'a season change and an event cancellation read as sentences',
+    apply: h => h.replace('if(!ferry) for(const [re,rep] of (TR_REORDER[tgt]||[])) s = s.replace(re, rep);',
+                          'for(const [re,rep] of (TR_REORDER[tgt]||[])) s = s.replace(re, rep);'),
+  },
+  {
+    name: 'let a name capture run over the Arabic comma',
+    expect: 'a name capture never reaches over Arabic punctuation',
+    apply: h => h.replace(String.raw`[^\\s,;،؛]*\\s+)?[' + TR_FD_CAP + '][^\\s,;،؛]*)'`, String.raw`[^\\s,;]*\\s+)?[' + TR_FD_CAP + '][^\\s,;]*)'`),
+  },
+  {
+    name: 'tell the translator nothing about what kind of notice it is translating',
+    expect: 'the app translates a ferry notice with the ferry templates, and the scraper stores the same text',
+    apply: h => h.replace('bestEffortTranslation(d.messageTr, disNames(d), lang, d.mode)', 'bestEffortTranslation(d.messageTr, disNames(d), lang)'),
+  },
+  {
+    name: 'forget the electricity distributor behind a power cut',
+    expect: 'a covered alert is translated into each language, not handed over in English',
+    apply: h => h.replace(String.raw`/elektrik\s+dağıtım\s+kurumu\s+kaynaklı`, String.raw`/elektrik\s+dağıtımX\s+kurumu\s+kaynaklı`),
+  },
 ];
 
 const original = fs.readFileSync(SRC, 'utf8');

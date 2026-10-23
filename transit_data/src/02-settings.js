@@ -650,7 +650,7 @@ function kindLabel(kind){ const k=I18N[lang]['kind_'+kind]; return k!==undefined
        deployed vocabulary, English mode still translates it on the spot. --- */
 __TRANSLATOR_JS__
 // the names in an alert that are supposed to survive translation unchanged
-function disNames(d){ return [d.ref, d.from, d.to].concat(d.stations||[]).filter(Boolean); }
+function disNames(d){ return [d.ref, d.from, d.to].concat(d.stations||[], d.lines||[]).filter(Boolean); }
 /* Normalise a freshly-arrived feed. This no longer produces the text — disText does that, per
    reader, in the language they are actually reading — but it still settles the one thing that
    belongs to the ENTRY rather than to the reader: whether a Turkish original exists to
@@ -701,7 +701,7 @@ function disText(d){
   if(lang === 'en' && (d.source === 'manual' || d.translatedBy === 'llm')){
     r = { text:d.message, lang:'en' };
   } else if(d.messageTr && TR_TARGETS.indexOf(lang) >= 0){
-    const best = bestEffortTranslation(d.messageTr, disNames(d), lang);
+    const best = bestEffortTranslation(d.messageTr, disNames(d), lang, d.mode);
     r = { text:best.text, lang:best.lang };
   } else {
     r = { text:d.message || d.messageTr || '', lang:d.messageLang || 'en' };

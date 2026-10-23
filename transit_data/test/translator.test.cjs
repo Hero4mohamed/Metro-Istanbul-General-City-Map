@@ -199,8 +199,8 @@ test('every machine-translated alert in the live feed matches the shipped rules'
   const bad = [];
   for (const d of H.json('disruptions.json')) {
     if (d.source === 'manual' || d.translatedBy === 'llm' || !d.messageTr) continue;
-    const names = [d.ref, d.from, d.to].concat(d.stations || []).filter(Boolean);
-    const best = bestEffortEnglish(d.messageTr, names);
+    const names = [d.ref, d.from, d.to].concat(d.stations || [], d.lines || []).filter(Boolean);
+    const best =bestEffortEnglish(d.messageTr, names, d.mode);
     if (d.message !== best.text)
       bad.push(d.ref + ': stored message is not what the shipped rules produce');
     // an alert shown in Turkish has to SAY it is in Turkish, or an English reader is simply
@@ -234,6 +234,8 @@ const COVERED_ALL = [
   ['Olumsuz hava koşulları nedeniyle seferler geçici süreyle durdurulmuştur.', []],
   ['Kadıköy istasyonu kapalıdır.', ['Kadıköy']],
   ['Seferler normale dönmüştür.', []],
+  // the TF1 notice: a power cut that came from the electricity distributor (it shipped in Turkish)
+  ['Elektrik dağıtım kurumu kaynaklı yaşanan enerji kesintisi nedeniyle seferler yapılamamaktadır.', ['TF1']],
   // the T3 notice: a line closed for works, with the operator's replacement buses (it shipped in Turkish)
   ['Hat bakım ve ray yenileme çalışmaları nedeniyle hattımız işletmeye kapalıdır. Çalışma süresince İETT’ye ait elektrikli araçlar ile hizmet verilecektir.',
    ['T3', 'İETT']],

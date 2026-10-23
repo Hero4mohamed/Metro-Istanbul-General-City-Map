@@ -18,8 +18,10 @@
  * It is kept for as long as it is RELEVANT, which the operator's own words decide: the dates in the title or
  * body ("12-13 Eylül 2026", "12 Ekim 2026 tarihinden itibaren"). A notice about last month's regatta is history.
  * The text is shown as the operator wrote it (Turkish), with a title, a severity and — only where the text names
- * a line this map draws — that line. Nothing is translated here: free text is not safe to machine-translate and
- * an announcement about a timetable is the last place for a guess.
+ * a line this map draws — that line. Nothing is translated HERE: the text is stored as the operator wrote it, and
+ * scrape-disruptions.cjs runs it through the ferry templates of the shared translator (TR_FERRY), which carry every
+ * time and date across by capture and refuse any result whose numbers differ from the original. Wording the
+ * templates do not know stays Turkish, flagged, rather than being guessed at.
  *
  * The ferry operator's other public service notices (cancellations on the day) are not on this page: Şehir
  * Hatları publishes them as images and PDFs, and İDO's page needs a browser to render. Neither is read.
@@ -29,7 +31,9 @@ const UA = 'Mozilla/5.0 (compatible; IstanbulTransitMap/1.0; +github.com/Hero4mo
 const DAY = 86400000;
 
 const ENT = { uuml: 'ü', Uuml: 'Ü', ccedil: 'ç', Ccedil: 'Ç', ouml: 'ö', Ouml: 'Ö', nbsp: ' ', rsquo: '’', lsquo: '‘', bull: '•',
-  ndash: '–', mdash: '—', amp: '&', quot: '"', iacute: 'í', Iacute: 'İ', scaron: 'š', Scaron: 'Š', hellip: '…', laquo: '«', raquo: '»' };
+  ndash: '–', mdash: '—', amp: '&', quot: '"', iacute: 'í', Iacute: 'İ', scaron: 'š', Scaron: 'Š', hellip: '…', laquo: '«', raquo: '»',
+  // the operator's quoted event names arrive as &ldquo;…&rdquo; and "imkânı" as imk&acirc;nı
+  ldquo: '“', rdquo: '”', bdquo: '„', acirc: 'â', Acirc: 'Â', icirc: 'î', ucirc: 'û', ecirc: 'ê', ocirc: 'ô' };
 function decodeEntities(s) {
   return String(s).replace(/&#(\d+);/g, (_, n) => String.fromCharCode(+n))
                   .replace(/&#x([0-9a-f]+);/gi, (_, n) => String.fromCharCode(parseInt(n, 16)))
