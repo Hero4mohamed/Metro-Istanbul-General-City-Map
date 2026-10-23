@@ -43,12 +43,18 @@ jobs:
       # validated a stale artifact.
       - name: The committed build matches the template
         run: |
-          # Two values are intentionally different on every build: the diagnostics build stamp,
-          # and the CSP script hash that necessarily changes with it. Normalise both, or this
-          # check reports drift on every single run and stops meaning anything.
+          # Three values are intentionally different on every build: the diagnostics build stamp,
+          # the CSP script hash that necessarily changes with it, and the "updated" time of
+          # disruptions.json in the provenance table. The last is the time of the latest commit
+          # to that file, and the live-disruptions bot commits it every ~30 minutes without
+          # rebuilding index.html, so any merge that lands after a bot commit (and every squash
+          # merge, which makes a new commit of its own) rebuilds with a newer time than the one
+          # committed. Normalise all three, or this check reports drift after nearly every merge
+          # and stops meaning anything. Every other dataset's date is still compared.
           normalise() {
             sed -E -e 's/const BUILD = "[0-9]+"/const BUILD = "STAMP"/' \
-                   -e "s/'sha256-[A-Za-z0-9+\\/=]+'/'sha256-HASH'/g" "$1"
+                   -e "s/'sha256-[A-Za-z0-9+\\/=]+'/'sha256-HASH'/g" \
+                   -e 's/("disruptions\.json":\{[^}]*"updated":")[^"]*"/\1STAMP"/' "$1"
           }
           normalise index.html > /tmp/committed.html
           node transit_data/build.cjs > /dev/null
