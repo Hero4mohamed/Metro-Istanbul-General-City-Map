@@ -111,6 +111,10 @@ test('a name capture never reaches over Arabic punctuation', () => {
   assert.ok(ar.indexOf('وبناءً على ذلك،') >= 0, 'the connective was split: ' + ar);
   assert.ok(/رحلات خط Üsküdar-Haliç حتى رصيف Balat/.test(ar), 'the first line name was not captured cleanly: ' + ar);
   assert.ok(!/خط\s+ذلك/.test(ar), 'a word of the connective ended up in a line name: ' + ar);
+  /* The case the exclusion is really for: a Latin name written just before an Arabic comma ("Haliç،") is a capitalised
+     word, so only the punctuation class stops it being taken as the first half of the next line's two-word name. */
+  const near = translateTR('Haliç’te düzenlenecek Yarış sebebiyle Üsküdar-Haliç Hattı seferleri Balat İskelesi’ne kadar gerçekleştirilecektir.', 'ar', 'ferry');
+  assert.ok(/في Haliç، ستسير رحلات خط Üsküdar-Haliç حتى رصيف Balat/.test(near), 'a name was joined across an Arabic comma: ' + near);
 });
 
 test('the four spellings of an event clause place the date, the weekday and the place correctly', () => {
