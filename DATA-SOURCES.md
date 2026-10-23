@@ -23,7 +23,7 @@ redistribute it.
 | **Kocaeli Büyükşehir / UlaşımPark** | Kocaeli bus routes (scraped from published route pages) | No published open-data licence | yes, operator named |
 | **TCDD Taşımacılık** | Intercity rail lines | No published open-data licence | yes |
 | **Photon** (komoot) | Geocoding and category search over OSM | Free, keyless; underlying data ODbL | yes |
-| **Open-Meteo** | Weather context | Free for non-commercial use, CC-BY | yes |
+| **Open-Meteo** (forecast + air-quality services) | The Weather tab, for every city: now, the next 24 hours and 7 days for the city centre and each district, plus the European Air Quality Index. One request per refresh (all places at once), nothing stored. The "hints" on the card (rain, gusts, heat, frost, UV, poor air) are arithmetic on those numbers with the thresholds written in the code and tests; they are labelled as not being warnings, and link to the State Meteorological Service for the official ones | Free for non-commercial use, CC-BY 4.0 | yes |
 | **OSRM** (routing.openstreetmap.de) | Walking-leg geometry refinement | Public demo server, no SLA; ODbL data | yes |
 | **Leaflet** | Map rendering | BSD-2-Clause | in the map credit |
 

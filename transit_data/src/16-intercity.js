@@ -134,95 +134,7 @@ document.getElementById('icModeSeg').addEventListener('click', e=>{
   renderIntercityList();
 });
 
-/* ---- Weather & time per belediye (39 ilçe) — Open-Meteo, keyless + CORS-open ---- */
-const DISTRICTS = CITY.districts || [
-  ['Adalar',40.8760,29.0891],['Arnavutköy',41.1840,28.7400],['Ataşehir',40.9923,29.1274],
-  ['Avcılar',40.9800,28.7170],['Bağcılar',41.0340,28.8560],['Bahçelievler',41.0020,28.8600],
-  ['Bakırköy',40.9820,28.8720],['Başakşehir',41.0930,28.8020],['Bayrampaşa',41.0460,28.9020],
-  ['Beşiktaş',41.0430,29.0090],['Beykoz',41.1340,29.0920],['Beylikdüzü',41.0010,28.6420],
-  ['Beyoğlu',41.0370,28.9770],['Büyükçekmece',41.0200,28.5850],['Çatalca',41.1430,28.4610],
-  ['Çekmeköy',41.0360,29.1770],['Esenler',41.0430,28.8760],['Esenyurt',41.0340,28.6800],
-  ['Eyüpsultan',41.0480,28.9340],['Fatih',41.0190,28.9400],['Gaziosmanpaşa',41.0580,28.9120],
-  ['Güngören',41.0190,28.8820],['Kadıköy',40.9900,29.0300],['Kağıthane',41.0860,28.9710],
-  ['Kartal',40.9060,29.1900],['Küçükçekmece',40.9990,28.7760],['Maltepe',40.9350,29.1300],
-  ['Pendik',40.8780,29.2510],['Sancaktepe',41.0020,29.2310],['Sarıyer',41.1670,29.0570],
-  ['Silivri',41.0730,28.2460],['Sultanbeyli',40.9600,29.2710],['Sultangazi',41.1060,28.8680],
-  ['Şile',41.1760,29.6130],['Şişli',41.0600,28.9870],['Tuzla',40.8160,29.3000],
-  ['Ümraniye',41.0250,29.0960],['Üsküdar',41.0230,29.0150],['Zeytinburnu',40.9940,28.9050]
-];
-const weatherLayer = L.layerGroup();
-let wxData=null, wxFetchedAt=0, wxLoading=false;
-// WMO weather code → emoji + i18n label key
-function wmo(code){
-  if(code===0) return ['☀️','wx0']; if(code===1) return ['🌤️','wx1']; if(code===2) return ['⛅','wx2'];
-  if(code===3) return ['☁️','wx3']; if(code===45||code===48) return ['🌫️','wx45'];
-  if(code>=51&&code<=57) return ['🌦️','wx51']; if(code>=61&&code<=67) return ['🌧️','wx61'];
-  if(code>=71&&code<=77) return ['🌨️','wx71']; if(code>=80&&code<=82) return ['🌧️','wx80'];
-  if(code===85||code===86) return ['🌨️','wx71']; if(code>=95) return ['⛈️','wx95'];
-  return ['🌡️','wx1'];
-}
-function ensureWeather(){
-  if(wxData && Date.now()-wxFetchedAt < 10*60*1000){ renderWeather(); return; }
-  fetchWeather();
-}
-async function fetchWeather(){
-  if(wxLoading) return; wxLoading=true;
-  const list=document.getElementById('wxList');
-  if(!wxData) list.innerHTML=`<div class="none">${t('wxLoading')}</div>`;
-  try{
-    const lats=DISTRICTS.map(d=>d[1]).join(','), lngs=DISTRICTS.map(d=>d[2]).join(',');
-    const u=`https://api.open-meteo.com/v1/forecast?latitude=${lats}&longitude=${lngs}`+
-            `&current=temperature_2m,relative_humidity_2m,weather_code,wind_speed_10m&timezone=Europe%2FIstanbul`;
-    const r=await fetch(u); if(!r.ok) throw new Error('HTTP '+r.status);
-    const j=await r.json();
-    wxData=(Array.isArray(j)?j:[j]).map(x=>x.current);
-    wxFetchedAt=Date.now();
-    renderWeather();
-  }catch(e){ if(!wxData) list.innerHTML=`<div class="none">${t('wxFail')}</div>`; }
-  wxLoading=false;
-}
-function renderWeather(){
-  if(!wxData) return;
-  const list=document.getElementById('wxList');
-  const q=fold(document.getElementById('wxSearch').value||'');
-  const rows=DISTRICTS.map((d,i)=>({ name:d[0], lat:d[1], lng:d[2], c:wxData[i] }))
-    .filter(x=>x.c && (!q || fold(x.name).includes(q)));
-  list.innerHTML = rows.map(x=>{
-    const [emo,key]=wmo(x.c.weather_code);
-    return `<div class="wx-row" data-lat="${x.lat}" data-lng="${x.lng}">
-      <span class="wx-emo">${emo}</span>
-      <span class="wx-nm">${x.name}<small>${t(key)}</small></span>
-      <span class="wx-t">${Math.round(x.c.temperature_2m)}°</span>
-      <span class="wx-sub">💨 ${Math.round(x.c.wind_speed_10m)} km/h<br>💧 ${x.c.relative_humidity_2m}%</span></div>`;
-  }).join('') || `<div class="none">${t('noLines')}</div>`;
-  list.querySelectorAll('.wx-row').forEach(row=> row.addEventListener('click', ()=>
-    map.flyTo([+row.dataset.lat, +row.dataset.lng], Math.max(map.getZoom(),12), {duration:.6})));
-  const upd=document.getElementById('wxUpd');
-  if(upd) upd.textContent = t('wxUpdated')+' '+new Intl.DateTimeFormat(LOCALE[lang]||'en-GB',
-    timeOpts({hour:'2-digit',minute:'2-digit'})).format(new Date(wxFetchedAt));
-  // map badges: temp + emoji at each district centre
-  weatherLayer.clearLayers();
-  DISTRICTS.forEach((d,i)=>{
-    const c=wxData[i]; if(!c) return;
-    const [emo,key]=wmo(c.weather_code);
-    const icon=L.divIcon({ className:'wx-icon',
-      html:`<div class="wx-badge">${emo} ${Math.round(c.temperature_2m)}°</div>`, iconSize:[54,20], iconAnchor:[27,10] });
-    const mk=L.marker([d[1],d[2]],{icon, zIndexOffset:900});
-    mk.bindTooltip(`<b>${d[0]}</b><br>${t(key)} · ${Math.round(c.temperature_2m)}°C<br>💨 ${Math.round(c.wind_speed_10m)} km/h · 💧 ${c.relative_humidity_2m}%`,
-      {className:'lt', direction:'top', offset:[0,-8]});
-    mk.addTo(weatherLayer);
-  });
-}
-// live İstanbul clock (header of the weather card)
-setInterval(()=>{
-  const el=document.getElementById('wxClock'); if(!el || currentTab!=='weather') return;
-  const now=new Date();
-  el.textContent=new Intl.DateTimeFormat(LOCALE[lang]||'en-GB',
-    timeOpts({hour:'2-digit',minute:'2-digit',second:'2-digit'})).format(now);
-  const de=document.getElementById('wxDate');
-  if(de) de.textContent=new Intl.DateTimeFormat(LOCALE[lang]||'en-GB',
-    {timeZone:'Europe/Istanbul',weekday:'long',day:'numeric',month:'long'}).format(now);
-}, 1000);
+/* The Weather tab lives in 16a-weather.js. */
 
 /* ---- Bus directory (855 İETT lines; geometry fetched from OSM on click) ---- */
 function renderBusList(q){
@@ -675,8 +587,6 @@ document.getElementById('advClear').addEventListener('click', ()=>{
   document.getElementById('advOut').classList.remove('show');
 });
 document.getElementById('busSearch').addEventListener('input', e=> renderBusList(e.target.value));
-document.getElementById('wxSearch').addEventListener('input', ()=> renderWeather());
-document.getElementById('wxRefresh').addEventListener('click', ()=>{ wxFetchedAt=0; fetchWeather(); });
 document.getElementById('route').addEventListener('click', runRoute);
 document.getElementById('clear').addEventListener('click', ()=>{
   routeLayer.clearLayers();

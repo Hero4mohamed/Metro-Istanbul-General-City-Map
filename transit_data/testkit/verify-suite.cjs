@@ -89,6 +89,64 @@ const MUTATIONS = [
     name: 'stop showing bus and ferry notices on the trip legs they affect',
     expect: 'a trip leg on a line with a notice says so',
     apply: h => h.replace('const ns = noticesForRide(s);', 'const ns = [];'),
+    name: 'announce "ferries may be held back" at a light breeze',
+    expect: 'hints fire at their thresholds and not below them',
+    apply: h => h.replace("if (mx >= 55) out.push({ k: 'ferry'", "if (mx >= 5) out.push({ k: 'ferry'"),
+  },
+  {
+    name: 'announce rain that is a day away as likely',
+    expect: 'hints fire at their thresholds and not below them',
+    apply: h => h.replace('const n = Math.min(12, H.precipitation_probability.length);', 'const n = Math.min(24, H.precipitation_probability.length);'),
+  },
+  {
+    name: 'push every air-quality band one step the wrong way',
+    expect: 'air quality bands are the European index: 20, 40, 60, 80, 100 and above',
+    apply: h => h.replace('if (v <= WX_AQI_BANDS[i][0]) return', 'if (v < WX_AQI_BANDS[i][0]) return'),
+  },
+  {
+    name: 'point the wind arrow where the wind comes from',
+    expect: 'wind is read as where it blows FROM, and the arrow points where it goes',
+    apply: h => h.replace("transform:rotate(' + ((deg + 180) % 360) + 'deg)", "transform:rotate(' + (deg % 360) + 'deg)"),
+  },
+  {
+    name: 'turn the compass at forty degrees instead of forty-five',
+    expect: 'wind is read as where it blows FROM, and the arrow points where it goes',
+    apply: h => h.replace('function wxCompass(deg) { return Math.round((((deg % 360) + 360) % 360) / 45) % 8; }', 'function wxCompass(deg) { return Math.round((((deg % 360) + 360) % 360) / 40) % 8; }'),
+  },
+  {
+    name: 'keep the sun in the sky after sunset',
+    expect: 'the sun\'s place in the day: nothing before sunrise or after sunset, half way at noon',
+    apply: h => h.replace('if (a == null || b == null || b <= a || nowMin < a || nowMin > b) return null;', 'if (a == null || b == null || b <= a || nowMin < a) return null;'),
+  },
+  {
+    name: 'read a place with no temperature as a place',
+    expect: 'an answer is read as a list or as a single place, and a place without a temperature is a gap, not a zero',
+    apply: h => h.replace("out.push(x && x.current && typeof x.current.temperature_2m === 'number' ? {", 'out.push(x && x.current ? {'),
+  },
+  {
+    name: 'let the content-security policy block the air-quality service',
+    expect: 'the page may talk to both Open-Meteo hosts and no others for weather',
+    apply: h => h.replace('https://air-quality-api.open-meteo.com ', ''),
+  },
+  {
+    name: 'put "İstanbul" over every city\'s weather',
+    expect: 'every city has places to ask about, inside its own box, and the card names the city rather than İstanbul',
+    apply: h => h.replace("if (t0) t0.textContent = CITY.name + ' · ' + t('wxTitleSuffix');", "if (t0) t0.textContent = 'İstanbul · ' + t('wxTitleSuffix');"),
+  },
+  {
+    name: 'offer only three weather modes',
+    expect: 'the weather code left 16-intercity.js, and the card keeps the ids the rest of the page reaches for',
+    apply: h => h.replace('<button data-m="air" data-i18n="wxModeAir">🍃 Air</button>', ''),
+  },
+  {
+    name: 'let the rain fall over the numbers as well as the sky',
+    expect: 'motion is for show only: the scenes are CSS, and switch off with reduced motion',
+    apply: h => h.replace('.k-rain .wx-fx i:nth-child(4),.k-storm .wx-fx i:nth-child(4){opacity:.32;inset:-20px 0 52% 0;', '.k-rain .wx-fx i:nth-child(4),.k-storm .wx-fx i:nth-child(4){opacity:.32;inset:-20px 0 0 0;'),
+  },
+  {
+    name: 'forget the Turkish word for the wind hint\'s hour',
+    expect: 'every word the weather card uses exists in all four languages, and a hint has its own sentence for each kind',
+    apply: h => h.replace("wxHint_gust:\"Saat {at} civarında {v} km/sa'e varan hamleler\",", ''),
   },
   {
     name: 'corrupt a statement (the "$&" splice that killed the whole app)',

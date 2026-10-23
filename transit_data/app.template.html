@@ -522,12 +522,13 @@
   .ic-foot a:hover{text-decoration:underline;}
   
   /* weather card */
-  .wx-clockbox{text-align:center;padding:10px 0 12px;border-bottom:1px solid var(--stroke);margin-bottom:10px;
-    background:radial-gradient(60% 100% at 50% 0%,rgba(var(--sky-rgb),.09),transparent 70%);border-radius:12px 12px 0 0;}
-  .wx-clock{font-family:var(--mono);font-size:27px;font-weight:700;letter-spacing:2.5px;color:#A5DFFC;text-shadow:0 0 22px rgba(var(--sky-rgb),.5);}
-  .wx-date{font-size:11px;color:var(--text);margin-top:4px;font-weight:600;}
-  .wx-tz{font-size:var(--fs-4);color:var(--dim);letter-spacing:.9px;text-transform:uppercase;margin-top:2px;font-weight:600;}
-  .wx-list{max-height:46vh;overflow-y:auto;margin-top:6px;}
+  .wx-clockrow{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:2px 0 9px;}
+  .wx-clock{font-family:var(--mono);font-size:21px;font-weight:700;letter-spacing:2px;color:#A5DFFC;text-shadow:0 0 22px rgba(var(--sky-rgb),.5);}
+  .wx-dtz{display:flex;flex-direction:column;align-items:flex-end;}
+  .wx-date{font-size:11px;color:var(--text);font-weight:600;}
+  .wx-tz{font-size:var(--fs-4);color:var(--dim);letter-spacing:.9px;text-transform:uppercase;font-weight:600;}
+  .wx-list{margin-top:6px;}
+  .wx-modes{margin-top:2px;}
   .wx-row{display:flex;align-items:center;gap:9px;padding:7px 8px;border-radius:10px;cursor:pointer;transition:all .15s var(--ease);border:1px solid transparent;}
   .wx-row:hover{background:var(--surface);border-color:var(--stroke);transform:translateX(2px);}
   .wx-emo{flex:0 0 22px;font-size:16px;text-align:center;filter:drop-shadow(0 2px 5px rgba(0,0,0,.5));}
@@ -538,9 +539,90 @@
   .wx-icon{background:none;border:none;}
   #wxRefresh{width:38px;height:38px;padding:0;margin:0;flex:0 0 38px;font-size:14px;line-height:1;border-radius:11px;}
   #wxRefresh:hover{transform:rotate(90deg);}
-  .wx-badge{background:rgba(7,11,18,.85);border:1px solid rgba(var(--sky-rgb),.45);border-radius:var(--r-pill);
-            color:#D6F0FF;font:650 10px/1 var(--font);padding:4px 8px;white-space:nowrap;text-align:center;
+  .wx-badge{--wc:#38BDF8;background:rgba(7,11,18,.86);border:1px solid var(--wc);border-radius:var(--r-pill);
+            color:#EAF2FF;font:650 10px/1 var(--font);padding:4px 8px;white-space:nowrap;text-align:center;
             backdrop-filter:blur(6px);box-shadow:0 3px 10px rgba(0,0,0,.5);}
+  .wx-badge.named{border-radius:11px;padding:3px 8px;}
+  .wx-badge small{display:block;font-weight:500;font-size:var(--fs-4);opacity:.85;margin-top:2px;}
+  .wx-badge.sel{outline:2px solid var(--wc);outline-offset:1px;}
+  .wx-badge .wx-arrow{margin-right:2px;}
+  /* the selected place: a small scene (sky by day or night, weather moving in it), its numbers, the sun's path */
+  .wx-hero{position:relative;overflow:hidden;border-radius:14px;padding:11px 12px 10px;border:1px solid var(--stroke);color:#EAF2FF;
+           background:linear-gradient(160deg,#2f6fb5,#16385f);}
+  .wx-hero.night{background:linear-gradient(160deg,#141c33,#0a0f1d);}
+  .wx-hero.day.k-cloud{background:linear-gradient(160deg,#52647d,#2a3444);}
+  .wx-hero.night.k-cloud{background:linear-gradient(160deg,#252d3d,#11151f);}
+  .wx-hero.day.k-rain,.wx-hero.day.k-storm{background:linear-gradient(160deg,#3a4a60,#1c2432);}
+  .wx-hero.night.k-rain,.wx-hero.night.k-storm{background:linear-gradient(160deg,#1c2433,#0c1018);}
+  .wx-hero.day.k-snow{background:linear-gradient(160deg,#667b97,#2e3a4c);}
+  .wx-hero.night.k-snow{background:linear-gradient(160deg,#2a3445,#12171f);}
+  .wx-hero.k-fog{background:linear-gradient(160deg,#5b6470,#2d333b);}
+  .wx-fx{position:absolute;inset:0;pointer-events:none;overflow:hidden;}
+  .wx-fx i{position:absolute;display:block;opacity:0;}
+  .k-clear.day .wx-fx i:nth-child(1){opacity:1;right:-34px;top:-38px;width:150px;height:150px;border-radius:var(--r-round);background:radial-gradient(circle,rgba(255,214,102,.8),rgba(255,214,102,0) 65%);animation:wxSun 5s ease-in-out infinite;}
+  .k-clear.night .wx-fx i:nth-child(1){opacity:1;right:-12px;top:-14px;width:90px;height:90px;border-radius:var(--r-round);background:radial-gradient(circle,rgba(190,210,255,.4),rgba(190,210,255,0) 65%);}
+  .k-cloud .wx-fx i:nth-child(2),.k-rain .wx-fx i:nth-child(2),.k-storm .wx-fx i:nth-child(2),.k-snow .wx-fx i:nth-child(2),.k-fog .wx-fx i:nth-child(2){opacity:.5;left:-30%;top:6px;width:70%;height:46px;border-radius:var(--r-round);background:rgba(255,255,255,.22);filter:blur(14px);animation:wxDrift 26s linear infinite;}
+  .k-cloud .wx-fx i:nth-child(3),.k-rain .wx-fx i:nth-child(3),.k-storm .wx-fx i:nth-child(3),.k-snow .wx-fx i:nth-child(3){opacity:.4;left:-60%;top:36px;width:80%;height:40px;border-radius:var(--r-round);background:rgba(255,255,255,.2);filter:blur(16px);animation:wxDrift 38s linear infinite reverse;}
+  .k-fog .wx-fx i:nth-child(3){opacity:.45;inset:auto 0 0 0;height:60%;background:linear-gradient(to top,rgba(220,225,232,.35),transparent);animation:wxPulse 7s ease-in-out infinite;}
+  .k-rain .wx-fx i:nth-child(4),.k-storm .wx-fx i:nth-child(4){opacity:.32;inset:-20px 0 52% 0;background:repeating-linear-gradient(104deg,transparent 0 9px,rgba(200,222,255,.65) 9px 10px);
+    -webkit-mask-image:repeating-linear-gradient(to bottom,#000 0 9px,transparent 9px 24px);mask-image:repeating-linear-gradient(to bottom,#000 0 9px,transparent 9px 24px);animation:wxRain .6s linear infinite;}
+  .k-snow .wx-fx i:nth-child(4){opacity:.7;inset:-20px 0 35% 0;background:radial-gradient(circle,rgba(255,255,255,.95) 1.3px,transparent 2.2px) 0 0/19px 21px,radial-gradient(circle,rgba(255,255,255,.8) 1px,transparent 1.8px) 9px 10px/27px 29px;animation:wxSnow 5s linear infinite;}
+  .k-storm .wx-fx i:nth-child(3){opacity:0;inset:0;left:0;width:auto;height:auto;border-radius:0;filter:none;background:rgba(255,255,255,.55);animation:wxFlash 7s infinite;}
+  @keyframes wxSun{0%,100%{transform:scale(1);opacity:.85;}50%{transform:scale(1.08);opacity:1;}}
+  @keyframes wxDrift{from{transform:translateX(0);}to{transform:translateX(260%);}}
+  @keyframes wxRain{from{-webkit-mask-position:0 0;mask-position:0 0;}to{-webkit-mask-position:0 24px;mask-position:0 24px;}}
+  @keyframes wxSnow{from{background-position:0 0,9px 10px;}to{background-position:0 21px,9px 39px;}}
+  @keyframes wxFlash{0%,92%,100%{opacity:0;}93%{opacity:.55;}94%{opacity:.1;}95%{opacity:.5;}97%{opacity:0;}}
+  @keyframes wxPulse{0%,100%{opacity:.35;}50%{opacity:.6;}}
+  .wx-h-top{position:relative;display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:12.5px;}
+  .wx-back{border:1px solid rgba(255,255,255,.35);background:rgba(255,255,255,.12);color:inherit;font:inherit;font-size:var(--fs-8);font-weight:650;padding:2px 9px;border-radius:var(--r-pill);cursor:pointer;}
+  .wx-back:hover{background:rgba(255,255,255,.22);}
+  .wx-h-main{position:relative;display:flex;align-items:center;gap:10px;margin:5px 0 0;}
+  .wx-h-emo{font-size:36px;line-height:1;filter:drop-shadow(0 3px 6px rgba(0,0,0,.4));}
+  .wx-h-temp{font:800 42px/1 var(--mono);text-shadow:0 2px 10px rgba(0,0,0,.35);}
+  .wx-h-side{display:flex;flex-direction:column;gap:2px;min-width:0;}
+  .wx-h-cond{font-weight:750;font-size:13px;}
+  .wx-h-sub{font-size:var(--fs-8);color:rgba(234,242,255,.82);}
+  .wx-arc{position:relative;display:block;width:100%;height:44px;color:#EAF2FF;margin-top:2px;}
+  .wx-sun{filter:drop-shadow(0 0 6px rgba(251,191,36,.95));animation:wxPulse 3s ease-in-out infinite;}
+  .wx-sunrow{position:relative;display:flex;justify-content:space-between;font-size:var(--fs-8);color:rgba(234,242,255,.88);margin-top:-2px;}
+  .wx-stats{position:relative;display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-top:9px;}
+  .wx-st{display:flex;flex-direction:column;gap:1px;padding:6px 7px;border-radius:10px;background:rgba(255,255,255,.09);min-width:0;}
+  .wx-st-i{font-size:12px;line-height:1.1;}
+  .wx-st-v{font:700 13px var(--mono);}
+  .wx-st-v small{font:500 9px var(--font);opacity:.85;}
+  .wx-st-l{font-size:var(--fs-6);opacity:.85;line-height:1.3;}
+  .wx-st-l em{display:block;font-style:normal;opacity:.9;}
+  .wx-arrow{display:inline-block;transition:transform .6s var(--ease);}
+  .wx-aqi{display:inline-block;width:8px;height:8px;border-radius:var(--r-round);margin-right:4px;}
+  .wx-hints{display:flex;flex-wrap:wrap;gap:5px;margin:9px 0 2px;}
+  .wx-hint{font-size:var(--fs-8);font-weight:650;padding:4px 9px;border-radius:var(--r-pill);border:1px solid rgba(var(--warn-rgb),.4);background:rgba(var(--warn-rgb),.1);color:#F5C36A;}
+  body.light .wx-hint{color:var(--warn-ink);}
+  .wx-hint.k-raining,.wx-hint.k-rain{border-color:rgba(var(--sky-rgb),.45);background:rgba(var(--sky-rgb),.1);color:#9FD8F5;}
+  body.light .wx-hint.k-raining,body.light .wx-hint.k-rain{color:#0b5d85;}
+  .wx-hintnote{font-size:var(--fs-6);color:var(--dim);margin:3px 1px 0;line-height:1.4;}
+  .wx-hintnote a{color:var(--accent);text-decoration:none;}
+  .wx-sechd{font-size:var(--fs-5);font-weight:800;letter-spacing:.8px;text-transform:uppercase;color:var(--dim);margin:13px 2px 5px;}
+  .wx-hourly{display:flex;gap:3px;overflow-x:auto;padding-bottom:5px;scrollbar-width:thin;}
+  .wx-hr{flex:0 0 40px;display:flex;flex-direction:column;align-items:center;gap:2px;padding:5px 0;border-radius:10px;background:var(--surface);font-size:var(--fs-7);}
+  .wx-hr-t{color:var(--muted);font-weight:650;}
+  .wx-hr-i{font-size:16px;line-height:1.2;}
+  .wx-hr b{font:700 12px var(--mono);}
+  .wx-hr-p{display:flex;flex-direction:column;align-items:center;justify-content:flex-end;height:38px;}
+  .wx-hr-p i{display:block;width:5px;border-radius:3px;}
+  .wx-hr-p small{font-size:var(--fs-4);color:var(--dim);min-height:10px;}
+  .wx-daily{display:flex;flex-direction:column;gap:2px;}
+  .wx-dy{display:grid;grid-template-columns:42px 24px 32px 26px 1fr 26px;align-items:center;gap:6px;font-size:11px;padding:3px 4px;border-radius:8px;}
+  .wx-dy:hover{background:var(--surface);}
+  .wx-dy-d{font-weight:650;}
+  .wx-dy-p em{font-style:normal;font-size:var(--fs-7);font-weight:700;}
+  .wx-dy-lo{color:var(--muted);text-align:right;font-family:var(--mono);}
+  .wx-dy-hi{font-family:var(--mono);font-weight:700;}
+  .wx-dy-bar{position:relative;height:5px;border-radius:3px;background:var(--track);}
+  .wx-dy-bar i{position:absolute;top:0;bottom:0;border-radius:3px;}
+  .wx-row.sel{background:rgba(var(--sky-rgb),.12);border-color:rgba(var(--sky-rgb),.5);}
+  .wx-tag{font-size:var(--fs-4);font-weight:800;letter-spacing:.4px;text-transform:uppercase;padding:1px 6px;border-radius:var(--r-pill);background:var(--surface-2);color:var(--muted);margin-left:4px;white-space:nowrap;}
+  .wx-row .wx-t{display:flex;align-items:center;gap:2px;}
   .bus-search{width:100%;padding:10px 12px;border-radius:11px;background:var(--track);color:var(--text);border:1px solid var(--stroke-2);font-family:var(--font);font-size:12px;outline:none;margin-bottom:7px;transition:all .18s var(--ease);}
   .bus-search:focus{border-color:#FBBF24;box-shadow:0 0 0 3px rgba(var(--gold-rgb),.18);}
   .bus-search::placeholder{color:var(--dim);}
@@ -1827,13 +1909,20 @@
   </div>
 
   <div class="card glass" id="cardWeather" style="display:none;">
-    <div class="sec" data-i18n="wxTitle">İstanbul · District Weather</div>
-    <div class="wx-clockbox">
-      <div class="wx-clock" id="wxClock">--:--:--</div>
-      <div class="wx-date" id="wxDate"></div>
-      <div class="wx-tz" data-i18n="istTime">İstanbul time (GMT+3)</div>
+    <div class="sec" id="wxTitle">İstanbul · District Weather</div>
+    <div class="wx-clockrow"><span class="wx-clock" id="wxClock">--:--:--</span><span class="wx-dtz"><span class="wx-date" id="wxDate"></span><span class="wx-tz" data-i18n="istTime">İstanbul time (GMT+3)</span></span></div>
+    <div id="wxHero" class="wx-herobox"></div>
+    <div id="wxHintsBox"></div>
+    <div id="wxHourlyBox"></div>
+    <div id="wxDailyBox"></div>
+    <div class="wx-sechd" data-i18n="wxDistricts">Districts</div>
+    <div class="seg ptabs wx-modes" id="wxModes" role="group">
+      <button data-m="temp" class="active" data-i18n="wxModeTemp">🌡️ Temp</button>
+      <button data-m="rain" data-i18n="wxModeRain">💧 Rain</button>
+      <button data-m="wind" data-i18n="wxModeWind">💨 Wind</button>
+      <button data-m="air" data-i18n="wxModeAir">🍃 Air</button>
     </div>
-    <div style="display:flex;gap:6px;align-items:center;margin-bottom:8px">
+    <div style="display:flex;gap:6px;align-items:center;margin:8px 0">
       <input id="wxSearch" class="bus-search" style="margin:0;flex:1" data-i18n-ph="wxSearchPh" placeholder="Search district…" autocomplete="off" />
       <button class="btn ghost" id="wxRefresh" style="margin:0;flex:0 0 auto" title="↻">↻</button>
     </div>
