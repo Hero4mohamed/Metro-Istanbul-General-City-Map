@@ -711,12 +711,32 @@ async function parseX(){
   return out;
 }
 
+/* GET a page as text, with a few attempts. The status page answers from a developer's machine at the very moment the
+   scheduled run on GitHub's network gets "fetch failed" (twice running on 23 Oct 2026, after days of success), and
+   that message alone says nothing about why — so every failed attempt logs its CAUSE (a timeout, a reset, a refused
+   connection), and a transient one gets a second and third chance before the run is written off as "source
+   unreachable". Giving up still leaves disruptions.json untouched, exactly as before. */
+async function getWithRetry(url, opts, tries, pauseMs, fetchFn){
+  const doFetch = fetchFn || fetch;
+  let last;
+  for(let i=1; i<=tries; i++){
+    try{
+      const r = await doFetch(url, Object.assign({ signal: AbortSignal.timeout(25000) }, opts));
+      if(!r.ok) throw new Error('HTTP '+r.status);
+      return await r.text();
+    }catch(e){
+      last = e;
+      const why = e && e.cause ? ' ('+(e.cause.code || e.cause.message || e.cause)+')' : '';
+      console.error('metro.istanbul attempt '+i+'/'+tries+' failed: '+e.message+why);
+      if(i < tries) await new Promise(res=>setTimeout(res, pauseMs*i));
+    }
+  }
+  throw last;
+}
 async function main(){
   let metro=[], fetchOk=false;
   try{
-    const r=await fetch(SRC,{headers:{'User-Agent':UA}});
-    if(!r.ok) throw new Error('HTTP '+r.status);
-    metro=parseMetro(await r.text()); fetchOk=true;
+    metro=parseMetro(await getWithRetry(SRC,{headers:{'User-Agent':UA}},3,6000)); fetchOk=true;
   }catch(e){ console.error('metro.istanbul fetch failed:', e.message); process.exitCode=2; }
   // a transient fetch failure must NOT erase the current file — bail out, leave it untouched
   if(!fetchOk){ console.error('Source unreachable — leaving disruptions.json unchanged.'); return; }
