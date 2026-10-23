@@ -33,7 +33,7 @@ bus-route lookups).
 - Trip planner (Dijkstra over the whole network) with refresh-safe history & favourites.
 - **Tabs:** Active Network · Vision & Expansion (official + İBB projects, dashed) · Bus Directory (855 İETT lines, click to draw the real route).
 - Light/Dark/Satellite basemaps, zoom-responsive line thickness, station service hours.
-- **Announcements for rail, ferries and buses.** Rail faults and ferry notices are scraped into `disruptions.json` (every 30 minutes); İETT's bus notices are read live in the browser. A bus detour that can be checked against the route's stops is drawn on that route; the rest are shown in the operator's own words, never guessed at.
+- **Announcements for rail, ferries and buses.** Rail faults and ferry notices are scraped into `disruptions.json` (every 30 minutes); İETT's bus notices are read live in the browser. A bus detour that can be checked against the route's stops is drawn on that route; the rest are shown in the operator's own words, never guessed at. Ferry notices are translated by whole-sentence templates that carry every time and date across untouched (a result whose numbers differ from the original is refused); wording they don't know stays Turkish, labelled.
 - **Weather for every city and district:** the selected place's scene, sunrise/sunset arc, next 24 hours, 7 days and air quality, with the map showing every district by temperature, rain, wind or air.
 
 ## How it's built

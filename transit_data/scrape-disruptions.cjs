@@ -95,6 +95,14 @@ const TR_PHRASES = [
     { en:'due to a technical fault,', ar:'بسبب عطل فني،', fr:'en raison d’une panne technique,' }],
   [/sinyalizasyon\s+arızası\s+nedeniyle/gi,
     { en:'due to a signalling fault,', ar:'بسبب عطل في نظام الإشارات،', fr:'en raison d’une panne de signalisation,' }],
+  /* "Elektrik dağıtım kurumu kaynaklı yaşanan enerji kesintisi nedeniyle" (the TF1 notice): the cause is the electricity
+     distributor's, not the railway's, and says so. Named before the plain power-cut rules so the whole clause goes at once. */
+  [/elektrik\s+dağıtım\s+kurumu\s+kaynaklı\s+(?:yaşanan\s+)?(?:enerji|elektrik)\s+kesintisi\s+(?:nedeniyle|sebebiyle)/gi,
+    { en:'due to a power outage originating with the electricity distribution company,',
+      ar:'بسبب انقطاع في التيار الكهربائي ناجم عن شركة توزيع الكهرباء،',
+      fr:'en raison d’une coupure de courant imputable au distributeur d’électricité,' }],
+  [/enerji\s+kesintisi\s+(?:nedeniyle|sebebiyle)/gi,
+    { en:'due to a power outage,', ar:'بسبب انقطاع التيار الكهربائي،', fr:'en raison d’une coupure de courant,' }],
   [/elektrik\s+kesintisi\s+nedeniyle/gi,
     { en:'due to a power outage,', ar:'بسبب انقطاع التيار الكهربائي،', fr:'en raison d’une coupure de courant,' }],
   [/olumsuz\s+hava\s+koşulları\s+nedeniyle/gi,
@@ -220,6 +228,140 @@ const TR_PHRASES = [
     { en:'for your information', ar:'للعلم', fr:'pour information' }],
   [/durdurul(?:muştur|du)/gi, { en:'has been suspended', ar:'أُوقف', fr:'a été suspendu' }],
 ];
+/* --- Şehir Hatları (the city ferries) ----------------------------------------------------------
+   The ferry operator writes its notices in a few fixed shapes: a timetable change ("A kalkış saati: 15.40 yerine
+   16.10"), an event that re-routes or cancels trips, extra trips, a season change, a stop restored. Unlike a rail
+   fault they carry TIMES and DATES, which is where a wrong guess does real harm — so these are whole-sentence
+   templates that carry every number across untouched, they run only for ferry notices (the rail rules above would
+   turn "seferleri" into "trains"), and bestEffortTranslation refuses any result whose numbers differ from the
+   original. Wording outside these shapes is not guessed at: it falls through to the coverage check and is shown
+   in Turkish, flagged, exactly as a rail notice the rules cannot read is.
+   Month and weekday names are left in place by the rules and turned into words by the word table below — which is
+   why a rule only has to say where the date goes, not what the month is called. */
+const TR_FD_DATE = '(\\d{1,2}(?:\\s*[-–]\\s*\\d{1,2})?\\s+[A-Za-zÇĞİÖŞÜçğıöşü]+(?:\\s+\\d{4})?)';   // "12 Ekim 2026", "12-13 Eylül 2026", "7 Eylül"
+const TR_FD_DAY  = '(Pazartesi|Salı|Çarşamba|Perşembe|Cuma|Cumartesi|Pazar)';
+const TR_FD_TODAY = '(?:\\s*\\((?:[Bb]ugün|[Yy]arın)\\))?';                // the operator's "(Bugün)" on the day itself
+const TR_FD_TXT  = '((?:[^.;]|\\d\\.)+?)';                                // free text inside one sentence; "38. Yarışı" keeps its dot
+/* A name is one or two CAPITALISED words, and never reaches over a comma or semicolon — ASCII or Arabic. Those limits
+   matter because the templates run one after another on the same string: with a looser class a name capture swallowed
+   the Arabic "ذلك،" an earlier rule had just written and put it inside a line name. Rules that use these are compiled
+   without the i flag, which would make [A-Z] match lowercase too. */
+const TR_FD_CAP  = 'A-ZÇĞİÖŞÜ';
+const TR_FD_NAME = '((?:[' + TR_FD_CAP + '][^\\s,;،؛]*\\s+)?[' + TR_FD_CAP + '][^\\s,;،؛]*)';   // "Heybeliada", "Anadolu Kavağı", "Üsküdar-Haliç"
+const TR_FD_PLACE = '((?:[' + TR_FD_CAP + '][^\\s,.;،؛]*\\s+)?[' + TR_FD_CAP + '][^\\s,.;،؛]*)[\'’ʼ](?:nda|nde|da|de|ta|te)';   // "Beşiktaş Stadyumu’nda", "Haliç’te"
+const TR_FD_VERB = '(?:düzenlenecek|gerçekleştirilecek|yapılacak|düzenlenen|gerçekleştirilen)(?:\\s+olan)?';
+const TR_FD_WHY  = '(?:sebebiyle|nedeniyle)';
+/* "<date> [<weekday> günü | tarihinde] [<place>’da] düzenlenecek <event> sebebiyle" — four spellings of one clause,
+   differing only in whether a weekday and a place are named, so they are generated rather than written four times. */
+function trFerryEventRules(){
+  const out = [];
+  [true, false].forEach(function(hasPlace){ [true, false].forEach(function(hasDay){
+    const re = new RegExp(TR_FD_DATE + TR_FD_TODAY + '\\s+' + (hasDay ? TR_FD_DAY + '\\s+günü' : 'tarihinde') + '\\s+' +
+                          (hasPlace ? TR_FD_PLACE + '\\s+' : '') + TR_FD_VERB + '\\s+' + TR_FD_TXT + '\\s+' + TR_FD_WHY, 'g');
+    const day = hasDay ? 2 : 0, place = hasPlace ? (hasDay ? 3 : 2) : 0, ev = 1 + (hasDay ? 1 : 0) + (hasPlace ? 1 : 0) + 1;
+    out.push([re, {
+      en:'due to the $' + ev + ' on ' + (day ? '$' + day + ' ' : '') + '$1' + (place ? ' at $' + place : '') + ',',
+      ar:'بسبب $' + ev + ' ' + (day ? 'يوم $' + day + ' ' : 'بتاريخ ') + '$1' + (place ? ' في $' + place : '') + '،',
+      // "de l’événement suivant :" because the event arrives as a bare name or a bare noun ("concert") with no article to agree with
+      fr:'en raison de l’événement suivant : $' + ev + ', ' + (day ? 'le $' + day + ' ' : 'le ') + '$1' + (place ? ' à $' + place : '') + ','
+    }]);
+  }); });
+  return out;
+}
+const TR_FERRY = [
+  // official bodies and tours the notices name (proper names, so the words inside them must not be translated one by one)
+  [/Ulaştırma\s+ve\s+Altyapı\s+Bakanlığı\s+[İi]stanbul\s+Bölge\s+Liman\s+Başkanlığı/gi,
+    { en:'the İstanbul Regional Harbour Master’s Office of the Ministry of Transport and Infrastructure',
+      ar:'رئاسة ميناء إسطنبول الإقليمية التابعة لوزارة النقل والبنية التحتية',
+      fr:'la capitainerie régionale d’İstanbul du ministère des Transports et des Infrastructures' }],
+  [/Ulaştırma\s+ve\s+Altyapı\s+Bakanlığı/gi,
+    { en:'the Ministry of Transport and Infrastructure', ar:'وزارة النقل والبنية التحتية', fr:'le ministère des Transports et des Infrastructures' }],
+  [/[İi]stanbul\s+Valiliği/gi, { en:'İstanbul Governorate', ar:'محافظة إسطنبول', fr:'la préfecture d’İstanbul' }],
+  [/Gençlik\s+ve\s+Spor\s+[İi]l\s+Müdürlüğü/gi,
+    { en:'the Provincial Directorate of Youth and Sports', ar:'مديرية الشباب والرياضة بالولاية', fr:'la direction provinciale de la jeunesse et des sports' }],
+  [/[İi]stanbul\s+Büyükşehir\s+Belediyesi/gi,
+    { en:'İstanbul Metropolitan Municipality', ar:'بلدية إسطنبول الكبرى', fr:'la municipalité métropolitaine d’İstanbul' }],
+  [/uzun\s+Boğaz\s+Turu/gi, { en:'the long Bosphorus Tour', ar:'جولة البوسفور الطويلة', fr:'le long tour du Bosphore' }],
+  // season change: "<operator>’nin yaz tarifesi sona eriyor. Yeni düzenlenen kış tarifesi D1 ile D2 tarihleri arasında uygulanacak."
+  [/([^\s.;][^.;]*?)\s+iştiraki\s+(Şehir\s+Hatları\s+AŞ)[’']nin\s+(yaz|kış)\s+tarifesi\s+sona\s+eriyor/gi,
+    { en:'the $3 timetable of $2, an affiliate of $1, is ending',
+      ar:'ينتهي جدول $3 الخاص بـ$2 التابعة إلى $1',
+      fr:'l’horaire d’$3 de $2, filiale de $1, prend fin' }],
+  [new RegExp('[Yy]eni\\s+düzenlenen\\s+(yaz|kış)\\s+tarifesi,?\\s*' + TR_FD_DATE + '\\s+(?:ile|[-–])\\s*' + TR_FD_DATE + '\\s+tarihleri\\s+arasında\\s+uygulanacak', 'gi'),
+    { en:'the newly arranged $1 timetable will apply between $2 and $3',
+      ar:'سيُطبَّق جدول $1 الجديد في الفترة بين $2 و$3',
+      fr:'le nouvel horaire d’$1 s’appliquera entre le $2 et le $3' }],
+  [new RegExp(TR_FD_DATE + '\\s+' + TR_FD_DAY + '\\s+gününden\\s+itibaren\\s+(yaz|kış)\\s+tarifesine\\s+geçiyor', 'gi'),
+    { en:'is switching to the $3 timetable from $2 $1', ar:'تنتقل إلى جدول $3 اعتبارًا من يوم $2 $1', fr:'passe à l’horaire d’$3 à partir du $2 $1' }],
+  [new RegExp(TR_FD_DATE + '\\s+itibarıyla\\s+(yaz|kış)\\s+tarifesine\\s+geçiyor', 'gi'),
+    { en:'is switching to the $2 timetable as of $1', ar:'تنتقل إلى جدول $2 اعتبارًا من $1', fr:'passe à l’horaire d’$2 à compter du $1' }],
+  [/Avrupa[’']nın\s+en\s+büyük\s+toplu\s+deniz\s+ulaşım\s+sağlayıcısı\s+olan\s+ve\s+Şirket-i\s+Hayriye[’']den\s+bu\s+yana\s+(\d+)\s+yıldır\s+[İi]stanbul[’']da\s+deniz\s+ulaşımı\s+hizmeti\s+veren\s+(Şehir\s+Hatları)/gi,
+    { en:'$2, Europe’s largest public sea transport provider, which has provided sea transport in İstanbul for $1 years, since the Şirket-i Hayriye,',
+      ar:'$2، أكبر مزوّد للنقل البحري العام في أوروبا، التي تقدّم خدمة النقل البحري في إسطنبول منذ $1 عامًا، أي منذ Şirket-i Hayriye،',
+      fr:'$2, premier opérateur européen de transport maritime public, qui assure le transport maritime à İstanbul depuis $1 ans, depuis la Şirket-i Hayriye,' }],
+  // a timetable change
+  [/([^\s,;:.،؛]+)\s+Hattı[’']ndaki\s+(\S+)\s+seferinin\s+saatleri,?\s*/gi,
+    { en:'the times of the $2 trip on the $1 line ', ar:'مواعيد رحلة $2 على خط $1 ', fr:'les horaires de la traversée $2 sur la ligne $1 ' }],
+  [/Güncel\s+sefer\s+saatleri\s+aşağıda\s+belirtilmiştir/gi,
+    { en:'The current trip times are listed below', ar:'مواعيد الرحلات الحالية مبيّنة أدناه', fr:'Les horaires actuels sont indiqués ci-dessous' }],
+  [new RegExp(TR_FD_NAME + '\\s+kalkış\\s+saati:\\s*(\\d{1,2}[.:]\\d{2})\\s+yerine\\s+(\\d{1,2}[.:]\\d{2})', 'g'),
+    { en:'$1 departure: $3 instead of $2', ar:'المغادرة من $1: $3 بدلًا من $2', fr:'départ de $1 : $3 au lieu de $2' }],
+  [new RegExp(TR_FD_NAME + '\\s+varış\\s+saati:\\s*(\\d{1,2}[.:]\\d{2})\\s+yerine\\s+(\\d{1,2}[.:]\\d{2})', 'g'),
+    { en:'$1 arrival: $3 instead of $2', ar:'الوصول إلى $1: $3 بدلًا من $2', fr:'arrivée à $1 : $3 au lieu de $2' }],
+  // an authority's decision, and the event behind it
+  [/([^\s.;][^.;]*?)\s+tarafından\s+alınan\s+karar\s+doğrultusunda,?/gi,
+    { en:'in line with the decision taken by $1,', ar:'وفقًا للقرار الصادر عن $1،', fr:'conformément à la décision prise par $1,' }],
+  ...trFerryEventRules(),
+  // "<place>’da düzenlenecek <event> sebebiyle" — the event first, the date later in the sentence
+  [new RegExp(TR_FD_PLACE + '\\s+' + TR_FD_VERB + '\\s+' + TR_FD_TXT + '\\s+' + TR_FD_WHY + ',?', 'g'),
+    { en:'due to the $2 at $1,', ar:'بسبب $2 في $1،', fr:'en raison de l’événement suivant : $2, à $1,' }],
+  [/Sınava\s+girecek\s+tüm\s+öğrencilere\s+başarılar\s+dileriz/gi,
+    { en:'We wish all students taking the exam success', ar:'نتمنى النجاح لجميع الطلاب المتقدمين للامتحان', fr:'Nous souhaitons bonne réussite à tous les élèves qui passent l’examen' }],
+  [new RegExp(TR_FD_DATE + '\\s+tarihlerinde\\s+aşağıda\\s+detayları\\s+(?:belirtilen|verilen)\\s+seferlerde\\s+düzenlemeler\\s+yapılmıştır', 'gi'),
+    { en:'adjustments have been made to the trips detailed below on $1',
+      ar:'أُجريت تعديلات على الرحلات المبيّنة أدناه بتاريخ $1',
+      fr:'des modifications ont été apportées aux traversées détaillées ci-dessous aux dates du $1' }],
+  [/Bu\s+kapsamda;?/gi, { en:'Accordingly,', ar:'وبناءً على ذلك،', fr:'En conséquence,' }],
+  // "<line> Hattı seferleri [ise] <pier> İskelesi’ne [kadar gerçekleştirilecektir]" — the last clause carries the verb for all
+  [new RegExp(TR_FD_NAME + '\\s+Hattı\\s+seferleri\\s+ise\\s+' + TR_FD_NAME + '\\s+[İi]skelesi[\'’]ne\\s+kadar\\s+gerçekleştirilecektir', 'g'),
+    { en:'while $1 line trips will run as far as $2 Pier', ar:'بينما ستسير رحلات خط $1 حتى رصيف $2', fr:'tandis que les traversées de la ligne $1 iront jusqu’à l’embarcadère de $2' }],
+  [new RegExp(TR_FD_NAME + '\\s+Hattı\\s+seferleri\\s+' + TR_FD_NAME + '\\s+[İi]skelesi[\'’]ne\\s+kadar\\s+gerçekleştirilecektir', 'g'),
+    { en:'$1 line trips will run as far as $2 Pier', ar:'ستسير رحلات خط $1 حتى رصيف $2', fr:'les traversées de la ligne $1 iront jusqu’à l’embarcadère de $2' }],
+  [new RegExp(TR_FD_NAME + '\\s+Hattı\\s+seferleri\\s+' + TR_FD_NAME + '\\s+[İi]skelesi[\'’]ne,', 'g'),
+    { en:'$1 line trips will run as far as $2 Pier,', ar:'ستسير رحلات خط $1 حتى رصيف $2،', fr:'les traversées de la ligne $1 iront jusqu’à l’embarcadère de $2,' }],
+  // trips that cannot run, and lines where arrangements were made
+  [/aşağıda\s+detayları\s+(?:verilen|belirtilen)\s+seferlerimiz\s+ve\s+(.+?)\s+gerçekleştirilemeyecektir/gi,
+    { en:'the trips detailed below and $1 cannot be run', ar:'لا يمكن تنفيذ الرحلات المبيّنة أدناه و$1', fr:'les traversées détaillées ci-dessous et $1 ne pourront pas être assurées' }],
+  [/aşağıda\s+detayları\s+(?:verilen|belirtilen)\s+seferlerimiz\s+gerçekleştirilemeyecektir/gi,
+    { en:'the trips detailed below cannot be run', ar:'لا يمكن تنفيذ الرحلات المبيّنة أدناه', fr:'les traversées détaillées ci-dessous ne pourront pas être assurées' }],
+  [/([^\s.;][^.;]*?)\s+Hattı[’']nda\s+ise\s+aşağıda\s+detayları\s+(?:verilen|belirtilen)\s+seferler\s+gerçekleştirilemeyecektir/gi,
+    { en:'on the $1 line the trips detailed below cannot be run', ar:'وعلى خط $1 لا يمكن تنفيذ الرحلات المبيّنة أدناه', fr:'sur la ligne $1, les traversées détaillées ci-dessous ne pourront pas être assurées' }],
+  [/aşağıda\s+belirtilen\s+([^\s.;][^.;]*?)\s+Hattı[’']nda\s+düzenlemeler\s+gerçekleştirilmiştir/gi,
+    { en:'adjustments have been made on the $1 line, as detailed below', ar:'أُجريت تعديلات على خط $1 كما هو مبيّن أدناه', fr:'des modifications ont été apportées sur la ligne $1, comme indiqué ci-dessous' }],
+  // extra trips
+  [new RegExp(TR_FD_DATE + TR_FD_TODAY + '\\s+([“"][^”"]+[”"])\\s+kapsamında\\s+(\\d{1,2}[.:]\\d{2})\\s+(\\S+)\\s+ek\\s+seferi\\s+düzenlenecektir', 'gi'),
+    { en:'on $1, as part of $2, an extra $3 $4 trip will be run', ar:'بتاريخ $1، وضمن $2، ستُنظَّم رحلة إضافية $4 الساعة $3', fr:'le $1, dans le cadre de $2, une traversée supplémentaire $4 de $3 sera organisée' }],
+  [/aşağıda\s+belirtilen\s+ek\s+seferler\s+yapılacaktır/gi,
+    { en:'the extra trips listed below will be run', ar:'ستُنظَّم الرحلات الإضافية المبيّنة أدناه', fr:'les traversées supplémentaires indiquées ci-dessous seront assurées' }],
+  [/aşağıda\s+belirtilen\s+ek\s+sefer\s+düzenlenecektir/gi,
+    { en:'the extra trip listed below will be run', ar:'ستُنظَّم الرحلة الإضافية المبيّنة أدناه', fr:'la traversée supplémentaire indiquée ci-dessous sera assurée' }],
+  // a stop added or restored, a service resumed
+  [/(\S+)\s+Hattı[’']na\s+(\S+)\s+uğraması\s+eklenmiştir/gi,
+    { en:'a stop at $2 has been added to the $1 line', ar:'أُضيف توقف في $2 إلى خط $1', fr:'un arrêt à $2 a été ajouté à la ligne $1' }],
+  [new RegExp(TR_FD_DATE + '\\s+' + TR_FD_DAY + '\\s+günü\\s+geçerli\\s+olacak\\s+sefer\\s+tarifesi\\s+aşağıda\\s+belirtilmiştir', 'gi'),
+    { en:'The timetable valid on $2 $1 is given below', ar:'جدول الرحلات الساري يوم $2 $1 مبيّن أدناه', fr:'L’horaire en vigueur le $2 $1 est indiqué ci-dessous' }],
+  [/(\S+)\s+Hattı[’']\S*\s+(\S+)\s+[İi]skelesi\s+uğraması\s+normale\s+dönmüştür/gi,
+    { en:'the $2 Pier stop on the $1 line has returned to normal', ar:'عاد التوقف في رصيف $2 على خط $1 إلى وضعه الطبيعي', fr:'l’arrêt de l’embarcadère de $2 sur la ligne $1 est revenu à la normale' }],
+  [/([^\s.;][^.;]*?)\s+Hattı\s+seferlerimiz\s+normal\s+tarifesinde\s+(\S+)\s+[İi]skelesinden\s+yapılmaya\s+başlanmıştır/gi,
+    { en:'our $1 line trips have started running from $2 Pier on the normal timetable', ar:'بدأت رحلات خط $1 من رصيف $2 وفق الجدول العادي', fr:'les traversées de la ligne $1 ont repris au départ de l’embarcadère de $2 selon l’horaire normal' }],
+  // dates: "<date> tarihinden itibaren"
+  [new RegExp(TR_FD_DATE + '\\s+tarihinden\\s+itibaren\\s+aşağıdaki\\s+şekilde\\s+güncellenecektir(:?)', 'gi'),
+    { en:'will be updated from $1 as follows$2', ar:'ستُحدَّث اعتبارًا من $1 على النحو التالي$2', fr:'seront modifiés à partir du $1 comme suit $2' }],
+  [new RegExp(TR_FD_DATE + '\\s+tarihinden\\s+itibaren', 'gi'),
+    { en:'from $1', ar:'اعتبارًا من $1', fr:'à partir du $1' }],
+  // trips, in the ferry sense — after everything above, so the rail "trains" rule never sees them
+  [/seferler(?:imiz|ini|ine|i)?/gi, { en:'trips', ar:'الرحلات', fr:'les traversées' }]
+];
 // whole-word cleanup for the odd straggler the phrase rules missed (base forms only)
 const TR_WORDS = {
   've':      { en:'and', ar:'و', fr:'et' },
@@ -273,7 +415,32 @@ const TR_WORDS = {
   'nedeni':  { en:'reason', ar:'سبب', fr:'motif' },
   'güvenlik':{ en:'security', ar:'أمن', fr:'sécurité' },
   'etkinlik':{ en:'event', ar:'فعالية', fr:'événement' },
-  'maç':     { en:'match', ar:'مباراة', fr:'match' }
+  'maç':     { en:'match', ar:'مباراة', fr:'match' },
+  /* dates and seasons, for the ferry notices: a rule leaves the month or weekday where it stands and this turns it
+     into a word, in the order each language writes the date in ("12 October 2026", "12 أكتوبر 2026", "12 octobre 2026") */
+  'ocak':   { en:'January',   ar:'يناير',   fr:'janvier' },
+  'şubat':  { en:'February',  ar:'فبراير',  fr:'février' },
+  'mart':   { en:'March',     ar:'مارس',    fr:'mars' },
+  'nisan':  { en:'April',     ar:'أبريل',   fr:'avril' },
+  'mayıs':  { en:'May',       ar:'مايو',    fr:'mai' },
+  'haziran':{ en:'June',      ar:'يونيو',   fr:'juin' },
+  'temmuz': { en:'July',      ar:'يوليو',   fr:'juillet' },
+  'ağustos':{ en:'August',    ar:'أغسطس',   fr:'août' },
+  'eylül':  { en:'September', ar:'سبتمبر',  fr:'septembre' },
+  'ekim':   { en:'October',   ar:'أكتوبر',  fr:'octobre' },
+  'kasım':  { en:'November',  ar:'نوفمبر',  fr:'novembre' },
+  'aralık': { en:'December',  ar:'ديسمبر',  fr:'décembre' },
+  'pazartesi':{ en:'Monday',    ar:'الاثنين',  fr:'lundi' },
+  'salı':     { en:'Tuesday',   ar:'الثلاثاء', fr:'mardi' },
+  'çarşamba': { en:'Wednesday', ar:'الأربعاء', fr:'mercredi' },
+  'perşembe': { en:'Thursday',  ar:'الخميس',   fr:'jeudi' },
+  'cuma':     { en:'Friday',    ar:'الجمعة',   fr:'vendredi' },
+  'cumartesi':{ en:'Saturday',  ar:'السبت',    fr:'samedi' },
+  'pazar':    { en:'Sunday',    ar:'الأحد',    fr:'dimanche' },
+  'yaz':     { en:'summer', ar:'الصيف',  fr:'été' },
+  'kış':     { en:'winter', ar:'الشتاء', fr:'hiver' },
+  'konser':  { en:'concert', ar:'حفل موسيقي', fr:'concert' },
+  'sınavı':  { en:'exam',    ar:'امتحان',    fr:'examen' }
 };
 const TR_TARGETS = ['en', 'ar', 'fr'];
 /* Turkish is verb-final and puts both the transfer clause and the reason before the thing
@@ -303,18 +470,27 @@ const TR_REORDER = {
     [/^\s*(?!بسبب)(.+?)\s+(بسبب [^،]*)،\s*(.+?)[.\s]*$/, '$1 $3 $2.']
   ]
 };
-function translateTR(text, target){
+/* `mode` is the kind of notice being translated; only 'ferry' changes anything. A ferry notice goes through its own
+   templates first (TR_FERRY), skips the reorder pass below — the templates already come out in the target
+   language's word order, and that pass looks for a "due to" anywhere in the text, which in a notice of several
+   sentences would drag a reason across a full stop — and gets a capital after each full stop, since a template
+   that starts a later sentence cannot know it is not the start of the text. */
+function translateTR(text, target, mode){
   const tgt = TR_TARGETS.indexOf(target) >= 0 ? target : 'en';
+  const ferry = mode === 'ferry';
   let s=' '+text+' ';
+  if(ferry) for(const [re,rep] of TR_FERRY) s=s.replace(re, rep[tgt]);
   for(const [re,rep] of TR_PHRASES) s=s.replace(re, rep[tgt]);
   // whole-word stragglers (base forms only; station/line names pass through unchanged)
   s=s.replace(/[A-Za-zÇĞİıÖŞÜçğöşü]+/g, w=>{ const k=w.toLocaleLowerCase('tr');
                                              return (TR_WORDS[k] && TR_WORDS[k][tgt]) || w; });
-  for(const [re,rep] of (TR_REORDER[tgt]||[])) s = s.replace(re, rep);
+  if(!ferry) for(const [re,rep] of (TR_REORDER[tgt]||[])) s = s.replace(re, rep);
   s=s.replace(/\s+([,،])/g,'$1').replace(/([,،])\s*[,،]/g,'$1').replace(/\s{2,}/g,' ').replace(/\s+\./g,'.').trim();
   // Arabic is caseless; capitalising its first character is a no-op, but doing it only where
   // it means something keeps the intent legible.
   if(tgt !== 'ar') s=s.charAt(0).toUpperCase()+s.slice(1);
+  if(ferry && tgt !== 'ar') s=s.replace(/([.!?]\s+)(\p{Ll})/gu, (m,a,b)=>a+b.toUpperCase());
+  if(ferry && tgt === 'ar') s=s.replace(/;/g,'؛');          // the operator's list separator, in Arabic's own mark
   if(s && !/[.!?]$/.test(s)) s+='.';
   return s;
 }
@@ -354,6 +530,7 @@ const TR_EMITTED = (function(){
     const add = str => { for(const w of (String(str).replace(/\$\d/g,' ').match(TR_TOKEN)||[])){
                            set.add(w.toLowerCase()); set.add(w.toLocaleLowerCase('tr')); } };
     for(const rule of TR_PHRASES) add(rule[1][tgt]);
+    for(const rule of TR_FERRY) add(rule[1][tgt]);
     for(const k in TR_WORDS) add(TR_WORDS[k][tgt]);
     for(const ro of (TR_REORDER[tgt]||[])) add(ro[1]);
     out[tgt] = set;
@@ -402,16 +579,21 @@ const TR_FALLBACK_SHARE = 0.25;
    The judgement is made per destination language: the rules can cover an announcement well
    enough in one language and not in another, and each reader is owed the honest answer for
    the language they are actually reading. */
-function bestEffortTranslation(tr, names, target){
+/* The numbers in an announcement — times, dates, counts — are the one thing a translation must not change. Rules
+   carry them across by capture, but a rule that dropped one, doubled one or swapped two would still read like a
+   sentence, so this compares them: the translation must contain exactly the numbers the original does (order
+   aside, since the languages order a date differently). Any difference and the original is shown instead. */
+function trNumbers(s){ return (String(s||'').match(/\d+/g) || []).sort().join(','); }
+function bestEffortTranslation(tr, names, target, mode){
   const tgt   = TR_TARGETS.indexOf(target) >= 0 ? target : 'en';
   const src   = String(tr||'').trim();
-  const out   = translateTR(src, tgt);
+  const out   = translateTR(src, tgt, mode);
   const share = turkishShare(out, names, tgt);
-  return share > TR_FALLBACK_SHARE ? { text:src, lang:'tr', share:share }
-                                   : { text:out, lang:tgt, share:share };
+  return (share > TR_FALLBACK_SHARE || trNumbers(out) !== trNumbers(src)) ? { text:src, lang:'tr', share:share }
+                                                                          : { text:out, lang:tgt, share:share };
 }
 // the English-only entry point the scraper and the older call sites use
-function bestEffortEnglish(tr, names){ return bestEffortTranslation(tr, names, 'en'); }
+function bestEffortEnglish(tr, names, mode){ return bestEffortTranslation(tr, names, 'en', mode); }
 // ==TRANSLATOR-END==
 async function llmTranslate(tr){
   const key=process.env.ANTHROPIC_API_KEY; if(!key) return null;
@@ -556,6 +738,14 @@ async function main(){
     try{ ferry=JSON.parse(fs.readFileSync(OUT,'utf8')).filter(e=>e.mode==='ferry'); }catch(e){ ferry=[]; }
     if(ferry.length) console.error('kept', ferry.length, 'ferry notice(s) from the current file');
   }
+  /* The English a ferry notice is stored with comes from the same ferry templates the app runs for every reader, on the
+     notices read just now AND on any carried over from the current file (a rule added since is picked up on the next
+     run). A notice the templates do not cover keeps its Turkish, flagged, as a rail notice the rules cannot read does. */
+  ferry.forEach(function(e){
+    const best = bestEffortEnglish(e.messageTr || e.message, [e.ref].concat(e.lines||[]).filter(Boolean), 'ferry');
+    e.message = best.text; e.messageLang = best.lang;
+    if(best.lang === 'tr') e.translatedBy = 'none'; else delete e.translatedBy;
+  });
   // merge curated manual entries (lines the metro.istanbul page does NOT cover — Marmaray/B2/
   // ferries/buses). Live parse wins for any ref it actually reports.
   let manual=[]; try{ manual=JSON.parse(fs.readFileSync(path.join(__dirname,'disruptions-manual.json'),'utf8')); }catch(e){}
