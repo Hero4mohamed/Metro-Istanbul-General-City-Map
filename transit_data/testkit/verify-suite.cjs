@@ -946,6 +946,21 @@ const MUTATIONS = [
     apply: h => h.replace('    (foldQ(g.name).startsWith(foldQ(l.name)) && metersBetween([g.lat,g.lng],[l.lat,l.lng])<200)));',
                           '    metersBetween([g.lat,g.lng],[l.lat,l.lng])<200));'),
   },
+  {
+    name: 'run the typo pass even when a place already matches the name in full',
+    expect: 'a query that already has a real match by name does not go looking for typos',
+    apply: h => h.replace('if (top.length < 3 && !goodName && F.length >= 4 && !opt.noFuzzy) {', 'if (top.length < 3 && F.length >= 4 && !opt.noFuzzy) {'),
+  },
+  {
+    name: 'let the letter-mask filter pass every word, so each typo scans the whole vocabulary with an edit distance',
+    expect: 'the letter-mask filter never rules out a word that really is within the edit limit',
+    apply: h => h.replace('return (((x + (x >>> 4)) & 0x0F0F0F0F) * 0x01010101) >>> 24; }', 'return 0; }'),
+  },
+  {
+    name: 'ask the public geocoder as well even when the file found the place',
+    expect: 'the network is asked about a place only when the file found next to nothing, or when the query has a number',
+    apply: h => h.replace('function gazThin(n, q) { return n < 2 || /\\d/.test(q); }', 'function gazThin(n, q) { return true; }'),
+  },
 ];
 
 const original = fs.readFileSync(SRC, 'utf8');

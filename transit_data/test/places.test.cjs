@@ -19,7 +19,7 @@ function engine() {
   const a = html.indexOf('/* ==GAZETTEER-PURE-START== */'), b = html.indexOf('/* ==GAZETTEER-PURE-END== */');
   assert.ok(a > 0 && b > a, 'the gazetteer markers are not in the built page');
   const mod = { exports: {} };
-  new Function('module', 'exports', html.slice(a, b) + '\nmodule.exports={gazFold,gazDecode,gazSearch,gazTypesFor,gazEdit,gazMeters};')(mod, mod.exports);
+  new Function('module', 'exports', html.slice(a, b) + '\nmodule.exports={gazFold,gazDecode,gazSearch,gazTypesFor,gazEdit,gazMeters,gazMask,gazBits,gazThin};')(mod, mod.exports);
   return mod.exports;
 }
 const E = engine();
@@ -197,6 +197,46 @@ test('the whole name outranks a longer name that merely starts with it', () => {
   assert.ok(inside.length === 1 && start.length >= 1 && start[0].score > inside[0].score, 'a mid-word match should score below a word-start match');
 });
 
+/* The typo pass runs on a phone on a keystroke. Measured against the real İstanbul file (128,000 places) it used to take 150-1000 ms
+   (a scan of the whole vocabulary with an edit distance per word, then a full re-search for each of up to forty corrections); these
+   are the properties that bring it to a few milliseconds, so that an edit cannot quietly give them back. */
+test('the letter-mask filter never rules out a word that really is within the edit limit', () => {
+  const rnd = (() => { let x = 12345; return () => (x = (x * 1103515245 + 12345) & 0x7fffffff) / 0x7fffffff; })();
+  const L = 'abcdefghijklmnopqrstuvwxyz0123456789', pick = () => L[Math.floor(rnd() * L.length)];
+  for (let n = 0; n < 4000; n++) {
+    let w = ''; const len = 4 + Math.floor(rnd() * 8); for (let i = 0; i < len; i++) w += pick();
+    let v = w; const edits = 1 + Math.floor(rnd() * 2);
+    for (let e = 0; e < edits; e++) {
+      const p = Math.floor(rnd() * (v.length + 1)), kind = Math.floor(rnd() * 3);
+      v = kind === 0 ? v.slice(0, p) + pick() + v.slice(p) : kind === 1 ? v.slice(0, p) + v.slice(p + 1) : v.slice(0, p) + pick() + v.slice(p + 1);
+    }
+    const d = E.gazEdit(w, v, 2);
+    if (d <= 2) assert.ok(E.gazBits(E.gazMask(w) ^ E.gazMask(v)) <= 2 * 2, w + ' -> ' + v + ' is ' + d + ' edit(s) but the mask would discard it');
+  }
+  assert.strictEqual(E.gazBits(0), 0); assert.strictEqual(E.gazBits(-1), 32); assert.strictEqual(E.gazBits(0b1011), 3);
+  // and it must actually filter: unrelated words are well outside the band, so the edit distance runs on few words, not all of them
+  assert.ok(E.gazBits(E.gazMask('kadikoy') ^ E.gazMask('besiktas')) > 4 && E.gazBits(E.gazMask('caddesi') ^ E.gazMask('universitesi')) > 4, 'the mask separates nothing');
+});
+test('a query that already has a real match by name does not go looking for typos', () => {
+  const G2 = E.gazDecode(JSON.parse(JSON.stringify(file)));
+  const r = E.gazSearch(G2, 'galata kulesi', { org: ORG, limit: 10, typeWords: TW });
+  assert.ok(r.length >= 1 && G.name[r[0].i] === 'Galata Kulesi');
+  assert.strictEqual(G2.vocab, null, 'a typo pass ran although the name matched in full (one extra scan of every word, and worse results added)');
+});
+test('words that all exist but never together are not mistaken for typos', () => {
+  const G2 = E.gazDecode(JSON.parse(JSON.stringify(file)));
+  const r = E.gazSearch(G2, 'galata zeytin', { org: ORG, limit: 10, typeWords: TW });
+  assert.deepStrictEqual(r, [], 'two real words with no place between them returned ' + r.length + ' rows');
+});
+test('the same thing mapped twice nearby is one answer; two far apart are two', () => {
+  const raw = rawCity();
+  const cafe = (id, lat) => ({ id: 'n' + id, tags: { name: 'Twin Cafe', amenity: 'cafe' }, lat, lon: 29.03 });
+  raw.pois.push(cafe(901, 40.9700), cafe(902, 40.9712) /* 130 m: past the processor's 80 m, inside the engine's 150 m */, cafe(903, 40.9790) /* 1 km away */);
+  const G2 = E.gazDecode(JSON.parse(JSON.stringify(P.build(raw).out)));
+  const r = E.gazSearch(G2, 'twin cafe', { org: ORG, limit: 10, typeWords: TW });
+  assert.strictEqual(r.length, 2, 'expected the pair to collapse and the far one to stay: ' + r.length + ' rows');
+});
+
 test('the typo helper is a real edit distance with an early exit', () => {
   assert.strictEqual(E.gazEdit('kadikoy', 'kadikoy', 2), 0);
   assert.strictEqual(E.gazEdit('kadikoy', 'kadikoyy', 2), 1);
@@ -210,7 +250,15 @@ test('the geocoder asks the offline file first and the network only to top up a 
   const g = html.indexOf('async function geocode(q)'); assert.ok(g > 0, 'geocode not found');
   const body = html.slice(g, g + 900);
   assert.ok(body.indexOf('gazFind(') > 0 && body.indexOf('gazFind(') < body.indexOf('photonSearch('), 'the network is asked before the offline file');
-  assert.ok(/local\.length\s*>=\s*5/.test(body), 'an answer with enough offline results still goes to the network');
+  assert.ok(/gazThin\(local\.length,\s*q\)/.test(body), 'an answer with enough offline results still goes to the network');
+  assert.ok(/gazThin\(top\.length \+ gz\.length,\s*q\)/.test(html) && /gazThin\(gz\.length,\s*q\)/.test(html), 'the search box or the planner asks the network about a place the file already found');
+});
+test('the network is asked about a place only when the file found next to nothing, or when the query has a number', () => {
+  assert.strictEqual(E.gazThin(0, 'galata'), true);
+  assert.strictEqual(E.gazThin(1, 'galata'), true);
+  assert.strictEqual(E.gazThin(2, 'galata kulesi'), false, 'two real answers from the file are enough');
+  assert.strictEqual(E.gazThin(8, 'bagdat caddesi 120'), true, 'a house number is the one thing the file does not hold');
+  assert.strictEqual(E.gazThin(8, 'kadikoy'), false);
 });
 test('turning online lookup off stops the network lookup, and is a switch in Settings in every language', () => {
   const html = H.html();

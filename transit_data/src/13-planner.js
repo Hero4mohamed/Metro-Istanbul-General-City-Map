@@ -134,7 +134,7 @@ function acSearch(key, q, listEl, onPick){
   clearTimeout(_acDeb[key]);
   // the network only tops up a thin answer
   if(willGeo) _acDeb[key]=setTimeout(async ()=>{
-    if(gz.length >= 5) return;
+    if(!gazThin(gz.length, q)) return;
     const on = dedupeGeo(await photonSearch(q), local.concat(gz));
     if(my!==_acTok[key]) return;                          // a newer keystroke superseded this one
     if(on.length || !gz.length) draw(gz.concat(on), false);

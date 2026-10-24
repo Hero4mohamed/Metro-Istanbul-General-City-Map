@@ -165,11 +165,22 @@ function gazEdit(a, b, lim) {
   }
   return prev[m];
 }
+/* Which letters a word uses, as bits: an edit changes at most two of them, so two words more than 2×lim bits apart cannot be
+   within lim edits of each other. That one integer test rules out almost the whole vocabulary before any edit distance is run. */
+function gazMask(w) {
+  let m = 0;
+  for (let i = 0; i < w.length; i++) { const c = w.charCodeAt(i); m |= 1 << (c >= 97 && c <= 122 ? c - 97 : 26 + (c % 6)); }
+  return m;
+}
+function gazBits(x) { x = x - ((x >>> 1) & 0x55555555); x = (x & 0x33333333) + ((x >>> 2) & 0x33333333); return (((x + (x >>> 4)) & 0x0F0F0F0F) * 0x01010101) >>> 24; }
+/* the words of the file (4+ letters), how often each is used, and their letter masks: built once, on the first typo */
 function gazVocab(G) {
   if (G.vocab) return G.vocab;
-  const seen = new Set();
-  for (let i = 0; i < G.n; i++) { const w = G.fn[i].split(' '); for (let k = 0; k < w.length; k++) if (w[k].length >= 4) seen.add(w[k]); }
-  G.vocab = Array.from(seen);
+  const count = new Map();
+  for (let i = 0; i < G.n; i++) { const w = G.fn[i].split(' '); for (let k = 0; k < w.length; k++) if (w[k].length >= 4) count.set(w[k], (count.get(w[k]) || 0) + 1); }
+  const words = Array.from(count.keys()), mask = new Int32Array(words.length), freq = new Uint32Array(words.length);
+  for (let v = 0; v < words.length; v++) { mask[v] = gazMask(words[v]); freq[v] = count.get(words[v]); }
+  G.vocab = { words: words, mask: mask, freq: freq };
   return G.vocab;
 }
 
@@ -213,8 +224,9 @@ function gazSearch(G, q, opt) {
   const tHood = toks.map(function (tk) { return gazAreasFor(G.fh, tk); });
 
   const top = [], keep = limit * 4;                                      // sorted descending by score
-  let floor = -1e9;
+  let floor = -1e9, goodName = false;                                    // goodName: some place has every word of the query in its NAME
   const consider = function (i, base, typeOnly) {
+    if (!typeOnly && base >= GAZ_WORD) goodName = true;
     const ty = G.types[G.t[i]];
     let s = base + (GAZ_TYPE_WEIGHT[ty] || 40) * (typeOnly ? 0.3 : 1) + G.r[i] * 26;
     let m = -1;
@@ -274,17 +286,28 @@ function gazSearch(G, q, opt) {
     consider(i, nameWords ? GAZ_CTX + 45 * nameWords / T : GAZ_TYPE, nameWords === 0);
   }
 
-  // few or no results: tolerate a typo in one word, by finding the real word in the file's vocabulary
-  if (top.length < 3 && F.length >= 4 && !opt.noFuzzy) {
-    const vocab = gazVocab(G), swaps = [];
+  /* Few or no results, and none of them a real match of the name: tolerate a typo in one word, by finding the real word in the
+     file's vocabulary. A word that IS a word of the file (or the start of one) is not the typo, so it is left alone — which also
+     means a query made only of real words ("starbucks taksim") costs one scan of the vocabulary and no re-search. The best few
+     corrections are tried, nearest first and commonest first: each is a full search, so the number is what the keystroke pays. */
+  if (top.length < 3 && !goodName && F.length >= 4 && !opt.noFuzzy) {
+    const vocab = gazVocab(G), cand = [], swaps = [];
     toks.forEach(function (tk) {
       if (tk.length < 4) return;
-      const lim = tk.length <= 5 ? 1 : 2;
-      for (let v = 0; v < vocab.length && swaps.length < 40; v++) {
-        const w = vocab[v];
-        if (w !== tk && Math.abs(w.length - tk.length) <= lim && gazEdit(tk, w, lim) <= lim) swaps.push([tk, w]);
+      const lim = tk.length <= 5 ? 1 : 2, tm = gazMask(tk), found = [];
+      let known = false;
+      for (let v = 0; v < vocab.words.length; v++) {
+        const w = vocab.words[v];
+        if (w.startsWith(tk)) { known = true; break; }
+        if (Math.abs(w.length - tk.length) <= lim && gazBits(vocab.mask[v] ^ tm) <= 2 * lim) {
+          const d = gazEdit(tk, w, lim);
+          if (d <= lim) found.push([tk, w, d, vocab.freq[v]]);
+        }
       }
+      if (!known) for (let z = 0; z < found.length; z++) cand.push(found[z]);
     });
+    cand.sort(function (a, b) { return a[2] - b[2] || b[3] - a[3]; });
+    for (let z = 0; z < cand.length && swaps.length < 3; z++) swaps.push([cand[z][0], cand[z][1]]);
     if (swaps.length) {
       const have = {}; top.forEach(function (x) { have[x.i] = 1; });
       for (let w = 0; w < swaps.length; w++) {
@@ -300,13 +323,24 @@ function gazSearch(G, q, opt) {
   // identical names (a chain, a numbered street) are not worth more than four rows each
   const out = [], per = {};
   for (let z = 0; z < top.length && out.length < limit; z++) {
-    const key = G.fn[top[z].i] + '|' + G.t[top[z].i];
+    const i = top[z].i, key = G.fn[i] + '|' + G.t[i];
+    // the same thing mapped twice (two nodes for one terminal, a building and its entrance) is one answer
+    let twin = false;
+    for (let k = 0; k < out.length && !twin; k++) {
+      const j = out[k].i;
+      twin = G.fn[j] === G.fn[i] && G.t[j] === G.t[i] && gazMeters(G.lat[j], G.lng[j], G.lat[i], G.lng[i]) < (GAZ_AREA[G.types[G.t[i]]] ? 500 : 150);
+    }
+    if (twin) continue;
     per[key] = (per[key] || 0) + 1;
     if (per[key] > 4) continue;
     out.push(top[z]);
   }
   return out;
 }
+/* Does the network get asked at all? Only when the file's answer is thin (fewer than two places) or the query has a number in it
+   (a house number is the one thing the file does not hold). A place the file already found is not improved by a public geocoder's
+   guesses beside it ("Galata Kulesi" next to "Kule Optik"), and every call is a call to a service that promises nothing. */
+function gazThin(n, q) { return n < 2 || /\d/.test(q); }
 /* ==GAZETTEER-PURE-END== */
 
 /* ---- everything below talks to the page: the type table, the language, the network ------------------------------ */

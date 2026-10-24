@@ -296,7 +296,7 @@ document.addEventListener("click", e=>{
     else paint('<div class="omni-note">' + svgEsc(onlineSearchPref && foldQ(q).length >= 3 ? t("omniLook") : t("omniNone")) + "</div>");
 
     // the network only tops up a thin answer
-    if(top.length + gz.length >= 4 || foldQ(q).length < 3) return;
+    if(!gazThin(top.length + gz.length, q) || foldQ(q).length < 3) return;
     const on = (await photonSearch(q)).filter(g => !gz.some(z => foldQ(z.name) === foldQ(g.name)) && !top.some(l => fold(l.name) === fold(g.name)));
     if(my !== seq) return;
     if(!on.length){ if(!top.length && !gz.length && !bus.length) paint('<div class="omni-note">' + svgEsc(onlineSearchPref ? t("omniNone") : t("omniOff")) + "</div>"); return; }

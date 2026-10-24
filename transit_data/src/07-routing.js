@@ -387,7 +387,7 @@ async function geocode(q){
   if(!key || key.length < 2) return [];
   await gazWhen(1200);
   const local = gazFind(q, 8);
-  if(local.length >= 5 || key.length < 3) return local;
+  if(!gazThin(local.length, q) || key.length < 3) return local;
   const online = await photonSearch(q);
   const fresh = online.filter(o => !local.some(l => foldQ(l.name) === foldQ(o.name) && metersBetween([l.lat,l.lng],[o.lat,o.lng]) < 400));
   return local.concat(fresh);
