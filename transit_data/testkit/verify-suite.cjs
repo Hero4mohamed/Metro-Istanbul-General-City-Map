@@ -1002,6 +1002,47 @@ const MUTATIONS = [
     expect: 'the preview card shown when the link is shared is 1200 x 630, matches the page\'s tags, and carries the new icon',
     apply: h => h.replace('og:image:width" content="1200"', 'og:image:width" content="1100"'),
   },
+  // ---- V4.1: the loading screen ----
+  {
+    name: 'take away the CSS fallback that removes the loading screen after 12 s, so a stuck script leaves it over the app for good',
+    expect: 'the loading screen can never be left covering the app: it sits above everything, fades out, and removes itself in CSS after 12 s',
+    apply: h => h.replace('animation:bsGone .01s linear 12s forwards;', ''),
+  },
+  {
+    name: 'put the loading screen under the map controls',
+    expect: 'the loading screen can never be left covering the app: it sits above everything, fades out, and removes itself in CSS after 12 s',
+    apply: h => h.replace('#bootSplash{position:fixed;inset:0;z-index:99999;', '#bootSplash{position:fixed;inset:0;z-index:5;'),
+  },
+  {
+    name: 'let the faded-out loading screen keep catching touches',
+    expect: 'the loading screen can never be left covering the app: it sits above everything, fades out, and removes itself in CSS after 12 s',
+    apply: h => h.replace('#bootSplash.done{opacity:0;pointer-events:none;}', '#bootSplash.done{opacity:0;}'),
+  },
+  {
+    name: 'start the loading screen on black again, a different colour from the one the phone shows before the page paints',
+    expect: 'the colour the phone shows first (manifest) is the colour the page starts with, so nothing flashes between them',
+    apply: h => h.replace('#bootSplash{position:fixed;inset:0;z-index:99999;background:#0E2A3F;', '#bootSplash{position:fixed;inset:0;z-index:99999;background:#000000;'),
+  },
+  {
+    name: 'let the loading screen wait up to a minute for a map that never answers',
+    expect: 'the script that does this is in the page the user receives',
+    apply: h => h.replace('setTimeout(dismiss, 6000);', 'setTimeout(dismiss, 60000);'),
+  },
+  {
+    name: 'drop the minimum time on the loading screen, so it flashes by on a fast connection',
+    expect: 'the script that does this is in the page the user receives',
+    apply: h => h.replace('Math.max(0, 700 - ', 'Math.max(0, 0 - '),
+  },
+  {
+    name: 'stop preloading the loading screen\'s pictures, so it paints empty before they arrive',
+    expect: 'the loading screen is the first thing in the page, is announced as a status, and its pictures are preloaded',
+    apply: h => h.replace('<link rel="preload" as="image" href="assets/splash-bg.jpg">', ''),
+  },
+  {
+    name: 'stop announcing the loading screen to a screen reader',
+    expect: 'the loading screen is the first thing in the page, is announced as a status, and its pictures are preloaded',
+    apply: h => h.replace('<div id="bootSplash" role="status" aria-label="Loading">', '<div id="bootSplash" aria-label="Loading">'),
+  },
   // ---- how old the rail and ferry notices are ----
   {
     name: 'never call the notices out of date, however long since the page was read',
