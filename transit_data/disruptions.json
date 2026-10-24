@@ -36,17 +36,6 @@
     "messageLang": "en"
   },
   {
-    "id": "tf1-al-m-yor",
-    "ref": "TF1",
-    "source": "metro.istanbul",
-    "scope": "line",
-    "severity": "minor",
-    "title": "Service notice",
-    "messageTr": "Elektrik dağıtım kurumu kaynaklı yaşanan enerji kesintisi nedeniyle seferler yapılamamaktadır.",
-    "message": "Due to a power outage originating with the electricity distribution company, services cannot operate.",
-    "messageLang": "en"
-  },
-  {
     "id": "ferry-3788",
     "mode": "ferry",
     "ref": null,
