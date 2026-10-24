@@ -65,12 +65,6 @@ function vecColours(tone) {
     halo: day ? [255, 255, 255] : [12, 15, 23], haloA: day ? .92 : .9
   };
 }
-/* the dot beside a place name: a quiet hue per kind of place, so a row of names reads at a glance */
-const VEC_DOT = {
-  food: [226, 168, 92], shop: [140, 166, 224], health: [232, 122, 122], sights: [190, 150, 232], nature: [118, 190, 140],
-  service: [160, 170, 188], transport: [116, 200, 222], worship: [214, 192, 140], education: [136, 178, 232], stay: [226, 150, 192],
-  sports: [128, 210, 172], culture: [200, 150, 210], other: [160, 170, 188], area: [160, 170, 188], street: [160, 170, 188]
-};
 /* the zoom (in the app's numbering) at which each kind of place first gets a name on the map. Landmarks and airports are
    readable from afar; what you would only want when you are close waits until you are. A type not listed is the last tier. */
 const VEC_TIER = {
@@ -214,13 +208,11 @@ function vecStyle(tone, lang, glyphs) {
   /* ---- the places people go: shops, food, health, worship… from the app's own file (empty until it has loaded) ---- */
   VEC_TIERS.forEach(function (tier) {
     const f = ['==', ['get', 'tier'], tier];
-    L.push({ id: 'poi-dot-' + tier, type: 'circle', source: VEC_PLACES, minzoom: vecZ(tier), filter: f,
-             paint: { 'circle-radius': vecRamp([[tier, 2.4], [tier + 3, 3.4]]), 'circle-color': ['get', 'dot'], 'circle-opacity': .9,
-                      'circle-stroke-width': 1, 'circle-stroke-color': rgb(V.halo, V.haloA) } });
+    // names only, no marker: a dot for every shop made a busy street look crowded, and the name says what it needs to
     L.push({ id: 'poi-label-' + tier, type: 'symbol', source: VEC_PLACES, minzoom: vecZ(tier), filter: f,
              layout: { 'text-field': ['coalesce', ['get', lang === 'en' ? 'en' : (lang === 'ar' ? 'ar' : 'n')], ['get', 'n']], 'text-font': VEC_FONT,
-                       'text-size': vecRamp([[tier, 10.5], [tier + 2, 12], [tier + 4, 14]], 1.2), 'text-anchor': 'left', 'text-offset': [.75, 0],
-                       'text-max-width': 9, 'text-padding': 3, 'text-optional': true, 'symbol-sort-key': ['-', 0, ['get', 'r']] },
+                       'text-size': vecRamp([[tier, 10.5], [tier + 2, 12], [tier + 4, 14]], 1.2), 'text-anchor': 'center',
+                       'text-max-width': 9, 'text-padding': 3, 'symbol-sort-key': ['-', 0, ['get', 'r']] },
              paint: paintText(V.ink, 1.6) });
   });
   // the tiles' own places of interest, until the app's file is there (and for a city that has none): the few the tiles carry
@@ -247,7 +239,7 @@ function vecPlacesData(G, meta) {
   for (let i = 0; i < G.n; i++) {
     const key = G.types[G.t[i]], m = meta[key];
     if (!m || SKIP[key] || m[1] === 'area' || m[1] === 'street') continue;
-    const props = { n: G.name[i], tier: vecTierOf(key, G.r[i]), r: G.r[i], dot: vecRgb(VEC_DOT[m[1]] || VEC_DOT.other) };
+    const props = { n: G.name[i], tier: vecTierOf(key, G.r[i]), r: G.r[i] };
     if (G.en[i]) props.en = G.en[i];
     if (G.ar[i]) props.ar = G.ar[i];
     feats.push({ type: 'Feature', geometry: { type: 'Point', coordinates: [G.lng[i], G.lat[i]] }, properties: props });
@@ -288,7 +280,7 @@ const VectorBase = (typeof L !== 'undefined' && L.MaplibreGL) ? L.MaplibreGL.ext
     // a style that never arrives (the tile service is unreachable, the worker was blocked): fall back to the raster map
     setTimeout(function () { if (!ready && errors > 0 && self._map && typeof vecFallback === 'function') vecFallback(self._key); }, 15000);
   },
-  /* the app's own file of places, shown as names and dots; kept so a re-added layer (a base-map switch builds a new GL map)
+  /* the app's own file of places, shown as names; kept so a re-added layer (a base-map switch builds a new GL map)
      gets it again */
   setPlaces: function (fc) { this._places = fc; this._applyPlaces(); },
   _applyPlaces: function () {

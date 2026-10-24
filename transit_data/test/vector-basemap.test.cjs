@@ -21,7 +21,7 @@ function vec() {
   const html = H.html();
   const pick = (a, b) => { const i = html.indexOf(a), j = html.indexOf(b); assert.ok(i > 0 && j > i, a + ' not in the built page'); return html.slice(i, j); };
   const code = pick('/* ==BASEMAP-PURE-START== */', '/* ==BASEMAP-PURE-END== */') + '\n' + pick('/* ==VECTOR-BASEMAP-PURE-START== */', '/* ==VECTOR-BASEMAP-PURE-END== */') +
-    '\nmodule.exports={ATLAS_PAL,contrastRgb,vecStyle,vecName,vecColours,vecPlacesData,VEC_TIER,VEC_TIERS,VEC_DOT,vecZ,vecTierOf};';
+    '\nmodule.exports={ATLAS_PAL,contrastRgb,vecStyle,vecName,vecColours,vecPlacesData,VEC_TIER,VEC_TIERS,vecZ,vecTierOf};';
   const mod = { exports: {} };
   new Function('module', 'exports', code)(mod, mod.exports);
   return mod.exports;
@@ -117,7 +117,9 @@ test('every kind of place the search knows has a place on the map, and no type i
   for (const k of Object.keys(V.VEC_TIER)) assert.ok(P.TYPES.includes(k), 'VEC_TIER names a type the places file does not have: ' + k);
   const missing = P.TYPES.filter(k => !['district', 'hood', 'place', 'street', 'water', 'peak', 'other', 'square'].includes(k) && V.VEC_TIER[k] === undefined);
   assert.deepStrictEqual(missing, [], 'these kinds of place would all fall to the last tier: ' + missing.join(', '));
-  assert.ok(V.VEC_TIERS.every(t => byId(night, 'poi-dot-' + t) && byId(night, 'poi-label-' + t)), 'a tier has no dot or no name layer');
+  assert.ok(V.VEC_TIERS.every(t => byId(night, 'poi-label-' + t) && byId(day, 'poi-label-' + t)), 'a tier has no name layer');
+  // names only: a dot for every shop made a busy street look crowded, so no marker is drawn for the places file
+  for (const st of [night, day]) assert.ok(!st.layers.some(l => l.source === 'places' && l.type !== 'symbol'), 'a marker (dot) is drawn beside place names again');
 });
 
 test('a place of a kind you only want close up still shows from further out when it is well known; hotels do not flood a tourist district', () => {
@@ -152,7 +154,7 @@ test('the places file becomes map names, minus what the tiles name better', () =
   const gal = fc.features.find(f => f.properties.n === 'Galata Kulesi');
   assert.strictEqual(gal.properties.en, 'Galata Tower'); assert.ok(gal.properties.r >= 2, 'Galata Kulesi in the fixture has a Wikidata entry, so it ranks as well known'); assert.strictEqual(gal.properties.tier, V.vecTierOf('attraction', gal.properties.r));
   assert.ok(Math.abs(gal.geometry.coordinates[0] - 29.06) < 1e-4 && Math.abs(gal.geometry.coordinates[1] - 41.02) < 1e-4, 'GeoJSON is [longitude, latitude]');
-  assert.ok(fc.features.every(f => /^rgb\(/.test(f.properties.dot) && f.properties.tier >= 13 && f.properties.tier <= 18));
+  assert.ok(fc.features.every(f => f.properties.tier >= 13 && f.properties.tier <= 18 && f.properties.dot === undefined));
 });
 
 /* ---------------- the libraries, and the page that uses them ---------------- */
