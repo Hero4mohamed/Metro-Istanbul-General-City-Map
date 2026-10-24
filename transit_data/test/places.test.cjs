@@ -72,6 +72,18 @@ test('a thing named twice for one place is one place, and a notable thing ranks 
   assert.ok(G.r[gal] > G.r[mig], 'a landmark with a Wikidata entry should outrank a supermarket');
 });
 
+test('another country\'s district, which a box reaching past the border brings in, and everything inside it, is left out', () => {
+  const raw = rawCity();
+  raw.admin.push({ id: 5, level: 6, name: 'Περιφερειακή Ενότητα Λέσβου', rings: [require('../testkit/places-fixture.cjs').sq(40.90, 40.94, 29.15, 29.19)], centre: [40.92, 29.17] });
+  raw.admin.push({ id: 6, level: 8, name: 'Μυτιλήνη', rings: [require('../testkit/places-fixture.cjs').sq(40.91, 40.93, 29.16, 29.18)], centre: [40.92, 29.17] });
+  raw.pois.push({ id: 'n801', tags: { name: 'Island Cafe', amenity: 'cafe' }, lat: 40.915, lon: 29.17 });
+  raw.streets.push({ id: 801, name: 'Island Street', hw: 'residential', lat: 40.915, lon: 29.175, len: 300 });
+  const { out } = P.build(raw), g = P.decode(out);
+  assert.ok(!out.districts.some(d => /Λέσβου/.test(d)) && !out.hoods.some(h => /Μυτιλήνη/.test(h)), 'a Greek district or neighbourhood is in the file');
+  assert.ok(!g.names.includes('Island Cafe') && !g.names.includes('Island Street'), 'a place inside the foreign district is in the file');
+  assert.ok(g.names.includes('Moda Eczanesi') && g.names.includes('Bağdat Caddesi'), 'the real places went with them');
+});
+
 test('the file is columns that decode to exactly the places that went in', () => {
   assert.strictEqual(G.n, built.stats.entries);
   assert.strictEqual(file.n.split('\n').length, G.n, 'the name column and the entry count disagree');

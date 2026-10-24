@@ -150,6 +150,10 @@ const HOOD_SUFFIX = /\s+(mahallesi|mah\.?|mahalle)$/i;
 function cleanName(s) { return String(s || '').replace(/\s+/g, ' ').trim(); }
 function hoodName(s) { return cleanName(s).replace(HOOD_SUFFIX, ''); }
 const DIGITS_ONLY = /^[\d\s.,\-/]+$/;
+/* The dump is fetched by box, and a box can reach past the border: İzmir's takes in Lesbos, whose outline is named in Greek.
+   A district named in Greek, Cyrillic or Georgian letters is another country's, and so is everything inside it; leaving them
+   in would offer the search a "Περιφερειακή Ενότητα Λέσβου" and a few thousand streets of an island no one here is going to. */
+const FOREIGN_SCRIPT = /[Ͱ-Ͽἀ-῿Ѐ-ӿႠ-ჿ]/;
 
 /* ---- geometry ------------------------------------------------------------------------------------------------------ */
 function mPerDeg(lat) { return { y: 111320, x: 111320 * Math.cos(lat * Math.PI / 180) }; }
@@ -247,16 +251,18 @@ function build(raw) {
   const dist = raw.admin.filter(a => a.level === 6).map(a => Object.assign({}, a));
   const hoodsA = raw.admin.filter(a => a.level === 8).map(a => Object.assign({}, a));
   const whichDist = areaIndex(dist), whichHood = areaIndex(hoodsA);
+  const foreignD = new Set(); dist.forEach((a, i) => { if (FOREIGN_SCRIPT.test(a.name)) foreignD.add(i); });
   const nearestCentre = (pt, list) => {                       // fallback for a point that is in no outline (the sea, a gap)
     let best = -1, bd = 5000;
-    list.forEach((a, i) => { if (!a.centre) return; const d = distM(pt, { lat: a.centre[0], lon: a.centre[1] }); if (d < bd) { bd = d; best = i; } });
+    list.forEach((a, i) => { if (!a.centre || (list === dist && foreignD.has(i))) return; const d = distM(pt, { lat: a.centre[0], lon: a.centre[1] }); if (d < bd) { bd = d; best = i; } });
     return best;
   };
   const districtNames = [], hoodNames = [], distIdx = new Map(), hoodIdx = new Map();
   const dOf = i => { if (i < 0) return 0; if (!distIdx.has(i)) { distIdx.set(i, districtNames.length); districtNames.push(cleanName(dist[i].name)); } return distIdx.get(i) + 1; };
   const hOf = i => { if (i < 0) return 0; if (!hoodIdx.has(i)) { hoodIdx.set(i, hoodNames.length); hoodNames.push(hoodName(hoodsA[i].name)); } return hoodIdx.get(i) + 1; };
   const locate = pt => {
-    let di = whichDist(pt); if (di < 0) di = nearestCentre(pt, dist);
+    let di = whichDist(pt); if (di >= 0 && foreignD.has(di)) return { skip: true };
+    if (di < 0) di = nearestCentre(pt, dist);
     const hi = whichHood(pt);
     return { d: dOf(di), h: hOf(hi) };
   };
@@ -266,11 +272,13 @@ function build(raw) {
     name = cleanName(name);
     if (name.length < 2 || DIGITS_ONLY.test(name)) return;
     const l = loc || locate({ lat, lon });
+    if (l.skip) return;                                       // inside another country's district
     E.push({ name, type: T[type], lat, lon, d: l.d, h: l.h, r: Math.max(0, Math.min(3, rank)), en: en || '', ar: ar || '' });
   };
 
   // districts and neighbourhoods, from the outlines
   dist.forEach((a, i) => {
+    if (foreignD.has(i)) return;
     const p = labelPoint(a); if (!p) return;
     add(a.name, 'district', p.lat, p.lon, 3, a.en, a.ar, { d: dOf(i), h: 0 });
   });
@@ -278,6 +286,8 @@ function build(raw) {
   raw.pois.forEach(e => { if (e.tags.place) placeAreas.push({ f: fold(e.tags.name), lat: e.lat, lon: e.lon }); });
   hoodsA.forEach((a, i) => {
     const p = labelPoint(a); if (!p) return;
+    if (FOREIGN_SCRIPT.test(a.name)) return;
+    { const di0 = whichDist(p); if (di0 >= 0 && foreignD.has(di0)) return; }
     const nm = hoodName(a.name);
     const f = fold(nm);
     if (placeAreas.some(q => q.f === f && distM(q, p) < 2500)) return;       // the place node says the same, better placed
@@ -319,6 +329,7 @@ function build(raw) {
   const byName = new Map();
   for (const w of raw.streets) {
     const loc = locate(w);
+    if (loc.skip) continue;
     w._loc = loc;
     const key = fold(w.name) + '|' + loc.d;
     let g = byName.get(key); if (!g) { g = []; byName.set(key, g); } g.push(w);
