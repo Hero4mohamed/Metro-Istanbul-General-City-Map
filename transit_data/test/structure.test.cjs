@@ -537,10 +537,22 @@ test('a suspended line is dashed, and gets its own dash back', () => {
 test('every basemap is keyless and depth-capped', () => {
   const src = H.appScript();
   assert.ok(!/cartocdn/.test(src), 'a CARTO basemap is back — it serves placeholders without an API key');
-  const block = src.match(/const BASES = \{[\s\S]*?\n\};/);
-  assert.ok(block, 'the BASES table is gone');
+  /* the raster maps are in two tables now: RASTER_BASES (the regraded Esri pair, which is also what a vector map falls back
+     to) and BASES (the choice between vector and raster, plus satellite) */
+  const blocks = ['RASTER_BASES', 'BASES'].map(n => {
+    const m = src.match(new RegExp('const ' + n + ' = \\{[\\s\\S]*?\\n\\};'));
+    assert.ok(m, 'the ' + n + ' table is gone');
+    return m[0];
+  });
+  const block = [blocks.join('\n')];
   assert.ok(!/[?&](api_?key|access_?token|key)=/i.test(block[0]),
     'a basemap URL carries a key — this page is public, so that key is published with it');
+  // the vector map's own tile, font and style addresses are public too
+  for (const c of ['VEC_TILEJSON', 'VEC_GLYPHS']) {
+    const m = src.match(new RegExp('const ' + c + ' = ([^;]+);'));
+    assert.ok(m, c + ' is gone');
+    assert.ok(!/[?&](api_?key|access_?token|key)=/i.test(m[1]), c + ' carries a key — the page is public, so that key is published with it');
+  }
   const layers = (block[0].match(/L\.tileLayer\(|new AtlasTiles\(/g) || []).length;
   const caps = (block[0].match(/maxNativeZoom:\s*\d+/g) || []).length;
   assert.ok(layers >= 3, 'expected the dark, light and satellite basemaps, found ' + layers);

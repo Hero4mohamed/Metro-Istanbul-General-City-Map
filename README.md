@@ -34,6 +34,7 @@ bus-route lookups).
 - **A search for everywhere you might want to go**, on the device: type a place, street, district, neighbourhood, landmark, shop, café, pharmacy, hospital, school or mosque (or just "eczane", "coffee shop", "kadikoy eczane") for any of the six cities. It reads a file of every named street, area and place from OpenStreetMap (about 1.4 MB for İstanbul), so it answers from the first letters, works offline and in Turkish, English, Arabic and French, finds names typed without accents or without spaces, forgives a typo, and ranks the well-known and the near first. The same search backs the map's search box and the trip planner's From/To fields. A public geocoder (Photon) is only a top-up for house numbers and places the file cannot hold, and can be switched off in Settings.
 - **Tabs:** Active Network · Vision & Expansion (official + İBB projects, dashed) · Bus Directory (855 İETT lines, click to draw the real route).
 - Light/Dark/Satellite basemaps, zoom-responsive line thickness, station service hours.
+- **A vector map with names that read.** The day and night maps are drawn on the device (MapLibre, OpenFreeMap vector tiles, the app's own palette), so names are text rather than a picture: only the big places show from afar, and as you zoom in neighbourhoods, streets (running along the road), then shops, cafés, pharmacies, schools and mosques appear, each larger and clearer than the last. Names follow the interface language. A device that cannot draw it, or a tile service that cannot be reached, gets the previous raster map automatically.
 - **Announcements for rail, ferries and buses.** Rail faults and ferry notices are scraped into `disruptions.json` (every 30 minutes); İETT's bus notices are read live in the browser. A bus detour that can be checked against the route's stops is drawn on that route; the rest are shown in the operator's own words, never guessed at. Ferry notices are translated by whole-sentence templates that carry every time and date across untouched (a result whose numbers differ from the original is refused); wording they don't know stays Turkish, labelled.
 - **Weather for every city and district:** the selected place's scene, sunrise/sunset arc, next 24 hours, 7 days and air quality, with the map showing every district by temperature, rain, wind or air.
 
@@ -53,6 +54,8 @@ The map is generated from data in [`transit_data/`](transit_data/):
 | `process-places.cjs` | the dump above | `places-<city>.json` (the search runs on this, on the device; monthly by `places.yml`) |
 | `process-bus.cjs` | `bus-probe.json` | `bus-directory.json` |
 | `build.cjs` | the JSONs + `app.template.html` | **`index.html`** |
+
+Third-party browser code (MapLibre, its Leaflet bridge, and the map's font files) is shipped in [`vendor/`](vendor/) rather than loaded from a CDN, with versions, hashes and licences recorded in [`vendor/README.md`](vendor/README.md).
 
 ### The Vision tab and how it stays current
 Future lines are **never hand-drawn**. Three layers are kept apart, and each says where it came from:

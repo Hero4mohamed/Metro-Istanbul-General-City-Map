@@ -904,6 +904,7 @@ function setLang(l){
   try{ renderModeChips(); }catch(e){}
   try{ renderProvenance(); }catch(e){}
   try{ renderCardSeg(); }catch(e){}
+  try{ vecApplyLang(); }catch(e){}                 // the names on the vector map follow the interface language
   try{ if(wxData) renderWeather(); }catch(e){}
   try{ if(selected) openStation(selected); }catch(e){}
 }

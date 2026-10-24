@@ -966,6 +966,37 @@ const MUTATIONS = [
     expect: 'the network is asked about a place only when the file found next to nothing, or when the query has a number',
     apply: h => h.replace('function gazThin(n, q) { return n < 2 || /\\d/.test(q); }', 'function gazThin(n, q) { return true; }'),
   },
+  // ---- the vector map ----
+  {
+    name: 'draw every name with no outline, so a street name vanishes into the road beneath it',
+    expect: 'every name has a halo and enough contrast to read, by night and by day',
+    apply: h => h.replace("'text-halo-width': hw == null ? 1.7 : hw,", "'text-halo-width': 0,"),
+  },
+  {
+    name: 'keep neighbourhood names the same size however far you zoom in',
+    expect: 'names grow as you zoom in',
+    apply: h => h.replace("[[11.5, 11], [13, 12.5], [15, 15], [17, 19], [19, 24]]", "[[11.5, 11], [19, 11]]"),
+  },
+  {
+    name: 'show English names to everyone, whatever language the app is in',
+    expect: 'names follow the interface language, falling back to the local name',
+    apply: h => h.replace("return lang === 'en' ? ['coalesce', ['get', 'name_en']", "return true ? ['coalesce', ['get', 'name_en']"),
+  },
+  {
+    name: 'leave a map that cannot load its tiles blank instead of switching to the raster map',
+    expect: 'a device that cannot draw it, or a tile service that cannot be reached, gets the raster map',
+    apply: h => h.replace("if (!ready && errors > 0 && self._map && typeof vecFallback === 'function') vecFallback(self._key);", "if (!ready && false && self._map && typeof vecFallback === 'function') vecFallback(self._key);"),
+  },
+  {
+    name: 'save an area for offline use at a raster address when the vector map is showing',
+    expect: '"save this area" asks for the tile the vector map will really ask for, once',
+    apply: h => h.replace('    if(lyr && lyr._glMap) return offVectorURL(z,x,y);', ''),
+  },
+  {
+    name: 'save offline tiles six at a time from a service that allows four',
+    expect: '"save this area" asks for the tile the vector map will really ask for, once',
+    apply: h => h.replace('  const CONC = vec ? 4 : 6;', '  const CONC = 6;'),
+  },
 ];
 
 const original = fs.readFileSync(SRC, 'utf8');

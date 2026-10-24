@@ -38,22 +38,40 @@ const TILE_OPTS = { crossOrigin:'anonymous', keepBuffer:3, updateWhenZooming:fal
 const ESRI = 'https://server.arcgisonline.com/ArcGIS/rest/services/';
 const ESRI_STREETS = ESRI + 'World_Street_Map/MapServer/tile/{z}/{y}/{x}';
 const ESRI_ATTR = '&copy; Esri, HERE, Garmin, USGS, &copy; OpenStreetMap contributors';
-const BASES = {
+/* The dark and day maps are VECTOR maps (08-basemap-vector.js) where the device can draw them — crisp names at any screen
+   density, chosen by importance and growing as you zoom — and the regraded Esri raster otherwise: no WebGL, or the libraries
+   did not load. The raster pair is built either way, because it is also what a vector map falls back to if its tile service
+   cannot be reached (vecFallback below). Satellite is raster imagery and stays so. */
+const RASTER_BASES = {
   dark:    new AtlasTiles(ESRI_STREETS,
             Object.assign({ maxZoom:20, maxNativeZoom:19, attribution:ESRI_ATTR,
               grade:makeBasemapGrade(ATLAS_PAL.night), landuse:makeLanduseMask(ATLAS_PAL.night) }, TILE_OPTS)),
   voyager: new AtlasTiles(ESRI_STREETS,
             Object.assign({ maxZoom:20, maxNativeZoom:19, attribution:ESRI_ATTR,
-              grade:makeBasemapGrade(ATLAS_PAL.day), landuse:makeLanduseMask(ATLAS_PAL.day) }, TILE_OPTS)),
+              grade:makeBasemapGrade(ATLAS_PAL.day), landuse:makeLanduseMask(ATLAS_PAL.day) }, TILE_OPTS))
+};
+const USE_VECTOR = !!(VectorBase && vecSupported());
+const BASES = {
+  dark:    USE_VECTOR ? new VectorBase('dark', 'night') : RASTER_BASES.dark,
+  voyager: USE_VECTOR ? new VectorBase('voyager', 'day') : RASTER_BASES.voyager,
   sat:     L.tileLayer(ESRI + 'World_Imagery/MapServer/tile/{z}/{y}/{x}',
             Object.assign({ maxZoom:20, maxNativeZoom:19,
               attribution:'&copy; Esri, Vantor, Earthstar Geographics' }, TILE_OPTS))
 };
+/* The vector map's tiles could not be fetched (the service is down or blocked): put the raster map in its place, on screen
+   if that is the one showing. A map that is blank is worse than one that is less sharp. */
+function vecFallback(key){
+  if(!RASTER_BASES[key] || BASES[key] === RASTER_BASES[key]) return;
+  const showing = (curBaseKey === key);
+  if(showing) map.removeLayer(curBase);
+  BASES[key] = RASTER_BASES[key];
+  if(showing){ curBase = BASES[key].addTo(map); curBase.bringToBack(); applyMapTone(); }
+}
 /* A tile that errors stays blank until something happens to re-create it, so one dropped
    request left a permanent hole in the map. Re-request it a few times with backoff. Leaflet
    keeps its own onload handler on the <img>, so a late success still fades in normally. */
 Object.keys(BASES).forEach(k => {
-  if(BASES[k] instanceof AtlasTiles) return;   // its canvas tiles retry inside createTile
+  if(BASES[k] instanceof AtlasTiles || (VectorBase && BASES[k] instanceof VectorBase)) return;   // each retries for itself
   const tries = new WeakMap();
   BASES[k].on('tileerror', ev => {
     const img = ev.tile; if(!img || !img.src) return;

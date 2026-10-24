@@ -12,7 +12,8 @@ redistribute it.
 | Source | Used for | Stated terms | Attribution shown in-app |
 |---|---|---|---|
 | **OpenStreetMap** (via Overpass) | Rail, tram, ferry and funicular geometry; station positions; Ankara/İzmir/Bursa/Antalya bus routes; **every named street, district, neighbourhood, landmark, shop, café, pharmacy, school, mosque and so on that the search runs on, on the device** (`places-<city>.json`, refreshed monthly by `places.yml`; the processor assigns each place to its district and neighbourhood by point-in-polygon and ranks well-known ones, with a Wikidata entry, higher); **forest, park, campus and airport outlines** painted into the basemap (`landuse-<city>.json`, refreshed monthly by `landuse.yml`) | ODbL 1.0 — attribution **and share-alike** | yes, map credit |
-| **Esri** World Street Map | The day and night basemaps. The tiles are **recoloured in the browser** into the app's own palette (see `transit_data/src/08-basemap.js`); only Esri's original tiles are fetched and cached, never the recoloured result | Esri's published terms for its basemap tile services; the keyless endpoint is used as published | yes, map credit: © Esri, HERE, Garmin, USGS, © OpenStreetMap contributors |
+| **OpenFreeMap** (tiles.openfreemap.org) · **OpenMapTiles** schema | The day and night basemaps: vector tiles of OpenStreetMap data, drawn on the device by MapLibre in the app's own palette (`transit_data/src/08-basemap-vector.js`), so names are real text that grows as you zoom and can be thinned out, not a picture. Only the tile files and a small index naming the current data version are fetched; nothing about the user is sent. Tiles stop at zoom 14 and are enlarged beyond that | Free, no key, commercial use stated as allowed, attribution required and shown (its own site, checked 24 Oct 2026). **No SLA** ("I don't offer SLA guarantees or personalized support"); its software is MIT-licensed open source and the public instance can be replaced by a self-hosted one, which a release with real traffic should do (see *Basemap provider risk*) | yes, map credit: OpenFreeMap © OpenMapTiles, data © OpenStreetMap contributors |
+| **Esri** World Street Map | The **fallback** day and night basemap, used only when the device cannot draw the vector map (no WebGL) or its tiles cannot be reached. The tiles are **recoloured in the browser** into the app's own palette (see `transit_data/src/08-basemap.js`); only Esri's original tiles are fetched and cached, never the recoloured result. Anonymous use of this endpoint in a commercial app is **not something Esri's published terms clearly grant**, which is one reason it is no longer the default | Esri's published terms for its basemap tile services; the keyless endpoint is used as published | yes, map credit: © Esri, HERE, Garmin, USGS, © OpenStreetMap contributors |
 | **Esri / Maxar / Earthstar** | Satellite imagery layer | Esri World Imagery terms of use | yes, map credit |
 | **İETT** (via İBB Open Data) | İstanbul bus routes, stops and GTFS timetables | İBB Open Data portal terms | yes, "İETT GTFS" on the bus panel |
 | **İBB Open Data** | Station registry, lift/escalator counts, live arrivals | İBB Open Data portal terms | yes |
@@ -26,6 +27,8 @@ redistribute it.
 | **Open-Meteo** (forecast + air-quality services) | The Weather tab, for every city: now, the next 24 hours and 7 days for the city centre and each district, plus the European Air Quality Index. One request per refresh (all places at once), nothing stored. The "hints" on the card (rain, gusts, heat, frost, UV, poor air) are arithmetic on those numbers with the thresholds written in the code and tests; they are labelled as not being warnings, and link to the State Meteorological Service for the official ones | Free for non-commercial use, CC-BY 4.0 | yes |
 | **OSRM** (routing.openstreetmap.de) | Walking-leg geometry refinement | Public demo server, no SLA; ODbL data | yes |
 | **Leaflet** | Map rendering | BSD-2-Clause | in the map credit |
+| **MapLibre GL JS** 4.7.1 · **maplibre-gl-leaflet** 0.0.22 | Draws the vector basemap inside the Leaflet map. Shipped in `vendor/` (not loaded from a CDN) with the version and a hash of each file recorded in `vendor/README.md`; a test fails if a file changes without the record | BSD-3-Clause · BSD-2-Clause (licence files in `vendor/maplibre/`) | no |
+| **Noto Sans** (as MapLibre glyph files) | The typeface of the map's names, shipped in `vendor/glyphs/` so every name draws offline and a cold start never waits on a font server | SIL Open Font License 1.1 (`vendor/glyphs/LICENSE-NotoSans-OFL.txt`) | no |
 
 ## The two things that actually need a decision
 
@@ -51,6 +54,17 @@ deliberately built to respect this: it caches only tiles the user has actually v
 "Save this area" action is user-initiated and capped (~340 tiles for the current view across
 four zoom levels), and the cache is LRU-trimmed at 3,000 tiles. Do not raise those limits
 without re-reading the providers' terms.
+
+The vector map keeps its tiles the same way, in a cache of its own (`raynet-vtiles-v1`, trimmed at
+3,000 files). OpenFreeMap states its limit for apps that keep tiles offline: at most 3,000 tiles or
+50 MB, at most 4 requests in parallel, and larger downloads by arrangement with the operator.
+"Save this area" stays inside that: it asks for the tile each view will use, once, with four
+requests at a time, so saving a screenful fetches about seventy small files (about 2 MB, measured on
+Bursa) instead of hundreds of pictures. (A browser cannot set its own User-Agent, which the
+operator also asks for; the page's own origin is what the service sees. Another reason to host the
+tiles for a release.)
+A vector tile's address carries its data version, so a saved tile is never stale; the small index
+that names the current version is read from the network whenever there is one.
 
 ## Third-party services the browser contacts
 
@@ -99,4 +113,15 @@ key given away). Esri's endpoints are keyless today and the same thing could hap
 `npm run check-tiles` (and the daily *Basemap health* workflow) is the alarm: it hashes a grid of
 tiles over inland İstanbul and fails if any image repeats, because a placeholder is the same
 bytes everywhere and a real map never is. A green run means "not serving placeholders right
-now", not "healthy" — the CARTO degradation was intermittent.
+now", not "healthy" — the CARTO degradation was intermittent. It watches the Esri raster
+tiles, which are now the fallback; the vector map's equivalent failure is a tile service that
+does not answer, which the page already handles by switching to the raster map after the first
+tile errors (`vecFallback` in `08-map.js`).
+
+**The vector map's provider.** OpenFreeMap's public instance promises no availability (it says so,
+and mentions a possible paid plan). That is fine for a project like this one and not for an app people *depend on*.
+Before a Play Store release with real traffic, host the tiles yourself — OpenFreeMap's own
+software is open source and publishes how, and the style in `08-basemap-vector.js` reads the tiles
+from one constant (`VEC_TILEJSON`) — or buy a vector-tile plan from a provider that signs a
+service agreement. Nothing else in the app changes: the style asks only for the standard
+OpenMapTiles layers, which any such provider serves.

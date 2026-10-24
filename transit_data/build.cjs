@@ -216,7 +216,7 @@ const CSP = [
   "img-src 'self' data: blob: https://server.arcgisonline.com",
   // every host the app fetches from, including tiles (the offline save uses fetch, not <img>)
   ["connect-src 'self'",
-   'https://server.arcgisonline.com',
+   'https://server.arcgisonline.com', 'https://tiles.openfreemap.org',
    'https://photon.komoot.io', 'https://overpass-api.de', 'https://api.ibb.gov.tr',
    'https://api.open-meteo.com', 'https://air-quality-api.open-meteo.com', 'https://routing.openstreetmap.de',
    'https://api.anthropic.com'].join(' '),
