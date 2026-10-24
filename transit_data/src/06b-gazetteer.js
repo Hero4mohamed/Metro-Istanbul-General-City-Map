@@ -224,9 +224,10 @@ function gazSearch(G, q, opt) {
   const tHood = toks.map(function (tk) { return gazAreasFor(G.fh, tk); });
 
   const top = [], keep = limit * 4;                                      // sorted descending by score
-  let floor = -1e9, goodName = false;                                    // goodName: some place has every word of the query in its NAME
+  let floor = -1e9, goodName = false, exactName = false;                                    // goodName: some place has every word of the query in its NAME
   const consider = function (i, base, typeOnly) {
     if (!typeOnly && base >= GAZ_WORD) goodName = true;
+    if (!typeOnly && base >= GAZ_EXACT) exactName = true;
     const ty = G.types[G.t[i]];
     let s = base + (GAZ_TYPE_WEIGHT[ty] || 40) * (typeOnly ? 0.3 : 1) + G.r[i] * 26;
     let m = -1;
@@ -284,6 +285,22 @@ function gazSearch(G, q, opt) {
     // not a request for everything in Kadıköy
     if (!ok || (nameWords === 0 && !typeUsed)) continue;
     consider(i, nameWords ? GAZ_CTX + 45 * nameWords / T : GAZ_TYPE, nameWords === 0);
+  }
+
+  /* One long word typed that is two in the name: "kapalicarsi" for "Kapalı Çarşı", which is how most people type it. Only
+     names that start with the same letter are joined up and compared, so this costs a few thousand string joins, and only when
+     no place is called exactly that. */
+  if (!exactName && T === 1 && toks[0].length >= 6) {
+    const tk = toks[0], c0 = tk.charCodeAt(0), have = {};
+    top.forEach(function (x) { have[x.i] = 1; });
+    for (let i = 0; i < G.n; i++) {
+      const nm = G.fn[i];
+      if (nm.charCodeAt(0) !== c0 || nm.length <= tk.length - 1 || nm.indexOf(' ') < 0 || have[i]) continue;
+      if (onlySet && !onlySet[G.t[i]]) continue;
+      const joined = nm.split(' ').join('');
+      if (joined === tk) consider(i, GAZ_EXACT - 60, false);
+      else if (joined.startsWith(tk)) consider(i, GAZ_PREFIX_LO + (GAZ_PREFIX_HI - GAZ_PREFIX_LO) * (tk.length / joined.length), false);
+    }
   }
 
   /* Few or no results, and none of them a real match of the name: tolerate a typo in one word, by finding the real word in the

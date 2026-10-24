@@ -6,7 +6,7 @@
 <!-- Substituted by build.cjs, which hashes the inline script from the final bytes. Pages
      cannot set headers, so this ships as meta; frame-ancestors and report-uri are
      unavailable that way. -->
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-ZI0HFa6qo6md/FgbvWxssQO2EcUcNyQL/NX6/Y4f8vc=' https://unpkg.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://unpkg.com; font-src https://fonts.gstatic.com data:; img-src 'self' data: blob: https://server.arcgisonline.com; connect-src 'self' https://server.arcgisonline.com https://photon.komoot.io https://overpass-api.de https://api.ibb.gov.tr https://api.open-meteo.com https://air-quality-api.open-meteo.com https://routing.openstreetmap.de https://api.anthropic.com; worker-src 'self'; manifest-src 'self'; base-uri 'self'; form-action 'none'; object-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-YUW+fqGA2S4GFA4ma25OmreuTdDRYGALbNsrwDroY30=' https://unpkg.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://unpkg.com; font-src https://fonts.gstatic.com data:; img-src 'self' data: blob: https://server.arcgisonline.com; connect-src 'self' https://server.arcgisonline.com https://photon.komoot.io https://overpass-api.de https://api.ibb.gov.tr https://api.open-meteo.com https://air-quality-api.open-meteo.com https://routing.openstreetmap.de https://api.anthropic.com; worker-src 'self'; manifest-src 'self'; base-uri 'self'; form-action 'none'; object-src 'none'">
 <title>İSTANBUL RAY-NET · Live Rail Network Map &amp; Simulation</title>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
       integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
@@ -2130,7 +2130,7 @@
 
    The report carries the fault, the build, the city, the language and the browser. It never
    carries location, saved places, trip history or the API key. ===== */
-const BUILD = "20261024134902";
+const BUILD = "20261024135426";
 const DIAG_MAX = 20;
 let DIAG = [];
 try { DIAG = JSON.parse(localStorage.getItem("irn_diag") || "[]"); } catch (e) { DIAG = []; }
@@ -5687,9 +5687,10 @@ function gazSearch(G, q, opt) {
   const tHood = toks.map(function (tk) { return gazAreasFor(G.fh, tk); });
 
   const top = [], keep = limit * 4;                                      // sorted descending by score
-  let floor = -1e9, goodName = false;                                    // goodName: some place has every word of the query in its NAME
+  let floor = -1e9, goodName = false, exactName = false;                                    // goodName: some place has every word of the query in its NAME
   const consider = function (i, base, typeOnly) {
     if (!typeOnly && base >= GAZ_WORD) goodName = true;
+    if (!typeOnly && base >= GAZ_EXACT) exactName = true;
     const ty = G.types[G.t[i]];
     let s = base + (GAZ_TYPE_WEIGHT[ty] || 40) * (typeOnly ? 0.3 : 1) + G.r[i] * 26;
     let m = -1;
@@ -5747,6 +5748,22 @@ function gazSearch(G, q, opt) {
     // not a request for everything in Kadıköy
     if (!ok || (nameWords === 0 && !typeUsed)) continue;
     consider(i, nameWords ? GAZ_CTX + 45 * nameWords / T : GAZ_TYPE, nameWords === 0);
+  }
+
+  /* One long word typed that is two in the name: "kapalicarsi" for "Kapalı Çarşı", which is how most people type it. Only
+     names that start with the same letter are joined up and compared, so this costs a few thousand string joins, and only when
+     no place is called exactly that. */
+  if (!exactName && T === 1 && toks[0].length >= 6) {
+    const tk = toks[0], c0 = tk.charCodeAt(0), have = {};
+    top.forEach(function (x) { have[x.i] = 1; });
+    for (let i = 0; i < G.n; i++) {
+      const nm = G.fn[i];
+      if (nm.charCodeAt(0) !== c0 || nm.length <= tk.length - 1 || nm.indexOf(' ') < 0 || have[i]) continue;
+      if (onlySet && !onlySet[G.t[i]]) continue;
+      const joined = nm.split(' ').join('');
+      if (joined === tk) consider(i, GAZ_EXACT - 60, false);
+      else if (joined.startsWith(tk)) consider(i, GAZ_PREFIX_LO + (GAZ_PREFIX_HI - GAZ_PREFIX_LO) * (tk.length / joined.length), false);
+    }
   }
 
   /* Few or no results, and none of them a real match of the name: tolerate a typo in one word, by finding the real word in the

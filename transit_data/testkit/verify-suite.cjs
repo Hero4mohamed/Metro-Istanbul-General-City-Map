@@ -957,6 +957,11 @@ const MUTATIONS = [
     apply: h => h.replace('return (((x + (x >>> 4)) & 0x0F0F0F0F) * 0x01010101) >>> 24; }', 'return 0; }'),
   },
   {
+    name: 'never join the words of a name to match a long word typed without spaces',
+    expect: 'a name typed as one word is found, and ranks as the whole name when it is exactly that',
+    apply: h => h.replace('if (!exactName && T === 1 && toks[0].length >= 6) {', 'if (false) {'),
+  },
+  {
     name: 'ask the public geocoder as well even when the file found the place',
     expect: 'the network is asked about a place only when the file found next to nothing, or when the query has a number',
     apply: h => h.replace('function gazThin(n, q) { return n < 2 || /\\d/.test(q); }', 'function gazThin(n, q) { return true; }'),

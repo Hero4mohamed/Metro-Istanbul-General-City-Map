@@ -253,6 +253,14 @@ test('the geocoder asks the offline file first and the network only to top up a 
   assert.ok(/gazThin\(local\.length,\s*q\)/.test(body), 'an answer with enough offline results still goes to the network');
   assert.ok(/gazThin\(top\.length \+ gz\.length,\s*q\)/.test(html) && /gazThin\(gz\.length,\s*q\)/.test(html), 'the search box or the planner asks the network about a place the file already found');
 });
+test('a name typed as one word is found, and ranks as the whole name when it is exactly that', () => {
+  // "Zeytin Market" typed "zeytinmarket", "Moda Sahil Cafe" typed "modasahil" (a prefix of the joined name)
+  const z = find('zeytinmarket'); assert.ok(z.length >= 1 && names(z)[0] === 'Zeytin Market', 'zeytinmarket: ' + names(z).join(' | '));
+  const m = find('modasahil'); assert.ok(m.length >= 1 && names(m)[0] === 'Moda Sahil Cafe', 'modasahil: ' + names(m).join(' | '));
+  // a short joined word is left alone (too many names would join into it), and a word that already is a name is not joined
+  assert.ok(!find('modas').some(x => G.name[x.i] === 'Moda Sahil Cafe' && !x.fuzzy), 'a five-letter fragment should not join names');
+  assert.strictEqual(names(find('moda'))[0], 'Moda');
+});
 test('the network is asked about a place only when the file found next to nothing, or when the query has a number', () => {
   assert.strictEqual(E.gazThin(0, 'galata'), true);
   assert.strictEqual(E.gazThin(1, 'galata'), true);
