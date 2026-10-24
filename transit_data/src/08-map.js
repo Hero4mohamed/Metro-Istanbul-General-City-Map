@@ -5,6 +5,13 @@
 const map = L.map('map', { zoomControl:true, preferCanvas:true, minZoom:6, maxZoom:18 })
              .setView(CITY.center, CITY.zoom);
 L.control.zoom({ position:'bottomright' });
+/* Two panes of our own (V4.0). Leaflet draws the metro lines (canvas, overlay pane, z 400) above the base map (tile pane, z 200), so
+   names drawn with the base map were hidden wherever a line ran over a street or a place. The names are therefore a second map in
+   a pane ABOVE the lines (z 450, and it passes every click through); the station dots get a pane of their own above the names so
+   that a name never covers a station. Markers (carriages, pins, popups) stay above both, at z 600 and up. */
+map.createPane(VEC_LABEL_PANE).style.zIndex = 450;
+map.getPane(VEC_LABEL_PANE).style.pointerEvents = 'none';
+map.createPane('stationPane').style.zIndex = 460;
 
 /* crossOrigin makes Leaflet request tiles with CORS, so Cache Storage holds REAL responses
    rather than opaque ones. Opaque entries are padded by the browser to stop size-probing:
@@ -108,7 +115,7 @@ function mapTone(){ return curBaseKey === 'dark' ? 'night' : (curBaseKey === 'sa
 const MAP_T = () => MAP_TONES[mapTone()];
 
 const lineRenderer = L.canvas({ padding:0.5 });
-const stationRenderer = L.canvas({ padding:0.5 });
+const stationRenderer = L.canvas({ padding:0.5, pane:'stationPane' });
 
 /* The stages of a project that is not running yet. They are declared HERE, with the way each is
    drawn, rather than next to the panel that also uses them (11a-planned-panel.js): the line
