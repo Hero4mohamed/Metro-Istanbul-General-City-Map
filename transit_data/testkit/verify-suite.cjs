@@ -992,6 +992,16 @@ const MUTATIONS = [
     expect: 'the page links the PNG icons, not the old inline picture, and the Apple icon is the right size',
     apply: h => h.replace('href="assets/favicon-32.png">', 'href="assets/favicon-33.png">'),
   },
+  {
+    name: 'point the top-bar mark at a picture that does not exist',
+    expect: 'the mark inside the app (top bar and welcome dialog) is the new icon, not the old drawn "M"',
+    apply: h => h.replace('<h1><img class="logo" src="assets/logo-96.png"', '<h1><img class="logo" src="assets/logo-69.png"'),
+  },
+  {
+    name: 'tell chat apps the share card is a different size from the one that ships',
+    expect: 'the preview card shown when the link is shared is 1200 x 630, matches the page\'s tags, and carries the new icon',
+    apply: h => h.replace('og:image:width" content="1200"', 'og:image:width" content="1100"'),
+  },
   // ---- how old the rail and ferry notices are ----
   {
     name: 'never call the notices out of date, however long since the page was read',
