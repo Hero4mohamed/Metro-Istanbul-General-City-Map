@@ -1,21 +1,8 @@
-// Generate assets/og-card.png (1200×630 social-preview card) + assets/logo.svg.
-// Dependency-free: hand-rolled PNG encoder + a 5×7 pixel font for the wordmark.
+// Generate assets/og-card.png (1200×630 social-preview card): the app icon (assets/icon-512.png, the picture the user
+// supplied for V4.0) beside the wordmark. Dependency-free: hand-rolled PNG reader/encoder + a 5×7 pixel font.
 const fs=require('fs'), zlib=require('zlib'), path=require('path');
 const OUT=path.resolve(__dirname,'..','assets');
 fs.mkdirSync(OUT,{recursive:true});
-
-/* ---------- standalone logo.svg (same mark as the app) ---------- */
-fs.writeFileSync(path.join(OUT,'logo.svg'),
-`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 34 34" width="256" height="256">
-  <defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
-    <stop offset="0" stop-color="#4ADE80"/><stop offset="1" stop-color="#14B8A6"/>
-  </linearGradient></defs>
-  <rect x="1.2" y="1.2" width="31.6" height="31.6" rx="9.5" fill="#0B0F17" stroke="rgba(255,255,255,.16)" stroke-width="1.2"/>
-  <path d="M8 24 V11 L17 19.5 26 11 V24" fill="none" stroke="url(#g)" stroke-width="3.3" stroke-linecap="round" stroke-linejoin="round"/>
-  <circle cx="8" cy="11" r="2" fill="#fff"/><circle cx="26" cy="11" r="2" fill="#fff"/>
-  <circle cx="17" cy="19.5" r="2.3" fill="#E5484D"/>
-</svg>
-`);
 
 /* ---------- 1200×630 PNG card ---------- */
 const W=1200,H=630,buf=Buffer.alloc(W*H*3);
@@ -34,28 +21,42 @@ for(let y=0;y<H;y++)for(let x=0;x<W;x++){
 }
 for(let y=40;y<H;y+=44)for(let x=40;x<W;x+=44){ set(x,y,22,28,40); set(x+1,y,22,28,40); set(x,y+1,22,28,40); }
 
-// logo tile
-const TX=95,TY=165,TS=300;
-rrect(TX-6,TY-6,TS+12,TS+12,44,26,33,46);          // border halo
-rrect(TX,TY,TS,TS,40,11,15,23);                    // tile
-// M route (gradient emerald→teal along the stroke)
-const pts=[[TX+62,TY+218],[TX+62,TY+92],[TX+150,TY+175],[TX+238,TY+92],[TX+238,TY+218]];
-let total=0; const segL=[]; for(let i=1;i<pts.length;i++){ const L=Math.hypot(pts[i][0]-pts[i-1][0],pts[i][1]-pts[i-1][1]); segL.push(L); total+=L; }
-let acc=0;
-for(let i=1;i<pts.length;i++){
-  const steps=Math.ceil(segL[i-1]);
-  for(let s=0;s<=steps;s++){
-    const t=(acc+segL[i-1]*s/steps)/total;
-    disc(Math.round(pts[i-1][0]+(pts[i][0]-pts[i-1][0])*s/steps),
-         Math.round(pts[i-1][1]+(pts[i][1]-pts[i-1][1])*s/steps), 14,
-         lerp(74,20,t), lerp(222,184,t), lerp(128,166,t));
-  }
-  acc+=segL[i-1];
+// the app icon: read assets/icon-512.png (8-bit RGBA, not interlaced) and draw it, smoothed down, with its own rounded corners
+function readPng(file){
+  const b=fs.readFileSync(file); let pos=8, w=0, h=0; const idat=[];
+  while(pos<b.length){ const len=b.readUInt32BE(pos), type=b.toString('latin1',pos+4,pos+8);
+    if(type==='IHDR'){ w=b.readUInt32BE(pos+8); h=b.readUInt32BE(pos+12); if(b[pos+16]!==8||b[pos+17]!==6||b[pos+20]!==0) throw new Error(file+' must be 8-bit RGBA and not interlaced'); }
+    if(type==='IDAT') idat.push(b.subarray(pos+8,pos+8+len));
+    pos+=12+len; }
+  const raw=zlib.inflateSync(Buffer.concat(idat)), bpp=4, stride=w*bpp, out=Buffer.alloc(stride*h); let prev=Buffer.alloc(stride);
+  for(let r=0;r<h;r++){ const ft=raw[r*(stride+1)], line=out.subarray(r*stride,(r+1)*stride);
+    raw.copy(line,0,r*(stride+1)+1,(r+1)*(stride+1));
+    for(let i=0;i<stride;i++){ const a=i>=bpp?line[i-bpp]:0, up=prev[i], ul=i>=bpp?prev[i-bpp]:0; let v=line[i];
+      if(ft===1)v+=a; else if(ft===2)v+=up; else if(ft===3)v+=(a+up)>>1;
+      else if(ft===4){ const p=a+up-ul, pa=Math.abs(p-a), pb=Math.abs(p-up), pc=Math.abs(p-ul); v+=(pa<=pb&&pa<=pc)?a:(pb<=pc?up:ul); }
+      line[i]=v&255; }
+    prev=line; }
+  return { w, h, px: out };
 }
-disc(pts[1][0],pts[1][1],12,255,255,255);          // terminal stations
-disc(pts[3][0],pts[3][1],12,255,255,255);
-disc(pts[2][0],pts[2][1],15,229,72,77);            // red hub
-disc(pts[2][0],pts[2][1],6,255,255,255);
+const ICON=readPng(path.join(OUT,'icon-512.png'));
+const IS=380, IX=70, IY=Math.round((H-IS)/2);       // size and position of the icon on the card
+// a soft emerald glow behind it, so the dark card does not swallow the rounded corners
+const RR=Math.round(IS*0.157);                      // corner radius of the icon's rounded square
+for(let y=IY-60;y<IY+IS+60;y++)for(let x=IX-60;x<IX+IS+60;x++){
+  // distance outside the ROUNDED square (not its bounding box, or the empty corners would show as a dark box inside the glow)
+  const qx=Math.abs(x-(IX+IS/2))-(IS/2-RR), qy=Math.abs(y-(IY+IS/2))-(IS/2-RR);
+  const d=Math.hypot(Math.max(qx,0),Math.max(qy,0))+Math.min(Math.max(qx,qy),0)-RR;
+  if(d>0&&d<60){ const a=Math.pow(1-d/60,2)*0.22; const i=(y*W+x)*3; buf[i]=lerp(buf[i],52,a); buf[i+1]=lerp(buf[i+1],211,a); buf[i+2]=lerp(buf[i+2],153,a); }
+}
+for(let y=0;y<IS;y++)for(let x=0;x<IS;x++){
+  // bilinear sample of the 512 px icon at the centre of this output pixel
+  const fx=(x+0.5)*ICON.w/IS-0.5, fy=(y+0.5)*ICON.h/IS-0.5, x0=Math.max(0,Math.floor(fx)), y0=Math.max(0,Math.floor(fy)), x1=Math.min(ICON.w-1,x0+1), y1=Math.min(ICON.h-1,y0+1), tx=fx-x0, ty=fy-y0;
+  const px=(xx,yy,c)=>ICON.px[(yy*ICON.w+xx)*4+c];
+  const ch=c=>(px(x0,y0,c)*(1-tx)+px(x1,y0,c)*tx)*(1-ty)+(px(x0,y1,c)*(1-tx)+px(x1,y1,c)*tx)*ty;
+  const a=ch(3)/255; if(a<=0) continue;
+  const o=((IY+y)*W+(IX+x))*3;
+  buf[o]=Math.round(buf[o]*(1-a)+ch(0)*a); buf[o+1]=Math.round(buf[o+1]*(1-a)+ch(1)*a); buf[o+2]=Math.round(buf[o+2]*(1-a)+ch(2)*a);
+}
 
 // 5×7 pixel font
 const F={
@@ -95,10 +96,10 @@ function text(str,x,y,sc,r,g,b){
   return cx;
 }
 // wordmark + subtitle + accent underline
-text("İSTANBUL · RAY-NET", 470, 205, 6, 238,242,248);
-fill(470, 268, 470+250, 274, 52,211,153);
-text("LIVE TRANSIT NETWORK MAP", 470, 300, 3, 147,157,178);
-text("METRO · TRAM · FERRY · BUS · CABLE CAR", 470, 336, 2, 94,104,128);
+text("İSTANBUL · RAY-NET", 520, 205, 5, 238,242,248);
+fill(520, 262, 520+230, 268, 52,211,153);
+text("LIVE TRANSIT NETWORK MAP", 520, 296, 3, 147,157,178);
+text("METRO · TRAM · FERRY · BUS · CABLE CAR", 520, 332, 2, 94,104,128);
 
 /* encode */
 const crcT=(()=>{const t=[];for(let n=0;n<256;n++){let c=n;for(let k=0;k<8;k++)c=c&1?0xEDB88320^(c>>>1):c>>>1;t[n]=c>>>0;}return t;})();
@@ -108,4 +109,4 @@ const stride=W*3,raw=Buffer.alloc((stride+1)*H);
 for(let y=0;y<H;y++){ raw[y*(stride+1)]=0; buf.copy(raw,y*(stride+1)+1,y*stride,y*stride+stride); }
 const ih=Buffer.alloc(13); ih.writeUInt32BE(W,0); ih.writeUInt32BE(H,4); ih[8]=8; ih[9]=2;
 fs.writeFileSync(path.join(OUT,'og-card.png'),Buffer.concat([Buffer.from([137,80,78,71,13,10,26,10]),chunk('IHDR',ih),chunk('IDAT',zlib.deflateSync(raw,{level:9})),chunk('IEND',Buffer.alloc(0))]));
-console.log('wrote assets/logo.svg + assets/og-card.png',(fs.statSync(path.join(OUT,'og-card.png')).size/1024).toFixed(0)+'KB');
+console.log('wrote assets/og-card.png',(fs.statSync(path.join(OUT,'og-card.png')).size/1024).toFixed(0)+'KB');

@@ -61,6 +61,36 @@ test('the full-bleed icons have no see-through corners to show a black or white 
   };
   for (const [x, y] of [[0, 0], [179, 0], [0, 179], [179, 179]]) assert.strictEqual(px('assets/apple-touch-icon.png', x, y).a, 255, 'the Apple icon has a see-through corner at ' + x + ',' + y);
   assert.ok(px('assets/icon-512.png', 0, 0).a < 20, 'the plain icon lost its rounded corners');
+  // the supplied picture has a soft glow around its rounded square; left in, it shows as a faint square haze on a dark background
+  for (const [x, y] of [[8, 8], [20, 4], [4, 20], [503, 503], [491, 507], [507, 491]]) assert.ok(px('assets/icon-512.png', x, y).a <= 8, 'a haze is left in the corner of the plain icon at ' + x + ',' + y + ' (alpha ' + px('assets/icon-512.png', x, y).a + ')');
+  assert.strictEqual(px('assets/icon-512.png', 256, 256).a, 255, 'the middle of the icon is not solid');
+});
+
+test('the mark inside the app (top bar and welcome dialog) is the new icon, not the old drawn "M"', () => {
+  const html = H.html();
+  assert.ok(/<h1><img class="logo" src="assets\/logo-96\.png" width="30" height="30"/.test(html), 'the top-bar mark is not the new icon');
+  assert.ok(/<img class="wc-logo" src="assets\/logo-96\.png" width="44" height="44"/.test(html), 'the welcome-dialog mark is not the new icon');
+  assert.ok(!/<svg class="logo"/.test(html) && !/<svg class="wc-logo"/.test(html) && !/id="lgM"/.test(html), 'the old drawn "M" is still in the page');
+  assert.deepStrictEqual([png('assets/logo-96.png').w, png('assets/logo-96.png').h], [96, 96]);
+  assert.ok(png('assets/logo-96.png').bytes <= 50e3, 'the in-app mark is heavier than it should be for a 30 px picture');
+  assert.ok(!fs.existsSync(path.join(ROOT, 'assets', 'logo.svg')), 'the old logo file is back');
+});
+
+test('the preview card shown when the link is shared is 1200 x 630, matches the page\'s tags, and carries the new icon', () => {
+  const card = png('assets/og-card.png');
+  assert.deepStrictEqual([card.w, card.h], [1200, 630]);
+  assert.ok(card.bytes < 600e3, 'the card is too heavy for chat apps: ' + card.bytes);
+  const html = H.html();
+  assert.ok(/og:image" content="https:\/\/hero4mohamed\.github\.io\/Metro-Istanbul-General-City-Map\/assets\/og-card\.png"/.test(html) && /og:image:width" content="1200"/.test(html) && /og:image:height" content="630"/.test(html), 'the page tags do not describe the card');
+  // the new icon is blue and green and red; the old card had none of the strong blue: sample the icon's middle-left (sea) area
+  const zlib = require('node:zlib'); const b = fs.readFileSync(path.join(ROOT, 'assets', 'og-card.png'));
+  let pos = 8; const idat = []; while (pos < b.length) { const len = b.readUInt32BE(pos), type = b.toString('latin1', pos + 4, pos + 8); if (type === 'IDAT') idat.push(b.subarray(pos + 8, pos + 8 + len)); pos += 12 + len; }
+  const raw = zlib.inflateSync(Buffer.concat(idat)), stride = 1200 * 3 + 1;
+  const at = (x, y) => [raw[y * stride + 1 + x * 3], raw[y * stride + 1 + x * 3 + 1], raw[y * stride + 1 + x * 3 + 2]];
+  const sea = at(385, 360); assert.ok(sea[2] > sea[0] + 40, 'the icon is not on the card (no blue where the sea should be): ' + sea);
+  const corner = at(72, 127), outside = at(40, 100);
+  assert.ok(Math.abs(corner[0] - outside[0]) < 40 && Math.abs(corner[2] - outside[2]) < 40, 'the empty corner of the icon shows a box against the glow: ' + corner + ' vs ' + outside);
+  const word = at(560, 224); assert.ok(word[0] > 200 && word[1] > 200, 'the wordmark is missing or has moved: ' + word);
 });
 
 test('the icon files are not so heavy that they slow a first visit', () => {
