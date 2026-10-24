@@ -13,6 +13,7 @@ const BUS_OPERATOR = CITY.busOperator || '';      // İETT, UlaşımPark, …
 const BUS_DIR = HAS.bus ? (BUS_ALL[CITY_ID] || []) : [];
 /* --- Live disruptions: faults / closures / suspensions (editable transit_data/disruptions.json) --- */
 let DISRUPTIONS = HAS.disruptions ? __DISRUPTIONS_JSON__ : [];   // baked-in fallback; overridden by the live fetch below
+let DISR_CHECKED = null;        // ms: when the rail/ferry notices were last read from the status page (disruptions-status.json); null = unknown
 let SURFACE_NOTICES = [];       // live İETT bus notices (İstanbul only); empty until the feed and the bus data have both arrived
 /* --- Upcoming line openings: curated İBB projected launch dates (subject to change). Shown as
        "coming soon" cards in the announcements panel; auto-hide once the projected date passes. --- */

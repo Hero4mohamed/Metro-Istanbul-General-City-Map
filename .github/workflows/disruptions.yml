@@ -51,7 +51,7 @@ jobs:
       - name: Commit if changed
         id: commit
         run: |
-          if git diff --quiet -- transit_data/disruptions.json; then
+          if git diff --quiet -- transit_data/disruptions.json transit_data/disruptions-status.json; then
             echo "No change — disruptions.json already current."
             echo "changed=false" >> "$GITHUB_OUTPUT"
             exit 0
@@ -59,7 +59,7 @@ jobs:
           echo "changed=true" >> "$GITHUB_OUTPUT"
           git config user.name  "disruptions-bot"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add transit_data/disruptions.json
+          git add transit_data/disruptions.json transit_data/disruptions-status.json
           git commit -m "chore: live disruptions update"
           # A push can lose a race with a human push. Rebase onto whatever landed and retry,
           # rather than failing the run and leaving the map on stale data until the next tick.

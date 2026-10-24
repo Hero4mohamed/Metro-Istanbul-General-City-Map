@@ -5,7 +5,21 @@
 // stated in the structured table — never invented.
 const fs = require('fs'); const path = require('path');
 const OUT = path.join(__dirname, 'disruptions.json');
+const STATUS = path.join(__dirname, 'disruptions-status.json');
 const SRC = 'https://www.metro.istanbul/SeferDurumlari/Ariza';
+
+/* ==STATUS-START== How old are the notices? disruptions.json only changes when a notice does, so on a quiet day its own
+   history says nothing about whether the page is still being read. This small file says it: the last time the status page
+   was read successfully. It is rewritten when the notices change, and otherwise at most every HEARTBEAT_MS, so a quiet day
+   costs a handful of tiny commits rather than one every half hour. The app turns it into "checked 12 min ago" and, after
+   several hours of silence (a laptop asleep, a source that cannot be reached), says the notices may be out of date. */
+const HEARTBEAT_MS = 3 * 3600 * 1000;
+function nextStatus(prevStatus, noticesChanged, nowMs){
+  const prev = prevStatus ? Date.parse(prevStatus.checkedAt) : NaN;
+  if(!noticesChanged && isFinite(prev) && nowMs - prev >= 0 && nowMs - prev < HEARTBEAT_MS) return null;   // current enough: publish nothing
+  return { v: 1, checkedAt: new Date(nowMs).toISOString() };
+}
+/* ==STATUS-END== */
 const UA  = 'Mozilla/5.0 (compatible; IstanbulTransitMap/1.0; +github.com/Hero4mohamed)';
 
 // decode numeric + named HTML entities and tidy whitespace
@@ -777,7 +791,13 @@ async function main(){
   if(!metro.length && !process.env.ALLOW_EMPTY){
     console.error('No metro.istanbul disruptions parsed — keeping manual-only set (safety).');
   }
-  fs.writeFileSync(OUT, JSON.stringify(all, null, 2)+'\n');
+  const text = JSON.stringify(all, null, 2)+'\n';
+  let before = null; try{ before = fs.readFileSync(OUT, 'utf8'); }catch(e){}
+  fs.writeFileSync(OUT, text);
   console.log('WROTE', OUT, '—', all.length, 'item(s):', all.map(e=>e.ref+'/'+e.id).join(', '));
+  // the page was read successfully just now: say so (see ==STATUS-START==)
+  let prevStatus = null; try{ prevStatus = JSON.parse(fs.readFileSync(STATUS, 'utf8')); }catch(e){}
+  const st = nextStatus(prevStatus, before !== text, Date.now());
+  if(st){ fs.writeFileSync(STATUS, JSON.stringify(st, null, 2)+'\n'); console.log('WROTE', STATUS, '—', st.checkedAt); }
 }
 main();

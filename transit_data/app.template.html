@@ -937,6 +937,11 @@
   .ann-foot{font-size:var(--fs-5);color:var(--dim);padding-top:4px;border-top:1px solid var(--stroke);margin-top:2px;line-height:1.55;}
   .ann-foot a{color:var(--accent);text-decoration:none;}
   .ann-foot a:hover{text-decoration:underline;}
+  .ann-age{margin-bottom:2px;}
+  .ann-age.stale{color:var(--warn-ink);font-weight:700;}
+  .ann-stalebar{font-size:var(--fs-7);line-height:1.45;color:var(--warn-ink);background:var(--surface);border:1px solid var(--stroke);border-left:3px solid var(--warn-ink);border-radius:8px;padding:6px 9px;}
+  /* stale rail and ferry notices (not the bus group, which this device reads live, nor the "opening soon" cards) */
+  .ann-body.ann-stale > .ann-item[data-id]{opacity:.62;filter:saturate(.35);}
   .ann-item{cursor:pointer;}
   .ann-none{font-size:11px;color:var(--ok-ink);padding:8px 9px;}
   .ann-open{border-left-color:#2FBF71;}

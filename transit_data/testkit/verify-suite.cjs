@@ -966,6 +966,27 @@ const MUTATIONS = [
     expect: 'the network is asked about a place only when the file found next to nothing, or when the query has a number',
     apply: h => h.replace('function gazThin(n, q) { return n < 2 || /\\d/.test(q); }', 'function gazThin(n, q) { return true; }'),
   },
+  // ---- how old the rail and ferry notices are ----
+  {
+    name: 'never call the notices out of date, however long since the page was read',
+    expect: '"may be out of date" starts at eight hours, not before',
+    apply: h => h.replace('const ANN_STALE_MIN = 8 * 60;', 'const ANN_STALE_MIN = 8 * 60 * 1000;'),
+  },
+  {
+    name: 'let the age go negative when the device clock is behind the file',
+    expect: 'the age is whole minutes, never negative, and unknown when there is nothing to go on',
+    apply: h => h.replace('const mins = Math.max(0, Math.round((nowMs - checkedMs) / 60000));', 'const mins = Math.round((nowMs - checkedMs) / 60000);'),
+  },
+  {
+    name: 'fetch the notices once at start and never again, so a tab left open keeps an age that only grows',
+    expect: 'the page fetches the status with the notices, and keeps fetching while the tab is in use',
+    apply: h => h.replace('if(HAS.disruptions) setInterval(() => { if(!document.hidden) loadLiveDisruptions(); }, 10 * 60 * 1000);', ''),
+  },
+  {
+    name: 'grey every announcement when the feed is stale, the live bus group and the opening cards included',
+    expect: 'a stale feed shows a warning and greys the rail and ferry rows, but not the bus group or the opening cards',
+    apply: h => h.replace('.ann-body.ann-stale > .ann-item[data-id]{opacity:', '.ann-body.ann-stale .ann-item{opacity:'),
+  },
   // ---- the vector map ----
   {
     name: 'draw every name with no outline, so a street name vanishes into the road beneath it',
