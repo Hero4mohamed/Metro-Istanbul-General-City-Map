@@ -110,6 +110,7 @@ function dropPin(p, zoom){
     : "—";
   pinMarker.bindPopup(
     '<div class="pin-pop"><b>' + svgEsc(p.name) + '</b>' +
+    (p.type ? '<div class="pin-type">' + svgEsc((p.ic ? p.ic + " " : "") + p.type + (p.tr ? " · " + p.tr : "")) + '</div>' : "") +
     '<div class="sub">' + (p.ctx ? svgEsc(p.ctx) + " · " : "") + svgEsc(t("aiStops")) + ": <br>" + stopTxt + '</div>' +
     '<div class="pin-acts">' +
       '<button data-pin="O">' + svgEsc(t("routeFrom")) + '</button>' +
@@ -142,18 +143,71 @@ document.addEventListener("click", e=>{
 });
 
 /* ================================ omni search ================================ */
+/* The search box. It looks, in order, in: this map's own stops, stations and curated landmarks; the OFFLINE places file
+   (06b-gazetteer.js — streets, areas, food, health, shops, worship…), which answers on the device with no network; and
+   only when both come up short, the network. Results show what a thing IS and where, with the matched part of the name
+   marked, and the nearest first among equals. */
 (function(){
   const wrap = document.getElementById("omni"), inp = document.getElementById("omniIn"),
         res  = document.getElementById("omniRes"), xb  = document.getElementById("omniX");
   if(!wrap || !inp || !res) return;
-  let seq = 0, lastRows = [], selIdx = -1;
+  let seq = 0, lastRows = [], selIdx = -1, results = [], shown = 8, lastQ = "";
 
-  const row = (ic, nm, sb, d) =>
+  /* what a category chip means in the offline file's own types */
+  const CAT_TYPES = {
+    "amenity:restaurant":["restaurant","fast_food"], "amenity:cafe":["cafe"], "amenity:hospital":["hospital"],
+    "amenity:pharmacy":["pharmacy"], "amenity:bank":["bank"], "shop:supermarket":["supermarket","mall"],
+    "tourism:hotel":["hotel","lodging"], "amenity:police":["police"], "amenity:fuel":["fuel"],
+    "tourism:museum":["museum","gallery"], "leisure:park":["park","garden"],
+    "amenity:place_of_worship":["mosque","church","synagogue","worship"], "amenity:pub":["bar"]
+  };
+  const SIGHT_TYPES = { attraction:1, museum:1, historic:1, viewpoint:1, tower:1, square:1, mosque:1, gallery:1 };
+  const ZOOM_FOR = { district:13, place:13, hood:14, airport:14, street:16, park:16, square:16, attraction:16, historic:16, museum:16 };
+
+  /* ---- recent searches: kept on the device, shown when the box is empty ---- */
+  const RECENT_KEY = "irn_recent";
+  function recent(){ try{ const a = JSON.parse(localStorage.getItem(RECENT_KEY) || "[]"); return Array.isArray(a) ? a : []; }catch(e){ return []; } }
+  function remember(p){
+    if(!p || !isFinite(p.lat) || !isFinite(p.lng)) return;
+    try{
+      const keep = recent().filter(r => !(r.name === p.name && Math.abs(r.lat - p.lat) < 0.0005 && Math.abs(r.lng - p.lng) < 0.0005));
+      keep.unshift({ name:p.name, lat:p.lat, lng:p.lng, ctx:p.ctx || "", ic:p.ic || "", type:p.type || "", typeKey:p.typeKey || "" });
+      localStorage.setItem(RECENT_KEY, JSON.stringify(keep.slice(0, 8)));
+    }catch(e){ /* a full or blocked store only costs the shortcut */ }
+  }
+
+  /* ---- the matched part of a name, marked. Turkish letters match their plain forms, as the search itself does ---- */
+  const LAT_CLS = { i:"[iıİI]", s:"[sşŞS]", g:"[gğĞG]", u:"[uüÜU]", o:"[oöÖO]", c:"[cçÇC]", a:"[aâÂA]" };
+  function hl(name, q){
+    const toks = gazFold(q).split(" ").filter(w => w.length >= 2 && /^[a-z0-9]+$/.test(w));
+    if(!toks.length || /[؀-ۿ]/.test(name)) return svgEsc(name);
+    const pat = toks.map(w => w.split("").map(ch => LAT_CLS[ch] || ch).join("")).join("|");
+    const re = new RegExp("(^|[^A-Za-zÀ-ÿĞğİıŞş0-9])(" + pat + ")", "gi");
+    let out = "", last = 0, m;
+    while((m = re.exec(name))){
+      const s = m.index + m[1].length;
+      out += svgEsc(name.slice(last, s)) + "<b>" + svgEsc(m[2]) + "</b>"; last = s + m[2].length;
+      if(re.lastIndex === m.index) re.lastIndex++;
+    }
+    return out + svgEsc(name.slice(last));
+  }
+  function dist(m){
+    if(!isFinite(m) || m < 0) return "";
+    if(m < 950) return unitSystem === "imperial" ? Math.round(m * 3.281 / 10) * 10 + " ft" : Math.round(m / 10) * 10 + " m";
+    return distStr(m / 1000);
+  }
+  const rowH = (ic, nmHTML, sb, d) =>
     '<div class="omni-row" role="option"><span class="omni-ico">' + ic + '</span>' +
-    '<span class="omni-tx"><span class="omni-nm">' + svgEsc(nm) + '</span>' +
+    '<span class="omni-tx"><span class="omni-nm">' + nmHTML + '</span>' +
     (sb ? '<span class="omni-sb">' + svgEsc(sb) + '</span>' : "") + '</span>' +
-    (d ? '<span class="omni-d">' + d + '</span>' : "") + '</div>';
-
+    (d ? '<span class="omni-d">' + svgEsc(d) + '</span>' : "") + '</div>';
+  function stopRow(p, org){
+    const ic = p.poi ? (ATTR_CAT[p.cat] || "📍") : (p.bus ? "🚌" : "🚇");
+    return rowH(ic, hl(p.name, lastQ), p.ref || "", org ? dist(metersBetween([org.lat, org.lng], [p.lat, p.lng])) : "");
+  }
+  function placeRow(p){
+    return rowH(p.ic || "📍", hl(p.name, lastQ), [p.tr, p.type, p.ctx].filter(Boolean).join(" · "), p.m != null ? dist(p.m) : "");
+  }
   function chips(){
     const pick = [0,2,3,1,6,4];   // food, hospital, pharmacy, café, market, ATM
     return '<div class="omni-chips">' + pick.map(i=>{ const c = POI_CATS[i];
@@ -170,71 +224,105 @@ document.addEventListener("click", e=>{
 
   function paint(html){ res.innerHTML = html; open();
     lastRows = [...res.querySelectorAll(".omni-row")]; selIdx = -1; }
+  /* draw sections [{ h, items, row }] and keep `results` in step with the rows, so a click finds its place */
+  function render(sections, tail){
+    results = []; let html = "";
+    sections.forEach(s => {
+      if(!s.items.length) return;
+      html += '<div class="omni-h">' + svgEsc(s.h) + '</div>' + s.items.map(p => { results.push(p); return s.row(p); }).join("");
+      if(s.more) html += '<button class="omni-more" data-more="1">' + svgEsc(t("omniMore")) + ' (' + s.more + ')</button>';
+    });
+    paint(html + (tail || ""));
+  }
+
+  function home(){
+    results = []; const rec = recent();
+    let html = "";
+    if(rec.length){
+      html += '<div class="omni-h">' + svgEsc(t("omniRecent")) + '</div>' + rec.map(p => { results.push(p); return rowH(p.ic || "📍", svgEsc(p.name), [p.type, p.ctx].filter(Boolean).join(" · "), ""); }).join("");
+    }
+    paint(chips() + html + (rec.length ? "" : '<div class="omni-note">' + svgEsc(t("omniHint") || t("omniNone")) + "</div>"));
+  }
 
   async function runCat(cat){
-    const c0 = map.getCenter();
+    const my = ++seq, c0 = map.getCenter(), types = CAT_TYPES[cat.tag];
     paint('<div class="omni-h">' + svgEsc(catLabel(cat)) + '</div><div class="omni-note">' + svgEsc(t("omniLook")) + "</div>");
+    if(types){
+      await gazWhen(1500);
+      if(my !== seq) return;
+      const near = gazNearby(types, c0.lat, c0.lng, 25);
+      if(near){
+        if(!near.length){ paint('<div class="omni-note">' + svgEsc(t("omniNone")) + "</div>"); return; }
+        render([{ h:cat.ic + " " + catLabel(cat), items:near, row:placeRow }]);
+        return;
+      }
+    }
+    // no offline file for this city (or no mapping for this category): the live lookup, if the user allows it
+    if(!onlineSearchPref){ paint('<div class="omni-note">' + svgEsc(t("omniOff")) + "</div>"); return; }
     const hits = await poiNear(c0.lat, c0.lng, cat.tag, 3, 25);
+    if(my !== seq) return;
     if(hits === null){ paint('<div class="omni-note">' + svgEsc(t("aiOffline")) + "</div>"); return; }
     if(!hits.length){ paint('<div class="omni-note">' + svgEsc(t("omniNone")) + "</div>"); return; }
     results = hits.slice(0,25);
     paint('<div class="omni-h">' + cat.ic + " " + svgEsc(catLabel(cat)) + '</div>' +
-      results.map(p=>row(cat.ic, p.name, p.ctx, distStr(p.m/1000))).join(""));
+      results.map(p=>rowH(cat.ic, svgEsc(p.name), p.ctx, distStr(p.m/1000))).join(""));
   }
 
-  let results = [];
   async function run(q){
-    const my = ++seq;
-    if(!q.trim()){ results=[]; paint(chips() + '<div class="omni-note">' + svgEsc(t("omniHint")||t("omniNone")) + "</div>"); return; }
-    const cat = matchCat(q);
+    const my = ++seq; lastQ = q;
+    if(!q.trim()){ home(); return; }
+    gazLoad();                                             // the moment someone searches, if it is not already on its way
+    if(!GAZ.G && GAZ.state !== "none"){
+      paint('<div class="omni-note">' + svgEsc(t("omniLoading")) + "</div>");
+      await gazWhen(2000);
+      if(my !== seq) return;
+    }
+    // no offline file at all (another city, or offline with nothing stored): a category word still works, over the network
+    const cat = !GAZ.G ? matchCat(q) : null;
     if(cat){ await runCat(cat); return; }
-    // 1 — local stops + landmarks, instantly and offline
-    const local = searchPlaces(q).slice(0,8);
-    results = local.slice();
-    let html = local.length
-      ? '<div class="omni-h">' + svgEsc(t("omniStops")) + '</div>' +
-        local.map(p=>row(p.poi ? (ATTR_CAT[p.cat]||"📍") : (p.bus ? "🚌" : "🚇"), p.name, p.ref||"", "")).join("")
-      : "";
-    html += '<div class="omni-h">' + svgEsc(t("omniPlaces")) + '</div><div class="omni-note">' + svgEsc(t("omniLook")) + "</div>";
-    paint(html);
-    // 2 — anything else in the city, from OpenStreetMap
-    const geo = await geocode(q);
-    if(my !== seq) return;                              // a newer keystroke won
-    /* Drop only genuine repeats of a local hit — same name, or the same name carrying a
-       district suffix ("Galata Tower, Bereketzade") within 200 m. The planner's dedupeGeo
-       drops everything within 200 m, which here would also bin the pub next door. */
-    const fresh = (geo || []).filter(g => !local.some(l => {
-      if(fold(l.name) === fold(g.name)) return true;
-      return foldQ(g.name).startsWith(foldQ(l.name)) &&
-             metersBetween([l.lat,l.lng],[g.lat,g.lng]) < 200;
-    })).slice(0,8);
-    results = local.concat(fresh);
-    let h2 = local.length
-      ? '<div class="omni-h">' + svgEsc(t("omniStops")) + '</div>' +
-        local.map(p=>row(p.poi ? (ATTR_CAT[p.cat]||"📍") : (p.bus ? "🚌" : "🚇"), p.name, p.ref||"", "")).join("")
-      : "";
-    if(fresh.length) h2 += '<div class="omni-h">' + svgEsc(t("omniPlaces")) + '</div>' +
-        fresh.map(p=>row("📍", p.name, p.ctx||"", "")).join("");
-    else if(!local.length) h2 += '<div class="omni-note">' + svgEsc(geo===null ? t("omniOff") : t("omniNone")) + "</div>";
-    paint(h2);
+
+    const org = searchOrigin();
+    const stops = searchPlaces(q);
+    const rail = stops.filter(p => !p.bus && !p.poi).slice(0, 3), lm = stops.filter(p => p.poi).slice(0, 3), bus = stops.filter(p => p.bus).slice(0, 3);
+    // a curated landmark and the places file's entry for it are one place: keep the curated one (it has the English name)
+    const gz = gazFind(q, 60).filter(g => !(SIGHT_TYPES[g.typeKey] && lm.some(l => metersBetween([l.lat, l.lng], [g.lat, g.lng]) < 150)));
+    const top = rail.concat(lm), more = Math.max(0, gz.length - shown);
+    const sections = [
+      { h:t("omniStops"),  items:top,                row:p => stopRow(p, org) },
+      { h:t("omniPlaces"), items:gz.slice(0, shown), row:placeRow, more:more },
+      { h:t("omniBus"),    items:bus,                row:p => stopRow(p, org) }
+    ];
+    if(top.length + gz.length + bus.length) render(sections);
+    else paint('<div class="omni-note">' + svgEsc(onlineSearchPref && foldQ(q).length >= 3 ? t("omniLook") : t("omniNone")) + "</div>");
+
+    // the network only tops up a thin answer
+    if(top.length + gz.length >= 4 || foldQ(q).length < 3) return;
+    const on = (await photonSearch(q)).filter(g => !gz.some(z => foldQ(z.name) === foldQ(g.name)) && !top.some(l => fold(l.name) === fold(g.name)));
+    if(my !== seq) return;
+    if(!on.length){ if(!top.length && !gz.length && !bus.length) paint('<div class="omni-note">' + svgEsc(onlineSearchPref ? t("omniNone") : t("omniOff")) + "</div>"); return; }
+    sections.push({ h:t("omniOnline"), items:on.slice(0, 8), row:p => rowH("📍", hl(p.name, q), p.ctx || "", "") });
+    render(sections);
   }
 
   let tmr = 0;
   inp.addEventListener("input", ()=>{
     const q = inp.value;
     wrap.classList.toggle("has-q", !!q);
-    clearTimeout(tmr); tmr = setTimeout(()=>run(q), q.trim() ? 300 : 0);
+    shown = 8;
+    clearTimeout(tmr); tmr = setTimeout(()=>run(q), q.trim() ? (GAZ.G ? 60 : 200) : 0);
   });
-  inp.addEventListener("focus", ()=>{ if(!inp.value.trim()) run(""); else open(); });
+  inp.addEventListener("focus", ()=>{ gazLoad(); if(!inp.value.trim()) run(""); else open(); });
   xb.addEventListener("click", ()=>{ inp.value=""; wrap.classList.remove("has-q"); inp.focus(); run(""); });
 
   res.addEventListener("click", e=>{
     const chip = e.target.closest(".omni-chip");
     if(chip){ const c = POI_CATS.find(x=>x.tag===chip.getAttribute("data-cat")); if(c){ inp.value = catLabel(c); wrap.classList.add("has-q"); runCat(c); } return; }
+    if(e.target.closest(".omni-more")){ shown += 12; run(lastQ); return; }
     const r = e.target.closest(".omni-row"); if(!r) return;
     const i = [...res.querySelectorAll(".omni-row")].indexOf(r);
     const p = results[i]; if(!p) return;
-    dropPin(p); shut(); inp.blur();
+    remember(p);
+    dropPin(p, ZOOM_FOR[p.typeKey]); shut(); inp.blur();
   });
 
   inp.addEventListener("keydown", e=>{

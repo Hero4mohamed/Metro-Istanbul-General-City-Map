@@ -81,7 +81,7 @@ const BROWSER_GLOBALS = new Set([
   'KeyboardEvent', 'MouseEvent', 'TouchEvent', 'PointerEvent', 'Image', 'Audio', 'Worker',
   'Notification', 'navigator', 'document', 'window', 'console', 'localStorage', 'sessionStorage',
   'history', 'location', 'performance', 'screen', 'caches', 'crypto', 'DOMParser', 'XMLSerializer',
-  'Uint8Array', 'Float32Array', 'Float64Array', 'Int32Array', 'ArrayBuffer', 'DataView', 'TextEncoder', 'TextDecoder',
+  'Uint8Array', 'Uint16Array', 'Float32Array', 'Float64Array', 'Int32Array', 'ArrayBuffer', 'DataView', 'TextEncoder', 'TextDecoder',
   'Proxy', 'Reflect', 'globalThis', 'isSecureContext', 'ServiceWorkerRegistration', 'Element',
   'HTMLElement', 'Node', 'NodeList', 'FormData', 'Option',
   'L',                       // Leaflet, loaded from the CDN before this script

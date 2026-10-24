@@ -1034,7 +1034,10 @@
   .omni.has-q .omni-x{display:block;}
   .omni-res{position:absolute;top:calc(100% + 7px);left:0;right:0;z-index:1100;display:none;
     max-height:min(52vh,430px);overflow-y:auto;overscroll-behavior:contain;border-radius:13px;
-    padding:6px;flex-direction:column;gap:2px;}
+    padding:6px;flex-direction:column;gap:2px;
+    /* solid, not the translucent glass: this sits inside another frosted panel, and nested backdrop blur does not
+       compose, so the Announcements card behind it showed straight through the rows */
+    background:var(--obsidian);}
   .omni.open .omni-res{display:flex;}
   .omni-res::-webkit-scrollbar{width:6px;}
   .omni-res::-webkit-scrollbar-thumb{background:var(--stroke-2);border-radius:var(--r-pill);}
@@ -1055,6 +1058,12 @@
     transition:all .14s var(--ease);}
   .omni-chip:hover{border-color:var(--accent);color:var(--accent);}
   .omni-note{font-size:var(--fs-6);color:var(--dim);padding:9px 10px;line-height:1.5;}
+  /* the part of a name the search matched, the way every map's search shows it */
+  .omni-nm b{color:var(--accent);font-weight:800;}
+  .omni-more{display:block;width:calc(100% - 10px);margin:4px 5px;padding:7px;border:1px dashed var(--stroke-2);border-radius:9px;
+    background:none;color:var(--muted);font-size:var(--fs-6);cursor:pointer;}
+  .omni-more:hover{border-color:var(--accent);color:var(--accent);}
+  .pin-type{font-size:var(--fs-5);color:var(--accent);margin:-1px 0 4px;}
   /* .topbar owns a stacking context at z-index 1000, so the list inside it would otherwise
      sit under the z-1200 left rail no matter what z-index the list itself carries */
   body.omni-open .topbar{z-index:1300;}
@@ -1799,6 +1808,9 @@
     <div class="sp-row"><span data-i18n="prefStepFree">Prefer step-free (♿)</span>
       <button class="sw" id="swStepFree" role="switch" aria-label="Prefer step-free routes"><span class="sw-k"></span></button></div>
     <div class="sp-hint" data-i18n="stepFreeHint">Prefers stations with elevators (İBB + OpenStreetMap data). Not guaranteed where data is missing.</div>
+    <div class="sp-row"><span data-i18n="prefOnline">Look places up online</span>
+      <button class="sw" id="swOnline" role="switch" aria-label="Look places up online"><span class="sw-k"></span></button></div>
+    <div class="sp-hint" data-i18n="onlineHint">When a place is not in the offline list, what you type is sent to the Photon service (komoot.io) with the city centre — never your own location. Turn off to keep every search on this device.</div>
     <div class="sp-row"><span data-i18n="distUnit">Distance</span>
       <div class="seg" id="unitSeg"><button data-u="metric" class="active">km</button><button data-u="imperial">mi</button></div></div>
     <div class="sp-row"><span data-i18n="clockFmt">Clock</span>

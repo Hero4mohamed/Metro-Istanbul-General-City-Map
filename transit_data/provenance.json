@@ -322,6 +322,60 @@
       "covers_tr": "T6 Sirkeci–Kazlıçeşme tramvayı (26 Şubat 2024’ten beri hizmette)",
       "covers_ar": "ترام T6 سيركجي–قازليتشيشمه (قيد التشغيل منذ 26 فبراير 2024)",
       "covers_fr": "Tramway T6 Sirkeci–Kazlıçeşme (en service depuis le 26 février 2024)"
+    },
+    "places-istanbul.json": {
+      "kind": "community",
+      "source": "OpenStreetMap contributors (Overpass)",
+      "licence": "ODbL 1.0",
+      "covers": "Streets, areas, landmarks, shops, food, health, schools and worship in İstanbul, for the search",
+      "covers_tr": "İstanbul için arama: sokaklar, semtler, simge yapılar, mağazalar, yeme-içme, sağlık, okullar ve ibadet yerleri",
+      "covers_ar": "الشوارع والأحياء والمعالم والمتاجر والمطاعم والصحة والمدارس ودور العبادة في إسطنبول للبحث",
+      "covers_fr": "Rues, quartiers, lieux remarquables, commerces, restauration, santé, écoles et lieux de culte de İstanbul, pour la recherche"
+    },
+    "places-ankara.json": {
+      "kind": "community",
+      "source": "OpenStreetMap contributors (Overpass)",
+      "licence": "ODbL 1.0",
+      "covers": "Streets, areas, landmarks, shops, food, health, schools and worship in Ankara, for the search",
+      "covers_tr": "Ankara için arama: sokaklar, semtler, simge yapılar, mağazalar, yeme-içme, sağlık, okullar ve ibadet yerleri",
+      "covers_ar": "الشوارع والأحياء والمعالم والمتاجر والمطاعم والصحة والمدارس ودور العبادة في أنقرة للبحث",
+      "covers_fr": "Rues, quartiers, lieux remarquables, commerces, restauration, santé, écoles et lieux de culte de Ankara, pour la recherche"
+    },
+    "places-izmir.json": {
+      "kind": "community",
+      "source": "OpenStreetMap contributors (Overpass)",
+      "licence": "ODbL 1.0",
+      "covers": "Streets, areas, landmarks, shops, food, health, schools and worship in İzmir, for the search",
+      "covers_tr": "İzmir için arama: sokaklar, semtler, simge yapılar, mağazalar, yeme-içme, sağlık, okullar ve ibadet yerleri",
+      "covers_ar": "الشوارع والأحياء والمعالم والمتاجر والمطاعم والصحة والمدارس ودور العبادة في إزمير للبحث",
+      "covers_fr": "Rues, quartiers, lieux remarquables, commerces, restauration, santé, écoles et lieux de culte de İzmir, pour la recherche"
+    },
+    "places-bursa.json": {
+      "kind": "community",
+      "source": "OpenStreetMap contributors (Overpass)",
+      "licence": "ODbL 1.0",
+      "covers": "Streets, areas, landmarks, shops, food, health, schools and worship in Bursa, for the search",
+      "covers_tr": "Bursa için arama: sokaklar, semtler, simge yapılar, mağazalar, yeme-içme, sağlık, okullar ve ibadet yerleri",
+      "covers_ar": "الشوارع والأحياء والمعالم والمتاجر والمطاعم والصحة والمدارس ودور العبادة في بورصة للبحث",
+      "covers_fr": "Rues, quartiers, lieux remarquables, commerces, restauration, santé, écoles et lieux de culte de Bursa, pour la recherche"
+    },
+    "places-antalya.json": {
+      "kind": "community",
+      "source": "OpenStreetMap contributors (Overpass)",
+      "licence": "ODbL 1.0",
+      "covers": "Streets, areas, landmarks, shops, food, health, schools and worship in Antalya, for the search",
+      "covers_tr": "Antalya için arama: sokaklar, semtler, simge yapılar, mağazalar, yeme-içme, sağlık, okullar ve ibadet yerleri",
+      "covers_ar": "الشوارع والأحياء والمعالم والمتاجر والمطاعم والصحة والمدارس ودور العبادة في أنطاليا للبحث",
+      "covers_fr": "Rues, quartiers, lieux remarquables, commerces, restauration, santé, écoles et lieux de culte de Antalya, pour la recherche"
+    },
+    "places-kocaeli.json": {
+      "kind": "community",
+      "source": "OpenStreetMap contributors (Overpass)",
+      "licence": "ODbL 1.0",
+      "covers": "Streets, areas, landmarks, shops, food, health, schools and worship in Kocaeli, for the search",
+      "covers_tr": "Kocaeli için arama: sokaklar, semtler, simge yapılar, mağazalar, yeme-içme, sağlık, okullar ve ibadet yerleri",
+      "covers_ar": "الشوارع والأحياء والمعالم والمتاجر والمطاعم والصحة والمدارس ودور العبادة في قوجه إيلي للبحث",
+      "covers_fr": "Rues, quartiers, lieux remarquables, commerces, restauration, santé, écoles et lieux de culte de Kocaeli, pour la recherche"
     }
   }
 }

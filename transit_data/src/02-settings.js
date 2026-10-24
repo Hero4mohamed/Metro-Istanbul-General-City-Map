@@ -327,6 +327,10 @@ let avoidModes = new Set((function(){ const a=lsJSON('irn_avoid'); return Array.
 let homePlace  = lsJSON('irn_home');   // {name,lat,lng} | null
 let workPlace  = lsJSON('irn_work');
 let stepFreePref = lsStr('irn_stepfree')==='1';   // Settings → prefer step-free (elevator) routes
+/* Settings → look places up online. The search runs on the device first; this only decides whether what is NOT in the
+   offline list may be asked of the public Photon service (the text typed, plus the city centre — never the user's own
+   position). On by default, as it always was; off keeps every search on the phone. */
+let onlineSearchPref = lsStr('irn_online') !== '0';
 function applyDisplayPrefs(){
   document.body.classList.toggle('large-text', textSize==='large');
   document.body.classList.toggle('reduce-motion', reduceMotionPref);
@@ -385,6 +389,8 @@ function setAvoid(mode, on, rerun){
   try{ localStorage.setItem('irn_avoid', JSON.stringify([...avoidModes])); }catch(e){}
   const sw=document.getElementById(mode==='ferry'?'swAvoidFerry':'swAvoidBus'); if(sw) sw.classList.toggle('on', avoidModes.has(mode));
   if(rerun && originPt && destPt && currentOpts && currentOpts.length) runRoute(); }
+function setOnlineSearch(on){ onlineSearchPref=!!on; try{localStorage.setItem('irn_online',on?'1':'0');}catch(e){}
+  const sw=document.getElementById('swOnline'); if(sw) sw.classList.toggle('on', onlineSearchPref); }
 function setStepFree(on, rerun){ stepFreePref=!!on; try{localStorage.setItem('irn_stepfree',on?'1':'0');}catch(e){}
   const sw=document.getElementById('swStepFree'); if(sw) sw.classList.toggle('on', stepFreePref);
   if(rerun && originPt && destPt && currentOpts && currentOpts.length) runRoute(); }
@@ -640,7 +646,7 @@ function initSettingsUI(){
   document.querySelectorAll('#clockSeg button').forEach(b=>b.classList.toggle('active', b.dataset.ck===(clock24?'24':'12')));
   const set=(id,on)=>{ const el=document.getElementById(id); if(el) el.classList.toggle('on',on); };
   set('swMotion',reduceMotionPref); set('swContrast',highContrastPref);
-  set('swAvoidFerry',avoidModes.has('ferry')); set('swAvoidBus',avoidModes.has('bus')); set('swStepFree',stepFreePref);
+  set('swAvoidFerry',avoidModes.has('ferry')); set('swAvoidBus',avoidModes.has('bus')); set('swStepFree',stepFreePref); set('swOnline',onlineSearchPref);
   renderPlaces();
 }
 // localized line-category label (legend groups + planner steps); falls back to KIND.label

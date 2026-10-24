@@ -1,0 +1,82 @@
+name: Refresh the search places (streets, areas, shops, food, health, worship)
+
+# The app's search runs on the device, over places fetched from OpenStreetMap
+# (fetch-places.cjs -> process-places.cjs -> transit_data/places-<city>.json). That is what lets it work offline
+# and keeps every keystroke on the phone; the public Photon service it used to depend on says heavy use "will be
+# throttled or completely banned".
+#
+# Monthly is plenty for streets and landmarks; a shop that opened last week is what the optional online top-up is
+# for. The download is the slow part (hours for İstanbul, which is why the Overpass queries are split into small
+# boxes and paced), and it is a courtesy to a free public service, so it is deliberately not more frequent.
+#
+# The raw dump is not committed. Only the processed file is, and only when its PLACES changed (the processor leaves
+# the file alone when only the fetch timestamp moved).
+
+on:
+  schedule:
+    - cron: '17 4 3 * *'        # the 3rd of each month, 04:17 UTC (two days after the land-use refresh)
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+  actions:  write               # lets it dispatch pages.yml - see the publish step
+
+concurrency:
+  group: places
+  cancel-in-progress: false
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    timeout-minutes: 340
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      # Exits non-zero if ANY city fails, and the job stops there: a half-refreshed set would give one city
+      # search and leave its neighbour with a month-old list.
+      - name: Fetch places from OpenStreetMap
+        run: node transit_data/fetch-places.cjs
+      - name: Process
+        run: node transit_data/process-places.cjs
+      - name: Rebuild the site
+        run: node transit_data/build.cjs
+      - name: Verify the rebuilt artifact
+        run: npm test
+
+      - name: Commit if changed
+        id: commit
+        run: |
+          FILES="transit_data/places-istanbul.json transit_data/places-ankara.json transit_data/places-izmir.json transit_data/places-bursa.json transit_data/places-antalya.json transit_data/places-kocaeli.json index.html sw.js"
+          if git diff --quiet -- $FILES; then
+            echo "No change - the places are already current."
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          git config user.name  "places-bot"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add $FILES
+          git commit -m "chore: refresh search places + rebuild"
+          for attempt in 1 2 3; do
+            if git push; then
+              echo "Places refreshed (attempt $attempt)."
+              echo "changed=true" >> "$GITHUB_OUTPUT"
+              exit 0
+            fi
+            echo "Push rejected on attempt $attempt - rebasing onto origin/main"
+            git pull --rebase --autostash origin main || exit 1
+          done
+          echo "::error::could not push the places refresh after 3 attempts"
+          exit 1
+
+      # Pushing is not enough: GitHub does not start a workflow from a push made with the default
+      # GITHUB_TOKEN, so pages.yml has to be asked for explicitly.
+      - name: Publish to Pages
+        if: steps.commit.outputs.changed == 'true' || github.event_name == 'workflow_dispatch'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: gh workflow run pages.yml --ref main

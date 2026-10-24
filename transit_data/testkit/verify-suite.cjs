@@ -913,6 +913,39 @@ const MUTATIONS = [
     expect: 'a covered alert is translated into each language, not handed over in English',
     apply: h => h.replace(String.raw`/elektrik\s+dağıtım\s+kurumu\s+kaynaklı`, String.raw`/elektrik\s+dağıtımX\s+kurumu\s+kaynaklı`),
   },
+  // ---- the app's own place search ----
+  {
+    name: 'ask the network for a typed destination without asking the offline file first',
+    expect: 'the geocoder asks the offline file first and the network only to top up a thin answer',
+    apply: h => h.replace('  const local = gazFind(q, 8);', '  const local = [];'),
+  },
+  {
+    name: 'look places up online even when the user has turned that off',
+    expect: 'turning online lookup off stops the network lookup, and is a switch in Settings in every language',
+    apply: h => h.replace("  if(typeof onlineSearchPref !== 'undefined' && !onlineSearchPref) return [];", ''),
+  },
+  {
+    name: 'rank a whole-name match below a longer name that starts with it',
+    expect: 'the whole name outranks a longer name that merely starts with it',
+    apply: h => h.replace('const GAZ_EXACT = 1000, GAZ_PREFIX_LO = 500,', 'const GAZ_EXACT = 100, GAZ_PREFIX_LO = 500,'),
+  },
+  {
+    name: 'stop treating a type word on its own as "the nearest of those"',
+    expect: 'a type word alone means "the nearest of those", in every language',
+    apply: h => h.replace('    if (allType && T === 1 && tTypes[0][ti]) { consider(i, GAZ_TYPE, true); continue; }',
+                          '    if (false && allType && T === 1 && tTypes[0][ti]) { consider(i, GAZ_TYPE, true); continue; }'),
+  },
+  {
+    name: 'answer a district name with everything in that district',
+    expect: 'a district is found by its name and comes before the streets and shops that carry it',
+    apply: h => h.replace('    if (!ok || (nameWords === 0 && !typeUsed)) continue;', '    if (!ok) continue;'),
+  },
+  {
+    name: 'hide a found place just for being near a stop in the planner',
+    expect: 'the planner no longer hides a result just for being near a stop',
+    apply: h => h.replace('    (foldQ(g.name).startsWith(foldQ(l.name)) && metersBetween([g.lat,g.lng],[l.lat,l.lng])<200)));',
+                          '    metersBetween([g.lat,g.lng],[l.lat,l.lng])<200));'),
+  },
 ];
 
 const original = fs.readFileSync(SRC, 'utf8');

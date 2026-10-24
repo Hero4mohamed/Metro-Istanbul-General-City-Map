@@ -350,9 +350,14 @@ function geoName(p){
   const ctx = p.district || p.city || p.county || p.state;
   return [p.name, (ctx && ctx!==p.name) ? ctx : null].filter(Boolean).join(', ') || p.name || '—';
 }
-async function geocode(q){
+/* The live Photon lookup — now ONLY a top-up for what the offline places file cannot hold (a house number, a shop
+   opened last week). Photon's own README says heavy use "will be throttled or completely banned" and promises no
+   availability, so nothing depends on it: it is asked only when the offline search found too little, and not at all when
+   the user has turned online lookup off. */
+async function photonSearch(q){
   const key = foldQ(q);
   if(!key || key.length < 3) return [];
+  if(typeof onlineSearchPref !== 'undefined' && !onlineSearchPref) return [];
   if(GEO_CACHE.has(key)) return GEO_CACHE.get(key);
   const langP = /^(en|de|fr|it)$/.test(lang) ? '&lang='+lang : '';   // Photon's supported UI languages
   const url = `https://photon.komoot.io/api/?q=${encodeURIComponent(q)}&limit=6&lat=${IST_C.lat}&lon=${IST_C.lng}${langP}`;
@@ -373,6 +378,19 @@ async function geocode(q){
     GEO_CACHE.set(key, out);
     return out;
   }catch(e){ clearTimeout(timer); GEO_CACHE.set(key, []); return []; }   // offline / blocked / timeout → local only
+}
+/* Where a typed destination is resolved: the planner's fields, the assistant, the alert deep-links. The offline places
+   file answers first and, when it has enough, alone; only a thin answer is topped up from the network, and what the
+   network adds is dropped where it repeats something the file already gave. */
+async function geocode(q){
+  const key = foldQ(q);
+  if(!key || key.length < 2) return [];
+  await gazWhen(1200);
+  const local = gazFind(q, 8);
+  if(local.length >= 5 || key.length < 3) return local;
+  const online = await photonSearch(q);
+  const fresh = online.filter(o => !local.some(l => foldQ(l.name) === foldQ(o.name) && metersBetween([l.lat,l.lng],[o.lat,o.lng]) < 400));
+  return local.concat(fresh);
 }
 let WALK = 80;        // metres / minute (adjustable via Settings → Walking pace)
 /* The fastest thing on THIS city's network, derived rather than assumed. The A* heuristic

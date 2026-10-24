@@ -65,3 +65,4 @@ transit_data/test/_stats.html
 
 # regenerated report of unmatched / stale / disagreeing Vision entries (stamped every run; the weekly job prints it instead)
 transit_data/planned-report.json
+transit_data/places-osm-*.json

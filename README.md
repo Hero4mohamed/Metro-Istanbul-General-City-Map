@@ -48,6 +48,8 @@ The map is generated from data in [`transit_data/`](transit_data/):
 | `process-planned.cjs` | `planned-registry.json` + the two above | `planned-lines.json`, `openings.json` |
 | `fetch-landuse.cjs` | Overpass: forests, parks, campuses, airports (per city, in small boxes) | `landuse-osm-<city>.json` (not committed) |
 | `process-landuse.cjs` | the dump above | `landuse-<city>.json` (painted into the basemap tiles; monthly by `landuse.yml`) |
+| `fetch-places.cjs` | Overpass: every named street, area, landmark, shop, café, pharmacy, school, mosque… (per city, in small boxes; the district and neighbourhood outlines once per city) | `places-osm-<city>.json` (not committed) |
+| `process-places.cjs` | the dump above | `places-<city>.json` (the search runs on this, on the device; monthly by `places.yml`) |
 | `process-bus.cjs` | `bus-probe.json` | `bus-directory.json` |
 | `build.cjs` | the JSONs + `app.template.html` | **`index.html`** |
 
