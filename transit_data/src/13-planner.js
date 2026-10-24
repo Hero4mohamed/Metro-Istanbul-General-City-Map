@@ -84,15 +84,20 @@ function useMyLocation(which, btn){
 // one dropdown row: rail/ferry stop (line-coloured dot), bus stop (amber), curated landmark
 // (★), or a live-geocoded place/address (📍)
 function acItemHTML(pl, id){
+  // a place from the offline places file: its own icon, and what it is and where
+  if(pl.gaz) return `<div class="ac-item" data-id="${id}"><span class="ac-ic">${pl.ic}</span><span class="ac-nm">${svgEsc(pl.name)}</span><small>${svgEsc(pl.type + (pl.ctx ? ' · ' + pl.ctx : ''))}</small></div>`;
   if(pl.geo) return `<div class="ac-item" data-id="${id}"><span class="ac-ic">📍</span><span class="ac-nm">${svgEsc(pl.name)}</span><small>${svgEsc(pl.ctx||t('placeWord'))}</small></div>`;
   if(pl.poi) return `<div class="ac-item" data-id="${id}"><span class="ac-ic">★</span><span class="ac-nm">${svgEsc(pl.name)}</span><small>${t('landmarkWord')}</small></div>`;
   const col = pl.bus ? BUS_COLOR : colorForLine(pl.ref);
   const kl  = pl.bus ? (t('busLabel')||'Bus') : (lineByRef[pl.ref] ? kindLabel(lineByRef[pl.ref].kind) : 'Rail');
   return `<div class="ac-item" data-id="${id}"><span class="ac-dot" style="background:${col}"></span><span class="ac-nm">${svgEsc(pl.name)}</span><small>${svgEsc(kl)}</small></div>`;
 }
-// drop geocoded hits that just duplicate a local stop/landmark (same name, or within 200 m)
+/* drop found places that just repeat a stop or landmark already listed: the same name, or the same name with a district
+   after it ("Galata Tower, Bereketzade") within 200 m. It used to drop EVERYTHING within 200 m, which now would bin the
+   pharmacy and the café next to every station. */
 function dedupeGeo(geo, local){
-  return geo.filter(g => !local.some(l => fold(l.name)===fold(g.name) || metersBetween([g.lat,g.lng],[l.lat,l.lng])<200));
+  return geo.filter(g => !local.some(l => fold(l.name)===fold(g.name) ||
+    (foldQ(g.name).startsWith(foldQ(l.name)) && metersBetween([g.lat,g.lng],[l.lat,l.lng])<200)));
 }
 // shared autocomplete: local stops+landmarks render instantly; a debounced geocoder then
 // appends real places/addresses under a divider. `key` isolates each field's async token.
@@ -101,8 +106,12 @@ function acSearch(key, q, listEl, onPick){
   if(!foldQ(q)){ listEl.classList.remove('show'); listEl.innerHTML=''; return; }
   const local = searchPlaces(q);
   const draw = (geo, loading)=>{
-    let html = local.map((pl,i)=>acItemHTML(pl,'L'+i)).join('');
+    /* stations and landmarks first, then the places found (streets, areas, shops…), and the many bus stops that merely
+       share a street's name LAST: someone going to "Bağdat Caddesi" means the street, not a stop called after it */
+    let html = local.map((pl,i)=>pl.bus ? '' : acItemHTML(pl,'L'+i)).join('');
     if(geo && geo.length) html += `<div class="ac-sec">${t('placesAddr')}</div>` + geo.map((pl,i)=>acItemHTML(pl,'G'+i)).join('');
+    const busRows = local.map((pl,i)=>pl.bus ? acItemHTML(pl,'L'+i) : '').join('');
+    if(busRows) html += (html ? `<div class="ac-sec">${t('omniBus')}</div>` : '') + busRows;
     if(loading && !geo) html += `<div class="ac-hint ac-loading">${t('searchingPlace')}</div>`;
     if(!html) html = `<div class="ac-hint">${t('noPlaceMatch')}</div>`;
     listEl.innerHTML = html; listEl.classList.add('show');
@@ -112,13 +121,23 @@ function acSearch(key, q, listEl, onPick){
     }));
   };
   const willGeo = foldQ(q).length>=3;
-  draw(null, willGeo);                                    // instant local results
   const my = (_acTok[key]=(_acTok[key]||0)+1);
+  /* the offline places file answers at once, from the second letter; if it has not finished loading (the first search
+     after the page opened) the stop results show first and these join them the moment it has */
+  const fromFile = () => dedupeGeo(gazFind(q, 8), local);
+  let gz = fromFile();
+  draw(gz.length ? gz : null, willGeo && !gz.length);     // instant results
+  if(!GAZ.G && GAZ.state !== 'none') gazWhen(3000).then(g => {
+    if(!g || my!==_acTok[key]) return;
+    gz = fromFile(); draw(gz.length ? gz : null, false);
+  });
   clearTimeout(_acDeb[key]);
+  // the network only tops up a thin answer
   if(willGeo) _acDeb[key]=setTimeout(async ()=>{
-    const geo = dedupeGeo(await geocode(q), local);
+    if(!gazThin(gz.length, q)) return;
+    const on = dedupeGeo(await photonSearch(q), local.concat(gz));
     if(my!==_acTok[key]) return;                          // a newer keystroke superseded this one
-    draw(geo, false);
+    if(on.length || !gz.length) draw(gz.concat(on), false);
   }, 350);
 }
 function acRender(which, q){
@@ -142,7 +161,7 @@ function resolveTyped(which){
      the alphabetically first prefix match, so the dropdown would offer "Atatürk Havalimanı"
      while pressing Enter silently resolved to "HAVALİMANI TAKSİ KOOPERATİFİ" — the list and
      the field disagreeing about what you picked. */
-  const m = PLACES.find(p=>p._q===f) || searchPlaces(val)[0];
+  const m = PLACES.find(p=>p._q===f) || searchPlaces(val)[0] || gazFind(val, 1)[0];
   if(m){ const pt={name:m.name,lat:m.lat,lng:m.lng}; if(which==='O') originPt=pt; else destPt=pt;
     document.getElementById(which==='O'?'selO':'selD').value=m.name; return pt; }
   return null;

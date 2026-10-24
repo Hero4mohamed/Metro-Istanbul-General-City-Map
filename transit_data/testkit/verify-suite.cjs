@@ -913,6 +913,59 @@ const MUTATIONS = [
     expect: 'a covered alert is translated into each language, not handed over in English',
     apply: h => h.replace(String.raw`/elektrik\s+dağıtım\s+kurumu\s+kaynaklı`, String.raw`/elektrik\s+dağıtımX\s+kurumu\s+kaynaklı`),
   },
+  // ---- the app's own place search ----
+  {
+    name: 'ask the network for a typed destination without asking the offline file first',
+    expect: 'the geocoder asks the offline file first and the network only to top up a thin answer',
+    apply: h => h.replace('  const local = gazFind(q, 8);', '  const local = [];'),
+  },
+  {
+    name: 'look places up online even when the user has turned that off',
+    expect: 'turning online lookup off stops the network lookup, and is a switch in Settings in every language',
+    apply: h => h.replace("  if(typeof onlineSearchPref !== 'undefined' && !onlineSearchPref) return [];", ''),
+  },
+  {
+    name: 'rank a whole-name match below a longer name that starts with it',
+    expect: 'the whole name outranks a longer name that merely starts with it',
+    apply: h => h.replace('const GAZ_EXACT = 1000, GAZ_PREFIX_LO = 500,', 'const GAZ_EXACT = 100, GAZ_PREFIX_LO = 500,'),
+  },
+  {
+    name: 'stop treating a type word on its own as "the nearest of those"',
+    expect: 'a type word alone means "the nearest of those", in every language',
+    apply: h => h.replace('    if (allType && T === 1 && tTypes[0][ti]) { consider(i, GAZ_TYPE, true); continue; }',
+                          '    if (false && allType && T === 1 && tTypes[0][ti]) { consider(i, GAZ_TYPE, true); continue; }'),
+  },
+  {
+    name: 'answer a district name with everything in that district',
+    expect: 'a district is found by its name and comes before the streets and shops that carry it',
+    apply: h => h.replace('    if (!ok || (nameWords === 0 && !typeUsed)) continue;', '    if (!ok) continue;'),
+  },
+  {
+    name: 'hide a found place just for being near a stop in the planner',
+    expect: 'the planner no longer hides a result just for being near a stop',
+    apply: h => h.replace('    (foldQ(g.name).startsWith(foldQ(l.name)) && metersBetween([g.lat,g.lng],[l.lat,l.lng])<200)));',
+                          '    metersBetween([g.lat,g.lng],[l.lat,l.lng])<200));'),
+  },
+  {
+    name: 'run the typo pass even when a place already matches the name in full',
+    expect: 'a query that already has a real match by name does not go looking for typos',
+    apply: h => h.replace('if (top.length < 3 && !goodName && F.length >= 4 && !opt.noFuzzy) {', 'if (top.length < 3 && F.length >= 4 && !opt.noFuzzy) {'),
+  },
+  {
+    name: 'let the letter-mask filter pass every word, so each typo scans the whole vocabulary with an edit distance',
+    expect: 'the letter-mask filter never rules out a word that really is within the edit limit',
+    apply: h => h.replace('return (((x + (x >>> 4)) & 0x0F0F0F0F) * 0x01010101) >>> 24; }', 'return 0; }'),
+  },
+  {
+    name: 'never join the words of a name to match a long word typed without spaces',
+    expect: 'a name typed as one word is found, and ranks as the whole name when it is exactly that',
+    apply: h => h.replace('if (!exactName && T === 1 && toks[0].length >= 6) {', 'if (false) {'),
+  },
+  {
+    name: 'ask the public geocoder as well even when the file found the place',
+    expect: 'the network is asked about a place only when the file found next to nothing, or when the query has a number',
+    apply: h => h.replace('function gazThin(n, q) { return n < 2 || /\\d/.test(q); }', 'function gazThin(n, q) { return true; }'),
+  },
 ];
 
 const original = fs.readFileSync(SRC, 'utf8');

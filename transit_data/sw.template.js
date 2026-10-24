@@ -104,7 +104,8 @@ self.addEventListener('fetch', e => {
   // out for the payload win would otherwise have silently dropped it from the offline cache,
   // leaving saved-area users with straight lines where a route shape used to be.
   // landuse-* (forests, parks, airports) is the same kind of file: large, static, per city
-  if (/\/transit_data\/(?:bus-(?:data|geom)|landuse)-[a-z]+\.json$/.test(url.pathname)) {
+  // places-* (every street, area and place the search runs on) is another: it IS the search, so it has to work offline
+  if (/\/transit_data\/(?:bus-(?:data|geom)|landuse|places)-[a-z]+\.json$/.test(url.pathname)) {
     e.respondWith((async () => {
       const cached = await caches.match(e.request);
       const fresh = fetch(e.request).then(r => {
