@@ -51,10 +51,18 @@ jobs:
           # merge, which makes a new commit of its own) rebuilds with a newer time than the one
           # committed. Normalise all three, or this check reports drift after nearly every merge
           # and stops meaning anything. Every other dataset's date is still compared.
+          #
+          # A fourth thing differs for the same reason: the page carries a baked-in COPY of the live
+          # notices (03-data.js: "baked-in fallback; overridden by the live fetch"). The bot, and the
+          # laptop that refreshes them while GitHub's servers cannot reach metro.istanbul, change
+          # disruptions.json without rebuilding index.html, so that copy is stale by design within
+          # hours. It is replaced with a placeholder on both sides; the notices themselves are
+          # checked by the suite, which reads disruptions.json directly.
           normalise() {
             sed -E -e 's/const BUILD = "[0-9]+"/const BUILD = "STAMP"/' \
                    -e "s/'sha256-[A-Za-z0-9+\\/=]+'/'sha256-HASH'/g" \
-                   -e 's/("disruptions\.json":\{[^}]*"updated":")[^"]*"/\1STAMP"/' "$1"
+                   -e 's/("disruptions\.json":\{[^}]*"updated":")[^"]*"/\1STAMP"/' \
+                   -e 's/^(let DISRUPTIONS = HAS\.disruptions \? ).*$/\1[BAKED-IN NOTICES]/' "$1"
           }
           normalise index.html > /tmp/committed.html
           node transit_data/build.cjs > /dev/null
