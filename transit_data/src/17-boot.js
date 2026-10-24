@@ -236,6 +236,29 @@ function annBusGroupHTML(g){
       <div class="ann-chips">${chips}${more>0?`<span class="ann-more-n">+${more}</span>`:''}</div>
       <div class="ann-msg">${msg}</div></div>`;
 }
+/* How old are the rail and ferry notices? They come from a job that reads the operator's status page; when it cannot (a laptop
+   asleep, a source that refuses it) the notices simply stop changing, and an outage that has long ended can sit on the map as if
+   it were current. So the panel says when the page was last read, and after ANN_STALE_MIN says plainly that the notices may be
+   out of date and greys them. Bus notices are read live by this device and are not part of it. */
+const ANN_STALE_MIN = 8 * 60;
+function noticeAge(checkedMs, nowMs){
+  if(typeof checkedMs !== 'number' || !isFinite(checkedMs)) return null;
+  const mins = Math.max(0, Math.round((nowMs - checkedMs) / 60000));
+  return { mins: mins, stale: mins >= ANN_STALE_MIN };
+}
+function ageWords(mins){
+  if(mins < 60) return t('ageMin').replace('{n}', Math.max(1, mins));
+  if(mins < 48 * 60) return t('ageHour').replace('{n}', Math.round(mins / 60));
+  return t('ageDay').replace('{n}', Math.round(mins / 1440));
+}
+function annAgeText(age){ return '🕒 ' + t('annAge').replace('{age}', ageWords(age.mins)); }
+// once a minute: keep the "checked … ago" line true, and redraw the panel only when it crosses into (or out of) "stale"
+function refreshAnnAge(){
+  const age = noticeAge(DISR_CHECKED, Date.now()), el = document.getElementById('annAge');
+  if(!age) return;
+  if(!el || el.classList.contains('stale') !== age.stale){ renderAnnouncements(); return; }
+  el.textContent = annAgeText(age);
+}
 let _annBusOpen = false, _annBusAll = false;
 const ANN_BUS_SHOWN = 6;       // bus groups shown before "show more": a bad day has fifty
 function renderAnnouncements(){
@@ -261,13 +284,16 @@ function renderAnnouncements(){
   }).join('');
   const nothing = !rail.length && !ferry.length && !groups.length;
   const body = document.getElementById('annBody');
-  body.innerHTML = (nothing ? `<div class="ann-none">${t('annNone')}</div>` : rail.map(annRowHTML).join(''))
+  const age = noticeAge(DISR_CHECKED, Date.now()), staleNow = !!(age && age.stale && (rail.length || ferry.length));
+  body.classList.toggle('ann-stale', staleNow);
+  body.innerHTML = (staleNow ? `<div class="ann-stalebar" role="status">⚠ ${t('annStale')}</div>` : '')
+    + (nothing ? `<div class="ann-none">${t('annNone')}</div>` : rail.map(annRowHTML).join(''))
     + (ferry.length ? `<div class="ann-sub">⛴ ${t('annFerrySub')} · ${ferry.length}</div>${ferry.map(annRowHTML).join('')}` : '')
     + (groups.length ? `<button class="ann-sec" id="annBusSec" aria-expanded="${_annBusOpen}">🚌 ${t('annBusSub')} · ${groups.length}<span class="ann-caret"></span></button>
          <div class="ann-busbox" id="annBusBox"${_annBusOpen?'':' hidden'}>${(_annBusAll ? groups : groups.slice(0, ANN_BUS_SHOWN)).map(annBusGroupHTML).join('')}
            ${groups.length > ANN_BUS_SHOWN ? `<button class="ann-moreb" id="annBusMore">${_annBusAll ? t('annLess') : t('annMore').replace('{n}', groups.length - ANN_BUS_SHOWN)}</button>` : ''}</div>` : '')
     + (opRows ? `<div class="ann-sub">🚈 ${t('openHdr')}</div>${opRows}<div class="ann-note">${t('openFoot')}</div>` : '')
-    + `<div class="ann-foot">${t('annFoot')} <a href="https://www.metro.istanbul/SeferDurumlari/SeferDetaylari" target="_blank" rel="noopener">metro.istanbul ↗</a>
+    + `<div class="ann-foot">${age ? `<div class="ann-age${age.stale ? ' stale' : ''}" id="annAge">${annAgeText(age)}</div>` : ''}${t('annFoot')} <a href="https://www.metro.istanbul/SeferDurumlari/SeferDetaylari" target="_blank" rel="noopener">metro.istanbul ↗</a>
        · <a href="https://github.com/Hero4mohamed/Metro-Istanbul-General-City-Map/issues/new" target="_blank" rel="noopener">🐞 ${t('reportProblem')}</a>
        ${(ferry.length || groups.length || (CITY_ID === 'istanbul' && HAS.bus)) ? `<div>${t('annFootExtra')}</div>` : ''}</div>`;
   body.querySelectorAll('.ann-item[data-id]').forEach(el => el.addEventListener('click', ()=>{
@@ -315,6 +341,7 @@ function applyDisruptionFeed(){
   renderDisruptionMarkers();      // marking, warning pins, and the suspended line's own dash
 }
 setInterval(()=>{ if(disrSignature() !== _disrSig) applyDisruptionFeed(); }, 30000);
+setInterval(refreshAnnAge, 60000);
 
 /* Named entry points for the browser smoke suite, in the same spirit as simCars() and
    busDirs(): the page's state lives in script-scoped const/let bindings, which are NOT

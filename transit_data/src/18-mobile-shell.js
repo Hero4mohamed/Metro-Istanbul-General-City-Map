@@ -205,12 +205,20 @@ async function loadBusData(){
 // baked-in copy on file:// or when offline.
 async function loadLiveDisruptions(){
   try{
-    const r = await fetch('transit_data/disruptions.json?t='+Date.now(), { cache:'no-store' });
+    const stamp = Date.now();
+    // the small status file says when the notices were last read from the operator; it is optional, and a miss just means "unknown"
+    const [r, sr] = await Promise.all([
+      fetch('transit_data/disruptions.json?t='+stamp, { cache:'no-store' }),
+      fetch('transit_data/disruptions-status.json?t='+stamp, { cache:'no-store' }).catch(() => null)
+    ]);
     if(!r.ok) return;
     const data = await r.json();
+    if(sr && sr.ok){ try{ const ms = Date.parse((await sr.json()).checkedAt); if(isFinite(ms)) DISR_CHECKED = ms; }catch(e){} }
     if(Array.isArray(data)){ ensureEnglish(data); DISRUPTIONS = data; applyDisruptionFeed(); checkDisruptionAlerts(); }
   }catch(e){ /* offline / file:// → keep the baked-in DISRUPTIONS */ }
 }
+// a tab left open all day used to keep the notices it was opened with, and would now also keep the age it computed from them
+if(HAS.disruptions) setInterval(() => { if(!document.hidden) loadLiveDisruptions(); }, 10 * 60 * 1000);
 // ---- city switcher: the city name in the title opens a picker. Changing city reloads with
 // ?city=… so EVERY derived structure (graph, stations, sim, fares, weather, search) is rebuilt
 // from that city's data — nothing can be left half-switched. ----
