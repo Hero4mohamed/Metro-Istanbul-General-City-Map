@@ -140,12 +140,26 @@ function offTileURL(z,x,y){
      under the on-screen zoom with mismatched x/y, collapsing ~340 tiles to 24 useless ones. */
   try{
     const lyr = curBase;
+    if(lyr && lyr._glMap) return offVectorURL(z,x,y);
     return L.Util.template(lyr._url, L.extend({
       r: L.Browser.retina ? '@2x' : '',
       s: lyr._getSubdomain({ x:x, y:y, z:z }),
       x: x, y: y, z: z
     }, lyr.options));
   }catch(e){ return null; }
+}
+/* The vector map draws from 512px tiles that exist only down to zoom 14, so at Leaflet zoom z it reads the tile at
+   zoom z-1 (never deeper than 14; a closer view enlarges that tile). The address comes from the tile index the map
+   itself loaded — it carries the data's version, so what is saved is exactly what the map will ask for later. */
+const OFF_VEC_MAXZ = 14;
+function offVecTile(z,x,y){
+  const Z = Math.min(OFF_VEC_MAXZ, z-1), s = z - Z;
+  return [Z, x >> s, y >> s];
+}
+function offVectorURL(z,x,y){
+  const src = curBase && curBase._glMap && curBase._glMap.getSource('openmaptiles');
+  const tpl = src && src.tiles && src.tiles[0];
+  return tpl ? tpl.replace('{z}',z).replace('{x}',x).replace('{y}',y) : null;
 }
 let deferredInstall=null;                 // set by beforeinstallprompt, consumed by the Settings row
 const isIOS = () => /iphone|ipad|ipod/i.test(navigator.userAgent) ||
@@ -200,11 +214,19 @@ async function offSaveArea(){
     offBusy=false; btn.disabled=false; return;
   }
   let list=[];
+  const vec = !!(curBase && curBase._glMap), seen = new Set();
   for(let z=Math.max(6,z0-1); z<=Math.min(17,z0+2) && list.length<OFF_TILE_BUDGET; z++){
-    for(const t of offTilesFor(b,z)){ if(list.length>=OFF_TILE_BUDGET) break; list.push(t); }
+    for(let tl of offTilesFor(b,z)){
+      if(list.length>=OFF_TILE_BUDGET) break;
+      if(vec){      // several close-in views share one zoom-14 tile: save it once
+        tl = offVecTile(tl[0],tl[1],tl[2]);
+        const k = tl.join('/'); if(seen.has(k)) continue; seen.add(k);
+      }
+      list.push(tl);
+    }
   }
   let done=0, failed=0;
-  const CONC=6;
+  const CONC = vec ? 4 : 6;           // OpenFreeMap asks offline downloads to stay within 4 parallel requests and 3,000 tiles
   const queue=list.slice();
   await Promise.all(Array.from({length:CONC}, async ()=>{
     while(queue.length){

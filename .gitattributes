@@ -1,0 +1,3 @@
+# Third-party files are shipped byte for byte: vendor/README.md records a hash of each, and a test checks it.
+# Without this, a Windows checkout (autocrlf) would rewrite their line endings and the hashes would stop matching.
+vendor/** -text

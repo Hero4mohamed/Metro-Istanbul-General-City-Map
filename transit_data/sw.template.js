@@ -14,6 +14,18 @@ const STATIC_HOSTS = ['unpkg.com', 'fonts.googleapis.com', 'fonts.gstatic.com'];
 const TILES  = 'raynet-tiles-v2';
 const TILE_HOST = /(^|\.)(arcgisonline\.com|tile\.openstreetmap\.org)$/;
 const TILE_CAP  = 3000;          // ~90 MB of 256px tiles; trimmed oldest-first
+/* The vector map's tiles (and the tile index that names their current version) are cached as you browse, like the raster
+   ones. A vector tile is small and its address carries the data's version, so a cached one is always right; the index is
+   fetched fresh when there is a network and read from the cache when there is not. */
+const VEC_HOST  = 'tiles.openfreemap.org';
+const VEC_TILES = 'raynet-vtiles-v1';
+const VEC_CAP   = 3000;          // the tile service's own ceiling for what an app keeps offline
+let vecPuts = 0;
+async function trimVec(){
+  const c = await caches.open(VEC_TILES);
+  const keys = await c.keys();
+  if (keys.length > VEC_CAP) await Promise.all(keys.slice(0, keys.length - VEC_CAP).map(k => c.delete(k)));
+}
 
 /* Basemap tiles are cached AS YOU VIEW THEM, so an area you have actually looked at still
    draws when you are offline. Deliberately NOT a bulk download: mass-fetching a provider's
@@ -49,11 +61,13 @@ self.addEventListener('activate', e => {
 self.addEventListener('message', e => {
   const reply = d => e.source && e.source.postMessage(d);
   if (e.data === 'tileStats') {
-    caches.open(TILES).then(c => c.keys()).then(k => reply({ type:"tileStats", count:k.length, cap:TILE_CAP }))
+    Promise.all([caches.open(TILES).then(c => c.keys()), caches.open(VEC_TILES).then(c => c.keys())])
+      .then(([a, b]) => reply({ type:"tileStats", count:a.length + b.length, cap:TILE_CAP + VEC_CAP }))
       .catch(() => reply({ type:"tileStats", count:0, cap:TILE_CAP }));
   }
   if (e.data === 'clearTiles') {
-    caches.delete(TILES).then(() => reply({ type:"tileStats", count:0, cap:TILE_CAP }));
+    Promise.all([caches.delete(TILES), caches.delete(VEC_TILES)])
+      .then(() => reply({ type:"tileStats", count:0, cap:TILE_CAP }));
   }
 });
 
@@ -92,6 +106,20 @@ self.addEventListener('fetch', e => {
       // 200 placeholder, which fired the <img> load event, so Leaflet believed the blank
       // square WAS the map and never asked for that tile again.
       return self.navigator.onLine ? Response.error() : OFFLINE_TILE.clone();
+    })());
+    return;
+  }
+  // vector map: a tile's address carries its data version, so a cached tile always wins; the tile index is network-first
+  if (url.host === VEC_HOST) {
+    e.respondWith((async () => {
+      const cache = await caches.open(VEC_TILES);
+      const hit = await cache.match(e.request, { ignoreVary: true });
+      if (hit && /\.pbf$/.test(url.pathname)) return hit;
+      try {
+        const r = await fetch(e.request);
+        if (r && r.ok) { cache.put(e.request, r.clone()); if (++vecPuts % 100 === 0) trimVec(); }
+        return r;
+      } catch (_) { return hit || Response.error(); }
     })());
     return;
   }

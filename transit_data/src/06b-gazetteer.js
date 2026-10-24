@@ -443,6 +443,7 @@ function gazLoad() {
       GAZ.G = gazDecode(j);
       GAZ.typeWords = gazBuildTypeWords(GAZ.G);
       GAZ.state = 'ready';
+      if (typeof vecPushPlaces === 'function') vecPushPlaces();     // the vector map names these on the map as well
       return GAZ.G;
     })
     .catch(function () { GAZ.state = 'none'; return null; });       // offline with nothing cached, or a city with no file: the stop search and the live top-up remain
