@@ -67,17 +67,28 @@ function vecColours(tone) {
 }
 /* the zoom (in the app's numbering) at which each kind of place first gets a name on the map. Landmarks and airports are
    readable from afar; what you would only want when you are close waits until you are. A type not listed is the last tier. */
+/* V4.0: the map names far fewer places. Every shop, café, pharmacy, hotel and school made busy streets crowded, and they are still one
+   search away. What stays on the map are the places people look for on a map: where they go as visitors, where they pray, where
+   they get help. Kinds not listed here are not drawn at all (they remain searchable). */
+/* kind: [zoom for an ordinary one, zoom for a well-known one, the rank that makes one well known]. The places file ranks a place from
+   its kind (a museum starts at 2, a mosque at 0) and adds one for a Wikidata entry, so "well known" is a different rank per kind. A
+   district view then shows the few that matter (the big museums, the Süleymaniye) and a street view shows the rest of the list. */
 const VEC_TIER = {
-  airport: 13, stadium: 14, university: 14, attraction: 14, historic: 14, museum: 14, viewpoint: 14, tower: 14, ferry: 14, bus_station: 15,
-  hospital: 15, mall: 15, park: 15, peak: 15, beach: 15, pier: 16, mosque: 16, church: 16, synagogue: 16, worship: 16,
-  hotel: 17, library: 16, cinema: 16, theatre: 16, government: 16, police: 16, garden: 16, water: 16, gallery: 16, square: 15,
-  restaurant: 17, cafe: 17, fast_food: 17, bar: 17, pharmacy: 17, clinic: 17, bank: 17, post: 17, fuel: 17, supermarket: 17,
-  lodging: 17, school: 17, sports: 17, shop: 18, other: 18
+  airport: [13, 13, 0], stadium: [14, 14, 0], university: [16, 15, 3],                      // big and far-seen
+  attraction: [16, 15, 3], museum: [16, 15, 3], tower: [17, 16, 2], historic: [17, 16, 2], viewpoint: [17, 16, 2],   // visitors
+  mosque: [16, 15, 1], church: [16, 15, 1], synagogue: [16, 15, 1], worship: [16, 15, 1],                           // worship
+  hospital: [16, 15, 2], police: [16, 16, 0]                                                 // help
 };
-const VEC_TIERS = [13, 14, 15, 16, 17, 18];
-/* the zoom a given place appears at: its kind's tier, one earlier for a well-known one (a wikidata-listed hotel, a famous café) so
-   that "important" does not mean only "a landmark" — and never earlier than the first tier */
-function vecTierOf(key, rank) { return Math.max(VEC_TIERS[0], (VEC_TIER[key] || 18) - (rank >= 2 ? 1 : 0)); }
+/* Kinds drawn only when well known: a famous park or square, not every pocket garden, gallery or mall. kind: [zoom, the rank needed]. */
+const VEC_NOTABLE = { park: [16, 2], square: [16, 3], mall: [16, 2], beach: [17, 1], garden: [17, 2], theatre: [17, 2], gallery: [17, 2], library: [17, 2], government: [17, 2] };
+const VEC_TIERS = [13, 14, 15, 16, 17];
+/* the zoom a given place appears at, or 0 = not drawn on the map at all */
+function vecTierOf(key, rank) {
+  const k = VEC_TIER[key];
+  if (k) return rank >= k[2] ? k[1] : k[0];
+  const n = VEC_NOTABLE[key];
+  return n && rank >= n[1] ? n[0] : 0;
+}
 
 /* the name in the reader's language. The tiles carry the local (Turkish) name as `name` and, where OpenStreetMap has one,
    an English one as `name_en`. French and Arabic readers get the local name, as they do from the raster map. */
@@ -85,7 +96,10 @@ function vecName(lang) {
   return lang === 'en' ? ['coalesce', ['get', 'name_en'], ['get', 'name:latin'], ['get', 'name']] : ['coalesce', ['get', 'name']];
 }
 
-function vecStyle(tone, lang, glyphs) {
+/* `part` splits one style into the two maps the page draws: 'base' (everything except names: land, water, roads, buildings) goes
+   BELOW the metro lines, 'labels' (every name) goes ABOVE them, so a line never hides a street or a place. No part = the whole
+   style, which is what the tests read. */
+function vecStyle(tone, lang, glyphs, part) {
   const V = vecColours(tone), name = vecName(lang), L = [];
   const rgb = vecRgb;
   const halo = rgb(V.halo, V.haloA);
@@ -221,25 +235,26 @@ function vecStyle(tone, lang, glyphs) {
            layout: text(vecRamp([[15, 10.5], [18, 13]]), null, VEC_FONT, { 'text-anchor': 'top', 'text-offset': [0, .4], 'text-padding': 3, 'text-optional': true }),
            paint: paintText(V.ink, 1.6) });
 
+  const wanted = part === 'base' ? function (l) { return l.type !== 'symbol'; } : part === 'labels' ? function (l) { return l.type === 'symbol'; } : null;
+  const sources = {};
+  sources[VEC_SOURCE] = { type: 'vector', url: VEC_TILEJSON };
+  if (part !== 'base') sources[VEC_PLACES] = { type: 'geojson', data: { type: 'FeatureCollection', features: [] } };   // only names read the app's own places
   return {
-    version: 8, name: 'raynet-' + tone,
+    version: 8, name: 'raynet-' + tone + (part ? '-' + part : ''),
     glyphs: glyphs || VEC_GLYPHS,
-    sources: {
-      [VEC_SOURCE]: { type: 'vector', url: VEC_TILEJSON },
-      [VEC_PLACES]: { type: 'geojson', data: { type: 'FeatureCollection', features: [] } }
-    },
-    layers: L
+    sources: sources,
+    layers: wanted ? L.filter(wanted) : L
   };
 }
 /* The places file as GeoJSON, once: every kind of place the tiles do not name well. Areas and streets are left to the tiles
    (they name them better, along the street, at the right size); water and peaks too; and "other" is taxi ranks. `meta` is the
    type table (icon, group) the search uses, passed in so this stays free of the page. */
 function vecPlacesData(G, meta) {
-  const SKIP = { water: 1, peak: 1, other: 1 }, feats = [];
+  const feats = [];
   for (let i = 0; i < G.n; i++) {
-    const key = G.types[G.t[i]], m = meta[key];
-    if (!m || SKIP[key] || m[1] === 'area' || m[1] === 'street') continue;
-    const props = { n: G.name[i], tier: vecTierOf(key, G.r[i]), r: G.r[i] };
+    const key = G.types[G.t[i]], m = meta[key], tier = vecTierOf(key, G.r[i]);
+    if (!m || !tier || m[1] === 'area' || m[1] === 'street') continue;       // shops, food, hotels and the like are not drawn (V4.0)
+    const props = { n: G.name[i], tier: tier, r: G.r[i] };
     if (G.en[i]) props.en = G.en[i];
     if (G.ar[i]) props.ar = G.ar[i];
     feats.push({ type: 'Feature', geometry: { type: 'Point', coordinates: [G.lng[i], G.lat[i]] }, properties: props });
@@ -260,6 +275,7 @@ function vecSupported() {
 }
 const VEC_LAYERS_BY_NAME = /^(place-|aerodrome-label|water-label|waterway-label|peak-label|road-label-|poi-tiles)/;
 const VEC = { layers: [], places: null };
+const VEC_LABEL_PANE = 'vecLabelPane';       // created in 08-map.js, above the lines (overlay pane) and below the markers
 const VEC_GLYPHS_ABS = new URL('vendor/glyphs/', document.baseURI).href + '{fontstack}/{range}.pbf';
 
 /* The Leaflet layer that hosts the GL map. It is a real layer, so the code that swaps base maps (add, remove, send to back)
@@ -267,8 +283,13 @@ const VEC_GLYPHS_ABS = new URL('vendor/glyphs/', document.baseURI).href + '{font
 const VectorBase = (typeof L !== 'undefined' && L.MaplibreGL) ? L.MaplibreGL.extend({
   initialize: function (key, tone) {
     this._key = key; this._tone = tone; this._places = null;
-    L.MaplibreGL.prototype.initialize.call(this, { style: vecStyle(tone, lang, VEC_GLYPHS_ABS), attribution: VEC_ATTRIBUTION, pixelRatio: Math.min(window.devicePixelRatio || 1, 2.5),
+    const px = Math.min(window.devicePixelRatio || 1, 2.5);
+    L.MaplibreGL.prototype.initialize.call(this, { style: vecStyle(tone, lang, VEC_GLYPHS_ABS, 'base'), attribution: VEC_ATTRIBUTION, pixelRatio: px,
                                                   fadeDuration: 180, maxZoom: 19 });
+    /* The names are a second, transparent map drawn in a pane ABOVE the metro lines (V4.0). The lines are Leaflet layers and a
+       GL map in the tile pane always sits beneath them, so names there were hidden wherever a line ran over a street or a place.
+       Both maps read the same tiles, which the service worker keeps, so the second one costs drawing, not downloading. */
+    this._labels = L.maplibreGL({ style: vecStyle(tone, lang, VEC_GLYPHS_ABS, 'labels'), pane: VEC_LABEL_PANE, pixelRatio: px, fadeDuration: 180, maxZoom: 19 });
     VEC.layers.push(this);
   },
   onAdd: function (map) {
@@ -276,21 +297,27 @@ const VectorBase = (typeof L !== 'undefined' && L.MaplibreGL) ? L.MaplibreGL.ext
     const g = this._glMap, self = this;
     let ready = false, errors = 0;
     g.on('error', function () { errors++; });
-    g.once('load', function () { ready = true; self._applyPlaces(); });
+    g.once('load', function () { ready = true; });
+    this._labels.addTo(map);
+    if (this._labels._glMap) this._labels._glMap.once('load', function () { self._applyPlaces(); });
     // a style that never arrives (the tile service is unreachable, the worker was blocked): fall back to the raster map
     setTimeout(function () { if (!ready && errors > 0 && self._map && typeof vecFallback === 'function') vecFallback(self._key); }, 15000);
+  },
+  onRemove: function (map) {
+    if (this._labels && this._labels._map) map.removeLayer(this._labels);
+    L.MaplibreGL.prototype.onRemove.call(this, map);
   },
   /* the app's own file of places, shown as names; kept so a re-added layer (a base-map switch builds a new GL map)
      gets it again */
   setPlaces: function (fc) { this._places = fc; this._applyPlaces(); },
   _applyPlaces: function () {
-    const g = this._glMap; if (!g || !this._places || !g.isStyleLoaded || !g.getSource(VEC_PLACES)) return;
+    const g = this._labels && this._labels._glMap; if (!g || !this._places || !g.isStyleLoaded || !g.getSource(VEC_PLACES)) return;
     g.getSource(VEC_PLACES).setData(this._places);
     if (g.getLayer('poi-tiles')) g.setLayoutProperty('poi-tiles', 'visibility', 'none');   // the app's file names more, and better
   },
   /* the language of every name changed: say so to the layers that carry one, in place (no new map, no flicker) */
   applyLang: function (lg) {
-    const g = this._glMap; if (!g || !g.isStyleLoaded()) return;
+    const g = this._labels && this._labels._glMap; if (!g || !g.isStyleLoaded()) return;
     g.getStyle().layers.forEach(function (l) {
       if (VEC_LAYERS_BY_NAME.test(l.id)) g.setLayoutProperty(l.id, 'text-field', vecName(lg));
       else if (/^poi-label-/.test(l.id)) g.setLayoutProperty(l.id, 'text-field', ['coalesce', ['get', lg === 'en' ? 'en' : (lg === 'ar' ? 'ar' : 'n')], ['get', 'n']]);

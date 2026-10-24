@@ -966,6 +966,32 @@ const MUTATIONS = [
     expect: 'the network is asked about a place only when the file found next to nothing, or when the query has a number',
     apply: h => h.replace('function gazThin(n, q) { return n < 2 || /\\d/.test(q); }', 'function gazThin(n, q) { return true; }'),
   },
+  // ---- V4.0: names above the lines, fewer places, the new icon ----
+  {
+    name: 'put the names back under the metro lines, where a line hides the street or place beneath it',
+    expect: 'the names are drawn above the metro lines and below the markers, and let every click through',
+    apply: h => h.replace('map.createPane(VEC_LABEL_PANE).style.zIndex = 450;', 'map.createPane(VEC_LABEL_PANE).style.zIndex = 350;'),
+  },
+  {
+    name: 'let the names pane swallow clicks meant for the lines and stations',
+    expect: 'the names are drawn above the metro lines and below the markers, and let every click through',
+    apply: h => h.replace("map.getPane(VEC_LABEL_PANE).style.pointerEvents = 'none';", ''),
+  },
+  {
+    name: 'draw names in the lower map as well, so a name is hidden by a line again',
+    expect: 'the names are drawn above the metro lines and below the markers, and let every click through',
+    apply: h => h.replace("style: vecStyle(tone, lang, VEC_GLYPHS_ABS, 'base')", 'style: vecStyle(tone, lang, VEC_GLYPHS_ABS)'),
+  },
+  {
+    name: 'draw every café on the map again',
+    expect: 'the map names the places you asked for (visitors, worship, hospitals, police) and not the shops, food or hotels',
+    apply: h => h.replace('hospital: [16, 15, 2], police: [16, 16, 0]', 'hospital: [16, 15, 2], police: [16, 16, 0], cafe: [17, 17, 0]'),
+  },
+  {
+    name: 'point the browser tab at an icon that does not exist',
+    expect: 'the page links the PNG icons, not the old inline picture, and the Apple icon is the right size',
+    apply: h => h.replace('href="assets/favicon-32.png">', 'href="assets/favicon-33.png">'),
+  },
   // ---- how old the rail and ferry notices are ----
   {
     name: 'never call the notices out of date, however long since the page was read',

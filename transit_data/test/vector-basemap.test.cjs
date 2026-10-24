@@ -21,7 +21,7 @@ function vec() {
   const html = H.html();
   const pick = (a, b) => { const i = html.indexOf(a), j = html.indexOf(b); assert.ok(i > 0 && j > i, a + ' not in the built page'); return html.slice(i, j); };
   const code = pick('/* ==BASEMAP-PURE-START== */', '/* ==BASEMAP-PURE-END== */') + '\n' + pick('/* ==VECTOR-BASEMAP-PURE-START== */', '/* ==VECTOR-BASEMAP-PURE-END== */') +
-    '\nmodule.exports={ATLAS_PAL,contrastRgb,vecStyle,vecName,vecColours,vecPlacesData,VEC_TIER,VEC_TIERS,vecZ,vecTierOf};';
+    '\nmodule.exports={ATLAS_PAL,contrastRgb,vecStyle,vecName,vecColours,vecPlacesData,VEC_TIER,VEC_NOTABLE,VEC_TIERS,vecZ,vecTierOf};';
   const mod = { exports: {} };
   new Function('module', 'exports', code)(mod, mod.exports);
   return mod.exports;
@@ -109,31 +109,50 @@ test('the important names come first: bigger places from afar, smaller ones and 
   // and the places people go: the tiers appear in increasing zoom, landmarks first and shops last
   const tiers = V.VEC_TIERS.map(t => byId(night, 'poi-label-' + t).minzoom);
   for (let i = 1; i < tiers.length; i++) assert.ok(tiers[i] > tiers[i - 1], 'tier ' + V.VEC_TIERS[i] + ' does not appear later than tier ' + V.VEC_TIERS[i - 1]);
-  assert.ok(V.VEC_TIER.airport < V.VEC_TIER.hospital && V.VEC_TIER.hospital < V.VEC_TIER.restaurant && V.VEC_TIER.restaurant < V.VEC_TIER.shop,
-    'airport < hospital < restaurant < shop is the order things should appear in');
+  const at = (k, r) => V.vecTierOf(k, r);
+  assert.ok(at('airport', 3) < at('hospital', 2) && at('hospital', 2) <= at('mosque', 1) && at('mosque', 0) <= at('police', 0),
+    'airport < a well-known hospital <= a well-known mosque, and an ordinary mosque no later than a police station');
 });
 
-test('every kind of place the search knows has a place on the map, and no type is misspelt', () => {
-  for (const k of Object.keys(V.VEC_TIER)) assert.ok(P.TYPES.includes(k), 'VEC_TIER names a type the places file does not have: ' + k);
-  const missing = P.TYPES.filter(k => !['district', 'hood', 'place', 'street', 'water', 'peak', 'other', 'square'].includes(k) && V.VEC_TIER[k] === undefined);
-  assert.deepStrictEqual(missing, [], 'these kinds of place would all fall to the last tier: ' + missing.join(', '));
+test('the map names the places you asked for (visitors, worship, hospitals, police) and not the shops, food or hotels', () => {
+  for (const k of Object.keys(V.VEC_TIER).concat(Object.keys(V.VEC_NOTABLE))) assert.ok(P.TYPES.includes(k), 'a table names a type the places file does not have: ' + k);
+  // V4.0, asked for by the user: tourist places, places of worship, hospitals and police stations, and the big landmarks
+  for (const k of ['attraction', 'museum', 'historic', 'viewpoint', 'tower', 'mosque', 'church', 'synagogue', 'worship', 'hospital', 'police', 'airport'])
+    assert.ok(V.vecTierOf(k, 3) > 0 && V.vecTierOf(k, 0) > 0, k + ' should be drawn on the map');
+  // every zoom in a table has a name layer to draw it, and no table asks for one that does not exist
+  const used = new Set(); Object.values(V.VEC_TIER).forEach(v => { used.add(v[0]); used.add(v[1]); }); Object.values(V.VEC_NOTABLE).forEach(v => used.add(v[0]));
+  for (const t of used) assert.ok(V.VEC_TIERS.includes(t), 'zoom ' + t + ' is asked for but has no name layer');
+  // "we don't need to show every single place": none of these is drawn, however well known (they are all still searchable)
+  for (const k of ['restaurant', 'cafe', 'fast_food', 'bar', 'shop', 'supermarket', 'pharmacy', 'clinic', 'bank', 'post', 'fuel', 'hotel', 'lodging', 'school', 'sports', 'cinema', 'ferry', 'bus_station', 'pier', 'other'])
+    assert.strictEqual(V.vecTierOf(k, 3), 0, k + ' should not be drawn on the map');
   assert.ok(V.VEC_TIERS.every(t => byId(night, 'poi-label-' + t) && byId(day, 'poi-label-' + t)), 'a tier has no name layer');
+  assert.strictEqual(byId(night, 'poi-label-18'), undefined, 'a tier below the visitor/worship/help kinds is back');
   // names only: a dot for every shop made a busy street look crowded, so no marker is drawn for the places file
   for (const st of [night, day]) assert.ok(!st.layers.some(l => l.source === 'places' && l.type !== 'symbol'), 'a marker (dot) is drawn beside place names again');
 });
 
-test('a place of a kind you only want close up still shows from further out when it is well known; hotels do not flood a tourist district', () => {
-  assert.strictEqual(V.vecTierOf('cafe', 0), 17);
-  assert.strictEqual(V.vecTierOf('cafe', 3), 16, 'a famous café should come one zoom earlier than the rest');
-  assert.strictEqual(V.vecTierOf('airport', 3), 13, 'and never before the first tier');
-  assert.strictEqual(V.vecTierOf('no-such-type', 0), 18, 'a kind that is not listed waits for the closest zoom');
-  assert.ok(V.VEC_TIER.hotel >= 17 && V.VEC_TIER.hotel > V.VEC_TIER.mosque, 'hotels fill a district such as Taksim and cover its streets at zoom 16');
+test('a well-known place shows a zoom earlier; a park or square is drawn only when it is well known', () => {
+  // the places file ranks a kind from its type (a museum starts at 2, a mosque at 0) and adds one for a Wikidata entry
+  assert.strictEqual(V.vecTierOf('museum', 2), 16, 'an ordinary museum waits for a street view');
+  assert.strictEqual(V.vecTierOf('museum', 3), 15, 'a Wikidata-listed one comes a zoom earlier');
+  assert.strictEqual(V.vecTierOf('mosque', 0), 16, 'the corner mosque shows from a street view');
+  assert.strictEqual(V.vecTierOf('mosque', 1), 15, 'the Süleymaniye from further out');
+  assert.strictEqual(V.vecTierOf('hospital', 1), 16); assert.strictEqual(V.vecTierOf('hospital', 2), 15);
+  assert.strictEqual(V.vecTierOf('police', 0), 16);
+  assert.strictEqual(V.vecTierOf('historic', 1), 17); assert.strictEqual(V.vecTierOf('historic', 2), 16);
+  assert.strictEqual(V.vecTierOf('airport', 3), 13);
+  assert.strictEqual(V.vecTierOf('park', 0), 0, 'a pocket park is not drawn: there are hundreds');
+  assert.strictEqual(V.vecTierOf('park', 1), 0, 'nor an ordinary park (2,000 of them)');
+  assert.strictEqual(V.vecTierOf('park', 2), 16, 'a park with a Wikidata entry is');
+  assert.strictEqual(V.vecTierOf('square', 2), 0); assert.strictEqual(V.vecTierOf('square', 3), 16);
+  assert.strictEqual(V.vecTierOf('cafe', 3), 0, 'not even a famous café');
+  assert.strictEqual(V.vecTierOf('no-such-type', 3), 0, 'a kind that is not listed is not drawn');
 });
 
 test('names follow the interface language, falling back to the local name', () => {
   assert.deepStrictEqual(V.vecName('en'), ['coalesce', ['get', 'name_en'], ['get', 'name:latin'], ['get', 'name']]);
   for (const lg of ['tr', 'fr', 'ar']) assert.deepStrictEqual(V.vecName(lg), ['coalesce', ['get', 'name']], lg);
-  const poi = lg => V.vecStyle('night', lg).layers.find(l => l.id === 'poi-label-17').layout['text-field'];
+  const poi = lg => V.vecStyle('night', lg).layers.find(l => l.id === 'poi-label-16').layout['text-field'];
   assert.deepStrictEqual(poi('en'), ['coalesce', ['get', 'en'], ['get', 'n']]);
   assert.deepStrictEqual(poi('ar'), ['coalesce', ['get', 'ar'], ['get', 'n']]);
   assert.deepStrictEqual(poi('tr'), ['coalesce', ['get', 'n'], ['get', 'n']]);
@@ -149,12 +168,43 @@ test('the places file becomes map names, minus what the tiles name better', () =
   let a = 0, o = 0; file.la.forEach((d, i) => { a += d; o += file.lo[i]; g.lat.push(a / 1e5); g.lng.push(o / 1e5); });
   const fc = V.vecPlacesData(g, meta);
   const names = fc.features.map(f => f.properties.n);
-  assert.ok(names.includes('Starbucks') && names.includes('Moda Eczanesi') && names.includes('Galata Kulesi'), 'shops and landmarks should be on the map');
+  assert.ok(names.includes('Galata Kulesi') && names.includes('Kadıköy Devlet Hastanesi') && names.includes('Merkez Camii'), 'a landmark, a hospital and a mosque should be on the map');
+  for (const shop of ['Starbucks', 'Moda Eczanesi', 'Migros', 'Zeytin Market', 'Moda Sahil Cafe']) assert.ok(!names.includes(shop), shop + ' should not be drawn on the map (it is still searchable)');
   assert.ok(!names.includes('Kadıköy') && !names.includes('Moda') && !names.includes('Bağdat Caddesi'), 'districts, neighbourhoods and streets are the tiles\' to name');
   const gal = fc.features.find(f => f.properties.n === 'Galata Kulesi');
   assert.strictEqual(gal.properties.en, 'Galata Tower'); assert.ok(gal.properties.r >= 2, 'Galata Kulesi in the fixture has a Wikidata entry, so it ranks as well known'); assert.strictEqual(gal.properties.tier, V.vecTierOf('attraction', gal.properties.r));
   assert.ok(Math.abs(gal.geometry.coordinates[0] - 29.06) < 1e-4 && Math.abs(gal.geometry.coordinates[1] - 41.02) < 1e-4, 'GeoJSON is [longitude, latitude]');
-  assert.ok(fc.features.every(f => f.properties.tier >= 13 && f.properties.tier <= 18 && f.properties.dot === undefined));
+  assert.ok(fc.features.every(f => f.properties.tier >= 13 && f.properties.tier <= 17 && f.properties.dot === undefined));
+});
+
+/* ---------------- V4.0: the names are a map of their own, above the metro lines ---------------- */
+
+test('the style splits into land and names: nothing is lost, nothing is drawn twice', () => {
+  const full = V.vecStyle('night', 'en'), base = V.vecStyle('night', 'en', undefined, 'base'), labels = V.vecStyle('night', 'en', undefined, 'labels');
+  assert.ok(base.layers.length > 20 && labels.layers.length > 5);
+  assert.ok(base.layers.every(l => l.type !== 'symbol'), 'a name is drawn in the map that sits UNDER the metro lines');
+  assert.ok(labels.layers.every(l => l.type === 'symbol'), 'the map above the lines draws something that is not a name (it would cover the lines)');
+  const ids = a => a.layers.map(l => l.id);
+  assert.deepStrictEqual(ids(base).concat(ids(labels)).sort(), ids(full).sort(), 'the two parts are not the whole style');
+  assert.ok(base.layers.some(l => l.type === 'background') && !labels.layers.some(l => l.type === 'background'), 'only the lower map has a background; the upper one must stay see-through');
+  assert.deepStrictEqual(Object.keys(base.sources), ['openmaptiles'], 'the land map has no use for the places file');
+  assert.deepStrictEqual(Object.keys(labels.sources).sort(), ['openmaptiles', 'places']);
+  // every layer of either part still reads a source that part has
+  for (const st of [base, labels]) for (const l of st.layers) if (l.source) assert.ok(st.sources[l.source], l.id + ' reads a source its map does not have');
+  assert.ok(byId(labels, 'poi-label-16') && byId(labels, 'place-city') && byId(labels, 'road-label-minor') && byId(labels, 'housenumber'));
+  assert.ok(byId(base, 'water') || base.layers.some(l => /water/.test(l.id)), 'the land map lost its water');
+});
+
+test('the names are drawn above the metro lines and below the markers, and let every click through', () => {
+  const html = H.html();
+  assert.ok(/map\.createPane\(VEC_LABEL_PANE\)\.style\.zIndex = 450;/.test(html), 'the names pane is gone or at the wrong height');
+  assert.ok(/map\.getPane\(VEC_LABEL_PANE\)\.style\.pointerEvents = 'none';/.test(html), 'the names would swallow clicks meant for the lines and stations');
+  const z = Number(html.match(/map\.createPane\(VEC_LABEL_PANE\)\.style\.zIndex = (\d+)/)[1]);
+  assert.ok(z > 400 && z < 600, 'the names must sit above the overlay pane (lines, z 400) and below the marker pane (z 600): ' + z);
+  assert.ok(/const stationRenderer = L\.canvas\(\{ padding:0\.5, pane:'stationPane' \}\);/.test(html) && /map\.createPane\('stationPane'\)\.style\.zIndex = 460;/.test(html), 'the station dots are no longer above the names');
+  assert.ok(/L\.maplibreGL\(\{ style: vecStyle\(tone, lang, VEC_GLYPHS_ABS, 'labels'\), pane: VEC_LABEL_PANE/.test(html), 'the page no longer draws the names in their own pane');
+  assert.ok(/style: vecStyle\(tone, lang, VEC_GLYPHS_ABS, 'base'\)/.test(html), 'the base map still draws names');
+  assert.ok(/onRemove: function \(map\) \{\s*if \(this\._labels && this\._labels\._map\) map\.removeLayer\(this\._labels\);/.test(html), 'switching map would leave the names behind');
 });
 
 /* ---------------- the libraries, and the page that uses them ---------------- */

@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="assets/logo.svg" width="110" alt="İstanbul Ray-Net logo — a metro M drawn as a transit route line">
+  <img src="assets/icon-192.png" width="110" alt="İstanbul Ray-Net icon — a green M with a map pin over the İstanbul skyline and metro lines">
 </p>
 
 <h1 align="center">İstanbul Ray-Net — Live Transit Network Map</h1>
