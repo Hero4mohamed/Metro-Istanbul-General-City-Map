@@ -76,11 +76,14 @@ const VEC_DOT = {
 const VEC_TIER = {
   airport: 13, stadium: 14, university: 14, attraction: 14, historic: 14, museum: 14, viewpoint: 14, tower: 14, ferry: 14, bus_station: 15,
   hospital: 15, mall: 15, park: 15, peak: 15, beach: 15, pier: 16, mosque: 16, church: 16, synagogue: 16, worship: 16,
-  hotel: 16, library: 16, cinema: 16, theatre: 16, government: 16, police: 16, garden: 16, water: 16, gallery: 16, square: 15,
+  hotel: 17, library: 16, cinema: 16, theatre: 16, government: 16, police: 16, garden: 16, water: 16, gallery: 16, square: 15,
   restaurant: 17, cafe: 17, fast_food: 17, bar: 17, pharmacy: 17, clinic: 17, bank: 17, post: 17, fuel: 17, supermarket: 17,
   lodging: 17, school: 17, sports: 17, shop: 18, other: 18
 };
 const VEC_TIERS = [13, 14, 15, 16, 17, 18];
+/* the zoom a given place appears at: its kind's tier, one earlier for a well-known one (a wikidata-listed hotel, a famous café) so
+   that "important" does not mean only "a landmark" — and never earlier than the first tier */
+function vecTierOf(key, rank) { return Math.max(VEC_TIERS[0], (VEC_TIER[key] || 18) - (rank >= 2 ? 1 : 0)); }
 
 /* the name in the reader's language. The tiles carry the local (Turkish) name as `name` and, where OpenStreetMap has one,
    an English one as `name_en`. French and Arabic readers get the local name, as they do from the raster map. */
@@ -244,7 +247,7 @@ function vecPlacesData(G, meta) {
   for (let i = 0; i < G.n; i++) {
     const key = G.types[G.t[i]], m = meta[key];
     if (!m || SKIP[key] || m[1] === 'area' || m[1] === 'street') continue;
-    const props = { n: G.name[i], tier: VEC_TIER[key] || 18, r: G.r[i], dot: vecRgb(VEC_DOT[m[1]] || VEC_DOT.other) };
+    const props = { n: G.name[i], tier: vecTierOf(key, G.r[i]), r: G.r[i], dot: vecRgb(VEC_DOT[m[1]] || VEC_DOT.other) };
     if (G.en[i]) props.en = G.en[i];
     if (G.ar[i]) props.ar = G.ar[i];
     feats.push({ type: 'Feature', geometry: { type: 'Point', coordinates: [G.lng[i], G.lat[i]] }, properties: props });

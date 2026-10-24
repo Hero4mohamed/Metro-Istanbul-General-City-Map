@@ -21,7 +21,7 @@ function vec() {
   const html = H.html();
   const pick = (a, b) => { const i = html.indexOf(a), j = html.indexOf(b); assert.ok(i > 0 && j > i, a + ' not in the built page'); return html.slice(i, j); };
   const code = pick('/* ==BASEMAP-PURE-START== */', '/* ==BASEMAP-PURE-END== */') + '\n' + pick('/* ==VECTOR-BASEMAP-PURE-START== */', '/* ==VECTOR-BASEMAP-PURE-END== */') +
-    '\nmodule.exports={ATLAS_PAL,contrastRgb,vecStyle,vecName,vecColours,vecPlacesData,VEC_TIER,VEC_TIERS,VEC_DOT,vecZ};';
+    '\nmodule.exports={ATLAS_PAL,contrastRgb,vecStyle,vecName,vecColours,vecPlacesData,VEC_TIER,VEC_TIERS,VEC_DOT,vecZ,vecTierOf};';
   const mod = { exports: {} };
   new Function('module', 'exports', code)(mod, mod.exports);
   return mod.exports;
@@ -120,6 +120,14 @@ test('every kind of place the search knows has a place on the map, and no type i
   assert.ok(V.VEC_TIERS.every(t => byId(night, 'poi-dot-' + t) && byId(night, 'poi-label-' + t)), 'a tier has no dot or no name layer');
 });
 
+test('a place of a kind you only want close up still shows from further out when it is well known; hotels do not flood a tourist district', () => {
+  assert.strictEqual(V.vecTierOf('cafe', 0), 17);
+  assert.strictEqual(V.vecTierOf('cafe', 3), 16, 'a famous café should come one zoom earlier than the rest');
+  assert.strictEqual(V.vecTierOf('airport', 3), 13, 'and never before the first tier');
+  assert.strictEqual(V.vecTierOf('no-such-type', 0), 18, 'a kind that is not listed waits for the closest zoom');
+  assert.ok(V.VEC_TIER.hotel >= 17 && V.VEC_TIER.hotel > V.VEC_TIER.mosque, 'hotels fill a district such as Taksim and cover its streets at zoom 16');
+});
+
 test('names follow the interface language, falling back to the local name', () => {
   assert.deepStrictEqual(V.vecName('en'), ['coalesce', ['get', 'name_en'], ['get', 'name:latin'], ['get', 'name']]);
   for (const lg of ['tr', 'fr', 'ar']) assert.deepStrictEqual(V.vecName(lg), ['coalesce', ['get', 'name']], lg);
@@ -142,7 +150,7 @@ test('the places file becomes map names, minus what the tiles name better', () =
   assert.ok(names.includes('Starbucks') && names.includes('Moda Eczanesi') && names.includes('Galata Kulesi'), 'shops and landmarks should be on the map');
   assert.ok(!names.includes('Kadıköy') && !names.includes('Moda') && !names.includes('Bağdat Caddesi'), 'districts, neighbourhoods and streets are the tiles\' to name');
   const gal = fc.features.find(f => f.properties.n === 'Galata Kulesi');
-  assert.strictEqual(gal.properties.en, 'Galata Tower'); assert.strictEqual(gal.properties.tier, V.VEC_TIER.attraction);
+  assert.strictEqual(gal.properties.en, 'Galata Tower'); assert.ok(gal.properties.r >= 2, 'Galata Kulesi in the fixture has a Wikidata entry, so it ranks as well known'); assert.strictEqual(gal.properties.tier, V.vecTierOf('attraction', gal.properties.r));
   assert.ok(Math.abs(gal.geometry.coordinates[0] - 29.06) < 1e-4 && Math.abs(gal.geometry.coordinates[1] - 41.02) < 1e-4, 'GeoJSON is [longitude, latitude]');
   assert.ok(fc.features.every(f => /^rgb\(/.test(f.properties.dot) && f.properties.tier >= 13 && f.properties.tier <= 18));
 });
