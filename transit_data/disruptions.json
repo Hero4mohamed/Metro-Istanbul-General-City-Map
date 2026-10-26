@@ -25,19 +25,6 @@
     "messageLang": "en"
   },
   {
-    "id": "t1-merkezefendi",
-    "ref": "T1",
-    "source": "metro.istanbul",
-    "scope": "segment",
-    "from": "Merkezefendi",
-    "to": "Mithatpaşa",
-    "severity": "partial",
-    "title": "Section affected",
-    "messageTr": "Teknik bir arıza nedeniyle seferler Kabataş-Cevizlibağ ve Zeytinburnu-Bağcılar istasyonları arasında yapılmaktadır.",
-    "message": "Due to a technical fault, trains Kabataş-Cevizlibağ and operate between Zeytinburnu and Bağcılar.",
-    "messageLang": "en"
-  },
-  {
     "id": "t3-al-m-yor",
     "ref": "T3",
     "source": "metro.istanbul",
