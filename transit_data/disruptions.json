@@ -64,21 +64,5 @@
     "url": "https://sehirhatlari.istanbul/tr/duyurular/maltepeadalar-hatti-sefer-duzenlemesi-3811",
     "published": "2026-10-11",
     "until": "2026-11-02"
-  },
-  {
-    "id": "ferry-3820",
-    "mode": "ferry",
-    "ref": null,
-    "scope": "note",
-    "severity": "minor",
-    "title": "Extra trips",
-    "message": "26.10.2026 tarihinde (bugün) Beşiktaş Stadyumu’nda gerçekleştirilecek maç nedeniyle aşağıda detayları verilen ek sefer düzenlenecektir.",
-    "messageTr": "26.10.2026 tarihinde (bugün) Beşiktaş Stadyumu’nda gerçekleştirilecek maç nedeniyle aşağıda detayları verilen ek sefer düzenlenecektir.",
-    "messageLang": "tr",
-    "translatedBy": "none",
-    "source": "sehirhatlari.istanbul",
-    "url": "https://sehirhatlari.istanbul/tr/duyurular/26102026-tarihli-ek-sefer-duzenlemesi-3820",
-    "published": "2026-10-26",
-    "until": "2026-10-26"
   }
 ]
