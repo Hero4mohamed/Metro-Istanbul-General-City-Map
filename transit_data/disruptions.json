@@ -64,5 +64,22 @@
     "url": "https://sehirhatlari.istanbul/tr/duyurular/maltepeadalar-hatti-sefer-duzenlemesi-3811",
     "published": "2026-10-11",
     "until": "2026-11-02"
+  },
+  {
+    "id": "ferry-3825",
+    "mode": "ferry",
+    "ref": null,
+    "scope": "note",
+    "severity": "partial",
+    "title": "Trips cancelled",
+    "message": "01 Kasım 2026 Pazar günü gerçekleştirilecek 48. İstanbul Maratonu sebebiyle aşağıda detayları belirtilen hatlarımızdaki seferler gerçekleştirilemeyecektir.",
+    "messageTr": "01 Kasım 2026 Pazar günü gerçekleştirilecek 48. İstanbul Maratonu sebebiyle aşağıda detayları belirtilen hatlarımızdaki seferler gerçekleştirilemeyecektir.",
+    "messageLang": "tr",
+    "translatedBy": "none",
+    "source": "sehirhatlari.istanbul",
+    "url": "https://sehirhatlari.istanbul/tr/duyurular/01-kasim-2026-tarihli-iptal-seferler-3825",
+    "published": "2026-10-31",
+    "until": "2026-11-01",
+    "starts": "2026-11-01"
   }
 ]
