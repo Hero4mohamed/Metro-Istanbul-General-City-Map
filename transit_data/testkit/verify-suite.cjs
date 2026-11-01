@@ -1043,6 +1043,297 @@ const MUTATIONS = [
     expect: 'the loading screen is the first thing in the page, is announced as a status, and its pictures are preloaded',
     apply: h => h.replace('<div id="bootSplash" role="status" aria-label="Loading">', '<div id="bootSplash" aria-label="Loading">'),
   },
+  // ---- V4.2: four bottom buttons, the back button, the warning bubble, buses, rotation ----
+  {
+    name: 'bring the Weather button back to the phone\'s bottom bar',
+    expect: 'the phone has four bottom buttons - Map, Planner, Layers, Alerts - and no sheet of its own for the weather',
+    apply: h => h.replace("['layers','◈','mLayers'], ['alerts','📢','mAlerts']", "['layers','◈','mLayers'], ['weather','☀','mWeather'], ['alerts','📢','mAlerts']"),
+  },
+  {
+    name: 'put the weather card back in a sheet that no longer exists',
+    expect: 'the weather card goes in the Layers sheet with the tab strip that selects it, and the layers card steps aside on every screen',
+    apply: h => h.replace("if(el.id==='cardPlanner') mSheets.planner.appendChild(el);", "if(el.id==='cardPlanner') mSheets.planner.appendChild(el);\n    else if(el.id==='cardWeather') mSheets.weather.appendChild(el);"),
+  },
+  {
+    name: 'let the warning sign open nothing but the old hover tooltip',
+    expect: 'every way to open a warning pins the bubble, and a screen with no hover is not given a hover tooltip that vanishes',
+    apply: h => h.replace("mk.on('click', ()=>{ mk.closeTooltip(); pinDisr(d, p, isz/2 + 4); openDisruption(d); });", "mk.on('click', ()=> openDisruption(d));"),
+  },
+  {
+    name: 'give a phone a hover tooltip',
+    expect: 'every way to open a warning pins the bubble, and a screen with no hover is not given a hover tooltip that vanishes',
+    apply: h => h.replace("const CAN_HOVER = matchMedia('(hover:hover)').matches;", "const CAN_HOVER = true;"),
+  },
+  {
+    name: 'close the bubble only on clicks that reach the page, so the zoom buttons leave it open',
+    expect: 'it stays through a drag and a fly (neither is a click) and goes on the next press, a click anywhere, or Escape',
+    apply: h => h.replace("document.addEventListener('click', unpinDisr, true);", "document.addEventListener('click', unpinDisr, false);"),
+  },
+  {
+    name: 'make the bubble close itself like a hover tooltip',
+    expect: 'pressing a warning sign opens a bubble that is its own layer on the map, holding the notice and the way to close it',
+    apply: h => h.replace("pinnedDisr = L.tooltip({ permanent:true,", "pinnedDisr = L.tooltip({ permanent:false,"),
+  },
+  {
+    name: 'leave the bubble up when the person switches to another scope',
+    expect: 'the bubble is cleared when the scope changes or the notices are refreshed, and its text exists in all four languages',
+    apply: h => h.replace('unpinDisr();                // an open warning bubble belongs to the scope it was opened on', ''),
+  },
+  {
+    name: 'forget which sheet a panel came from, so back from the panel goes straight to the map',
+    expect: 'the user\'s own example: from a line\'s panel opened out of the Layers sheet, back is the Layers sheet and back again is the map',
+    apply: h => h.replace("if(l.id !== 'sheet' && goneSheet) e.returnTo = goneSheet;", ''),
+  },
+  {
+    name: 'let back press close nothing',
+    expect: 'back closes the newest layer only: a station panel over Settings goes first, Settings second',
+    apply: h => h.replace('NAV.depth--; navCloseEntry(last); }', 'NAV.depth--; }'),
+  },
+  {
+    name: 'leave the history entry of a panel behind when it is closed with its own button',
+    expect: 'opening something puts one entry in the history, and closing it with its own button takes the entry away again',
+    apply: h => h.replace('history.go(delta);', ''),
+  },
+  {
+    name: 'treat an entry from an earlier visit as a press to close something',
+    expect: 'entries left by an earlier visit are stepped over, and a forward press is undone, instead of closing something',
+    apply: h => h.replace('if(st.d > NAV.depth){ history.back(); return; }', ''),
+  },
+  {
+    name: 'let back change the map\'s scope no further than the sheet it was chosen in',
+    expect: 'switching scope inside the Layers sheet is a step: back returns to the scope you came from, then closes the sheet',
+    apply: h => h.replace('try{ setTab(e.from); }finally', 'try{ void 0; }finally'),
+  },
+  {
+    name: 'make a scope change from the map a step in the history',
+    expect: 'a scope change made from the map (no sheet open on a phone) is not a step, and closing the sheet drops its scope steps without undoing them',
+    apply: h => h.replace("if(IS_MOBILE && !navHas('sheet_layers','open')) return;", ''),
+  },
+  {
+    name: 'react to any popstate, so a link to #something closes the panel that is open',
+    expect: 'a \\#link (a popstate that carries no state of ours) leaves everything open',
+    apply: h => h.replace('if(!st || !st.irnNav) return;', ''),
+  },
+  {
+    name: "draw both directions on the very same line again",
+    expect: "both directions are drawn: an edge under each, then the two coloured lines, never one line over the other",
+    apply: h => h.replace('P: busOffset(base, off), col:', 'P: base, col:'),
+  },
+  {
+    name: "dash the return line, as it was when it hid the going line",
+    expect: "both directions are drawn: an edge under each, then the two coloured lines, never one line over the other",
+    apply: h => h.replace("{ color:r.col, weight:w, opacity:r.dim ? 0.3 : 0.98, lineCap:'round', lineJoin:'round' }", "{ color:r.col, weight:w, opacity:r.dim ? 0.3 : 0.98, lineCap:'round', lineJoin:'round', dashArray:r.di ? '9,6' : null }"),
+  },
+  {
+    name: "put each direction on the LEFT of its travel",
+    expect: "each direction is shifted to the RIGHT of its own travel, so the two directions of one street end up on opposite sides",
+    apply: h => h.replace('N.push([-dy / l, dx / l]);', 'N.push([dy / l, -dx / l]);'),
+  },
+  {
+    name: "point the arrowheads backwards",
+    expect: "arrowheads point the way the bus goes, are spaced evenly, and are only made where they will be seen",
+    apply: h => h.replace('out.push([L.point(cx + hx * alen * 0.6, cy + hy * alen * 0.6),', 'out.push([L.point(cx - hx * alen * 0.6, cy - hy * alen * 0.6),'),
+  },
+  {
+    name: "make arrowheads for stretches nobody can see",
+    expect: "arrowheads point the way the bus goes, are spaced evenly, and are only made where they will be seen",
+    apply: h => h.replace('if(!out_ && cx >= vb.min.x && cx <= vb.max.x && cy >= vb.min.y && cy <= vb.max.y){', 'if(true){'),
+  },
+  {
+    name: "draw arrowheads at city scale",
+    expect: "zoomed out, only where each direction starts and ends is marked; zoomed in, every stop and the arrowheads",
+    apply: h => h.replace('if(z >= 12) rows.forEach(r => {', 'if(z >= 5) rows.forEach(r => {'),
+  },
+  {
+    name: "mark every stop on a whole-city view",
+    expect: "zoomed out, only where each direction starts and ends is marked; zoomed in, every stop and the arrowheads",
+    apply: h => h.replace('if(z < 12 && !end) return;', ''),
+  },
+  {
+    name: "rebuild the two lines on every pan",
+    expect: "the route is redrawn when the zoom changes (the gap between the lines is a number of screen pixels) and only the near arrowheads are redrawn when it moves",
+    apply: h => h.replace('if(busDraw.key !== key){', 'if(true){'),
+  },
+  {
+    name: "never fade the direction that was not chosen",
+    expect: "showing one direction fades the other, drops its arrows and stops, and says so in the control",
+    apply: h => h.replace("r.dim = view !== 'both' && view !== r.di;", 'r.dim = false;'),
+  },
+  {
+    name: "offer a direction control for a one-way route",
+    expect: "showing one direction fades the other, drops its arrows and stops, and says so in the control",
+    apply: h => h.replace("if(!dirs || dirs.length < 2) return '';", "if(!dirs) return '';"),
+  },
+  {
+    name: "let a search match a setting that has only SOME of the words typed",
+    expect: "several words must all be present, and nothing found says so",
+    apply: h => h.replace('return words.every(w => text.includes(w)); })();', 'return words.some(w => text.includes(w)); })();'),
+  },
+  {
+    name: "leave sections as the search left them when it is cleared",
+    expect: "clearing the search puts every section back as it was (open ones open, closed ones closed)",
+    apply: h => h.replace('if(!on && before){ secs.forEach((d, i) => { d.open = before[i]; }); before = null; }', ''),
+  },
+  {
+    name: "remember sections that a search opened",
+    expect: "a section left open or closed stays that way, but a search opening sections is not remembered",
+    apply: h => h.replace("if(panel.classList.contains('sp-searching')) return; try{", 'try{'),
+  },
+  {
+    name: "search without folding capitals and the Turkish dotted I",
+    expect: "typing finds a setting by what it says, opens the section it is in, and hides everything else",
+    apply: h => h.replace('const q = foldQ(inp.value.trim()), on', 'const q = inp.value.trim(), on'),
+  },
+  {
+    name: "keep what was typed in the search box when Settings is opened again",
+    expect: "opening Settings again starts with an empty search box, and the reset is called from there",
+    apply: h => h.replace('  spReset();     // 02a-settings-ui.js: start with nothing typed in the search box', ''),
+  },
+  {
+    name: "put a full-screen blur behind the settings sheet on a phone",
+    expect: "the sheet is light on a phone: no full-screen blur behind it, and a scroll in it does not scroll the map",
+    apply: h => h.replace('body.mobile .settings-overlay{backdrop-filter:none;', 'body.mobile .settings-overlay{'),
+  },
+  {
+    name: "lose the step-free switch in the move",
+    expect: "no setting was lost in the move: every control the app looks for is there once, and inside a section",
+    apply: h => h.replace('id="swStepFree"', 'id="swStepFree2"'),
+  },
+  {
+    name: "open every section at the start",
+    expect: "settings are seven sections, in this order, with Appearance open to begin with",
+    apply: h => h.replace('<details class="sp-sec" data-sec="journey">', '<details class="sp-sec" data-sec="journey" open>'),
+  },
+  {
+    name: "redraw every panel in the new language before the language button has been drawn",
+    expect: "a press on a setting lights its button at once and does the heavy part (the other base map, every panel in the new language) after the browser has painted",
+    apply: h => h.replace('later ? afterPaint(relocalise) : relocalise();', 'relocalise();'),
+  },
+  {
+    name: "swap the base map before the theme button has been drawn",
+    expect: "a press on a setting lights its button at once and does the heavy part (the other base map, every panel in the new language) after the browser has painted",
+    apply: h => h.replace('applyTheme(b.dataset.theme, true, true)', 'applyTheme(b.dataset.theme, true)'),
+  },
+  {
+    name: "wait for a frame that never comes (a hidden tab) before doing the work",
+    expect: "afterPaint runs its work once, after a frame, and still runs it if no frame is ever produced",
+    apply: h => h.replace('requestAnimationFrame(() => setTimeout(go, 0)); setTimeout(go, 150);', 'requestAnimationFrame(() => setTimeout(go, 0));'),
+  },
+  {
+    name: "make controls wait to see whether a second tap is coming",
+    expect: "controls answer a press at once: no double-tap-zoom wait on buttons, switches and the section headers",
+    apply: h => h.replace('button,summary,select,.switch,.seg{touch-action:manipulation;}', ''),
+  },
+  {
+    name: "turn the screen the wrong way when going from screen pixels to layer pixels",
+    expect: "screen and layer pixels convert both ways at every angle, with the map panned",
+    apply: h => h.replace("return turn(L.point(point).subtract(this._getMapPanePos()).subtract(c), -a).add(c);", "return turn(L.point(point).subtract(this._getMapPanePos()).subtract(c), a).add(c);"),
+  },
+  {
+    name: "leave the pane's pan unturned when the map turns, so the middle of the screen drifts",
+    expect: "the pan of the map pane turns with the map, so the middle of the screen does not drift",
+    apply: h => h.replace("if(this._loaded && (pos.x || pos.y)) L.DomUtil.setPosition(this._mapPane, turn(pos, a - was));", ""),
+  },
+  {
+    name: "work out the pixel origin as if the pane's pan were not turned",
+    expect: "after a move the new centre is in the middle of the screen, at any angle and pan",
+    apply: h => h.replace("._add(turn(this._getMapPanePos(), -a))._round();", "._add(this._getMapPanePos())._round();"),
+  },
+  {
+    name: "load tiles for an upright screen while the map is turned",
+    expect: "the box of tiles to load holds the whole turned screen, and swaps its sides at a right angle",
+    apply: h => h.replace("return L.bounds(corners);", "return mapOrig.getPixelBounds.call(this, center, zoom);"),
+  },
+  {
+    name: "fit bounds as if the screen were not turned",
+    expect: "fitting bounds into a turned screen measures them as the turned screen sees them",
+    apply: h => h.replace("const a = this._irnTheta; if(!a) return mapOrig.getBoundsZoom.call(this, bounds, inside, padding);", "const a = this._irnTheta; return mapOrig.getBoundsZoom.call(this, bounds, inside, padding);"),
+  },
+  {
+    name: "make the canvases too small to hold a turned screen",
+    expect: "the line and station canvases are one square that holds the screen at EVERY angle, so turning never redraws them",
+    apply: h => h.replace("side = Math.ceil(Math.hypot(size.x, size.y) + 0.4 * Math.max(size.x, size.y))", "side = Math.ceil(Math.hypot(size.x, size.y) * 0.6)"),
+  },
+  {
+    name: "move a canvas when nothing has moved",
+    expect: "a canvas that is not moved or zoomed stays exactly where it is (the transform offset is its own top-left)",
+    apply: h => h.replace("const scale = map.getZoomScale(zoom, this._zoom), half = this._bounds.getSize().multiplyBy(0.5);", "const scale = map.getZoomScale(zoom, this._zoom), half = map.getSize().multiplyBy(0.5 + this.options.padding);"),
+  },
+  {
+    name: "put a pane made later outside the rotor, so it does not turn",
+    expect: "everything Leaflet draws sits under a rotor that is turned about the middle of the screen, and a pane made later goes under it too",
+    apply: h => h.replace("if(this._irnRotor && !container && name !== 'mapPane') container = this._irnRotor;", ""),
+  },
+  {
+    name: "tell markers to turn back the wrong way",
+    expect: "everything Leaflet draws sits under a rotor that is turned about the middle of the screen, and a pane made later goes under it too",
+    apply: h => h.replace("rotor.style.setProperty('--irn-up', (-this._irnTheta) + 'rad');", "rotor.style.setProperty('--irn-up', (this._irnTheta) + 'rad');"),
+  },
+  {
+    name: "turn a marker back about its corner instead of the place it points at",
+    expect: "markers, tooltips and popups turn back about the place they point at, by one CSS variable, so a turn costs one write",
+    apply: h => h.replace("upright(icon, -(parseFloat(icon.style.marginLeft) || 0), -(parseFloat(icon.style.marginTop) || 0));", "upright(icon, 0, 0);"),
+  },
+  {
+    name: "turn a tooltip back about its corner instead of the place it points at",
+    expect: "markers, tooltips and popups turn back about the place they point at, by one CSS variable, so a turn costs one write",
+    apply: h => h.replace("upright(this._container, pos.x - at.x, pos.y - at.y);", "upright(this._container, 0, 0);"),
+  },
+  {
+    name: "give MapLibre the angle with the wrong sign",
+    expect: "the base map is told the angle (MapLibre turns the other way round) and its box is centred on the screen and turned back to upright",
+    apply: h => h.replace("gl.transform.bearing = bearingOf(this._map); },", "gl.transform.bearing = -bearingOf(this._map); },"),
+  },
+  {
+    name: "leave the base map's box turned with the map instead of turning it back",
+    expect: "the base map is told the angle (MapLibre turns the other way round) and its box is centred on the screen and turned back to upright",
+    apply: h => h.replace("rotate(' + (-this._map._irnTheta) + 'rad) scale('", "rotate(' + (this._map._irnTheta) + 'rad) scale('"),
+  },
+  {
+    name: "let any wobble of two fingers turn the map",
+    expect: "two fingers: a wobble of a few degrees does not turn the map, but zoom and the place under the fingers still follow",
+    apply: h => h.replace("const TURN_START_DEG = 7;", "const TURN_START_DEG = 0.01;"),
+  },
+  {
+    name: "put the place under the fingers back without allowing for the angle",
+    expect: "two fingers: a clear twist turns the map from the end of the wobble (no jump), and the place under the fingers stays under them",
+    apply: h => h.replace("MAP_TURN.turn(mid.subtract(c), -a)", "mid.subtract(c)"),
+  },
+  {
+    name: "let the twist jump when the angle wraps past the half-turn",
+    expect: "two fingers: a wobble that happens to straddle the half-turn is still a wobble",
+    apply: h => h.replace("if(d > Math.PI) d -= 2 * Math.PI; else if(d < -Math.PI) d += 2 * Math.PI;", ""),
+  },
+  {
+    name: "turn the map with two fingers although the person switched turning off",
+    expect: "two fingers do not turn the map when the person has switched turning off, but still zoom it",
+    apply: h => h.replace("if(map.options.irnTurn && turnAllowed(map)){", "if(map.options.irnTurn){"),
+  },
+  {
+    name: "take a plain left-button drag from Leaflet",
+    expect: "mouse: right-drag (or Ctrl + drag) sideways turns the map, a plain drag is left to Leaflet",
+    apply: h => h.replace("(e.button === 2 || (e.button === 0 && e.ctrlKey))", "(e.button === 2 || e.button === 0)"),
+  },
+  {
+    name: "turn on any wheel, not only Shift + wheel",
+    expect: "wheel: Shift + wheel turns the map and is kept from zooming it; a plain wheel is left alone",
+    apply: h => h.replace("if(!e.shiftKey || !turnAllowed(map)) return;", "if(!turnAllowed(map)) return;"),
+  },
+  {
+    name: "turn on Shift + arrow with the other modifiers, or without Shift",
+    expect: "keys: Shift + left/right turn by 15 degrees and are kept from panning Leaflet three times as far; other keys are left alone",
+    apply: h => h.replace("if(!turnAllowed(map) || !e.shiftKey || e.altKey || e.ctrlKey || e.metaKey) return;", "if(!turnAllowed(map) || e.altKey || e.ctrlKey || e.metaKey) return;"),
+  },
+  {
+    name: "turn the long way round",
+    expect: "turning the short way round: 350 to 10 is 20 degrees, not 340; and within 5 degrees of north the map settles onto it",
+    apply: h => h.replace("diff = ((deg - from + 540) % 360) - 180;", "diff = deg - from;"),
+  },
+  {
+    name: "leave Leaflet's own two-finger zoom on beside ours",
+    expect: "the page makes a map that can be turned (unless the person switched it off), by our own two-finger handler, with a compass",
+    apply: h => h.replace("touchZoom:!TURNABLE && L.Browser.touch", "touchZoom:L.Browser.touch"),
+  },
   // ---- how old the rail and ferry notices are ----
   {
     name: 'never call the notices out of date, however long since the page was read',

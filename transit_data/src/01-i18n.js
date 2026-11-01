@@ -65,7 +65,7 @@ const I18N = {
     predArrivals:"Predictive Arrivals", live:"LIVE", connectivity:"Connectivity", expansion:"Expansion Projects",
     lpSrc:"Metadata aligned with İBB / Metro İstanbul records · dates are official projections",
     announcements:"Announcements", collapse:"collapse",
-    hint:"Drag to pan · Scroll to zoom · Click a <b>station</b> or a <b>line</b> for details",
+    hint:"Drag to pan · Scroll to zoom · Right-drag to rotate · Click a <b>station</b> or a <b>line</b> for details",
     saveFav:"☆ Save to Favourites", favourited:"★ Favourited",
     walk:"Walk", busLabel:"Bus", transferAt:"Transfer at", walkToShort:"walk to", also:"also:",
     stop_one:"stop", stop_many:"stops", fastest:"Fastest", option:"Option", minUnit:"min",
@@ -75,7 +75,7 @@ const I18N = {
     toYourDest:"to your destination", toStop:"to", fromStop:"from",
     annNone:"✓ No reported disruptions — network running normally.",
     annFoot:"Reported service faults &amp; closures. Live official status:",
-    annAge:"Rail and ferry notices checked {age} ago", annStale:"Rail and ferry notices have not been refreshed for a while and may be out of date.",
+    annAge:"Rail and ferry notices checked {age} ago", annStale:"Rail and ferry notices have not been refreshed for a while and may be out of date.", disrPinHint:"Press anywhere to close", secSearch:"Search & privacy", secApp:"App & data", setSearchPh:"Search settings…", setNone:"No setting matches that.", rotateMapLbl:"Rotate the map", rotateMapHint:"Twist with two fingers to turn the map. On a computer: right-click and drag, or hold Shift and use the wheel. The compass button turns north back up.", compassReset:"Face north",
     ageMin:"{n} min", ageHour:"{n} h", ageDay:"{n} d",
     gt_district:"District", gt_hood:"Neighbourhood", gt_place:"Town or village", gt_square:"Square", gt_street:"Street",
     gt_restaurant:"Restaurant", gt_cafe:"Café", gt_fast_food:"Fast food", gt_bar:"Bar", gt_hotel:"Hotel", gt_lodging:"Lodging",
@@ -104,7 +104,7 @@ const I18N = {
     printTrip:"Print / PDF", freeXfer:"free transfer", totalFare:"Total fare", stepByStep:"Step by step",
     saveAdv:"Save adventure", savedWord:"Saved", savedAdv:"Saved adventures", stopsWord:"stops",
     goRerouting:"Off route — replanning…", goRerouted:"New route", goOffRoute:"Cannot replan from here", followMe:"Follow me",
-    busOutbound:"Outbound", busReturn:"Return",
+    busOutbound:"Outbound", busReturn:"Return", busBothDirs:"Both directions", busDirections:"Show direction",
     offlineMap:"Offline map", offSave:"Save this area", offClear:"Clear", offStored:"{n} tiles saved · ~{mb} MB. Areas you pan over are kept automatically; trips, fares and timetables already work offline.", offSaving:"Saving {n}/{t}…", offUnavailable:"Available once the app is installed / the service worker is active.",
     offKept:"Protected — kept even when storage runs low.", offEvictable:"Best-effort: install the app (Add to Home Screen) so the phone does not clear it.",
     offNoView:"Open the map first, then save — the view had no size to capture.",
@@ -176,7 +176,7 @@ const I18N = {
     st_construction:"Under construction", st_planned:"Planned", st_testing:"Under construction / testing", st_approx:"Approximate alignment",
     st_hold:"On hold", st_vision:"Long-term plan", vTarget:"Target", vProgress:"Progress", vOwner:"Owner", vOperator:"Operator", vContractor:"Contractor", vStart:"Works began", vValue:"Contract value", vCapacity:"Design capacity", vJourney:"Journey time", vTbm:"Tunnel-boring machines", vVehicles:"Vehicles", vDriverless:"Driverless", vStations:"Stations", vOfficialStns:"Official station list", vMapped:"on the mapped alignment", vNoStations:"Stations not yet published", vAlignment:"Alignment", vAlignOsm:"Surveyed alignment from OpenStreetMap", vAlignSchematic:"Indicative alignment from OpenStreetMap — sparsely mapped, the real route may differ", vAlignSmooth:"drawn smoothed (sparsely mapped)", vMappedPub:"{m} km mapped · {p} km published", vUnverified:"Not yet checked against official sources — shown as mapped in OpenStreetMap.", vVerified:"Facts last checked", vSources:"Sources", vNotes:"Notes", vAsOf:"as of", vProjectsHdr:"{n} projects · {k} under construction", vUnvHdr:"{u} not yet verified", vNoTarget:"No date announced", vPhaseTip:"Stage of the project",
     servedBy:"Served by {n} line(s).",
-    mMap:"Map", mPlanner:"Planner", mLayers:"Layers", mWeather:"Weather", mAlerts:"Alerts",
+    mMap:"Map", mPlanner:"Planner", mLayers:"Layers", mAlerts:"Alerts",
     installApp:"📲 Install app", appUpdated:"Updated to the latest version ✓",
     iosHint:"iPhone: Share → Add to Home Screen to install.",
     lineMap:"Line map", journeyMap:"Journey map", stripHint:"swipe to see the whole line →", showHide:"Show / hide on map", openLineMap:"Tap for line map",
@@ -276,7 +276,7 @@ const I18N = {
     predArrivals:"Tahmini Varışlar", live:"CANLI", connectivity:"Bağlantılar", expansion:"Genişleme Projeleri",
     lpSrc:"Veriler İBB / Metro İstanbul kayıtlarıyla uyumludur · tarihler resmi projeksiyonlardır",
     announcements:"Duyurular", collapse:"daralt",
-    hint:"Kaydırmak için sürükle · Yakınlaştırmak için tekerlek · Detay için bir <b>durak</b> ya da <b>hat</b> tıklayın",
+    hint:"Kaydırmak için sürükle · Yakınlaştırmak için tekerlek · Döndürmek için sağ tuşla sürükle · Detay için bir <b>durak</b> ya da <b>hat</b> tıklayın",
     saveFav:"☆ Favorilere Ekle", favourited:"★ Favoride",
     walk:"Yürü", busLabel:"Otobüs", transferAt:"Aktarma:", walkToShort:"şuraya yürü:", also:"ayrıca:",
     stop_one:"durak", stop_many:"durak", fastest:"En hızlı", option:"Seçenek", minUnit:"dk",
@@ -286,7 +286,7 @@ const I18N = {
     toYourDest:"varış noktanıza", toStop:"→", fromStop:"şuradan:",
     annNone:"✓ Bildirilen aksama yok — ağ normal çalışıyor.",
     annFoot:"Bildirilen servis arızaları ve kapanışları. Canlı resmi durum:",
-    annAge:"Raylı sistem ve vapur duyuruları {age} önce kontrol edildi", annStale:"Raylı sistem ve vapur duyuruları bir süredir yenilenmedi; güncel olmayabilir.",
+    annAge:"Raylı sistem ve vapur duyuruları {age} önce kontrol edildi", annStale:"Raylı sistem ve vapur duyuruları bir süredir yenilenmedi; güncel olmayabilir.", disrPinHint:"Kapatmak için herhangi bir yere basın", secSearch:"Arama ve gizlilik", secApp:"Uygulama ve veriler", setSearchPh:"Ayarlarda ara…", setNone:"Eşleşen ayar yok.", rotateMapLbl:"Haritayı döndür", rotateMapHint:"Haritayı döndürmek için iki parmakla çevirin. Bilgisayarda: sağ tuşla sürükleyin ya da Shift basılıyken tekerleği kullanın. Pusula düğmesi kuzeyi yeniden yukarı getirir.", compassReset:"Kuzeye dön",
     ageMin:"{n} dk", ageHour:"{n} sa", ageDay:"{n} gün",
     gt_district:"İlçe", gt_hood:"Mahalle", gt_place:"Yerleşim", gt_square:"Meydan", gt_street:"Cadde / Sokak",
     gt_restaurant:"Restoran", gt_cafe:"Kafe", gt_fast_food:"Fast food", gt_bar:"Bar", gt_hotel:"Otel", gt_lodging:"Konaklama",
@@ -315,7 +315,7 @@ const I18N = {
     printTrip:"Yazdır / PDF", freeXfer:"ücretsiz aktarma", totalFare:"Toplam ücret", stepByStep:"Adım adım",
     saveAdv:"Rotayı kaydet", savedWord:"Kaydedildi", savedAdv:"Kayıtlı rotalar", stopsWord:"durak",
     goRerouting:"Rota dışı — yeniden planlanıyor…", goRerouted:"Yeni rota", goOffRoute:"Buradan yeniden planlanamıyor", followMe:"Beni takip et",
-    busOutbound:"Gidiş", busReturn:"Dönüş",
+    busOutbound:"Gidiş", busReturn:"Dönüş", busBothDirs:"İki yön", busDirections:"Yönü göster",
     offlineMap:"Çevrimdışı harita", offSave:"Bu alanı kaydet", offClear:"Temizle", offStored:"{n} karo kayıtlı · ~{mb} MB. Gezdiğiniz alanlar otomatik saklanır; sefer, ücret ve saatler zaten çevrimdışı çalışır.", offSaving:"Kaydediliyor {n}/{t}…", offUnavailable:"Uygulama yüklendiğinde / servis çalışanı etkin olduğunda kullanılabilir.",
     offKept:"Korumalı — depolama azalsa bile saklanır.", offEvictable:"Garanti değil: telefonun silmemesi için uygulamayı yükleyin (Ana Ekrana Ekle).",
     offNoView:"Önce haritayı açın, sonra kaydedin — görünüm ölçülemedi.",
@@ -387,7 +387,7 @@ const I18N = {
     st_construction:"Yapım aşamasında", st_planned:"Planlanan", st_testing:"Yapım / test aşamasında", st_approx:"Yaklaşık güzergah",
     st_hold:"Askıda", st_vision:"Uzun vadeli plan", vTarget:"Hedef", vProgress:"İlerleme", vOwner:"Sahip", vOperator:"İşletmeci", vContractor:"Yüklenici", vStart:"İşe başlama", vValue:"Sözleşme bedeli", vCapacity:"Tasarım kapasitesi", vJourney:"Yolculuk süresi", vTbm:"Tünel açma makinesi", vVehicles:"Araç", vDriverless:"Sürücüsüz", vStations:"İstasyonlar", vOfficialStns:"Resmî istasyon listesi", vMapped:"haritalanan güzergâhta", vNoStations:"İstasyonlar henüz yayımlanmadı", vAlignment:"Güzergâh", vAlignOsm:"OpenStreetMap'te işlenmiş güzergâh", vAlignSchematic:"OpenStreetMap'ten yaklaşık güzergâh — seyrek haritalanmış, gerçek rota farklı olabilir", vAlignSmooth:"yumuşatılarak çizildi (seyrek haritalanmış)", vMappedPub:"{m} km haritalandı · {p} km açıklandı", vUnverified:"Resmî kaynaklarla henüz doğrulanmadı — OpenStreetMap'te işlendiği gibi gösteriliyor.", vVerified:"Bilgiler son kontrol", vSources:"Kaynaklar", vNotes:"Notlar", vAsOf:"itibarıyla", vProjectsHdr:"{n} proje · {k} yapım aşamasında", vUnvHdr:"{u} henüz doğrulanmadı", vNoTarget:"Açıklanmış tarih yok", vPhaseTip:"Projenin aşaması",
     servedBy:"{n} hat hizmet veriyor.",
-    mMap:"Harita", mPlanner:"Planlayıcı", mLayers:"Katmanlar", mWeather:"Hava", mAlerts:"Duyurular",
+    mMap:"Harita", mPlanner:"Planlayıcı", mLayers:"Katmanlar", mAlerts:"Duyurular",
     installApp:"📲 Uygulamayı yükle", appUpdated:"En son sürüme güncellendi ✓",
     iosHint:"iPhone: Paylaş → Ana Ekrana Ekle ile yükleyin.",
     lineMap:"Hat şeması", journeyMap:"Yolculuk şeması", stripHint:"tüm hattı görmek için kaydır →", showHide:"Haritada göster / gizle", openLineMap:"Hat şeması için dokun",
@@ -437,7 +437,7 @@ const I18N = {
     predArrivals:"الوصول المتوقع", live:"مباشر", connectivity:"الارتباطات", expansion:"مشاريع التوسعة",
     lpSrc:"البيانات وفق سجلات بلدية إسطنبول ومترو إسطنبول · التواريخ توقعات رسمية",
     announcements:"الإعلانات", collapse:"طيّ",
-    hint:"اسحب للتحريك · مرّر للتكبير · انقر على <b>محطة</b> أو <b>خط</b> للتفاصيل",
+    hint:"اسحب للتحريك · مرّر للتكبير · اسحب بالزر الأيمن للتدوير · انقر على <b>محطة</b> أو <b>خط</b> للتفاصيل",
     saveFav:"☆ حفظ في المفضلة", favourited:"★ في المفضلة",
     walk:"سيرًا", busLabel:"حافلة", transferAt:"تحويل في", walkToShort:"امشِ إلى", also:"أيضًا:",
     stop_one:"محطة", stop_many:"محطات", fastest:"الأسرع", option:"خيار", minUnit:"د",
@@ -447,7 +447,7 @@ const I18N = {
     toYourDest:"إلى وجهتك", toStop:"إلى", fromStop:"من",
     annNone:"✓ لا اضطرابات مبلّغة — الشبكة تعمل بشكل طبيعي.",
     annFoot:"الأعطال والإغلاقات المبلّغة. الحالة الرسمية:",
-    annAge:"آخر تحقّق من إشعارات المترو والعبّارات قبل {age}", annStale:"لم تُحدَّث إشعارات المترو والعبّارات منذ فترة وقد لا تكون محدّثة.",
+    annAge:"آخر تحقّق من إشعارات المترو والعبّارات قبل {age}", annStale:"لم تُحدَّث إشعارات المترو والعبّارات منذ فترة وقد لا تكون محدّثة.", disrPinHint:"اضغط في أي مكان للإغلاق", secSearch:"البحث والخصوصية", secApp:"التطبيق والبيانات", setSearchPh:"ابحث في الإعدادات…", setNone:"لا يوجد إعداد مطابق.", rotateMapLbl:"تدوير الخريطة", rotateMapHint:"أدِر الخريطة بتحريك إصبعين. على الحاسوب: انقر بالزر الأيمن واسحب، أو اضغط Shift واستخدم العجلة. زر البوصلة يعيد الشمال إلى الأعلى.", compassReset:"اتجاه الشمال",
     ageMin:"{n} د", ageHour:"{n} س", ageDay:"{n} يوم",
     gt_district:"منطقة", gt_hood:"حي", gt_place:"بلدة أو قرية", gt_square:"ميدان", gt_street:"شارع",
     gt_restaurant:"مطعم", gt_cafe:"مقهى", gt_fast_food:"وجبات سريعة", gt_bar:"بار", gt_hotel:"فندق", gt_lodging:"إقامة",
@@ -476,7 +476,7 @@ const I18N = {
     printTrip:"طباعة / PDF", freeXfer:"تبديل مجاني", totalFare:"إجمالي الأجرة", stepByStep:"خطوة بخطوة",
     saveAdv:"احفظ الجولة", savedWord:"محفوظة", savedAdv:"الجولات المحفوظة", stopsWord:"محطات",
     goRerouting:"خارج المسار — إعادة التخطيط…", goRerouted:"مسار جديد", goOffRoute:"تعذّرت إعادة التخطيط", followMe:"تتبّعني",
-    busOutbound:"ذهاب", busReturn:"عودة",
+    busOutbound:"ذهاب", busReturn:"عودة", busBothDirs:"الاتجاهان", busDirections:"عرض الاتجاه",
     offlineMap:"خريطة دون اتصال", offSave:"احفظ هذه المنطقة", offClear:"مسح", offStored:"{n} مربّع محفوظ · ~{mb} ميجابايت. المناطق التي تتصفّحها تُحفظ تلقائيًا؛ الرحلات والأسعار والمواعيد تعمل بالفعل دون اتصال.", offSaving:"جارٍ الحفظ {n}/{t}…", offUnavailable:"يتوفّر بعد تثبيت التطبيق.",
     offKept:"محمي — يبقى حتى عند امتلاء التخزين.", offEvictable:"غير مضمون: ثبّت التطبيق (إضافة إلى الشاشة الرئيسية) كي لا يمسحه الهاتف.",
     offNoView:"افتح الخريطة أولًا ثم احفظ — لم يكن للعرض حجم قابل للحفظ.",
@@ -546,7 +546,7 @@ const I18N = {
     st_construction:"قيد الإنشاء", st_planned:"مخطَّط", st_testing:"قيد الإنشاء / الاختبار", st_approx:"مسار تقريبي",
     st_hold:"متوقف مؤقتًا", st_vision:"خطة بعيدة المدى", vTarget:"الموعد المستهدف", vProgress:"نسبة الإنجاز", vOwner:"الجهة المالكة", vOperator:"المشغِّل", vContractor:"المقاول", vStart:"بدء الأعمال", vValue:"قيمة العقد", vCapacity:"السعة التصميمية", vJourney:"مدة الرحلة", vTbm:"آلات حفر الأنفاق", vVehicles:"المركبات", vDriverless:"بدون سائق", vStations:"المحطات", vOfficialStns:"قائمة المحطات الرسمية", vMapped:"على المسار المرسوم", vNoStations:"لم تُنشر المحطات بعد", vAlignment:"المسار", vAlignOsm:"مسار مرصود من OpenStreetMap", vAlignSchematic:"مسار تقريبي من OpenStreetMap — رصد متباعد وقد يختلف المسار الفعلي", vAlignSmooth:"مرسوم بتنعيم (رصد متباعد)", vMappedPub:"{m} كم مرسوم · {p} كم معلن", vUnverified:"لم يُتحقق منه بعد من مصادر رسمية — يُعرض كما هو مرصود في OpenStreetMap.", vVerified:"آخر تحقق من المعلومات", vSources:"المصادر", vNotes:"ملاحظات", vAsOf:"حتى", vProjectsHdr:"{n} مشروعًا · {k} قيد الإنشاء", vUnvHdr:"{u} لم يُتحقق منها بعد", vNoTarget:"لم يُعلن موعد", vPhaseTip:"مرحلة المشروع",
     servedBy:"تخدمها {n} خط/خطوط.",
-    mMap:"الخريطة", mPlanner:"المخطّط", mLayers:"الطبقات", mWeather:"الطقس", mAlerts:"تنبيهات",
+    mMap:"الخريطة", mPlanner:"المخطّط", mLayers:"الطبقات", mAlerts:"تنبيهات",
     installApp:"📲 تثبيت التطبيق", appUpdated:"تم التحديث إلى أحدث إصدار ✓",
     iosHint:"آيفون: مشاركة ← أضِف إلى الشاشة الرئيسية للتثبيت.",
     lineMap:"مخطط الخط", journeyMap:"مخطط الرحلة", stripHint:"اسحب لرؤية الخط بالكامل →", showHide:"إظهار / إخفاء على الخريطة", openLineMap:"اضغط لعرض مخطط الخط",
@@ -660,7 +660,7 @@ const I18N = {
     predArrivals:"Arrivées prédictives", live:"DIRECT", connectivity:"Connexions", expansion:"Projets d'extension",
     lpSrc:"Données alignées sur les registres İBB / Metro İstanbul · les dates sont des projections officielles",
     announcements:"Annonces", collapse:"réduire",
-    hint:"Glissez pour déplacer · Molette pour zoomer · Cliquez une <b>station</b> ou une <b>ligne</b>",
+    hint:"Glissez pour déplacer · Molette pour zoomer · Clic droit + glisser pour pivoter · Cliquez une <b>station</b> ou une <b>ligne</b>",
     saveFav:"☆ Ajouter aux favoris", favourited:"★ Favori",
     walk:"Marche", busLabel:"Bus", transferAt:"Correspondance à", walkToShort:"marcher vers", also:"aussi :",
     stop_one:"arrêt", stop_many:"arrêts", fastest:"Le plus rapide", option:"Option", minUnit:"min",
@@ -670,7 +670,7 @@ const I18N = {
     toYourDest:"jusqu'à votre destination", toStop:"vers", fromStop:"depuis",
     annNone:"✓ Aucune perturbation signalée — réseau normal.",
     annFoot:"Pannes et fermetures signalées. Statut officiel :",
-    annAge:"Avis métro et ferries vérifiés il y a {age}", annStale:"Les avis métro et ferries n'ont pas été actualisés depuis un moment et peuvent être obsolètes.",
+    annAge:"Avis métro et ferries vérifiés il y a {age}", annStale:"Les avis métro et ferries n'ont pas été actualisés depuis un moment et peuvent être obsolètes.", disrPinHint:"Appuyez n'importe où pour fermer", secSearch:"Recherche et confidentialité", secApp:"Application et données", setSearchPh:"Rechercher dans les réglages…", setNone:"Aucun réglage ne correspond.", rotateMapLbl:"Faire pivoter la carte", rotateMapHint:"Faites pivoter la carte avec deux doigts. Sur ordinateur : clic droit et glisser, ou Maj + molette. Le bouton boussole remet le nord en haut.", compassReset:"Orienter au nord",
     ageMin:"{n} min", ageHour:"{n} h", ageDay:"{n} j",
     gt_district:"District", gt_hood:"Quartier", gt_place:"Localité", gt_square:"Place", gt_street:"Rue",
     gt_restaurant:"Restaurant", gt_cafe:"Café", gt_fast_food:"Restauration rapide", gt_bar:"Bar", gt_hotel:"Hôtel", gt_lodging:"Hébergement",
@@ -699,7 +699,7 @@ const I18N = {
     printTrip:"Imprimer / PDF", freeXfer:"correspondance gratuite", totalFare:"Tarif total", stepByStep:"Étape par étape",
     saveAdv:"Enregistrer", savedWord:"Enregistré", savedAdv:"Parcours enregistrés", stopsWord:"arrêts",
     goRerouting:"Hors itinéraire — recalcul…", goRerouted:"Nouvel itinéraire", goOffRoute:"Recalcul impossible", followMe:"Me suivre",
-    busOutbound:"Aller", busReturn:"Retour",
+    busOutbound:"Aller", busReturn:"Retour", busBothDirs:"Les deux sens", busDirections:"Afficher le sens",
     offlineMap:"Carte hors ligne", offSave:"Enregistrer cette zone", offClear:"Effacer", offStored:"{n} tuiles · ~{mb} Mo. Les zones parcourues sont conservées automatiquement ; trajets, tarifs et horaires fonctionnent déjà hors ligne.", offSaving:"Enregistrement {n}/{t}…", offUnavailable:"Disponible une fois l’application installée.",
     offKept:"Protégé — conservé même si le stockage est faible.", offEvictable:"Non garanti : installez l’app (Sur l’écran d’accueil) pour éviter l’effacement.",
     offNoView:"Ouvrez d’abord la carte, puis enregistrez — la vue n’avait pas de taille.",
@@ -769,7 +769,7 @@ const I18N = {
     st_construction:"En construction", st_planned:"Planifié", st_testing:"En construction / essais", st_approx:"Tracé approximatif",
     st_hold:"Suspendu", st_vision:"Projet à long terme", vTarget:"Objectif", vProgress:"Avancement", vOwner:"Maître d’ouvrage", vOperator:"Exploitant", vContractor:"Entreprise", vStart:"Début des travaux", vValue:"Montant du marché", vCapacity:"Capacité de conception", vJourney:"Durée du trajet", vTbm:"Tunneliers", vVehicles:"Véhicules", vDriverless:"Sans conducteur", vStations:"Stations", vOfficialStns:"Liste officielle des stations", vMapped:"sur le tracé cartographié", vNoStations:"Stations pas encore publiées", vAlignment:"Tracé", vAlignOsm:"Tracé relevé dans OpenStreetMap", vAlignSchematic:"Tracé indicatif issu d’OpenStreetMap — peu cartographié, l’itinéraire réel peut différer", vAlignSmooth:"lissé (relevé peu dense)", vMappedPub:"{m} km cartographiés · {p} km annoncés", vUnverified:"Pas encore vérifié auprès de sources officielles — affiché tel que cartographié dans OpenStreetMap.", vVerified:"Informations vérifiées le", vSources:"Sources", vNotes:"Notes", vAsOf:"au", vProjectsHdr:"{n} projets · {k} en construction", vUnvHdr:"{u} non vérifiés", vNoTarget:"Aucune date annoncée", vPhaseTip:"Étape du projet",
     servedBy:"Desservie par {n} ligne(s).",
-    mMap:"Carte", mPlanner:"Trajets", mLayers:"Couches", mWeather:"Météo", mAlerts:"Alertes",
+    mMap:"Carte", mPlanner:"Trajets", mLayers:"Couches", mAlerts:"Alertes",
     installApp:"📲 Installer l'app", appUpdated:"Mis à jour vers la dernière version ✓",
     iosHint:"iPhone : Partager → Sur l'écran d'accueil pour installer.",
     lineMap:"Schéma de ligne", journeyMap:"Schéma du trajet", stripHint:"faites défiler pour voir toute la ligne →", showHide:"Afficher / masquer sur la carte", openLineMap:"Appuyez pour le schéma",
@@ -894,11 +894,15 @@ function applyI18n(){
      in the stylesheet. */
   document.documentElement.dir = (lang === "ar") ? "rtl" : "ltr";
 }
-function setLang(l){
+function setLang(l, later){
   if(!I18N[l]) return;
   lang=l; try{ localStorage.setItem('irn_lang', l); }catch(e){}
   document.querySelectorAll('#langSeg button').forEach(b=> b.classList.toggle('active', b.dataset.lang===l));
   applyI18n();
+  // the fixed text is already in the new language; the panels built by code follow a frame later when this came from a button
+  later ? afterPaint(relocalise) : relocalise();
+}
+function relocalise(){
   // re-render the dynamic panels in the new language
   try{ buildLegend(); }catch(e){}
   try{ renderAnnouncements(); renderDisruptionMarkers(); }catch(e){}

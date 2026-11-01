@@ -11,8 +11,11 @@ if(!HAS.bus){ const bt=document.querySelector('#tabs button[data-tab="bus"]'); i
 // hide Vision for a city with no projects mapped (Bursa/Antalya) rather than show an empty tab
 if(!visionLines.length){ const vt=document.querySelector('#tabs button[data-tab="vision"]'); if(vt) vt.style.display='none'; }
 function setTab(t){
+  const prevTab = currentTab;
   currentTab = t;
+  if(typeof navScope === 'function') navScope(prevTab, t);   // the back button treats a scope change as a step (21-history.js)
   focusStateOff();            // changing scope ends route focus; setTab itself rebuilds below
+  unpinDisr();                // an open warning bubble belongs to the scope it was opened on
   document.querySelectorAll('#tabs button').forEach(b=>{
     const on = b.dataset.tab===t;
     b.classList.toggle('active', on);
@@ -28,8 +31,8 @@ function setTab(t){
   document.getElementById('cardPlanner').style.display = hideCore ? 'none' : '';
   /* The weather card is tall (a scene, a day, a week, every district) and the right column is one scroll. Showing the
      map-layers card above it as well pushed the weather below the fold; the base-map choice is a tab away. On a phone the
-     layers card lives in a sheet of its own and is left alone. */
-  if(!IS_MOBILE) document.getElementById('cardLayers').style.display = (t==='weather') ? 'none' : '';
+     weather lives in the Layers sheet (V4.2), under the same tabs, so the same rule applies there. */
+  document.getElementById('cardLayers').style.display = (t==='weather') ? 'none' : '';
   document.getElementById('cardBus').style.display     = (t==='bus') ? '' : 'none';
   document.getElementById('cardWeather').style.display = (t==='weather') ? '' : 'none';
   document.getElementById('cardIntercity').style.display = (t==='intercity') ? '' : 'none';

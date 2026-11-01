@@ -265,22 +265,7 @@ function busDirPath(d, chains){
   pushPt(stops[stops.length-1]);
   return out.length>1 ? out : stops;
 }
-function drawBusDirs(dirs, chains){
-  busLayer.clearLayers(); const all=[];
-  dirs.forEach((d, di)=>{
-    const col = BUS_DIR_COLOR[di % BUS_DIR_COLOR.length];
-    const pts = busDirPath(d, chains);
-    L.polyline(pts,{color:'#fff',weight:7,opacity:.35,lineCap:'round',lineJoin:'round'}).addTo(busLayer);
-    L.polyline(pts,{color:col,weight:3.6,opacity:.97,lineCap:'round',lineJoin:'round',
-                    dashArray: di>0?'9,6':null})
-      .bindTooltip((d.ref||'')+' → '+(d.head||''),{sticky:true,className:'lt'}).addTo(busLayer);
-    for(const p of pts) all.push(p);
-  });
-  dirs.forEach((d, di)=> d.stops.forEach(s=> L.circleMarker([s[0],s[1]],
-      {radius:2.8,color:BUS_DIR_COLOR[di % BUS_DIR_COLOR.length],weight:1.5,fillColor:'#12161f',fillOpacity:1})
-      .bindTooltip(svgEsc(s[2]||''),{className:'lt',direction:'top'}).addTo(busLayer)));
-  return all;
-}
+// drawBusDirs(), the drawing of a route's two directions, is in 16b-bus-routes.js
 /* The detours that were VERIFIED against this route's stop list (see 14a-surface-notices.js), drawn on the road
    between the stop buses leave it at and the stop they rejoin it at. Dashed amber over the route: dashed is this
    map's word for "not in normal service". Only a verified detour has a `detour` to draw; the rest are text. */
@@ -291,8 +276,10 @@ function drawBusNotices(ref, dirs, chains){
     const pts = busDirPath({ stops }, chains); if(pts.length < 2) return;
     const col = SEV_COLOR.partial;
     L.polyline(pts, { color:col, weight:9, opacity:.22, lineCap:'round', lineJoin:'round', interactive:false }).addTo(busLayer);
-    L.polyline(pts, { color:col, weight:3.4, opacity:1, dashArray:'2,7', lineCap:'round', lineJoin:'round' })
-      .bindTooltip(disrTip(d), { sticky:true, className:'lt' }).addTo(busLayer);
+    const det = L.polyline(pts, { color:col, weight:3.4, opacity:1, dashArray:'2,7', lineCap:'round', lineJoin:'round' });
+    if(CAN_HOVER) det.bindTooltip(disrTip(d), { sticky:true, className:'lt' });
+    det.on('click', e => { det.closeTooltip(); pinDisr(d, e.latlng, 8); });      // the bubble stays until the next press (17-boot.js)
+    det.addTo(busLayer);
     [stops[0], stops[stops.length - 1]].forEach(s => L.circleMarker([s[0], s[1]], { radius:4.6, color:col, weight:2, fillColor:'#12161f', fillOpacity:1 })
       .bindTooltip(svgEsc(s[2] || ''), { className:'lt', direction:'top' }).addTo(busLayer));
   });
@@ -356,7 +343,7 @@ function busScheduleHTML(ref){
 async function selectBus(id, row){
   document.querySelectorAll('#busList .bus-row').forEach(r=>r.classList.remove('sel'));
   if(row) row.classList.add('sel');
-  busLayer.clearLayers();
+  busLayer.clearLayers(); BUS_VIEW.v = 'both';
   const countEl=document.getElementById('busCount'), detail=document.getElementById('busDetail');
   const ref = row ? row.dataset.ref : null;
   const tok = ++busSelToken;
@@ -373,7 +360,8 @@ async function selectBus(id, row){
     const chains = (BUS_GEOM && BUS_GEOM[ref]) ? BUS_GEOM[ref] : null;
     let all = drawBusDirs(dirs, chains);
     drawBusNotices(ref, dirs, chains);
-    detail.innerHTML = busNoticesHTML(ref) + busFareHTML(ref) + busScheduleHTML(ref) + busStopsHTML(dirs);
+    detail.innerHTML = busDirToggleHTML(dirs) + busNoticesHTML(ref) + busFareHTML(ref) + busScheduleHTML(ref) + busStopsHTML(dirs);
+    wireBusDirToggle(detail);
     countEl.textContent = ref+' · '+dl;
     if(all.length) map.fitBounds(L.latLngBounds(all).pad(0.2));
     if(!chains){                                 // no baked shape (2 of 855) → try Overpass once
@@ -481,7 +469,7 @@ document.getElementById('baseSeg').addEventListener('click', e=>{
 document.getElementById('settingsBtn').addEventListener('click', openSettings);
 document.getElementById('settingsX').addEventListener('click', closeSettings);
 document.getElementById('settingsOverlay').addEventListener('click', closeSettings);
-document.getElementById('themeSeg').addEventListener('click', e=>{ const b=e.target.closest('button'); if(b&&b.dataset.theme) applyTheme(b.dataset.theme, true); });
+document.getElementById('themeSeg').addEventListener('click', e=>{ const b=e.target.closest('button'); if(b&&b.dataset.theme) applyTheme(b.dataset.theme, true, true); });
 document.getElementById('prefSeg').addEventListener('click', e=>{ const b=e.target.closest('button'); if(b&&b.dataset.pref) setRoutePref(b.dataset.pref, true); });
 document.getElementById('textSeg').addEventListener('click', e=>{ const b=e.target.closest('button'); if(b&&b.dataset.ts) setTextSize(b.dataset.ts); });
 document.getElementById('styleSeg').addEventListener('click', e=>{ const b=e.target.closest('button'); if(b&&b.dataset.uis) setUiStyle(b.dataset.uis, true); });
@@ -499,6 +487,7 @@ document.getElementById('swAvoidFerry').addEventListener('click', ()=> setAvoid(
 document.getElementById('swAvoidBus').addEventListener('click', ()=> setAvoid('bus', !avoidModes.has('bus'), true));
 document.getElementById('swStepFree').addEventListener('click', ()=> setStepFree(!stepFreePref, true));
 document.getElementById('swOnline').addEventListener('click', ()=> setOnlineSearch(!onlineSearchPref));
+document.getElementById('swTurn').addEventListener('click', ()=> setMapTurn(!mapTurnPref));
 document.getElementById('placesGroup').addEventListener('click', e=>{ const b=e.target.closest('button[data-place]'); if(!b) return;
   if(b.dataset.act==='set') setPlaceFromOrigin(b.dataset.place); else clearPlace(b.dataset.place); });
 document.getElementById('placeChips').addEventListener('click', e=>{ const b=e.target.closest('.pchip'); if(b) useSavedPlace(b.dataset.place); });
@@ -574,7 +563,7 @@ document.getElementById('tglStations').addEventListener('change', e=>{
 document.getElementById('allOn').addEventListener('click', ()=>tabLines().forEach(l=>setLine(l.ref,true)));
 document.getElementById('allOff').addEventListener('click', ()=>tabLines().forEach(l=>setLine(l.ref,false)));
 document.getElementById('tabs').addEventListener('click', e=>{ const t=e.target.dataset.tab; if(t) setTab(t); });
-document.getElementById('langSeg').addEventListener('click', e=>{ const l=e.target.dataset.lang; if(l) setLang(l); });
+document.getElementById('langSeg').addEventListener('click', e=>{ const l=e.target.dataset.lang; if(l) setLang(l, true); });
 document.getElementById('plannerTabs').addEventListener('click', e=>{ const m=e.target.dataset.pt; if(m) setPlannerTab(m); });
 document.getElementById('advAdd').addEventListener('click', ()=>{
   if(advStops.length>=8) return;                       // sane cap
