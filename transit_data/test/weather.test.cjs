@@ -237,8 +237,8 @@ test('the weather code left 16-intercity.js, and the card keeps the ids the rest
   for (const id of ['wxHero', 'wxHintsBox', 'wxHourlyBox', 'wxDailyBox', 'wxModes', 'wxSearch', 'wxRefresh', 'wxUpd', 'wxList', 'wxClock', 'wxDate', 'wxTitle'])
     assert.ok(new RegExp('id="' + id + '"').test(html), 'the card lost #' + id);
   assert.strictEqual((html.match(/data-m="(temp|rain|wind|air)"/g) || []).length, 4, 'the four modes are not all offered');
-  // the layers card steps aside on desktop only
-  assert.ok(/if\(!IS_MOBILE\) document\.getElementById\('cardLayers'\)\.style\.display = \(t==='weather'\) \? 'none' : '';/.test(s), 'the layers card rule changed');
+  // the layers card steps aside on every screen: on a phone the weather sits in the same sheet, under the same tabs (V4.2)
+  assert.ok(/\n  document\.getElementById\('cardLayers'\)\.style\.display = \(t==='weather'\) \? 'none' : '';/.test(s), 'the layers card rule changed');
   // air quality can fail without taking the weather with it
   assert.ok(/\/\* no air quality: the rest stands \*\//.test(s), 'an air-quality failure is no longer survivable');
 });

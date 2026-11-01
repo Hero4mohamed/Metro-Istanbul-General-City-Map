@@ -1043,6 +1043,17 @@ const MUTATIONS = [
     expect: 'the loading screen is the first thing in the page, is announced as a status, and its pictures are preloaded',
     apply: h => h.replace('<div id="bootSplash" role="status" aria-label="Loading">', '<div id="bootSplash" aria-label="Loading">'),
   },
+  // ---- V4.2: four bottom buttons, the back button, the warning bubble, buses, rotation ----
+  {
+    name: 'bring the Weather button back to the phone\'s bottom bar',
+    expect: 'the phone has four bottom buttons - Map, Planner, Layers, Alerts - and no sheet of its own for the weather',
+    apply: h => h.replace("['layers','◈','mLayers'], ['alerts','📢','mAlerts']", "['layers','◈','mLayers'], ['weather','☀','mWeather'], ['alerts','📢','mAlerts']"),
+  },
+  {
+    name: 'put the weather card back in a sheet that no longer exists',
+    expect: 'the weather card goes in the Layers sheet with the tab strip that selects it, and the layers card steps aside on every screen',
+    apply: h => h.replace("if(el.id==='cardPlanner') mSheets.planner.appendChild(el);", "if(el.id==='cardPlanner') mSheets.planner.appendChild(el);\n    else if(el.id==='cardWeather') mSheets.weather.appendChild(el);"),
+  },
   // ---- how old the rail and ferry notices are ----
   {
     name: 'never call the notices out of date, however long since the page was read',

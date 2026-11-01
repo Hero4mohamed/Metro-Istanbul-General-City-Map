@@ -46,27 +46,27 @@ function setupMobile(){
   const bd=document.createElement('div'); bd.id='mbackdrop'; bd.className='mbackdrop';
   bd.addEventListener('click',()=>openSheet(null)); document.body.appendChild(bd);
   // sheets
-  mSheets={ planner:mkSheet('planner'), layers:mkSheet('layers'), weather:mkSheet('weather'), alerts:mkSheet('alerts') };
+  /* Four sheets, four buttons. Weather is one of the scopes in the Layers sheet (Active / Vision / Buses / Intercity / Weather), so it
+     has no sheet or button of its own. */
+  mSheets={ planner:mkSheet('planner'), layers:mkSheet('layers'), alerts:mkSheet('alerts') };
   // installing is offered in Settings → App, for phones and desktop alike
   // reparent the desktop cards into their sheets (order preserved)
   const controls=document.querySelector('.controls');
   [...controls.children].forEach(el=>{
     if(el.id==='cardPlanner') mSheets.planner.appendChild(el);
-    else if(el.id==='cardWeather') mSheets.weather.appendChild(el);
     else mSheets.layers.appendChild(el);
-    el.style.display='';   // sheets control visibility now; setTab still toggles weather/bus cards
+    el.style.display='';   // sheets control visibility now; setTab still toggles the weather / bus / intercity cards
   });
   document.getElementById('cardPlanner').style.display='';
   const ann=document.getElementById('announce'); mSheets.alerts.appendChild(ann); ann.classList.remove('collapsed');
   // bottom navigation
   const nav=document.createElement('div'); nav.className='mnav glass';
-  const items=[ ['map','🗺','mMap'], ['planner','⇆','mPlanner'], ['layers','◈','mLayers'], ['weather','☀','mWeather'], ['alerts','📢','mAlerts'] ];
+  const items=[ ['map','🗺','mMap'], ['planner','⇆','mPlanner'], ['layers','◈','mLayers'], ['alerts','📢','mAlerts'] ];
   items.forEach(([k,icon,key])=>{
     const b=document.createElement('button');
     b.innerHTML=`<span class="mi">${icon}</span><span class="ml" data-i18n="${key}">${t(key)}</span>`;
     b.addEventListener('click',()=>{
       if(k==='map'){ openSheet(null); return; }
-      if(k==='weather'){ setTab('weather'); }
       // the planner only works on the İstanbul network — leave any non-metro scope first
       if(k==='planner' && (currentTab==='weather'||currentTab==='bus'||currentTab==='intercity')) setTab('active');
       openSheet(k);
