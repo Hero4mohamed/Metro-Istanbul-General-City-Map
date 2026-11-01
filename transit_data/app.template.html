@@ -1412,6 +1412,10 @@
   .bd-stops summary b{margin-left:auto;font-size:var(--fs-5);color:var(--dim);font-weight:700;}
   .bd-stops summary::after{margin-left:8px;}
   .bd-sw{width:9px;height:9px;border-radius:3px;flex:none;}
+  /* which direction of a bus route is shown at full strength (16b-bus-routes.js) */
+  .seg.bd-dirs{margin:8px 0 2px;}
+  .seg.bd-dirs button{display:flex;align-items:center;justify-content:center;gap:5px;min-width:0;padding:7px 5px;line-height:1.2;}
+  .seg.bd-dirs .bd-t{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
   .bd-ol{margin:0;padding:2px 12px 10px 30px;max-height:190px;overflow-y:auto;}
   .bd-ol li{font-size:var(--fs-7);color:var(--muted);line-height:1.75;}
   .bd-ol li::marker{color:var(--dim);font-size:var(--fs-4);}

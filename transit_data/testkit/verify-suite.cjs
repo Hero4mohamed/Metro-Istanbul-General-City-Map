@@ -1114,6 +1114,56 @@ const MUTATIONS = [
     expect: 'a \\#link (a popstate that carries no state of ours) leaves everything open',
     apply: h => h.replace('if(!st || !st.irnNav) return;', ''),
   },
+  {
+    name: "draw both directions on the very same line again",
+    expect: "both directions are drawn: an edge under each, then the two coloured lines, never one line over the other",
+    apply: h => h.replace('P: busOffset(base, off), col:', 'P: base, col:'),
+  },
+  {
+    name: "dash the return line, as it was when it hid the going line",
+    expect: "both directions are drawn: an edge under each, then the two coloured lines, never one line over the other",
+    apply: h => h.replace("{ color:r.col, weight:w, opacity:r.dim ? 0.3 : 0.98, lineCap:'round', lineJoin:'round' }", "{ color:r.col, weight:w, opacity:r.dim ? 0.3 : 0.98, lineCap:'round', lineJoin:'round', dashArray:r.di ? '9,6' : null }"),
+  },
+  {
+    name: "put each direction on the LEFT of its travel",
+    expect: "each direction is shifted to the RIGHT of its own travel, so the two directions of one street end up on opposite sides",
+    apply: h => h.replace('N.push([-dy / l, dx / l]);', 'N.push([dy / l, -dx / l]);'),
+  },
+  {
+    name: "point the arrowheads backwards",
+    expect: "arrowheads point the way the bus goes, are spaced evenly, and are only made where they will be seen",
+    apply: h => h.replace('out.push([L.point(cx + hx * alen * 0.6, cy + hy * alen * 0.6),', 'out.push([L.point(cx - hx * alen * 0.6, cy - hy * alen * 0.6),'),
+  },
+  {
+    name: "make arrowheads for stretches nobody can see",
+    expect: "arrowheads point the way the bus goes, are spaced evenly, and are only made where they will be seen",
+    apply: h => h.replace('if(!out_ && cx >= vb.min.x && cx <= vb.max.x && cy >= vb.min.y && cy <= vb.max.y){', 'if(true){'),
+  },
+  {
+    name: "draw arrowheads at city scale",
+    expect: "zoomed out, only where each direction starts and ends is marked; zoomed in, every stop and the arrowheads",
+    apply: h => h.replace('if(z >= 12) rows.forEach(r => {', 'if(z >= 5) rows.forEach(r => {'),
+  },
+  {
+    name: "mark every stop on a whole-city view",
+    expect: "zoomed out, only where each direction starts and ends is marked; zoomed in, every stop and the arrowheads",
+    apply: h => h.replace('if(z < 12 && !end) return;', ''),
+  },
+  {
+    name: "rebuild the two lines on every pan",
+    expect: "the route is redrawn when the zoom changes (the gap between the lines is a number of screen pixels) and only the near arrowheads are redrawn when it moves",
+    apply: h => h.replace('if(busDraw.key !== key){', 'if(true){'),
+  },
+  {
+    name: "never fade the direction that was not chosen",
+    expect: "showing one direction fades the other, drops its arrows and stops, and says so in the control",
+    apply: h => h.replace("r.dim = view !== 'both' && view !== r.di;", 'r.dim = false;'),
+  },
+  {
+    name: "offer a direction control for a one-way route",
+    expect: "showing one direction fades the other, drops its arrows and stops, and says so in the control",
+    apply: h => h.replace("if(!dirs || dirs.length < 2) return '';", "if(!dirs) return '';"),
+  },
   // ---- how old the rail and ferry notices are ----
   {
     name: 'never call the notices out of date, however long since the page was read',
