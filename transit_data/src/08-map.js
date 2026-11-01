@@ -2,8 +2,14 @@
    4. LEAFLET MAP + LAYERS
    =========================================================================== */
 // minZoom 6 (not 9) so the Intercity tab can show the whole country — Ankara–Kars is 1,300 km
-const map = L.map('map', { zoomControl:true, preferCanvas:true, minZoom:6, maxZoom:18 })
+/* The map can be turned (V4.2; 07y-map-turn.js): two fingers, or the mouse. Whether it can is decided here, when it is made, because
+   its panes are built for it; Settings > Map switches it off (and back on after a restart). A map that cannot be turned is exactly
+   Leaflet's own. Two fingers are then handled by our own handler (zoom, turn and move together) instead of Leaflet's two-finger zoom. */
+const TURNABLE = mapTurnPref;
+const map = L.map('map', { zoomControl:true, preferCanvas:true, minZoom:6, maxZoom:18,
+                          irnTurn:TURNABLE, irnPinch:TURNABLE && L.Browser.touch, irnMouse:TURNABLE, touchZoom:!TURNABLE && L.Browser.touch })
              .setView(CITY.center, CITY.zoom);
+map._irnTurnOn = mapTurnPref;
 L.control.zoom({ position:'bottomright' });
 /* Two panes of our own (V4.0). Leaflet draws the metro lines (canvas, overlay pane, z 400) above the base map (tile pane, z 200), so
    names drawn with the base map were hidden wherever a line ran over a street or a place. The names are therefore a second map in

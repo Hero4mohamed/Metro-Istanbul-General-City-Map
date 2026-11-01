@@ -1224,6 +1224,116 @@ const MUTATIONS = [
     expect: "controls answer a press at once: no double-tap-zoom wait on buttons, switches and the section headers",
     apply: h => h.replace('button,summary,select,.switch,.seg{touch-action:manipulation;}', ''),
   },
+  {
+    name: "turn the screen the wrong way when going from screen pixels to layer pixels",
+    expect: "screen and layer pixels convert both ways at every angle, with the map panned",
+    apply: h => h.replace("return turn(L.point(point).subtract(this._getMapPanePos()).subtract(c), -a).add(c);", "return turn(L.point(point).subtract(this._getMapPanePos()).subtract(c), a).add(c);"),
+  },
+  {
+    name: "leave the pane's pan unturned when the map turns, so the middle of the screen drifts",
+    expect: "the pan of the map pane turns with the map, so the middle of the screen does not drift",
+    apply: h => h.replace("if(this._loaded && (pos.x || pos.y)) L.DomUtil.setPosition(this._mapPane, turn(pos, a - was));", ""),
+  },
+  {
+    name: "work out the pixel origin as if the pane's pan were not turned",
+    expect: "after a move the new centre is in the middle of the screen, at any angle and pan",
+    apply: h => h.replace("._add(turn(this._getMapPanePos(), -a))._round();", "._add(this._getMapPanePos())._round();"),
+  },
+  {
+    name: "load tiles for an upright screen while the map is turned",
+    expect: "the box of tiles to load holds the whole turned screen, and swaps its sides at a right angle",
+    apply: h => h.replace("return L.bounds(corners);", "return mapOrig.getPixelBounds.call(this, center, zoom);"),
+  },
+  {
+    name: "fit bounds as if the screen were not turned",
+    expect: "fitting bounds into a turned screen measures them as the turned screen sees them",
+    apply: h => h.replace("const a = this._irnTheta; if(!a) return mapOrig.getBoundsZoom.call(this, bounds, inside, padding);", "const a = this._irnTheta; return mapOrig.getBoundsZoom.call(this, bounds, inside, padding);"),
+  },
+  {
+    name: "make the canvases too small to hold a turned screen",
+    expect: "the line and station canvases are one square that holds the screen at EVERY angle, so turning never redraws them",
+    apply: h => h.replace("side = Math.ceil(Math.hypot(size.x, size.y) + 0.4 * Math.max(size.x, size.y))", "side = Math.ceil(Math.hypot(size.x, size.y) * 0.6)"),
+  },
+  {
+    name: "move a canvas when nothing has moved",
+    expect: "a canvas that is not moved or zoomed stays exactly where it is (the transform offset is its own top-left)",
+    apply: h => h.replace("const scale = map.getZoomScale(zoom, this._zoom), half = this._bounds.getSize().multiplyBy(0.5);", "const scale = map.getZoomScale(zoom, this._zoom), half = map.getSize().multiplyBy(0.5 + this.options.padding);"),
+  },
+  {
+    name: "put a pane made later outside the rotor, so it does not turn",
+    expect: "everything Leaflet draws sits under a rotor that is turned about the middle of the screen, and a pane made later goes under it too",
+    apply: h => h.replace("if(this._irnRotor && !container && name !== 'mapPane') container = this._irnRotor;", ""),
+  },
+  {
+    name: "tell markers to turn back the wrong way",
+    expect: "everything Leaflet draws sits under a rotor that is turned about the middle of the screen, and a pane made later goes under it too",
+    apply: h => h.replace("rotor.style.setProperty('--irn-up', (-this._irnTheta) + 'rad');", "rotor.style.setProperty('--irn-up', (this._irnTheta) + 'rad');"),
+  },
+  {
+    name: "turn a marker back about its corner instead of the place it points at",
+    expect: "markers, tooltips and popups turn back about the place they point at, by one CSS variable, so a turn costs one write",
+    apply: h => h.replace("upright(icon, -(parseFloat(icon.style.marginLeft) || 0), -(parseFloat(icon.style.marginTop) || 0));", "upright(icon, 0, 0);"),
+  },
+  {
+    name: "turn a tooltip back about its corner instead of the place it points at",
+    expect: "markers, tooltips and popups turn back about the place they point at, by one CSS variable, so a turn costs one write",
+    apply: h => h.replace("upright(this._container, pos.x - at.x, pos.y - at.y);", "upright(this._container, 0, 0);"),
+  },
+  {
+    name: "give MapLibre the angle with the wrong sign",
+    expect: "the base map is told the angle (MapLibre turns the other way round) and its box is centred on the screen and turned back to upright",
+    apply: h => h.replace("gl.transform.bearing = bearingOf(this._map); },", "gl.transform.bearing = -bearingOf(this._map); },"),
+  },
+  {
+    name: "leave the base map's box turned with the map instead of turning it back",
+    expect: "the base map is told the angle (MapLibre turns the other way round) and its box is centred on the screen and turned back to upright",
+    apply: h => h.replace("rotate(' + (-this._map._irnTheta) + 'rad) scale('", "rotate(' + (this._map._irnTheta) + 'rad) scale('"),
+  },
+  {
+    name: "let any wobble of two fingers turn the map",
+    expect: "two fingers: a wobble of a few degrees does not turn the map, but zoom and the place under the fingers still follow",
+    apply: h => h.replace("const TURN_START_DEG = 7;", "const TURN_START_DEG = 0.01;"),
+  },
+  {
+    name: "put the place under the fingers back without allowing for the angle",
+    expect: "two fingers: a clear twist turns the map from the end of the wobble (no jump), and the place under the fingers stays under them",
+    apply: h => h.replace("MAP_TURN.turn(mid.subtract(c), -a)", "mid.subtract(c)"),
+  },
+  {
+    name: "let the twist jump when the angle wraps past the half-turn",
+    expect: "two fingers: a wobble that happens to straddle the half-turn is still a wobble",
+    apply: h => h.replace("if(d > Math.PI) d -= 2 * Math.PI; else if(d < -Math.PI) d += 2 * Math.PI;", ""),
+  },
+  {
+    name: "turn the map with two fingers although the person switched turning off",
+    expect: "two fingers do not turn the map when the person has switched turning off, but still zoom it",
+    apply: h => h.replace("if(map.options.irnTurn && turnAllowed(map)){", "if(map.options.irnTurn){"),
+  },
+  {
+    name: "take a plain left-button drag from Leaflet",
+    expect: "mouse: right-drag (or Ctrl + drag) sideways turns the map, a plain drag is left to Leaflet",
+    apply: h => h.replace("(e.button === 2 || (e.button === 0 && e.ctrlKey))", "(e.button === 2 || e.button === 0)"),
+  },
+  {
+    name: "turn on any wheel, not only Shift + wheel",
+    expect: "wheel: Shift + wheel turns the map and is kept from zooming it; a plain wheel is left alone",
+    apply: h => h.replace("if(!e.shiftKey || !turnAllowed(map)) return;", "if(!turnAllowed(map)) return;"),
+  },
+  {
+    name: "turn on Shift + arrow with the other modifiers, or without Shift",
+    expect: "keys: Shift + left/right turn by 15 degrees and are kept from panning Leaflet three times as far; other keys are left alone",
+    apply: h => h.replace("if(!turnAllowed(map) || !e.shiftKey || e.altKey || e.ctrlKey || e.metaKey) return;", "if(!turnAllowed(map) || e.altKey || e.ctrlKey || e.metaKey) return;"),
+  },
+  {
+    name: "turn the long way round",
+    expect: "turning the short way round: 350 to 10 is 20 degrees, not 340; and within 5 degrees of north the map settles onto it",
+    apply: h => h.replace("diff = ((deg - from + 540) % 360) - 180;", "diff = deg - from;"),
+  },
+  {
+    name: "leave Leaflet's own two-finger zoom on beside ours",
+    expect: "the page makes a map that can be turned (unless the person switched it off), by our own two-finger handler, with a compass",
+    apply: h => h.replace("touchZoom:!TURNABLE && L.Browser.touch", "touchZoom:L.Browser.touch"),
+  },
   // ---- how old the rail and ferry notices are ----
   {
     name: 'never call the notices out of date, however long since the page was read',

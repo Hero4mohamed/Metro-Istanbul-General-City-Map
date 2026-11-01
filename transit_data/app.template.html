@@ -1027,6 +1027,16 @@
   .locate-fab:active{transform:scale(.94);}
   .locate-fab.on{color:#2f8fff;border-color:rgba(47,143,255,.5);box-shadow:0 0 0 1px rgba(47,143,255,.4),0 8px 22px -10px rgba(0,0,0,.7);}
   .locate-fab.busy svg{animation:spin 1s linear infinite;}
+  /* the compass (08c-map-turn-ui.js): only there while the map is turned; the map itself is turned by .irn-rotor (07y-map-turn.js) */
+  .compass-fab{position:fixed;left:var(--gutter);top:calc(var(--rail-top) + 2*var(--rail-step));z-index:1200;width:44px;height:44px;border-radius:14px;
+    display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--text);padding:0;
+    border:1px solid var(--stroke-2);background:var(--panel);box-shadow:0 8px 22px -10px rgba(0,0,0,.7);transition:opacity .2s,transform .18s var(--ease);}
+  .compass-fab[hidden]{display:none;}
+  .compass-fab:hover{color:var(--accent);border-color:var(--ring);}
+  .compass-fab:active{transform:scale(.94);}
+  body.mobile .compass-fab{left:auto;top:auto;right:14px;bottom:calc(204px + env(safe-area-inset-bottom));}
+  body.ai-open .compass-fab,body.omni-open .compass-fab{opacity:0;pointer-events:none;}
+  .leaflet-container{touch-action:none;}
   body.mobile .locate-fab{left:auto;top:auto;right:14px;bottom:calc(92px + env(safe-area-inset-bottom));}
   body.mobile .ai-orb{left:auto;top:auto;right:14px;bottom:calc(148px + env(safe-area-inset-bottom));}
   body.mobile .ai-panel{left:10px;right:10px;width:auto;top:auto;
@@ -1695,6 +1705,9 @@
     <line x1="1.3" y1="12" x2="4" y2="12"/><line x1="20" y1="12" x2="22.7" y2="12"/>
   </svg>
 </button>
+<button id="compassBtn" class="compass-fab glass" data-i18n-title="compassReset" title="Face north" aria-label="Face north" hidden>
+  <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><g id="compassNeedle"><path d="M12 2.5 15.6 12 8.4 12Z" fill="#EF4444"/><path d="M12 21.5 8.4 12 15.6 12Z" fill="currentColor" opacity=".55"/><circle cx="12" cy="12" r="1.6" fill="currentColor"/></g></svg>
+</button>
 <button id="aiOrb" class="ai-orb glass" data-i18n-title="aiTitle" title="Ask the map" aria-label="Ask the map"
         aria-expanded="false" aria-controls="aiPanel"><span class="orb" aria-hidden="true"></span></button>
 <div class="ai-panel glass" id="aiPanel" role="dialog" aria-labelledby="aiHd">
@@ -1851,6 +1864,11 @@
   <details class="sp-sec" data-sec="map">
     <summary><span class="sp-ico" aria-hidden="true">🗺</span><span data-i18n="mMap">Map</span></summary>
     <div class="sp-body">
+      <div class="sp-item">
+        <div class="sp-row"><span data-i18n="rotateMapLbl">Rotate the map</span>
+          <button class="sw" id="swTurn" role="switch" aria-label="Rotate the map"><span class="sw-k"></span></button></div>
+        <div class="sp-hint" data-i18n="rotateMapHint">Twist with two fingers to turn the map. On a computer: right-click and drag, or hold Shift and use the wheel. The compass button turns north back up.</div>
+      </div>
       <div class="sp-item sp-row sp-col" id="offlineRow"><span data-i18n="offlineMap">Offline map</span>
         <div class="off-wrap">
           <button class="off-btn" id="offSave" data-i18n="offSave">Save this area</button>

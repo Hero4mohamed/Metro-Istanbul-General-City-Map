@@ -366,6 +366,19 @@ let stepFreePref = lsStr('irn_stepfree')==='1';   // Settings → prefer step-fr
    offline list may be asked of the public Photon service (the text typed, plus the city centre — never the user's own
    position). On by default, as it always was; off keeps every search on the phone. */
 let onlineSearchPref = lsStr('irn_online') !== '0';
+/* Turning the map (V4.2). Read once, when the map is made (08-map.js): off keeps Leaflet's own map, untouched. */
+let mapTurnPref = lsStr('irn_turn') !== '0';
+function setMapTurn(on){
+  on = !!on; const was = mapTurnPref; mapTurnPref = on;
+  try{ localStorage.setItem('irn_turn', on ? '1' : '0'); }catch(e){}
+  const sw = document.getElementById('swTurn'); if(sw) sw.classList.toggle('on', on);
+  if(typeof map === 'undefined') return;
+  map._irnTurnOn = on;
+  if(!on && map.options.irnTurn) map.rotateTo(0, 200);
+  // a map made while the setting was off has no panes for turning: it is made again
+  if(on && !was && !map.options.irnTurn) setTimeout(() => location.reload(), 350);
+  if(typeof syncCompass === 'function') syncCompass();
+}
 function applyDisplayPrefs(){
   document.body.classList.toggle('large-text', textSize==='large');
   document.body.classList.toggle('reduce-motion', reduceMotionPref);
@@ -681,7 +694,7 @@ function initSettingsUI(){
   document.querySelectorAll('#clockSeg button').forEach(b=>b.classList.toggle('active', b.dataset.ck===(clock24?'24':'12')));
   const set=(id,on)=>{ const el=document.getElementById(id); if(el) el.classList.toggle('on',on); };
   set('swMotion',reduceMotionPref); set('swContrast',highContrastPref);
-  set('swAvoidFerry',avoidModes.has('ferry')); set('swAvoidBus',avoidModes.has('bus')); set('swStepFree',stepFreePref); set('swOnline',onlineSearchPref);
+  set('swAvoidFerry',avoidModes.has('ferry')); set('swAvoidBus',avoidModes.has('bus')); set('swStepFree',stepFreePref); set('swOnline',onlineSearchPref); set('swTurn',mapTurnPref);
   renderPlaces();
 }
 // localized line-category label (legend groups + planner steps); falls back to KIND.label

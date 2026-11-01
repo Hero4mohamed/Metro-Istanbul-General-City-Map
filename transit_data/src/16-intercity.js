@@ -487,6 +487,7 @@ document.getElementById('swAvoidFerry').addEventListener('click', ()=> setAvoid(
 document.getElementById('swAvoidBus').addEventListener('click', ()=> setAvoid('bus', !avoidModes.has('bus'), true));
 document.getElementById('swStepFree').addEventListener('click', ()=> setStepFree(!stepFreePref, true));
 document.getElementById('swOnline').addEventListener('click', ()=> setOnlineSearch(!onlineSearchPref));
+document.getElementById('swTurn').addEventListener('click', ()=> setMapTurn(!mapTurnPref));
 document.getElementById('placesGroup').addEventListener('click', e=>{ const b=e.target.closest('button[data-place]'); if(!b) return;
   if(b.dataset.act==='set') setPlaceFromOrigin(b.dataset.place); else clearPlace(b.dataset.place); });
 document.getElementById('placeChips').addEventListener('click', e=>{ const b=e.target.closest('.pchip'); if(b) useSavedPlace(b.dataset.place); });
