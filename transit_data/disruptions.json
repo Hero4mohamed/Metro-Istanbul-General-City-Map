@@ -36,17 +36,6 @@
     "messageLang": "en"
   },
   {
-    "id": "tf2-al-m-yor",
-    "ref": "TF2",
-    "source": "metro.istanbul",
-    "scope": "line",
-    "severity": "minor",
-    "title": "Service notice",
-    "messageTr": "Teknik bir arıza nedeniyle seferler yapılamamaktadır.",
-    "message": "Due to a technical fault, services cannot operate.",
-    "messageLang": "en"
-  },
-  {
     "id": "ferry-3788",
     "mode": "ferry",
     "ref": null,
