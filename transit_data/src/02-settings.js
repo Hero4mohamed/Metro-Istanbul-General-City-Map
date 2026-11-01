@@ -18,7 +18,22 @@ function syncThemeColor(actual){
   const tc = document.querySelector('meta[name="theme-color"]');
   if(tc) tc.setAttribute('content', atlas ? (actual==='light' ? '#F3F0E9' : '#1B1F2A') : (actual==='light' ? '#E9EEF5' : '#070A12'));
 }
-function applyTheme(pref, syncBase){
+/* Run `fn` once the browser has painted what the person just did. A press on a setting should light the button at once; the heavy
+   part (a different base map, every panel redrawn in another language) can follow a frame later. The timer is the way out if
+   frames are not being produced (a hidden tab). */
+function afterPaint(fn){
+  let done = false; const go = () => { if(done) return; done = true; fn(); };
+  if(document.hidden){ setTimeout(go, 0); return; }
+  requestAnimationFrame(() => setTimeout(go, 0)); setTimeout(go, 150);
+}
+/* keep the map's base layer in step with the UI theme (unless the person is on Satellite) */
+function syncBaseToTheme(){
+  if(typeof setBase!=='function') return;
+  const actual = resolveTheme(themePref);
+  if(actual==='light' && curBaseKey==='dark') setBase('voyager');
+  else if(actual==='dark' && curBaseKey==='voyager') setBase('dark');
+}
+function applyTheme(pref, syncBase, later){
   themePref = (pref==='light'||pref==='auto'||pref==='split') ? pref : 'dark';
   try{ localStorage.setItem('irn_theme', themePref); }catch(e){}
   const actual = resolveTheme(themePref);
@@ -26,11 +41,7 @@ function applyTheme(pref, syncBase){
   document.body.classList.toggle('mixed', themePref==='split');
   syncThemeColor(actual);
   document.querySelectorAll('#themeSeg button').forEach(b=> b.classList.toggle('active', b.dataset.theme===themePref));
-  // keep the map basemap in step with the UI theme (unless the user is on Satellite)
-  if(syncBase && typeof setBase==='function'){
-    if(actual==='light' && curBaseKey==='dark') setBase('voyager');
-    else if(actual==='dark' && curBaseKey==='voyager') setBase('dark');
-  }
+  if(syncBase) later ? afterPaint(syncBaseToTheme) : syncBaseToTheme();      // at start-up it must be before the first paint; from a button, after it
 }
 setInterval(()=>{ if(themePref==='auto') applyTheme('auto', true); }, 300000);   // re-check auto theme every 5 min
 function setRoutePref(p, rerun){
@@ -333,7 +344,9 @@ function sortOptsByPref(){
   else                         currentOpts.sort((a,b)=> (a.it.total-b.it.total) || (a.it.transfers-b.it.transfers));
   currentOptIdx=0;
 }
-function openSettings(){ document.getElementById('settingsPanel').classList.add('open'); document.getElementById('settingsOverlay').classList.add('on'); }
+function openSettings(){
+  spReset();     // 02a-settings-ui.js: start with nothing typed in the search box
+  document.getElementById('settingsPanel').classList.add('open'); document.getElementById('settingsOverlay').classList.add('on'); }
 function closeSettings(){ document.getElementById('settingsPanel').classList.remove('open'); document.getElementById('settingsOverlay').classList.remove('on'); }
 function resetTrips(){ planHistory=[]; planFavs=[]; lsSet(LS_HIST,planHistory); lsSet(LS_FAV,planFavs); renderPlanLists(); updateFavBtn(); showToast(t('tripsCleared')); }
 

@@ -75,7 +75,7 @@ const I18N = {
     toYourDest:"to your destination", toStop:"to", fromStop:"from",
     annNone:"✓ No reported disruptions — network running normally.",
     annFoot:"Reported service faults &amp; closures. Live official status:",
-    annAge:"Rail and ferry notices checked {age} ago", annStale:"Rail and ferry notices have not been refreshed for a while and may be out of date.", disrPinHint:"Press anywhere to close",
+    annAge:"Rail and ferry notices checked {age} ago", annStale:"Rail and ferry notices have not been refreshed for a while and may be out of date.", disrPinHint:"Press anywhere to close", secSearch:"Search & privacy", secApp:"App & data", setSearchPh:"Search settings…", setNone:"No setting matches that.",
     ageMin:"{n} min", ageHour:"{n} h", ageDay:"{n} d",
     gt_district:"District", gt_hood:"Neighbourhood", gt_place:"Town or village", gt_square:"Square", gt_street:"Street",
     gt_restaurant:"Restaurant", gt_cafe:"Café", gt_fast_food:"Fast food", gt_bar:"Bar", gt_hotel:"Hotel", gt_lodging:"Lodging",
@@ -286,7 +286,7 @@ const I18N = {
     toYourDest:"varış noktanıza", toStop:"→", fromStop:"şuradan:",
     annNone:"✓ Bildirilen aksama yok — ağ normal çalışıyor.",
     annFoot:"Bildirilen servis arızaları ve kapanışları. Canlı resmi durum:",
-    annAge:"Raylı sistem ve vapur duyuruları {age} önce kontrol edildi", annStale:"Raylı sistem ve vapur duyuruları bir süredir yenilenmedi; güncel olmayabilir.", disrPinHint:"Kapatmak için herhangi bir yere basın",
+    annAge:"Raylı sistem ve vapur duyuruları {age} önce kontrol edildi", annStale:"Raylı sistem ve vapur duyuruları bir süredir yenilenmedi; güncel olmayabilir.", disrPinHint:"Kapatmak için herhangi bir yere basın", secSearch:"Arama ve gizlilik", secApp:"Uygulama ve veriler", setSearchPh:"Ayarlarda ara…", setNone:"Eşleşen ayar yok.",
     ageMin:"{n} dk", ageHour:"{n} sa", ageDay:"{n} gün",
     gt_district:"İlçe", gt_hood:"Mahalle", gt_place:"Yerleşim", gt_square:"Meydan", gt_street:"Cadde / Sokak",
     gt_restaurant:"Restoran", gt_cafe:"Kafe", gt_fast_food:"Fast food", gt_bar:"Bar", gt_hotel:"Otel", gt_lodging:"Konaklama",
@@ -447,7 +447,7 @@ const I18N = {
     toYourDest:"إلى وجهتك", toStop:"إلى", fromStop:"من",
     annNone:"✓ لا اضطرابات مبلّغة — الشبكة تعمل بشكل طبيعي.",
     annFoot:"الأعطال والإغلاقات المبلّغة. الحالة الرسمية:",
-    annAge:"آخر تحقّق من إشعارات المترو والعبّارات قبل {age}", annStale:"لم تُحدَّث إشعارات المترو والعبّارات منذ فترة وقد لا تكون محدّثة.", disrPinHint:"اضغط في أي مكان للإغلاق",
+    annAge:"آخر تحقّق من إشعارات المترو والعبّارات قبل {age}", annStale:"لم تُحدَّث إشعارات المترو والعبّارات منذ فترة وقد لا تكون محدّثة.", disrPinHint:"اضغط في أي مكان للإغلاق", secSearch:"البحث والخصوصية", secApp:"التطبيق والبيانات", setSearchPh:"ابحث في الإعدادات…", setNone:"لا يوجد إعداد مطابق.",
     ageMin:"{n} د", ageHour:"{n} س", ageDay:"{n} يوم",
     gt_district:"منطقة", gt_hood:"حي", gt_place:"بلدة أو قرية", gt_square:"ميدان", gt_street:"شارع",
     gt_restaurant:"مطعم", gt_cafe:"مقهى", gt_fast_food:"وجبات سريعة", gt_bar:"بار", gt_hotel:"فندق", gt_lodging:"إقامة",
@@ -670,7 +670,7 @@ const I18N = {
     toYourDest:"jusqu'à votre destination", toStop:"vers", fromStop:"depuis",
     annNone:"✓ Aucune perturbation signalée — réseau normal.",
     annFoot:"Pannes et fermetures signalées. Statut officiel :",
-    annAge:"Avis métro et ferries vérifiés il y a {age}", annStale:"Les avis métro et ferries n'ont pas été actualisés depuis un moment et peuvent être obsolètes.", disrPinHint:"Appuyez n'importe où pour fermer",
+    annAge:"Avis métro et ferries vérifiés il y a {age}", annStale:"Les avis métro et ferries n'ont pas été actualisés depuis un moment et peuvent être obsolètes.", disrPinHint:"Appuyez n'importe où pour fermer", secSearch:"Recherche et confidentialité", secApp:"Application et données", setSearchPh:"Rechercher dans les réglages…", setNone:"Aucun réglage ne correspond.",
     ageMin:"{n} min", ageHour:"{n} h", ageDay:"{n} j",
     gt_district:"District", gt_hood:"Quartier", gt_place:"Localité", gt_square:"Place", gt_street:"Rue",
     gt_restaurant:"Restaurant", gt_cafe:"Café", gt_fast_food:"Restauration rapide", gt_bar:"Bar", gt_hotel:"Hôtel", gt_lodging:"Hébergement",
@@ -894,11 +894,15 @@ function applyI18n(){
      in the stylesheet. */
   document.documentElement.dir = (lang === "ar") ? "rtl" : "ltr";
 }
-function setLang(l){
+function setLang(l, later){
   if(!I18N[l]) return;
   lang=l; try{ localStorage.setItem('irn_lang', l); }catch(e){}
   document.querySelectorAll('#langSeg button').forEach(b=> b.classList.toggle('active', b.dataset.lang===l));
   applyI18n();
+  // the fixed text is already in the new language; the panels built by code follow a frame later when this came from a button
+  later ? afterPaint(relocalise) : relocalise();
+}
+function relocalise(){
   // re-render the dynamic panels in the new language
   try{ buildLegend(); }catch(e){}
   try{ renderAnnouncements(); renderDisruptionMarkers(); }catch(e){}

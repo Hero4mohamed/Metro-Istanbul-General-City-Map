@@ -1164,6 +1164,66 @@ const MUTATIONS = [
     expect: "showing one direction fades the other, drops its arrows and stops, and says so in the control",
     apply: h => h.replace("if(!dirs || dirs.length < 2) return '';", "if(!dirs) return '';"),
   },
+  {
+    name: "let a search match a setting that has only SOME of the words typed",
+    expect: "several words must all be present, and nothing found says so",
+    apply: h => h.replace('return words.every(w => text.includes(w)); })();', 'return words.some(w => text.includes(w)); })();'),
+  },
+  {
+    name: "leave sections as the search left them when it is cleared",
+    expect: "clearing the search puts every section back as it was (open ones open, closed ones closed)",
+    apply: h => h.replace('if(!on && before){ secs.forEach((d, i) => { d.open = before[i]; }); before = null; }', ''),
+  },
+  {
+    name: "remember sections that a search opened",
+    expect: "a section left open or closed stays that way, but a search opening sections is not remembered",
+    apply: h => h.replace("if(panel.classList.contains('sp-searching')) return; try{", 'try{'),
+  },
+  {
+    name: "search without folding capitals and the Turkish dotted I",
+    expect: "typing finds a setting by what it says, opens the section it is in, and hides everything else",
+    apply: h => h.replace('const q = foldQ(inp.value.trim()), on', 'const q = inp.value.trim(), on'),
+  },
+  {
+    name: "keep what was typed in the search box when Settings is opened again",
+    expect: "opening Settings again starts with an empty search box, and the reset is called from there",
+    apply: h => h.replace('  spReset();     // 02a-settings-ui.js: start with nothing typed in the search box', ''),
+  },
+  {
+    name: "put a full-screen blur behind the settings sheet on a phone",
+    expect: "the sheet is light on a phone: no full-screen blur behind it, and a scroll in it does not scroll the map",
+    apply: h => h.replace('body.mobile .settings-overlay{backdrop-filter:none;', 'body.mobile .settings-overlay{'),
+  },
+  {
+    name: "lose the step-free switch in the move",
+    expect: "no setting was lost in the move: every control the app looks for is there once, and inside a section",
+    apply: h => h.replace('id="swStepFree"', 'id="swStepFree2"'),
+  },
+  {
+    name: "open every section at the start",
+    expect: "settings are seven sections, in this order, with Appearance open to begin with",
+    apply: h => h.replace('<details class="sp-sec" data-sec="journey">', '<details class="sp-sec" data-sec="journey" open>'),
+  },
+  {
+    name: "redraw every panel in the new language before the language button has been drawn",
+    expect: "a press on a setting lights its button at once and does the heavy part (the other base map, every panel in the new language) after the browser has painted",
+    apply: h => h.replace('later ? afterPaint(relocalise) : relocalise();', 'relocalise();'),
+  },
+  {
+    name: "swap the base map before the theme button has been drawn",
+    expect: "a press on a setting lights its button at once and does the heavy part (the other base map, every panel in the new language) after the browser has painted",
+    apply: h => h.replace('applyTheme(b.dataset.theme, true, true)', 'applyTheme(b.dataset.theme, true)'),
+  },
+  {
+    name: "wait for a frame that never comes (a hidden tab) before doing the work",
+    expect: "afterPaint runs its work once, after a frame, and still runs it if no frame is ever produced",
+    apply: h => h.replace('requestAnimationFrame(() => setTimeout(go, 0)); setTimeout(go, 150);', 'requestAnimationFrame(() => setTimeout(go, 0));'),
+  },
+  {
+    name: "make controls wait to see whether a second tap is coming",
+    expect: "controls answer a press at once: no double-tap-zoom wait on buttons, switches and the section headers",
+    apply: h => h.replace('button,summary,select,.switch,.seg{touch-action:manipulation;}', ''),
+  },
   // ---- how old the rail and ferry notices are ----
   {
     name: 'never call the notices out of date, however long since the page was read',

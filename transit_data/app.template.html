@@ -1291,14 +1291,36 @@
   .settings-overlay{position:fixed;inset:0;background:rgba(3,6,10,.55);backdrop-filter:blur(2px);opacity:0;pointer-events:none;z-index:1650;transition:opacity .25s;}
   .settings-overlay.on{opacity:1;pointer-events:auto;}
   .settings-panel{position:fixed;top:50%;left:50%;transform:translate(-50%,-46%) scale(.98);opacity:0;pointer-events:none;
-    width:min(392px,94vw);max-height:86vh;overflow-y:auto;z-index:1660;padding:16px 18px 18px;transition:transform .3s var(--ease),opacity .25s;}
+    width:min(392px,94vw);max-height:86vh;overflow-y:auto;overscroll-behavior:contain;z-index:1660;padding:16px 18px 18px;transition:transform .3s var(--ease),opacity .25s;}
   .settings-panel.open{transform:translate(-50%,-50%) scale(1);opacity:1;pointer-events:auto;}
   .sp-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;}
   .sp-head span{font-family:var(--display);font-size:16px;font-weight:700;letter-spacing:.5px;}
   .sp-head .x{background:none;border:none;color:var(--muted);font-size:15px;cursor:pointer;width:28px;height:28px;border-radius:8px;transition:all .15s var(--ease);}
   .sp-head .x:hover{background:var(--surface-2);color:var(--text);}
-  .sp-group{padding:13px 0;border-top:1px solid var(--stroke);}
-  .sp-group:first-of-type{border-top:none;padding-top:2px;}
+  /* Settings are folded into sections (V4.2): one open at a time is enough to see, a search finds a setting wherever it is, and a
+     section left open stays open (02a-settings-ui.js). Closed sections cost nothing to draw. */
+  .sp-find{position:relative;margin:0 0 4px;}
+  .sp-find input{width:100%;box-sizing:border-box;padding:9px 12px;border-radius:12px;border:1px solid var(--stroke);background:var(--surface);color:var(--text);
+    font:600 var(--fs-8) var(--font);outline:none;transition:border-color .15s var(--ease),background .15s var(--ease);-webkit-appearance:none;appearance:none;}
+  .sp-find input:focus{border-color:var(--stroke-2);background:var(--surface-2);}
+  .sp-find input::placeholder{color:var(--dim);}
+  .sp-none{display:none;margin:8px 2px 2px;font-size:var(--fs-8);color:var(--dim);}
+  .sp-none.show{display:block;}
+  .sp-sec{border-top:1px solid var(--stroke);}
+  .sp-find+.sp-sec{margin-top:6px;}
+  .sp-sec>summary{list-style:none;display:flex;align-items:center;gap:10px;padding:13px 2px;cursor:pointer;font-size:var(--fs-7);font-weight:700;letter-spacing:1px;
+    text-transform:uppercase;color:var(--muted);user-select:none;-webkit-tap-highlight-color:transparent;}
+  .sp-sec>summary::-webkit-details-marker{display:none;}
+  .sp-sec>summary::after{content:"▾";margin-left:auto;font-size:var(--fs-5);color:var(--dim);transition:transform .18s var(--ease);}
+  .sp-sec[open]>summary{color:var(--text);}
+  .sp-sec[open]>summary::after{transform:rotate(180deg);}
+  .sp-sec>summary:active{opacity:.7;}
+  .sp-ico{width:20px;text-align:center;font-size:15px;letter-spacing:0;}
+  .sp-body{padding:2px 0 14px;}
+  .sp-body>.sp-item:last-child{margin-bottom:0;}
+  .sp-item{margin-bottom:12px;}
+  .sp-item.sp-row{margin-bottom:12px;}
+  .sp-hide{display:none!important;}
   .sp-label{font-size:var(--fs-7);font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--dim);margin-bottom:10px;}
   .sp-row{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:10px;}
   .sp-row:last-child{margin-bottom:0;}
@@ -1308,11 +1330,16 @@
   .settings-panel .sp-row .seg{gap:5px;padding:4px;}
   .settings-panel .sp-row .seg button{flex:0 0 auto;padding:7px 15px;letter-spacing:.2px;}
   .settings-panel .sp-row .langseg button{padding:7px 11px;}
+  .settings-panel .sp-row.sp-col>.seg button{flex:1;padding:7px 4px;}
+  /* a press is a press at once: no wait to see whether it is the first half of a double-tap zoom */
+  button,summary,select,.switch,.seg{touch-action:manipulation;}
   .settings-panel .spseg{width:100%;margin-top:3px;}
   .settings-panel .spseg button{flex:1;}
   .sp-hint{font-size:var(--fs-8);color:var(--dim);line-height:1.5;margin-top:8px;}
   .settings-panel .btn{margin-top:2px;}
-  body.mobile .settings-panel{top:auto;bottom:0;left:0;transform:translateY(105%);width:100%;max-height:84vh;border-radius:22px 22px 0 0;}
+  /* on a phone a full-screen blur behind a moving sheet is the costliest thing on the page: a darker wash does the same job */
+  body.mobile .settings-overlay{backdrop-filter:none;background:rgba(3,6,10,.64);}
+  body.mobile .settings-panel{top:auto;bottom:0;left:0;transform:translateY(105%);width:100%;max-height:84vh;border-radius:22px 22px 0 0;padding-bottom:calc(18px + env(safe-area-inset-bottom));}
   body.mobile .settings-panel.open{transform:translateY(0);}
   /* toggle switch */
   .sw{width:40px;height:23px;border-radius:var(--r-pill);border:1px solid var(--stroke-2);background:var(--track);cursor:pointer;position:relative;flex:0 0 auto;transition:background .18s var(--ease),border-color .18s var(--ease);padding:0;}
@@ -1726,137 +1753,176 @@
 <div class="settings-overlay" id="settingsOverlay"></div>
 <div class="settings-panel glass" id="settingsPanel" role="dialog" aria-modal="true" aria-label="Settings">
   <div class="sp-head"><span data-i18n="settings">Settings</span><button class="x" id="settingsX" aria-label="Close">✕</button></div>
-  <div class="sp-group">
-    <div class="sp-label" data-i18n="appearance">Appearance</div>
-    <div class="sp-row"><span data-i18n="theme">Theme</span>
-      <div class="seg" id="themeSeg">
-        <button data-theme="dark" class="active" data-i18n="dark">Dark</button>
-        <button data-theme="light" data-i18n="light">Light</button>
-        <button data-theme="auto" data-i18n="themeAuto">Auto</button>
-        <button data-theme="split" data-i18n="themeSplit" data-i18n-title="themeSplitTip" title="Everything light, except the tabs">Mixed</button>
+  <div class="sp-find">
+    <input id="spSearch" type="search" data-i18n-ph="setSearchPh" placeholder="Search settings…" autocomplete="off" spellcheck="false" aria-label="Search settings">
+    <div class="sp-none" id="spNone" role="status" data-i18n="setNone">No setting matches that.</div>
+  </div>
+
+  <details class="sp-sec" data-sec="appearance" open>
+    <summary><span class="sp-ico" aria-hidden="true">🎨</span><span data-i18n="appearance">Appearance</span></summary>
+    <div class="sp-body">
+      <div class="sp-item sp-row"><span data-i18n="theme">Theme</span>
+        <div class="seg" id="themeSeg">
+          <button data-theme="dark" class="active" data-i18n="dark">Dark</button>
+          <button data-theme="light" data-i18n="light">Light</button>
+          <button data-theme="auto" data-i18n="themeAuto">Auto</button>
+          <button data-theme="split" data-i18n="themeSplit" data-i18n-title="themeSplitTip" title="Everything light, except the tabs">Mixed</button>
+        </div>
       </div>
-    </div>
-    <div class="sp-row sp-col" id="cardRow"><span data-i18n="fareCard">Fare card</span>
-      <div class="card-pick">
-        <div class="card-art" id="cardArt"></div>
-        <div class="card-pick-main">
-          <select id="cardSel"></select>
-          <div class="sp-note" id="cardNote"></div>
-          <div class="sp-note card-credit" id="cardCredit"></div>
+      <div class="sp-item sp-row sp-col"><span data-i18n="uiStyle">Icon &amp; colour style</span>
+        <div class="seg" id="styleSeg">
+          <button data-uis="atlas" class="active" data-i18n="uiAtlas">Atlas</button>
+          <button data-uis="neon" data-i18n="uiNeon">Neon</button>
+          <button data-uis="calm" data-i18n="uiCalm">Calm</button>
+          <button data-uis="paper" data-i18n="uiPaper">Paper</button>
+        </div>
+      </div>
+      <div class="sp-item sp-row"><span data-i18n="textSize">Text size</span>
+        <div class="seg" id="textSeg">
+          <button data-ts="normal" class="active" data-i18n="textNormal">Normal</button>
+          <button data-ts="large" data-i18n="textLarge">Large</button>
+        </div>
+      </div>
+      <div class="sp-item sp-row"><span data-i18n="language">Language</span>
+        <div class="seg langseg" id="langSeg">
+          <button data-lang="en" class="active">EN</button>
+          <button data-lang="tr">TR</button>
+          <button data-lang="ar">ع</button>
+          <button data-lang="fr">FR</button>
         </div>
       </div>
     </div>
-    <div class="sp-row sp-col" id="provRow"><span data-i18n="provLabel">Data &amp; sources</span>
-      <div class="sp-note" data-i18n="provIntro">Where the data comes from and when it was last refreshed. Operator feeds are exact; community and scraped sources are labelled as such.</div>
-      <div class="pv-list" id="provList"></div>
+  </details>
+
+  <details class="sp-sec" data-sec="accessibility">
+    <summary><span class="sp-ico" aria-hidden="true">♿</span><span data-i18n="accessibility">Accessibility</span></summary>
+    <div class="sp-body">
+      <div class="sp-item sp-row"><span data-i18n="reduceMotion">Reduce motion</span>
+        <button class="sw" id="swMotion" role="switch" aria-label="Reduce motion"><span class="sw-k"></span></button></div>
+      <div class="sp-item sp-row"><span data-i18n="highContrast">High contrast</span>
+        <button class="sw" id="swContrast" role="switch" aria-label="High contrast"><span class="sw-k"></span></button></div>
     </div>
-    <div class="sp-row sp-col" id="diagRow"><span data-i18n="diagLabel">Diagnostics</span>
-      <div class="off-wrap">
-        <button class="off-btn" id="diagReport" data-i18n="diagReport">Report a problem</button>
-        <button class="off-btn ghost" id="diagCopy" data-i18n="diagCopy">Copy report</button>
-        <button class="off-btn ghost" id="diagClear" data-i18n="diagClear">Clear</button>
+  </details>
+
+  <details class="sp-sec" data-sec="journey">
+    <summary><span class="sp-ico" aria-hidden="true">🧭</span><span data-i18n="journeyPrefs">Journey</span></summary>
+    <div class="sp-body">
+      <div class="sp-item">
+        <div class="sp-row"><span data-i18n="preferRoute">Show best route by</span></div>
+        <div class="seg spseg" id="prefSeg">
+          <button data-pref="fast" class="active" data-i18n="prefFast">⚡ Fastest</button>
+          <button data-pref="easy" data-i18n="prefEasy">☺ Fewest changes</button>
+        </div>
+        <div class="sp-hint" data-i18n="prefHint">“Fewest changes” prefers fewer transfers, even if it's a little slower.</div>
       </div>
-      <div class="sp-note" id="diagNote"></div>
-    </div>
-    <div class="sp-row sp-col" id="aiKeyRow"><span data-i18n="aiKeyLabel">Assistant AI (optional)</span>
-      <div class="off-wrap">
-        <input type="password" id="aiKeyIn" class="ai-key" autocomplete="off" spellcheck="false"
-               placeholder="sk-ant-…" aria-label="Anthropic API key" />
-        <button class="off-btn" id="aiKeySave" data-i18n="aiKeySave">Save</button>
-        <button class="off-btn ghost" id="aiKeyClear" data-i18n="aiKeyClear">Clear</button>
+      <div class="sp-item sp-row"><span data-i18n="walkPace">Walking pace</span>
+        <div class="seg" id="paceSeg">
+          <button data-pace="slow" data-i18n="walkSlow">Slow</button>
+          <button data-pace="normal" class="active" data-i18n="walkNormal">Normal</button>
+          <button data-pace="fast" data-i18n="walkFast">Fast</button>
+        </div>
       </div>
-      <div class="sp-note" id="aiKeyNote"></div>
-    </div>
-    <div class="sp-row sp-col" id="installRow"><span data-i18n="installTitle">App</span>
-      <button class="off-btn" id="instBtn" data-i18n="installApp">Install app</button>
-      <div class="sp-note" id="instNote"></div>
-    </div>
-    <div class="sp-row sp-col" id="offlineRow"><span data-i18n="offlineMap">Offline map</span>
-      <div class="off-wrap">
-        <button class="off-btn" id="offSave" data-i18n="offSave">Save this area</button>
-        <button class="off-btn ghost" id="offClear" data-i18n="offClear">Clear</button>
+      <div class="sp-item sp-row"><span data-i18n="avoidFerry">Avoid ferries</span>
+        <button class="sw" id="swAvoidFerry" role="switch" aria-label="Avoid ferries"><span class="sw-k"></span></button></div>
+      <div class="sp-item sp-row"><span data-i18n="avoidBus">Avoid buses</span>
+        <button class="sw" id="swAvoidBus" role="switch" aria-label="Avoid buses"><span class="sw-k"></span></button></div>
+      <div class="sp-item">
+        <div class="sp-row"><span data-i18n="prefStepFree">Prefer step-free (♿)</span>
+          <button class="sw" id="swStepFree" role="switch" aria-label="Prefer step-free routes"><span class="sw-k"></span></button></div>
+        <div class="sp-hint" data-i18n="stepFreeHint">Prefers stations with elevators (İBB + OpenStreetMap data). Not guaranteed where data is missing.</div>
       </div>
-      <div class="sp-note" id="offNote"></div>
-    </div>
-    <div class="sp-row"><span data-i18n="uiStyle">Icon &amp; colour style</span>
-      <div class="seg" id="styleSeg">
-        <button data-uis="atlas" class="active" data-i18n="uiAtlas">Atlas</button>
-        <button data-uis="neon" data-i18n="uiNeon">Neon</button>
-        <button data-uis="calm" data-i18n="uiCalm">Calm</button>
-        <button data-uis="paper" data-i18n="uiPaper">Paper</button>
-      </div>
-    </div>
-    <div class="sp-row"><span data-i18n="textSize">Text size</span>
-      <div class="seg" id="textSeg">
-        <button data-ts="normal" class="active" data-i18n="textNormal">Normal</button>
-        <button data-ts="large" data-i18n="textLarge">Large</button>
-      </div>
-    </div>
-    <div class="sp-row"><span data-i18n="language">Language</span>
-      <div class="seg langseg" id="langSeg">
-        <button data-lang="en" class="active">EN</button>
-        <button data-lang="tr">TR</button>
-        <button data-lang="ar">ع</button>
-        <button data-lang="fr">FR</button>
-      </div>
-    </div>
-  </div>
-  <div class="sp-group">
-    <div class="sp-label" data-i18n="accessibility">Accessibility</div>
-    <div class="sp-row"><span data-i18n="reduceMotion">Reduce motion</span>
-      <button class="sw" id="swMotion" role="switch" aria-label="Reduce motion"><span class="sw-k"></span></button></div>
-    <div class="sp-row"><span data-i18n="highContrast">High contrast</span>
-      <button class="sw" id="swContrast" role="switch" aria-label="High contrast"><span class="sw-k"></span></button></div>
-  </div>
-  <div class="sp-group">
-    <div class="sp-label" data-i18n="journeyPrefs">Journey</div>
-    <div class="sp-row"><span data-i18n="preferRoute">Show best route by</span></div>
-    <div class="seg spseg" id="prefSeg">
-      <button data-pref="fast" class="active" data-i18n="prefFast">⚡ Fastest</button>
-      <button data-pref="easy" data-i18n="prefEasy">☺ Fewest changes</button>
-    </div>
-    <div class="sp-hint" data-i18n="prefHint">“Fewest changes” prefers fewer transfers, even if it's a little slower.</div>
-    <div class="sp-row" style="margin-top:12px"><span data-i18n="walkPace">Walking pace</span>
-      <div class="seg" id="paceSeg">
-        <button data-pace="slow" data-i18n="walkSlow">Slow</button>
-        <button data-pace="normal" class="active" data-i18n="walkNormal">Normal</button>
-        <button data-pace="fast" data-i18n="walkFast">Fast</button>
+      <div class="sp-item sp-row"><span data-i18n="distUnit">Distance</span>
+        <div class="seg" id="unitSeg"><button data-u="metric" class="active">km</button><button data-u="imperial">mi</button></div></div>
+      <div class="sp-item sp-row"><span data-i18n="clockFmt">Clock</span>
+        <div class="seg" id="clockSeg"><button data-ck="24" class="active">24h</button><button data-ck="12">12h</button></div></div>
+      <div class="sp-item sp-row sp-col" id="cardRow"><span data-i18n="fareCard">Fare card</span>
+        <div class="card-pick">
+          <div class="card-art" id="cardArt"></div>
+          <div class="card-pick-main">
+            <select id="cardSel"></select>
+            <div class="sp-note" id="cardNote"></div>
+            <div class="sp-note card-credit" id="cardCredit"></div>
+          </div>
+        </div>
       </div>
     </div>
-    <div class="sp-row"><span data-i18n="avoidFerry">Avoid ferries</span>
-      <button class="sw" id="swAvoidFerry" role="switch" aria-label="Avoid ferries"><span class="sw-k"></span></button></div>
-    <div class="sp-row"><span data-i18n="avoidBus">Avoid buses</span>
-      <button class="sw" id="swAvoidBus" role="switch" aria-label="Avoid buses"><span class="sw-k"></span></button></div>
-    <div class="sp-row"><span data-i18n="prefStepFree">Prefer step-free (♿)</span>
-      <button class="sw" id="swStepFree" role="switch" aria-label="Prefer step-free routes"><span class="sw-k"></span></button></div>
-    <div class="sp-hint" data-i18n="stepFreeHint">Prefers stations with elevators (İBB + OpenStreetMap data). Not guaranteed where data is missing.</div>
-    <div class="sp-row"><span data-i18n="prefOnline">Look places up online</span>
-      <button class="sw" id="swOnline" role="switch" aria-label="Look places up online"><span class="sw-k"></span></button></div>
-    <div class="sp-hint" data-i18n="onlineHint">When a place is not in the offline list, what you type is sent to the Photon service (komoot.io) with the city centre — never your own location. Turn off to keep every search on this device.</div>
-    <div class="sp-row"><span data-i18n="distUnit">Distance</span>
-      <div class="seg" id="unitSeg"><button data-u="metric" class="active">km</button><button data-u="imperial">mi</button></div></div>
-    <div class="sp-row"><span data-i18n="clockFmt">Clock</span>
-      <div class="seg" id="clockSeg"><button data-ck="24" class="active">24h</button><button data-ck="12">12h</button></div></div>
-  </div>
-  <div class="sp-group" id="placesGroup">
-    <div class="sp-label" data-i18n="places">Saved places</div>
-    <div class="sp-place"><span class="sp-p-ico">🏠</span><span class="sp-p-nm" id="homeVal">—</span>
-      <button class="mini" data-place="home" data-act="set" data-i18n="setPlace">Set</button>
-      <button class="mini" data-place="home" data-act="clear" data-i18n="clear">Clear</button></div>
-    <div class="sp-place"><span class="sp-p-ico">💼</span><span class="sp-p-nm" id="workVal">—</span>
-      <button class="mini" data-place="work" data-act="set" data-i18n="setPlace">Set</button>
-      <button class="mini" data-place="work" data-act="clear" data-i18n="clear">Clear</button></div>
-    <div class="sp-hint" data-i18n="placeHowto">Type a place in “From”, then tap Set.</div>
-  </div>
-  <div class="sp-group">
-    <div class="sp-label" data-i18n="funStats">You</div>
-    <button class="btn" id="openPassport">🎫 <span data-i18n="passport">Your travel passport</span></button>
-  </div>
-  <div class="sp-group">
-    <div class="sp-label" data-i18n="dataPrivacy">Data</div>
-    <button class="btn ghost" id="resetTrips" data-i18n="resetTrips">Clear saved trips &amp; favourites</button>
-    <div class="sp-hint" data-i18n="privacyNote">Your settings and saved trips stay on this device only.</div>
-  </div>
+  </details>
+
+  <details class="sp-sec" data-sec="map">
+    <summary><span class="sp-ico" aria-hidden="true">🗺</span><span data-i18n="mMap">Map</span></summary>
+    <div class="sp-body">
+      <div class="sp-item sp-row sp-col" id="offlineRow"><span data-i18n="offlineMap">Offline map</span>
+        <div class="off-wrap">
+          <button class="off-btn" id="offSave" data-i18n="offSave">Save this area</button>
+          <button class="off-btn ghost" id="offClear" data-i18n="offClear">Clear</button>
+        </div>
+        <div class="sp-note" id="offNote"></div>
+      </div>
+    </div>
+  </details>
+
+  <details class="sp-sec" data-sec="you">
+    <summary><span class="sp-ico" aria-hidden="true">👤</span><span data-i18n="funStats">You</span></summary>
+    <div class="sp-body">
+      <div class="sp-item" id="placesGroup">
+        <div class="sp-label" data-i18n="places">Saved places</div>
+        <div class="sp-place"><span class="sp-p-ico">🏠</span><span class="sp-p-nm" id="homeVal">—</span>
+          <button class="mini" data-place="home" data-act="set" data-i18n="setPlace">Set</button>
+          <button class="mini" data-place="home" data-act="clear" data-i18n="clear">Clear</button></div>
+        <div class="sp-place"><span class="sp-p-ico">💼</span><span class="sp-p-nm" id="workVal">—</span>
+          <button class="mini" data-place="work" data-act="set" data-i18n="setPlace">Set</button>
+          <button class="mini" data-place="work" data-act="clear" data-i18n="clear">Clear</button></div>
+        <div class="sp-hint" data-i18n="placeHowto">Type a place in “From”, then tap Set.</div>
+      </div>
+      <div class="sp-item"><button class="btn" id="openPassport">🎫 <span data-i18n="passport">Your travel passport</span></button></div>
+    </div>
+  </details>
+
+  <details class="sp-sec" data-sec="privacy">
+    <summary><span class="sp-ico" aria-hidden="true">🔒</span><span data-i18n="secSearch">Search &amp; privacy</span></summary>
+    <div class="sp-body">
+      <div class="sp-item">
+        <div class="sp-row"><span data-i18n="prefOnline">Look places up online</span>
+          <button class="sw" id="swOnline" role="switch" aria-label="Look places up online"><span class="sw-k"></span></button></div>
+        <div class="sp-hint" data-i18n="onlineHint">When a place is not in the offline list, what you type is sent to the Photon service (komoot.io) with the city centre — never your own location. Turn off to keep every search on this device.</div>
+      </div>
+      <div class="sp-item">
+        <button class="btn ghost" id="resetTrips" data-i18n="resetTrips">Clear saved trips &amp; favourites</button>
+        <div class="sp-hint" data-i18n="privacyNote">Your settings and saved trips stay on this device only.</div>
+      </div>
+    </div>
+  </details>
+
+  <details class="sp-sec" data-sec="app">
+    <summary><span class="sp-ico" aria-hidden="true">📲</span><span data-i18n="secApp">App &amp; data</span></summary>
+    <div class="sp-body">
+      <div class="sp-item sp-row sp-col" id="installRow"><span data-i18n="installTitle">App</span>
+        <button class="off-btn" id="instBtn" data-i18n="installApp">Install app</button>
+        <div class="sp-note" id="instNote"></div>
+      </div>
+      <div class="sp-item sp-row sp-col" id="provRow"><span data-i18n="provLabel">Data &amp; sources</span>
+        <div class="sp-note" data-i18n="provIntro">Where the data comes from and when it was last refreshed. Operator feeds are exact; community and scraped sources are labelled as such.</div>
+        <div class="pv-list" id="provList"></div>
+      </div>
+      <div class="sp-item sp-row sp-col" id="aiKeyRow"><span data-i18n="aiKeyLabel">Assistant AI (optional)</span>
+        <div class="off-wrap">
+          <input type="password" id="aiKeyIn" class="ai-key" autocomplete="off" spellcheck="false"
+                 placeholder="sk-ant-…" aria-label="Anthropic API key" />
+          <button class="off-btn" id="aiKeySave" data-i18n="aiKeySave">Save</button>
+          <button class="off-btn ghost" id="aiKeyClear" data-i18n="aiKeyClear">Clear</button>
+        </div>
+        <div class="sp-note" id="aiKeyNote"></div>
+      </div>
+      <div class="sp-item sp-row sp-col" id="diagRow"><span data-i18n="diagLabel">Diagnostics</span>
+        <div class="off-wrap">
+          <button class="off-btn" id="diagReport" data-i18n="diagReport">Report a problem</button>
+          <button class="off-btn ghost" id="diagCopy" data-i18n="diagCopy">Copy report</button>
+          <button class="off-btn ghost" id="diagClear" data-i18n="diagClear">Clear</button>
+        </div>
+        <div class="sp-note" id="diagNote"></div>
+      </div>
+    </div>
+  </details>
 </div>
 
 <div class="near-panel glass" id="nearPanel">

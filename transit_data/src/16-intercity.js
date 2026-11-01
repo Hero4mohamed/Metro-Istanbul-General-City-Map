@@ -469,7 +469,7 @@ document.getElementById('baseSeg').addEventListener('click', e=>{
 document.getElementById('settingsBtn').addEventListener('click', openSettings);
 document.getElementById('settingsX').addEventListener('click', closeSettings);
 document.getElementById('settingsOverlay').addEventListener('click', closeSettings);
-document.getElementById('themeSeg').addEventListener('click', e=>{ const b=e.target.closest('button'); if(b&&b.dataset.theme) applyTheme(b.dataset.theme, true); });
+document.getElementById('themeSeg').addEventListener('click', e=>{ const b=e.target.closest('button'); if(b&&b.dataset.theme) applyTheme(b.dataset.theme, true, true); });
 document.getElementById('prefSeg').addEventListener('click', e=>{ const b=e.target.closest('button'); if(b&&b.dataset.pref) setRoutePref(b.dataset.pref, true); });
 document.getElementById('textSeg').addEventListener('click', e=>{ const b=e.target.closest('button'); if(b&&b.dataset.ts) setTextSize(b.dataset.ts); });
 document.getElementById('styleSeg').addEventListener('click', e=>{ const b=e.target.closest('button'); if(b&&b.dataset.uis) setUiStyle(b.dataset.uis, true); });
@@ -562,7 +562,7 @@ document.getElementById('tglStations').addEventListener('change', e=>{
 document.getElementById('allOn').addEventListener('click', ()=>tabLines().forEach(l=>setLine(l.ref,true)));
 document.getElementById('allOff').addEventListener('click', ()=>tabLines().forEach(l=>setLine(l.ref,false)));
 document.getElementById('tabs').addEventListener('click', e=>{ const t=e.target.dataset.tab; if(t) setTab(t); });
-document.getElementById('langSeg').addEventListener('click', e=>{ const l=e.target.dataset.lang; if(l) setLang(l); });
+document.getElementById('langSeg').addEventListener('click', e=>{ const l=e.target.dataset.lang; if(l) setLang(l, true); });
 document.getElementById('plannerTabs').addEventListener('click', e=>{ const m=e.target.dataset.pt; if(m) setPlannerTab(m); });
 document.getElementById('advAdd').addEventListener('click', ()=>{
   if(advStops.length>=8) return;                       // sane cap
