@@ -73,6 +73,24 @@ function disruptionPoints(d){
 function disrTip(d){
   return `<b>⚠ ${d.ref?d.ref+' · ':''}${disTitle(d)}</b><br>${disTrTag(d)}${disMsg(d)}${d.until?'<br>⏱ '+untilText(d):''}`;
 }
+/* The bubble of a warning sign stays until the next PRESS (V4.2). A hover tooltip is the wrong tool on a screen with no hover: it
+   opened on the tap, then the map flew to the sign, the warnings were redrawn at the new zoom, and the bubble went with the old
+   marker, so there was no time to read it. This one belongs to nobody but itself: it is not part of the redrawn layer, it sits at
+   a fixed place on the map (so it follows the sign through the fly), and it goes only when a press lands anywhere - a tap or a
+   click. A click is not fired for a drag, so panning, turning and zooming the map with the bubble open leave it alone. The
+   listener is on the capture phase so that a control which swallows its own clicks (the zoom buttons) still closes it. */
+let pinnedDisr = null;
+function unpinDisr(){ if(pinnedDisr){ try{ map.removeLayer(pinnedDisr); }catch(e){} pinnedDisr = null; } }
+function pinDisr(d, latlng, lift){
+  unpinDisr();
+  pinnedDisr = L.tooltip({ permanent:true, direction:'top', offset:[0, -(lift || 8)], className:'lt disr-pin', interactive:false, opacity:1 })
+    .setLatLng(latlng).setContent(disrTip(d) + '<div class="pin-hint">' + svgEsc(t('disrPinHint')) + '</div>');
+  pinnedDisr.addTo(map);
+}
+document.addEventListener('click', unpinDisr, true);
+document.addEventListener('keydown', e=>{ if(e.key==='Escape') unpinDisr(); });
+/* a hover tooltip is only for a mouse: on a touch screen it is the thing that vanished */
+const CAN_HOVER = matchMedia('(hover:hover)').matches;
 function openDisruption(d){
   if(d.mode === 'bus'){ openBusRoute(d.ref); return; }
   const pts = disruptionPoints(d);
@@ -112,8 +130,8 @@ function renderDisruptionMarkers(){
                               dashArray:dash, interactive:false });
       const hit   = L.polyline(coords, { renderer:hazardRenderer, color:col,
                               weight:Math.max(10, core+8), opacity:0, lineCap:'round' });
-      hit.bindTooltip(disrTip(d), { sticky:true, className:'lt' });
-      hit.on('click', ()=> openDisruption(d));
+      if(CAN_HOVER) hit.bindTooltip(disrTip(d), { sticky:true, className:'lt' });
+      hit.on('click', e=>{ hit.closeTooltip(); pinDisr(d, e.latlng, 8); openDisruption(d); });
       wash.addTo(disruptionLayer); stripe.addTo(disruptionLayer); hit.addTo(disruptionLayer);
     });
     // warning marker(s): fixed screen size, gently smaller when zoomed out
@@ -130,8 +148,8 @@ function renderDisruptionMarkers(){
         html:`<span style="--wc:${col};width:${isz}px;height:${isz}px;font-size:${Math.round(isz*0.55)}px">⚠</span>`,
         iconSize:[isz,isz], iconAnchor:[isz/2,isz/2] });
       const mk = L.marker(p, { icon, zIndexOffset:2000 });
-      mk.bindTooltip(disrTip(d), { className:'lt', direction:'top', offset:[0,-8] });
-      mk.on('click', ()=> openDisruption(d));
+      if(CAN_HOVER) mk.bindTooltip(disrTip(d), { className:'lt', direction:'top', offset:[0,-8] });
+      mk.on('click', ()=>{ mk.closeTooltip(); pinDisr(d, p, isz/2 + 4); openDisruption(d); });
       mk.addTo(disruptionLayer);
     });
   });
@@ -335,6 +353,7 @@ function disrSignature(){ return activeDisruptions().map(d => d.id+':'+d.scope+'
 let _disrSig = disrSignature();
 function applyDisruptionFeed(){
   _disrSig = disrSignature();
+  unpinDisr();                    // the notice a bubble was showing may be gone, or may have changed
   clearTimingMemo();              // the suspension answer the router and the sim cache
   refreshClosed();
   renderAnnouncements();

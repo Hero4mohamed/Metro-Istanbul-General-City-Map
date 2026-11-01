@@ -291,8 +291,10 @@ function drawBusNotices(ref, dirs, chains){
     const pts = busDirPath({ stops }, chains); if(pts.length < 2) return;
     const col = SEV_COLOR.partial;
     L.polyline(pts, { color:col, weight:9, opacity:.22, lineCap:'round', lineJoin:'round', interactive:false }).addTo(busLayer);
-    L.polyline(pts, { color:col, weight:3.4, opacity:1, dashArray:'2,7', lineCap:'round', lineJoin:'round' })
-      .bindTooltip(disrTip(d), { sticky:true, className:'lt' }).addTo(busLayer);
+    const det = L.polyline(pts, { color:col, weight:3.4, opacity:1, dashArray:'2,7', lineCap:'round', lineJoin:'round' });
+    if(CAN_HOVER) det.bindTooltip(disrTip(d), { sticky:true, className:'lt' });
+    det.on('click', e => { det.closeTooltip(); pinDisr(d, e.latlng, 8); });      // the bubble stays until the next press (17-boot.js)
+    det.addTo(busLayer);
     [stops[0], stops[stops.length - 1]].forEach(s => L.circleMarker([s[0], s[1]], { radius:4.6, color:col, weight:2, fillColor:'#12161f', fillOpacity:1 })
       .bindTooltip(svgEsc(s[2] || ''), { className:'lt', direction:'top' }).addTo(busLayer));
   });

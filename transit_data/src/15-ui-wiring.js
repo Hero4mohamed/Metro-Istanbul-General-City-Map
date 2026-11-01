@@ -13,6 +13,7 @@ if(!visionLines.length){ const vt=document.querySelector('#tabs button[data-tab=
 function setTab(t){
   currentTab = t;
   focusStateOff();            // changing scope ends route focus; setTab itself rebuilds below
+  unpinDisr();                // an open warning bubble belongs to the scope it was opened on
   document.querySelectorAll('#tabs button').forEach(b=>{
     const on = b.dataset.tab===t;
     b.classList.toggle('active', on);

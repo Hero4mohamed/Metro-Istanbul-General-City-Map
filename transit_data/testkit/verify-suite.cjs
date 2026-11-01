@@ -1054,6 +1054,31 @@ const MUTATIONS = [
     expect: 'the weather card goes in the Layers sheet with the tab strip that selects it, and the layers card steps aside on every screen',
     apply: h => h.replace("if(el.id==='cardPlanner') mSheets.planner.appendChild(el);", "if(el.id==='cardPlanner') mSheets.planner.appendChild(el);\n    else if(el.id==='cardWeather') mSheets.weather.appendChild(el);"),
   },
+  {
+    name: 'let the warning sign open nothing but the old hover tooltip',
+    expect: 'every way to open a warning pins the bubble, and a screen with no hover is not given a hover tooltip that vanishes',
+    apply: h => h.replace("mk.on('click', ()=>{ mk.closeTooltip(); pinDisr(d, p, isz/2 + 4); openDisruption(d); });", "mk.on('click', ()=> openDisruption(d));"),
+  },
+  {
+    name: 'give a phone a hover tooltip',
+    expect: 'every way to open a warning pins the bubble, and a screen with no hover is not given a hover tooltip that vanishes',
+    apply: h => h.replace("const CAN_HOVER = matchMedia('(hover:hover)').matches;", "const CAN_HOVER = true;"),
+  },
+  {
+    name: 'close the bubble only on clicks that reach the page, so the zoom buttons leave it open',
+    expect: 'it stays through a drag and a fly (neither is a click) and goes on the next press, a click anywhere, or Escape',
+    apply: h => h.replace("document.addEventListener('click', unpinDisr, true);", "document.addEventListener('click', unpinDisr, false);"),
+  },
+  {
+    name: 'make the bubble close itself like a hover tooltip',
+    expect: 'pressing a warning sign opens a bubble that is its own layer on the map, holding the notice and the way to close it',
+    apply: h => h.replace("pinnedDisr = L.tooltip({ permanent:true,", "pinnedDisr = L.tooltip({ permanent:false,"),
+  },
+  {
+    name: 'leave the bubble up when the person switches to another scope',
+    expect: 'the bubble is cleared when the scope changes or the notices are refreshed, and its text exists in all four languages',
+    apply: h => h.replace('unpinDisr();                // an open warning bubble belongs to the scope it was opened on', ''),
+  },
   // ---- how old the rail and ferry notices are ----
   {
     name: 'never call the notices out of date, however long since the page was read',
