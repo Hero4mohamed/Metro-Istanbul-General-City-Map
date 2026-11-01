@@ -67,7 +67,12 @@ test('the loading screen can never be left covering the app: it sits above every
 });
 
 /* ---- the script that sends it away, run against a fake page and a fake clock ---- */
-const SRC = fs.readFileSync(path.join(__dirname, '..', 'src', '20-splash.js'), 'utf8');
+/* taken out of the BUILT page, so that what is tested is what is shipped (and what the mutation check alters) */
+const SRC = (() => {
+  const m = /\(function\(\)\{\r?\n\s*const el = document\.getElementById\('bootSplash'\);[\s\S]*?\r?\n\}\)\(\);/.exec(H.appScript());
+  assert.ok(m, 'the splash script is not in the page');
+  return m[0];
+})();
 
 function world({ map, readyState = 'complete', start = 1000 } = {}) {
   let now = start, seq = 0; const timers = [];

@@ -11,7 +11,9 @@ if(!HAS.bus){ const bt=document.querySelector('#tabs button[data-tab="bus"]'); i
 // hide Vision for a city with no projects mapped (Bursa/Antalya) rather than show an empty tab
 if(!visionLines.length){ const vt=document.querySelector('#tabs button[data-tab="vision"]'); if(vt) vt.style.display='none'; }
 function setTab(t){
+  const prevTab = currentTab;
   currentTab = t;
+  if(typeof navScope === 'function') navScope(prevTab, t);   // the back button treats a scope change as a step (21-history.js)
   focusStateOff();            // changing scope ends route focus; setTab itself rebuilds below
   unpinDisr();                // an open warning bubble belongs to the scope it was opened on
   document.querySelectorAll('#tabs button').forEach(b=>{

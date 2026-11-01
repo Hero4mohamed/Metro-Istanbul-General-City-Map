@@ -1079,6 +1079,41 @@ const MUTATIONS = [
     expect: 'the bubble is cleared when the scope changes or the notices are refreshed, and its text exists in all four languages',
     apply: h => h.replace('unpinDisr();                // an open warning bubble belongs to the scope it was opened on', ''),
   },
+  {
+    name: 'forget which sheet a panel came from, so back from the panel goes straight to the map',
+    expect: 'the user\'s own example: from a line\'s panel opened out of the Layers sheet, back is the Layers sheet and back again is the map',
+    apply: h => h.replace("if(l.id !== 'sheet' && goneSheet) e.returnTo = goneSheet;", ''),
+  },
+  {
+    name: 'let back press close nothing',
+    expect: 'back closes the newest layer only: a station panel over Settings goes first, Settings second',
+    apply: h => h.replace('NAV.depth--; navCloseEntry(last); }', 'NAV.depth--; }'),
+  },
+  {
+    name: 'leave the history entry of a panel behind when it is closed with its own button',
+    expect: 'opening something puts one entry in the history, and closing it with its own button takes the entry away again',
+    apply: h => h.replace('history.go(delta);', ''),
+  },
+  {
+    name: 'treat an entry from an earlier visit as a press to close something',
+    expect: 'entries left by an earlier visit are stepped over, and a forward press is undone, instead of closing something',
+    apply: h => h.replace('if(st.d > NAV.depth){ history.back(); return; }', ''),
+  },
+  {
+    name: 'let back change the map\'s scope no further than the sheet it was chosen in',
+    expect: 'switching scope inside the Layers sheet is a step: back returns to the scope you came from, then closes the sheet',
+    apply: h => h.replace('try{ setTab(e.from); }finally', 'try{ void 0; }finally'),
+  },
+  {
+    name: 'make a scope change from the map a step in the history',
+    expect: 'a scope change made from the map (no sheet open on a phone) is not a step, and closing the sheet drops its scope steps without undoing them',
+    apply: h => h.replace("if(IS_MOBILE && !navHas('sheet_layers','open')) return;", ''),
+  },
+  {
+    name: 'react to any popstate, so a link to #something closes the panel that is open',
+    expect: 'a \\#link (a popstate that carries no state of ours) leaves everything open',
+    apply: h => h.replace('if(!st || !st.irnNav) return;', ''),
+  },
   // ---- how old the rail and ferry notices are ----
   {
     name: 'never call the notices out of date, however long since the page was read',

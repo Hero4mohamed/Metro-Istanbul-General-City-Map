@@ -11,7 +11,8 @@ const fs = require('node:fs');
 const path = require('node:path');
 const H = require('../testkit/helpers.cjs');
 
-const SRC = fs.readFileSync(path.join(__dirname, '..', 'src', '17-boot.js'), 'utf8');
+/* taken out of the BUILT page, so that what is tested is what is shipped (and what the mutation check alters) */
+const SRC = H.appScript();
 
 function world() {
   const added = [], removed = [], doc = {};
