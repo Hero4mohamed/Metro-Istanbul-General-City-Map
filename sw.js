@@ -2,10 +2,11 @@
    so every deploy activates immediately and the installed app self-updates.
    Strategy: NETWORK-FIRST for the page (updates always win; cached copy only when offline),
    stale-while-revalidate for static assets/CDNs, and NO caching for live data APIs. */
-const VERSION = '20261102135616';
+const VERSION = '20261103112044';
 const SHELL  = 'raynet-shell-' + VERSION;
 const STATIC = 'raynet-static-v1';
-const STATIC_HOSTS = ['unpkg.com', 'fonts.googleapis.com', 'fonts.gstatic.com'];
+const STATIC_HOSTS = [];     // the page loads no CDN files any more (V4.3): Leaflet and the fonts are shipped with it
+const APP_PATH = (self.registration && self.registration.scope) ? new URL(self.registration.scope).pathname : '/';   // the app's own address, e.g. /Metro-Istanbul-General-City-Map/
 /* v2, and the activate handler below drops v1. Tiles are cached by URL, so the CARTO entries
    would never be read again after the switch to Esri — but a phone that browsed the map during
    the outage is holding up to 3,000 cached "API KEY REQUIRED" images, and they would sit there
@@ -147,7 +148,9 @@ self.addEventListener('fetch', e => {
   if (url.pathname.includes('/transit_data/')) return;   // live disruptions JSON stays no-store
 
   // the app page: network-first, cache fallback for offline launches
-  if (e.request.mode === 'navigate' || url.pathname.endsWith('/index.html')) {
+  // (only the app's own page: a legal page opened from Settings is also a navigation, and must not be stored as the shell, or the
+  // next offline launch would open the privacy notice instead of the app)
+  if ((e.request.mode === 'navigate' && url.pathname === APP_PATH) || url.pathname.endsWith('/index.html')) {
     e.respondWith((async () => {
       try {
         const r = await fetch(e.request);
@@ -161,7 +164,7 @@ self.addEventListener('fetch', e => {
     return;
   }
 
-  // same-origin static + font/leaflet CDNs: stale-while-revalidate
+  // same-origin static files (Leaflet, MapLibre, the typefaces, icons): stale-while-revalidate
   if (url.origin === location.origin || STATIC_HOSTS.includes(url.host)) {
     e.respondWith((async () => {
       const cached = await caches.match(e.request);
