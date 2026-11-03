@@ -348,6 +348,41 @@ const MUTATIONS = [
     apply: h => h.replace("const suffix = (typeof lang !== 'undefined' && lang === 'tr') ? '.tr' : '';", "const suffix = '';"),
   },
   {
+    name: 'paint text with the raw accent again (1.6:1 on a light panel)',
+    expect: 'the accent is never used as text colour directly',
+    apply: h => h.replace(/color:var\(--accent-ink\)/g, 'color:var(--accent)'),
+  },
+  {
+    name: 'let Calm + Light keep the dark surface and track tokens',
+    expect: 'a style that restates dark surface tokens restates the light ones for the light theme',
+    apply: h => h.replace(/(contrast audit\) \*\/\s*)--surface:[^;]+; --surface-2:[^;]+; --track:[^;]+;/, '$1'),
+  },
+  {
+    name: 'make the light theme\'s dim text too pale',
+    expect: 'text on panels, chips and tinted chips passes AA: neon light',
+    apply: h => h.replace('--dim:#5C6779', '--dim:#9AA5B5'),
+  },
+  {
+    name: 'make the mixed theme\'s dim text too dark',
+    expect: 'the "mixed" theme (dark panels on a light page) passes AA too',
+    apply: h => h.replace('--dim:#98A3B8;', '--dim:#555566;'),
+  },
+  {
+    name: 'make the accent ink too pale for the light theme',
+    expect: 'text on panels, chips and tinted chips passes AA: atlas light',
+    apply: h => h.replace('body.light{--accent-ink:#05694A;}', 'body.light{--accent-ink:#34D399;}'),
+  },
+  {
+    name: 'go back to the brightness shortcut for text on coloured chips',
+    expect: 'inkOn() gives every line colour, severity colour and a sweep of all colours text',
+    apply: h => h.replace(/function inkOn\(hex\)\{[\s\S]*?\n\}/, "function inkOn(hex){ const c=(hex||'').replace('#',''); if(c.length<6) return '#fff'; const r=parseInt(c.slice(0,2),16), g=parseInt(c.slice(2,4),16), b=parseInt(c.slice(4,6),16); return (0.299*r+0.587*g+0.114*b)>150 ? '#0b0f17' : '#fff'; }"),
+  },
+  {
+    name: 'paint a station-panel line chip without choosing its text colour',
+    expect: 'every chip that paints a line or severity colour also chooses its text colour',
+    apply: h => h.replace(";color:${inkOn(ln?ln.color:'#888')}", ''),
+  },
+  {
     name: 'drop the MODELLED label from the arrivals board (French)',
     expect: 'the arrivals board still labels itself modelled',
     apply: h => h.replace('modelled:"MODÉLISÉ", ', ''),

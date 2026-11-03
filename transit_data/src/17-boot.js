@@ -219,8 +219,8 @@ function annRowHTML(d){
   const glyph = d.mode === 'bus' ? '🚌 ' : (d.mode === 'ferry' ? '⛴ ' : '');
   return `<div class="ann-item" data-id="${attrEsc(d.id)}" style="border-left-color:${col};cursor:pointer">
       <div class="ann-row1">
-        <span class="ann-line" style="background:${chipCol}">${d.ref ? glyph + svgEsc(d.ref) : '📣'}</span>
-        <span class="ann-sev" style="background:${col}">${sevLabel(d.severity)}</span>
+        <span class="ann-line" style="background:${chipCol};color:${inkOn(chipCol)}">${d.ref ? glyph + svgEsc(d.ref) : '📣'}</span>
+        <span class="ann-sev" style="background:${col};color:${inkOn(col)}">${sevLabel(d.severity)}</span>
         <span class="ann-ttl">${disTitle(d)}</span>
       </div>
       <div class="ann-msg">${disTrTag(d)}${disMsg(d)}</div>
@@ -250,7 +250,7 @@ function annBusGroupHTML(g){
     ? svgEsc(t('nTripsSummary').replace('{n}', g.items.reduce((n, x) => n + x.tpl.n, 0)).replace('{k}', g.items.length))
     : disTrTag(d) + svgEsc(disMsg(d));
   return `<div class="ann-item ann-bus" data-key="${attrEsc(g.key)}" style="border-left-color:${col}">
-      <div class="ann-row1"><span class="ann-sev" style="background:${col}">${sevLabel(d.severity)}</span><span class="ann-ttl">${disTitle(d)}</span></div>
+      <div class="ann-row1"><span class="ann-sev" style="background:${col};color:${inkOn(col)}">${sevLabel(d.severity)}</span><span class="ann-ttl">${disTitle(d)}</span></div>
       <div class="ann-chips">${chips}${more>0?`<span class="ann-more-n">+${more}</span>`:''}</div>
       <div class="ann-msg">${msg}</div></div>`;
 }
@@ -293,7 +293,7 @@ function renderAnnouncements(){
     const rel = opensRel(o);
     return `<div class="ann-item ann-open" data-open="${i}">
       <div class="ann-row1">
-        <span class="ann-line" style="background:${col}">${o.ref}</span>
+        <span class="ann-line" style="background:${col};color:${inkOn(col)}">${o.ref}</span>
         <span class="ann-sev ann-soon">${t('openSoon')}</span>
         <span class="ann-ttl">🚈 ${t('openTtl')}</span>
       </div>
