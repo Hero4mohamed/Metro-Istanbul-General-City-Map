@@ -117,6 +117,11 @@ test('credits name every library, typeface and image source the app ships', () =
   const credits = page('credits', 'en') + page('credits', 'tr');
   for (const s of ['Leaflet', 'MapLibre', 'maplibre-gl-leaflet', 'Inter', 'Space Grotesk', 'JetBrains Mono', 'Noto Sans', 'OpenStreetMap', 'OpenFreeMap', 'Esri', 'Open-Meteo', 'Belbim', 'Wikimedia Commons'])
     assert.ok(credits.includes(s), 'the credits page does not mention ' + s);
+  // the İBB Open Data Licence asks for this exact credit and a link to the licence wherever its data is used
+  for (const L of LANGS) {
+    const c = page('credits', L);
+    assert.ok(c.includes('Atıf 4.0 Uluslararası (CC BY 4.0) kapsamında lisanslanan kamu sektörü bilgilerini içerir') && c.includes('https://data.ibb.gov.tr/license'), 'the ' + L + ' credits page lacks the İBB credit line or the link to its licence');
+  }
   // each vendored library folder has a licence file, which is what the credits page promises
   for (const f of ['vendor/leaflet/LICENSE', 'vendor/fonts/LICENSE-OFL.txt', 'vendor/maplibre/LICENSE-maplibre-gl.txt', 'vendor/glyphs/LICENSE-NotoSans-OFL.txt']) assert.ok(H.exists(f), f + ' is missing');
 });
