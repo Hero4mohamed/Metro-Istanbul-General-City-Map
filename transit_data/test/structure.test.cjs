@@ -169,15 +169,16 @@ test('no reference to an undefined shared data table', () => {
 });
 
 /* --- 6. Supply chain and secrets ---------------------------------------------------- */
-test('every CDN resource is integrity-pinned', () => {
-  // Both the stylesheet and the script come from unpkg; checking only one leaves the other
-  // free to be swapped upstream. Each needs integrity AND crossorigin — SRI without
-  // crossorigin is not enforced at all.
-  const tags = [...H.html().matchAll(/<(?:script|link)[^>]+unpkg\.com[^>]*>/g)].map(m => m[0]);
-  assert.ok(tags.length >= 1, 'no unpkg resource found — did the CDN reference move?');
-  const unpinned = tags.filter(t => !/integrity="sha\d{3}-/.test(t) || !/crossorigin/.test(t));
-  assert.deepStrictEqual(unpinned.map(t => t.slice(0, 60)), [],
-    'CDN resource without enforced SRI');
+test('the page loads no file from a CDN or any other host (V4.3); anything that ever does must be integrity-pinned', () => {
+  // Leaflet and the three typefaces are shipped with the app, so a visit sends nothing to a file host. If a CDN file is ever added
+  // again it must carry integrity AND crossorigin (SRI without crossorigin is not enforced at all) - and this test then needs
+  // the host's name added to the privacy policy, which the test in privacy.test.cjs also insists on.
+  const tags = [...H.html().matchAll(/<(?:script|link)[^>]+(?:src|href)="https?:\/\/[^"]*"[^>]*>/g)].map(m => m[0])
+    .filter(t => !/rel="(?:canonical|alternate|me|help)"/.test(t) && !/rel="manifest"/.test(t));
+  const outside = tags.filter(t => !/property=|<a /.test(t));
+  const unpinned = outside.filter(t => !/integrity="sha\d{3}-/.test(t) || !/crossorigin/.test(t));
+  assert.deepStrictEqual(unpinned.map(t => t.slice(0, 80)), [], 'a script or stylesheet from another host, without enforced SRI');
+  assert.deepStrictEqual(outside.map(t => t.slice(0, 80)), [], 'the page loads a file from another host again; ship it with the app instead (vendor/README.md)');
 });
 
 test('no API key is baked into the shipped page', () => {

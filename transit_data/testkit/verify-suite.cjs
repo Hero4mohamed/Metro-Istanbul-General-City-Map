@@ -27,7 +27,8 @@ const TMP = path.join(os.tmpdir(), 'raynet-mutant-' + process.pid + '.html');
 const TESTS = path.join(ROOT, 'transit_data', 'test');
 const SUITES = fs.readdirSync(TESTS).filter(f => f.endsWith('.test.cjs')).map(f => path.join(TESTS, f));
 
-const SRI_ON_SCRIPT = new RegExp('(<script[^>]+unpkg\\.com[^>]*?)\\s+integrity="[^"]*"');
+/* V4.3: Leaflet and the typefaces ship with the app, so the third-party-host rows below ADD a host the page must not name,
+   instead of stripping an integrity hash from a CDN file the page no longer loads. */
 
 /* Anchor on ONE line. The sources carry mixed line endings, so index.html does too, and a
    two-line anchor joined with \n silently fails to match — the mutation is then reported
@@ -169,9 +170,9 @@ const MUTATIONS = [
     apply: h => h.replace('id="aiOrb"', 'id="aiOrbRenamed"'),
   },
   {
-    name: 'strip Subresource Integrity from the Leaflet script',
-    expect: 'every CDN resource is integrity-pinned',
-    apply: h => h.replace(SRI_ON_SCRIPT, (m, keep) => keep),
+    name: 'load Leaflet from a CDN again',
+    expect: 'the page loads no file from a CDN or any other host',
+    apply: h => h.replace('src="vendor/leaflet/leaflet.js"', 'src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"'),
   },
   {
     name: 'leave a build token unreplaced',
@@ -180,11 +181,36 @@ const MUTATIONS = [
       'const OPENINGS_PLACEHOLDER = __OPENINGS_JSON__;\nconst OPENINGS'),
   },
   {
-    name: 'drop a CDN host from the directive that governs it',
+    name: 'move an API host out of the directive that governs it',
     expect: 'every host the page loads from is permitted by the RIGHT directive',
-    // the exact first-attempt CSP bug: the host stayed in script-src, so a whole-policy
-    // check saw it and stayed green while every stylesheet was blocked
-    apply: h => h.replace(new RegExp('(style-src[^;]*?) https://unpkg\\.com'), (m, keep) => keep),
+    // the exact first-attempt CSP bug: the host stayed somewhere else in the policy, so a whole-policy
+    // check saw it and stayed green while the fetch was blocked. (Moved to img-src here: still in the policy, wrong directive.)
+    apply: h => h.replace(new RegExp('(connect-src[^;]*?) https://api\\.anthropic\\.com'), (m, keep) => keep).replace("img-src 'self'", "img-src 'self' https://api.anthropic.com"),
+  },
+  {
+    name: 'let a Google font host back into the policy',
+    expect: 'neither the page, its policy nor its service worker names a third-party file host',
+    apply: h => h.replace("style-src 'self'", "style-src 'self' https://fonts.googleapis.com"),
+  },
+  {
+    name: 'point a typeface at a file that is not shipped',
+    expect: 'every @font-face file exists',
+    apply: h => h.replace('url(vendor/fonts/Inter-latin.woff2)', 'url(vendor/fonts/Inter-latin-gone.woff2)'),
+  },
+  {
+    name: 'preload a typeface without crossorigin (fetched twice)',
+    expect: 'every @font-face file exists',
+    apply: h => h.replace('href="vendor/fonts/Inter-latin.woff2" crossorigin>', 'href="vendor/fonts/Inter-latin.woff2">'),
+  },
+  {
+    name: 'let a typeface hide the text until it has loaded',
+    expect: 'every @font-face file exists',
+    apply: h => h.replace('font-display:swap;src:url(vendor/fonts/Inter-latin.woff2)', 'font-display:block;src:url(vendor/fonts/Inter-latin.woff2)'),
+  },
+  {
+    name: 'name a shipped library file that is not there',
+    expect: 'every vendor/ file the page names exists',
+    apply: h => h.replace('href="vendor/leaflet/leaflet.css"', 'href="vendor/leaflet/leaflet-gone.css"'),
   },
   {
     name: 'hash the bytes on disk instead of the text the parser sees',

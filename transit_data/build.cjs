@@ -209,9 +209,9 @@ if (!inlineScript) { console.error('CSP: inline script not found'); process.exit
 
 const CSP = [
   "default-src 'self'",
-  "script-src 'self' " + sha256(inlineScript[1]) + ' https://unpkg.com',
-  "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://unpkg.com",
-  'font-src https://fonts.gstatic.com data:',
+  "script-src 'self' " + sha256(inlineScript[1]),
+  "style-src 'self' 'unsafe-inline'",
+  "font-src 'self' data:",
   // all three basemaps come from Esri; card art and marker icons are data: URIs
   "img-src 'self' data: blob: https://server.arcgisonline.com",
   // every host the app fetches from, including tiles (the offline save uses fetch, not <img>)

@@ -5,7 +5,7 @@
 const VERSION = '__SW_VERSION__';
 const SHELL  = 'raynet-shell-' + VERSION;
 const STATIC = 'raynet-static-v1';
-const STATIC_HOSTS = ['unpkg.com', 'fonts.googleapis.com', 'fonts.gstatic.com'];
+const STATIC_HOSTS = [];     // the page loads no CDN files any more (V4.3): Leaflet and the fonts are shipped with it
 /* v2, and the activate handler below drops v1. Tiles are cached by URL, so the CARTO entries
    would never be read again after the switch to Esri — but a phone that browsed the map during
    the outage is holding up to 3,000 cached "API KEY REQUIRED" images, and they would sit there
@@ -161,7 +161,7 @@ self.addEventListener('fetch', e => {
     return;
   }
 
-  // same-origin static + font/leaflet CDNs: stale-while-revalidate
+  // same-origin static files (Leaflet, MapLibre, the typefaces, icons): stale-while-revalidate
   if (url.origin === location.origin || STATIC_HOSTS.includes(url.host)) {
     e.respondWith((async () => {
       const cached = await caches.match(e.request);
