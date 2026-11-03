@@ -11,6 +11,17 @@
     "source": "manual"
   },
   {
+    "id": "m3-al-m-yor",
+    "ref": "M3",
+    "source": "metro.istanbul",
+    "scope": "line",
+    "severity": "minor",
+    "title": "Service notice",
+    "messageTr": "Enerji kesintisi nedeniyle seferler yapılamamaktadır.",
+    "message": "Due to a power outage, services cannot operate.",
+    "messageLang": "en"
+  },
+  {
     "id": "m7-mecidiyek-y",
     "ref": "M7",
     "source": "metro.istanbul",
@@ -22,6 +33,17 @@
     "title": "Section affected",
     "messageTr": "Teknik bir arıza nedeniyle seferler Nurtepe-Mahmutbey arasında normal işletme döngüsünde, Nurtepe-Kağıthane arasında ise mekik seferi olarak yapılmaktadır.",
     "message": "Due to a technical fault, trains run normally between Nurtepe and Mahmutbey, and as a shuttle between Nurtepe and Kağıthane.",
+    "messageLang": "en"
+  },
+  {
+    "id": "m9-al-m-yor",
+    "ref": "M9",
+    "source": "metro.istanbul",
+    "scope": "line",
+    "severity": "minor",
+    "title": "Service notice",
+    "messageTr": "Enerji kesintisi nedeniyle seferler yapılamamaktadır.",
+    "message": "Due to a power outage, services cannot operate.",
     "messageLang": "en"
   },
   {
@@ -61,20 +83,5 @@
     "url": "https://sehirhatlari.istanbul/tr/duyurular/sehir-hatlari-kis-tarifesine-geciyor-3788",
     "published": "2026-09-03",
     "until": "2027-06-27"
-  },
-  {
-    "id": "ferry-3811",
-    "mode": "ferry",
-    "ref": null,
-    "scope": "note",
-    "severity": "minor",
-    "title": "Timetable change",
-    "message": "The times of the Heybeliada-Büyükada-Maltepe trip on the Maltepe-Adalar line will be updated from 12 October 2026 as follows: Heybeliada departure: 16.10 instead of 15.40; Büyükada departure: 16.25 instead of 15.55; Maltepe arrival: 16.45 instead of 16.15; The current trip times are listed below.",
-    "messageTr": "Maltepe-Adalar Hattı’ndaki Heybeliada-Büyükada-Maltepe seferinin saatleri, 12 Ekim 2026 tarihinden itibaren aşağıdaki şekilde güncellenecektir: Heybeliada kalkış saati: 15.40 yerine 16.10; Büyükada kalkış saati: 15.55 yerine 16.25; Maltepe varış saati: 16.15 yerine 16.45; Güncel sefer saatleri aşağıda belirtilmiştir.",
-    "messageLang": "en",
-    "source": "sehirhatlari.istanbul",
-    "url": "https://sehirhatlari.istanbul/tr/duyurular/maltepeadalar-hatti-sefer-duzenlemesi-3811",
-    "published": "2026-10-11",
-    "until": "2026-11-02"
   }
 ]
