@@ -1734,7 +1734,7 @@
 </style>
 </head>
 <body>
-<div id="bootSplash" role="status" aria-label="Loading"><div class="bs-bg"></div><img class="bs-icon" src="assets/splash-icon.jpg" width="384" height="384" alt=""><div class="bs-bar"><i></i></div></div>
+<div id="bootSplash" role="status" aria-label="Loading" data-i18n-aria="ariaLoading"><div class="bs-bg"></div><img class="bs-icon" src="assets/splash-icon.jpg" width="384" height="384" alt=""><div class="bs-bar"><i></i></div></div>
 <a href="#cardPlanner" class="skip-link" data-i18n="skipToPlanner">Skip to trip planner</a>
 <div class="print-sheet" id="printSheet"></div>
 <div id="map"></div>
@@ -1767,7 +1767,7 @@
 
 <div class="topbar glass">
   <h1><img class="logo" src="assets/logo-96.png" width="30" height="30" alt="" aria-hidden="true" decoding="async"><button id="cityBtn" class="city-btn" aria-haspopup="listbox" aria-expanded="false"><span id="cityName">İSTANBUL</span><span class="city-caret" aria-hidden="true">▾</span></button><span class="brand-tail">· RAY-NET</span>
-    <div class="city-menu glass" id="cityMenu" role="listbox" aria-label="City"></div></h1>
+    <div class="city-menu glass" id="cityMenu" role="listbox" aria-label="City" data-i18n-aria="ariaCity"></div></h1>
   <div class="sub"><span data-i18n="liveNet">Rail Network</span> · <a href="https://github.com/Hero4mohamed/Metro-Istanbul-General-City-Map" target="_blank" rel="noopener" style="color:var(--accent-ink);text-decoration:none;font-weight:700;" data-i18n="source">source ↗</a></div>
   <div class="stats">
     <div class="kv"><b id="sLines">0</b><span data-i18n="lines">Lines</span></div>
@@ -1817,10 +1817,10 @@
 </div>
 
 <div class="settings-overlay" id="settingsOverlay"></div>
-<div class="settings-panel glass" id="settingsPanel" role="dialog" aria-modal="true" aria-label="Settings">
-  <div class="sp-head"><span data-i18n="settings">Settings</span><button class="x" id="settingsX" aria-label="Close">✕</button></div>
+<div class="settings-panel glass" id="settingsPanel" role="dialog" aria-modal="true" aria-label="Settings" data-i18n-aria="settings">
+  <div class="sp-head"><span data-i18n="settings">Settings</span><button class="x" id="settingsX" aria-label="Close" data-i18n-aria="close">✕</button></div>
   <div class="sp-find">
-    <input id="spSearch" type="search" data-i18n-ph="setSearchPh" placeholder="Search settings…" autocomplete="off" spellcheck="false" aria-label="Search settings">
+    <input id="spSearch" type="search" data-i18n-ph="setSearchPh" placeholder="Search settings…" autocomplete="off" spellcheck="false" aria-label="Search settings" data-i18n-aria="setSearchPh">
     <div class="sp-none" id="spNone" role="status" data-i18n="setNone">No setting matches that.</div>
   </div>
 
@@ -1982,7 +1982,7 @@
       <div class="sp-item sp-row sp-col" id="aiKeyRow"><span data-i18n="aiKeyLabel">Assistant AI (optional)</span>
         <div class="off-wrap">
           <input type="password" id="aiKeyIn" class="ai-key" autocomplete="off" spellcheck="false"
-                 placeholder="sk-ant-…" aria-label="Anthropic API key" />
+                 placeholder="sk-ant-…" aria-label="Anthropic API key" data-i18n-aria="ariaApiKey" />
           <button class="off-btn" id="aiKeySave" data-i18n="aiKeySave">Save</button>
           <button class="off-btn ghost" id="aiKeyClear" data-i18n="aiKeyClear">Clear</button>
         </div>
@@ -2018,31 +2018,31 @@
 </div>
 
 <div class="near-panel glass" id="nearPanel">
-  <div class="np-head"><span data-i18n="nearbyTitle">Nearest stops</span><button class="x" id="nearX" aria-label="Close">✕</button></div>
+  <div class="np-head"><span data-i18n="nearbyTitle">Nearest stops</span><button class="x" id="nearX" aria-label="Close" data-i18n-aria="close">✕</button></div>
   <div class="np-body" id="nearBody"></div>
 </div>
 
 <div class="go-overlay" id="goOverlay"></div>
-<div class="go-panel glass" id="goPanel" role="dialog" aria-label="Live journey">
-  <div class="go-head"><span class="go-title">▶ <span data-i18n="liveJourney">Live journey</span></span><button class="go-follow on" id="goFollowBtn" data-i18n-title="followMe" title="Follow me">◎</button><button class="x" id="goExit" aria-label="Close">✕</button></div>
+<div class="go-panel glass" id="goPanel" role="dialog" aria-label="Live journey" data-i18n-aria="liveJourney">
+  <div class="go-head"><span class="go-title">▶ <span data-i18n="liveJourney">Live journey</span></span><button class="go-follow on" id="goFollowBtn" data-i18n-title="followMe" title="Follow me">◎</button><button class="x" id="goExit" aria-label="Close" data-i18n-aria="close">✕</button></div>
   <div class="go-now" id="goNow"></div>
   <div class="go-progress" id="goProgress"></div>
   <div class="go-controls">
-    <button id="goPrev" aria-label="Previous step">◀</button>
+    <button id="goPrev" aria-label="Previous step" data-i18n-aria="ariaPrevStep">◀</button>
     <span class="go-arrive" id="goArrive"></span>
-    <button id="goNext" aria-label="Next step">▶</button>
+    <button id="goNext" aria-label="Next step" data-i18n-aria="ariaNextStep">▶</button>
   </div>
 </div>
 
 <div class="settings-overlay" id="passOverlay"></div>
-<div class="settings-panel glass" id="passPanel" role="dialog" aria-label="Travel passport">
-  <div class="sp-head"><span>🎫 <span data-i18n="passport">Your travel passport</span></span><button class="x" id="passX" aria-label="Close">✕</button></div>
+<div class="settings-panel glass" id="passPanel" role="dialog" aria-modal="true" aria-label="Travel passport" data-i18n-aria="passport">
+  <div class="sp-head"><span>🎫 <span data-i18n="passport">Your travel passport</span></span><button class="x" id="passX" aria-label="Close" data-i18n-aria="close">✕</button></div>
   <div id="passBody"></div>
 </div>
 
 <div class="controls" id="controls">
   <div class="card glass" id="cardTabs" style="padding:7px;">
-    <div class="tabs" id="tabs" role="tablist" aria-label="Map view">
+    <div class="tabs" id="tabs" role="tablist" aria-label="Map view" data-i18n-aria="ariaMapView">
       <button data-tab="active" class="active" role="tab" aria-selected="true" data-i18n="tabActive">● Active</button>
       <button data-tab="vision" role="tab" aria-selected="false" data-i18n="tabVision">◇ Vision</button>
       <button data-tab="bus" role="tab" aria-selected="false" data-i18n="tabBus">▤ Buses</button>

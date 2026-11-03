@@ -383,6 +383,76 @@ const MUTATIONS = [
     apply: h => h.replace(";color:${inkOn(ln?ln.color:'#888')}", ''),
   },
   {
+    name: 'give a close button a fixed English name again',
+    expect: 'every hard-coded accessible name in the markup follows the language',
+    apply: h => h.replace('id="settingsX" aria-label="Close" data-i18n-aria="close"', 'id="settingsX" aria-label="Close"'),
+  },
+  {
+    name: 'lose a translated accessible name in Turkish',
+    expect: 'every translated name has its key in all four languages',
+    apply: h => h.replace('ariaPrevStep:"Önceki adım", ', ''),
+  },
+  {
+    name: 'stop translating accessible names when the language changes',
+    expect: 'applyI18n renames the accessible names when the language changes',
+    apply: h => h.replace("'[data-i18n-aria]'", "'[data-i18n-ariaX]'"),
+  },
+  {
+    name: 'stop announcing whether a switch is on',
+    expect: 'every on/off switch announces its state',
+    apply: h => h.replace("el.setAttribute('aria-checked', el.classList.contains('on')", "el.setAttribute('aria-checkedX', el.classList.contains('on')"),
+  },
+  {
+    name: 'leave a switch without the label printed beside it',
+    expect: 'syncAria names switches by the label beside them',
+    apply: h => h.replace("el.setAttribute('aria-labelledby', label.id); el.removeAttribute('aria-label');", "el.removeAttribute('aria-label');"),
+  },
+  {
+    name: 'leave the zoom buttons in English',
+    expect: 'syncAria names switches by the label beside them',
+    apply: h => h.replace("a.setAttribute('aria-label', t('zoomIn'));", "a.setAttribute('aria-label', 'Zoom in');"),
+  },
+  {
+    name: 'stop making legend chips keyboard-operable',
+    expect: 'the things you click that are not buttons become buttons',
+    apply: h => h.replace("var KB_CLICKABLE = '.lchip, .lchip > .sw, ", "var KB_CLICKABLE = '.lchip > .sw, "),
+  },
+  {
+    name: 'let a swatch also activate its chip',
+    expect: 'the things you click that are not buttons become buttons',
+    apply: h => h.replace('el.matches(KB_CLICKABLE)', 'el.closest(KB_CLICKABLE)'),
+  },
+  {
+    name: 'let one Escape close Settings and end the journey too',
+    expect: 'Escape closes the newest thing and nothing else',
+    apply: h => h.replace("if(open('settingsPanel', 'open')){ closeSettings(); e.preventDefault(); return; }", "if(open('settingsPanel', 'open')){ closeSettings(); closeNearby(); exitGo(); e.preventDefault(); return; }"),
+  },
+  {
+    name: 'let Tab reach a closed Settings panel',
+    expect: 'dialogs are named dialogs',
+    apply: h => h.replace('if(!d.hiddenByDisplay) el.inert = !isOpen;', ''),
+  },
+  {
+    name: 'take the name off the Settings dialog',
+    expect: 'dialogs are named dialogs',
+    apply: h => h.replace('id="settingsPanel" role="dialog" aria-modal="true" aria-label="Settings" data-i18n-aria="settings"', 'id="settingsPanel" role="dialog" aria-modal="true"'),
+  },
+  {
+    name: 'take the alt attribute off an image',
+    expect: 'every image has alt text',
+    apply: h => h.replace('width="44" height="44" alt="" aria-hidden="true"', 'width="44" height="44"'),
+  },
+  {
+    name: 'block pinch zoom',
+    expect: 'keyboard users can see where they are',
+    apply: h => h.replace('viewport-fit=cover', 'viewport-fit=cover, user-scalable=no'),
+  },
+  {
+    name: 'drop the skip link',
+    expect: 'keyboard users can see where they are',
+    apply: h => h.replace('class="skip-link"', 'class="skip-linkX"'),
+  },
+  {
     name: 'drop the MODELLED label from the arrivals board (French)',
     expect: 'the arrivals board still labels itself modelled',
     apply: h => h.replace('modelled:"MODÉLISÉ", ', ''),
@@ -1242,7 +1312,7 @@ const MUTATIONS = [
   {
     name: 'stop announcing the loading screen to a screen reader',
     expect: 'the loading screen is the first thing in the page, is announced as a status, and its pictures are preloaded',
-    apply: h => h.replace('<div id="bootSplash" role="status" aria-label="Loading">', '<div id="bootSplash" aria-label="Loading">'),
+    apply: h => h.replace('<div id="bootSplash" role="status" aria-label="Loading"', '<div id="bootSplash" aria-label="Loading"'),
   },
   // ---- V4.2: four bottom buttons, the back button, the warning bubble, buses, rotation ----
   {

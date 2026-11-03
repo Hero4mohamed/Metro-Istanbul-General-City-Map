@@ -196,6 +196,8 @@ const I18N = {
     secAbout:"About & legal", legalPrivacy:"Privacy notice", legalTerms:"Terms of use", legalStorage:"Cookies & stored data", legalCredits:"Credits & licences",
     aboutProject:"İstanbul Ray-Net is a free, non-commercial, open-source project by its author. It is not an official service of any transit operator.",
     aboutContact:"Contact", aboutVersion:"Version", aboutSource:"Source code",
+    ariaMapView:"Map view", ariaCity:"City", ariaLoading:"Loading", ariaPrevStep:"Previous step", ariaNextStep:"Next step", ariaApiKey:"Anthropic API key",
+    mapLabel:"Transit map. Arrow keys move the map, plus and minus zoom.", zoomIn:"Zoom in", zoomOut:"Zoom out",
     diagPrivacy:"Report a problem opens a public GitHub page with the fault log and your browser's name already typed in. Read it before you post; you need a GitHub account. The app itself sends nothing.",
     themeAuto:"Auto", themeSplit:"Mixed", themeSplitTip:"Light, but the tabs, layers, trip planner and announcements stay dark", textSize:"Text size", textNormal:"Normal", textLarge:"Large",
     accessibility:"Accessibility", reduceMotion:"Reduce motion", highContrast:"High contrast",
@@ -417,6 +419,8 @@ const I18N = {
     secAbout:"Hakkında ve yasal", legalPrivacy:"Gizlilik bildirimi", legalTerms:"Kullanım koşulları", legalStorage:"Çerezler ve saklanan veriler", legalCredits:"Katkılar ve lisanslar",
     aboutProject:"İstanbul Ray-Net, yazarının hazırladığı ücretsiz, ticari olmayan, açık kaynaklı bir projedir. Hiçbir ulaşım işletmecisinin resmî hizmeti değildir.",
     aboutContact:"İletişim", aboutVersion:"Sürüm", aboutSource:"Kaynak kod",
+    ariaMapView:"Harita görünümü", ariaCity:"Şehir", ariaLoading:"Yükleniyor", ariaPrevStep:"Önceki adım", ariaNextStep:"Sonraki adım", ariaApiKey:"Anthropic API anahtarı",
+    mapLabel:"Ulaşım haritası. Ok tuşları haritayı kaydırır, artı ve eksi yakınlaştırır.", zoomIn:"Yakınlaştır", zoomOut:"Uzaklaştır",
     diagPrivacy:"“Sorun bildir”, hata kaydınızın ve tarayıcınızın adının hazır yazıldığı herkese açık bir GitHub sayfası açar. Göndermeden önce okuyun; bir GitHub hesabı gerekir. Uygulamanın kendisi hiçbir şey göndermez.",
     themeAuto:"Otomatik", themeSplit:"Karma", themeSplitTip:"Açık tema; sekmeler, katmanlar, yolculuk planlayıcı ve duyurular koyu kalır", textSize:"Yazı boyutu", textNormal:"Normal", textLarge:"Büyük",
     accessibility:"Erişilebilirlik", reduceMotion:"Hareketi azalt", highContrast:"Yüksek kontrast",
@@ -586,6 +590,8 @@ const I18N = {
     secAbout:"حول التطبيق والمعلومات القانونية", legalPrivacy:"إشعار الخصوصية", legalTerms:"شروط الاستخدام", legalStorage:"ملفات تعريف الارتباط والبيانات المخزّنة", legalCredits:"الشكر والتراخيص",
     aboutProject:"İstanbul Ray-Net مشروع مجاني غير تجاري ومفتوح المصدر من إعداد صاحبه، وليس خدمة رسمية لأي مشغّل نقل.",
     aboutContact:"التواصل", aboutVersion:"الإصدار", aboutSource:"الشيفرة المصدرية",
+    ariaMapView:"عرض الخريطة", ariaCity:"المدينة", ariaLoading:"جارٍ التحميل", ariaPrevStep:"الخطوة السابقة", ariaNextStep:"الخطوة التالية", ariaApiKey:"مفتاح Anthropic API",
+    mapLabel:"خريطة النقل. مفاتيح الأسهم تحرّك الخريطة، وزائد وناقص للتكبير والتصغير.", zoomIn:"تكبير", zoomOut:"تصغير",
     diagPrivacy:"«الإبلاغ عن مشكلة» يفتح صفحة GitHub عامة مكتوبًا فيها سجل الأعطال واسم متصفحك. اقرأها قبل النشر؛ تحتاج إلى حساب GitHub. التطبيق نفسه لا يرسل شيئًا.",
     themeAuto:"تلقائي", themeSplit:"مختلط", themeSplitTip:"فاتح، لكن علامات التبويب والطبقات ومخطط الرحلة والإعلانات تبقى داكنة", textSize:"حجم النص", textNormal:"عادي", textLarge:"كبير",
     accessibility:"إمكانية الوصول", reduceMotion:"تقليل الحركة", highContrast:"تباين عالٍ",
@@ -819,6 +825,8 @@ const I18N = {
     secAbout:"À propos et mentions légales", legalPrivacy:"Avis de confidentialité", legalTerms:"Conditions d’utilisation", legalStorage:"Cookies et données stockées", legalCredits:"Crédits et licences",
     aboutProject:"İstanbul Ray-Net est un projet gratuit, non commercial et open source, réalisé par son auteur. Ce n’est le service officiel d’aucun exploitant de transport.",
     aboutContact:"Contact", aboutVersion:"Version", aboutSource:"Code source",
+    ariaMapView:"Vue de la carte", ariaCity:"Ville", ariaLoading:"Chargement", ariaPrevStep:"Étape précédente", ariaNextStep:"Étape suivante", ariaApiKey:"Clé API Anthropic",
+    mapLabel:"Carte des transports. Les flèches déplacent la carte, plus et moins zooment.", zoomIn:"Zoom avant", zoomOut:"Zoom arrière",
     diagPrivacy:"« Signaler un problème » ouvre une page GitHub publique où le journal d’erreurs et le nom de votre navigateur sont déjà saisis. Relisez-la avant de publier ; un compte GitHub est nécessaire. L’application n’envoie rien elle-même.",
     themeAuto:"Auto", themeSplit:"Mixte", themeSplitTip:"Clair, mais les onglets, les calques, le planificateur et les annonces restent sombres", textSize:"Taille du texte", textNormal:"Normal", textLarge:"Grand",
     accessibility:"Accessibilité", reduceMotion:"Réduire les animations", highContrast:"Contraste élevé",
@@ -924,6 +932,8 @@ function applyI18n(){
   document.querySelectorAll('[data-i18n-html]').forEach(el=> el.innerHTML = t(el.getAttribute('data-i18n-html')));
   document.querySelectorAll('[data-i18n-ph]').forEach(el=> el.placeholder = t(el.getAttribute('data-i18n-ph')));
   document.querySelectorAll('[data-i18n-title]').forEach(el=> el.title = t(el.getAttribute('data-i18n-title')));
+  document.querySelectorAll('[data-i18n-aria]').forEach(el=> el.setAttribute('aria-label', t(el.getAttribute('data-i18n-aria'))));   // V4.3: accessible names follow the language too
+  try{ if(typeof syncAria === 'function') syncAria(); }catch(e){}                                                                  // 23-a11y.js: names derived from the text on screen
   document.documentElement.lang = lang;
   try{ if(typeof syncLegalLinks === 'function') syncLegalLinks(); }catch(e){}     // 22-privacy.js: the legal pages follow the language
   /* Arabic is read right to left. Setting lang without dir left every Arabic panel laid
