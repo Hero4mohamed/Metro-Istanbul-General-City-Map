@@ -11,17 +11,6 @@
     "source": "manual"
   },
   {
-    "id": "m3-al-m-yor",
-    "ref": "M3",
-    "source": "metro.istanbul",
-    "scope": "line",
-    "severity": "minor",
-    "title": "Service notice",
-    "messageTr": "Enerji kesintisi nedeniyle seferler yapılamamaktadır.",
-    "message": "Due to a power outage, services cannot operate.",
-    "messageLang": "en"
-  },
-  {
     "id": "m7-mecidiyek-y",
     "ref": "M7",
     "source": "metro.istanbul",
@@ -33,17 +22,6 @@
     "title": "Section affected",
     "messageTr": "Teknik bir arıza nedeniyle seferler Nurtepe-Mahmutbey arasında normal işletme döngüsünde, Nurtepe-Kağıthane arasında ise mekik seferi olarak yapılmaktadır.",
     "message": "Due to a technical fault, trains run normally between Nurtepe and Mahmutbey, and as a shuttle between Nurtepe and Kağıthane.",
-    "messageLang": "en"
-  },
-  {
-    "id": "m9-al-m-yor",
-    "ref": "M9",
-    "source": "metro.istanbul",
-    "scope": "line",
-    "severity": "minor",
-    "title": "Service notice",
-    "messageTr": "Enerji kesintisi nedeniyle seferler yapılamamaktadır.",
-    "message": "Due to a power outage, services cannot operate.",
     "messageLang": "en"
   },
   {
