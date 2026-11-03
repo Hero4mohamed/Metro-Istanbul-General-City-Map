@@ -213,6 +213,26 @@ const MUTATIONS = [
     apply: h => h.replace('href="vendor/leaflet/leaflet.css"', 'href="vendor/leaflet/leaflet-gone.css"'),
   },
   {
+    name: 'call the simulated carriages live again (English)',
+    expect: 'no language calls the carriages live or real-time',
+    apply: h => h.replace('liveCarr:"Simulated carriages"', 'liveCarr:"Live carriages"'),
+  },
+  {
+    name: 'call the simulated carriages live again (Arabic)',
+    expect: 'no language calls the carriages live or real-time',
+    apply: h => h.replace('liveCarr:"عربات محاكاة"', 'liveCarr:"عربات مباشرة"'),
+  },
+  {
+    name: 'call the carriages real-time in the page description',
+    expect: 'the page title, description, share text and install manifest do not claim live or real-time vehicles',
+    apply: h => h.replace('Simulated carriages, official timetables', 'Real-time carriages, official timetables'),
+  },
+  {
+    name: 'drop the MODELLED label from the arrivals board (French)',
+    expect: 'the arrivals board still labels itself modelled',
+    apply: h => h.replace('modelled:"MODÉLISÉ", ', ''),
+  },
+  {
     name: 'hash the bytes on disk instead of the text the parser sees',
     expect: 'the script hash matches the script the parser will see',
     apply: h => h.replace(/(script-src [^;]*)'sha256-[^']*'/, (m, keep) => keep + "'sha256-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA='"),

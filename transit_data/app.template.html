@@ -7,7 +7,7 @@
      cannot set headers, so this ships as meta; frame-ancestors and report-uri are
      unavailable that way. -->
 <meta http-equiv="Content-Security-Policy" content="__CSP__">
-<title>İSTANBUL RAY-NET · Live Rail Network Map &amp; Simulation</title>
+<title>İSTANBUL RAY-NET · Rail Network Map &amp; Simulation</title>
 <!-- Leaflet 1.9.4, shipped with the app rather than fetched from a CDN (V4.3): see vendor/README.md -->
 <link rel="stylesheet" href="vendor/leaflet/leaflet.css">
 <!-- the vector base map (MapLibre GL), shipped with the app rather than fetched from a CDN: see vendor/README.md -->
@@ -16,7 +16,7 @@
 <link rel="preload" as="font" type="font/woff2" href="vendor/fonts/SpaceGrotesk-latin.woff2" crossorigin>
 <link rel="icon" type="image/png" sizes="32x32" href="assets/favicon-32.png">
 <link rel="icon" type="image/png" sizes="16x16" href="assets/favicon-16.png">
-<meta name="description" content="Live İstanbul transit map — metro, tram, funicular, cable car, Marmaray, ferry and bus. Real-time carriages, official timetables, multi-stop trip planner, live disruptions and district weather.">
+<meta name="description" content="İstanbul transit map — metro, tram, funicular, cable car, Marmaray, ferry and bus. Simulated carriages, official timetables, multi-stop trip planner, service notices and district weather.">
 <meta name="theme-color" content="#070A12">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="preload" as="image" href="assets/splash-bg.jpg">
@@ -28,15 +28,15 @@
 <meta name="apple-mobile-web-app-title" content="RAY-NET">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="İSTANBUL · RAY-NET">
-<meta property="og:title" content="İSTANBUL · RAY-NET — Live Transit Network Map">
-<meta property="og:description" content="Metro, tram, ferry &amp; bus on one live map: real-time carriages, official timetables, multi-stop trip planner, live disruptions and district weather.">
+<meta property="og:title" content="İSTANBUL · RAY-NET — Transit Network Map">
+<meta property="og:description" content="Metro, tram, ferry &amp; bus on one map: simulated carriages, official timetables, multi-stop trip planner, service notices and district weather.">
 <meta property="og:url" content="https://hero4mohamed.github.io/Metro-Istanbul-General-City-Map/">
 <meta property="og:image" content="https://hero4mohamed.github.io/Metro-Istanbul-General-City-Map/assets/og-card.png">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
 <meta name="twitter:card" content="summary_large_image">
-<meta name="twitter:title" content="İSTANBUL · RAY-NET — Live Transit Network Map">
-<meta name="twitter:description" content="Metro, tram, ferry &amp; bus on one live map: real-time carriages, official timetables, trip planner, disruptions and weather.">
+<meta name="twitter:title" content="İSTANBUL · RAY-NET — Transit Network Map">
+<meta name="twitter:description" content="Metro, tram, ferry &amp; bus on one map: simulated carriages, official timetables, trip planner, service notices and weather.">
 <meta name="twitter:image" content="https://hero4mohamed.github.io/Metro-Istanbul-General-City-Map/assets/og-card.png">
 <style>
   /* The three typefaces are shipped with the app (vendor/fonts/, SIL OFL 1.1), not fetched from Google Fonts: a font host would see every
@@ -1735,7 +1735,7 @@
 <div class="topbar glass">
   <h1><img class="logo" src="assets/logo-96.png" width="30" height="30" alt="" aria-hidden="true" decoding="async"><button id="cityBtn" class="city-btn" aria-haspopup="listbox" aria-expanded="false"><span id="cityName">İSTANBUL</span><span class="city-caret" aria-hidden="true">▾</span></button><span class="brand-tail">· RAY-NET</span>
     <div class="city-menu glass" id="cityMenu" role="listbox" aria-label="City"></div></h1>
-  <div class="sub"><span data-i18n="liveNet">Live Rail Network</span> · <a href="https://github.com/Hero4mohamed/Metro-Istanbul-General-City-Map" target="_blank" rel="noopener" style="color:var(--accent);text-decoration:none;font-weight:700;" data-i18n="source">source ↗</a></div>
+  <div class="sub"><span data-i18n="liveNet">Rail Network</span> · <a href="https://github.com/Hero4mohamed/Metro-Istanbul-General-City-Map" target="_blank" rel="noopener" style="color:var(--accent);text-decoration:none;font-weight:700;" data-i18n="source">source ↗</a></div>
   <div class="stats">
     <div class="kv"><b id="sLines">0</b><span data-i18n="lines">Lines</span></div>
     <div class="kv"><b id="sStations">0</b><span data-i18n="stations">Stations</span></div>
@@ -1763,9 +1763,9 @@
   <div class="wc-card glass" role="dialog" aria-modal="true" aria-labelledby="wcTitle">
     <img class="wc-logo" src="assets/logo-96.png" width="44" height="44" alt="" aria-hidden="true" decoding="async">
     <h2 id="wcTitle" data-i18n="wcTitle">Welcome aboard!</h2>
-    <div class="wc-row"><span class="wc-ic">🗺️</span><span data-i18n="wcTap">Tap any line or station for live details &amp; arrivals</span></div>
+    <div class="wc-row"><span class="wc-ic">🗺️</span><span data-i18n="wcTap">Tap any line or station for details &amp; next departures</span></div>
     <div class="wc-row"><span class="wc-ic">🧭</span><span data-i18n="wcPlan">Plan door-to-door trips — metro, tram, ferry &amp; bus</span></div>
-    <div class="wc-row"><span class="wc-ic">🚇</span><span data-i18n="wcLive">Watch carriages move live &amp; follow lines for alerts</span></div>
+    <div class="wc-row"><span class="wc-ic">🚇</span><span data-i18n="wcLive">Watch the simulated carriages move &amp; follow lines for alerts</span></div>
     <div class="wc-row"><span class="wc-ic">⚙️</span><span data-i18n="wcLang">Language, dark mode &amp; more in Settings</span></div>
     <button class="wc-go" id="wcGo" data-i18n="wcGo">Start exploring</button>
   </div>
@@ -2001,7 +2001,7 @@
     </details>
     <details class="lyr" open>
       <summary><span data-i18n="showOnMap">Show on map</span></summary>
-      <div class="row"><span data-i18n="liveCarr">Live carriages</span>
+      <div class="row"><span data-i18n="liveCarr">Simulated carriages</span>
         <label class="switch"><input type="checkbox" id="tglTrains" checked><span class="sl"></span></label>
       </div>
       <div class="row"><span data-i18n="stationMarkers">Station markers</span>
