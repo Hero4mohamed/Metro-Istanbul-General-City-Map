@@ -228,6 +228,126 @@ const MUTATIONS = [
     apply: h => h.replace('Simulated carriages, official timetables', 'Real-time carriages, official timetables'),
   },
   {
+    name: 'call the page live again in the title the app sets at run time',
+    expect: 'the title the app sets at run time does not claim live or real-time vehicles either',
+    apply: h => h.replace("' · RAY-NET — Transit Network Map';", "' · RAY-NET — Live Transit Network Map';"),
+  },
+  {
+    name: 'turn online look-ups back on by default',
+    expect: 'online look-ups are off until the person chooses',
+    apply: h => h.replace("let onlineSearchPref = lsStr('irn_online') === '1';", "let onlineSearchPref = lsStr('irn_online') !== '0';"),
+  },
+  {
+    name: 'let walking routes go to the routing server without asking',
+    expect: 'with look-ups off, the walking-route, text-search and nearby-search calls never reach the network',
+    apply: h => h.replace('async function fetchFoot(a,b){', 'async function fetchFoot(a,b){ var onlineSearchPref = true;'),
+  },
+  {
+    name: 'let a nearby search send a position to Photon without asking',
+    expect: 'with look-ups off, the walking-route, text-search and nearby-search calls never reach the network',
+    apply: h => h.replace('async function poiNear(lat, lng, tag, radiusKm, limit){', 'async function poiNear(lat, lng, tag, radiusKm, limit){ var onlineSearchPref = true;'),
+  },
+  {
+    name: 'let typed text go to Photon without asking',
+    expect: 'with look-ups off, the walking-route, text-search and nearby-search calls never reach the network',
+    apply: h => h.replace('async function photonSearch(q){', 'async function photonSearch(q){ var onlineSearchPref = true;'),
+  },
+  {
+    name: 'add a fourth way to reach Photon that skips the gate',
+    expect: 'no code path sends text or coordinates to Photon or the routing server except through those three gated functions',
+    apply: h => h.replace('const BUILD = ', "const LEAK = p => fetch('https://photon.komoot.io/api/?q=' + p); const BUILD = "),
+  },
+  {
+    name: 'make one answer to the privacy question look like the right one',
+    expect: 'the privacy question gives both answers the same size and style',
+    apply: h => h.replace('<button class="priv-btn" id="privAllow"', '<button class="priv-btn primary" id="privAllow"'),
+  },
+  {
+    name: 'show the privacy question on top of the welcome dialog',
+    expect: 'the privacy question waits for the welcome dialog',
+    apply: h => h.replace("if(welcome && welcome.classList.contains('show')) return;", ''),
+  },
+  {
+    name: 'let the privacy question steal the keyboard focus',
+    expect: 'the privacy question waits for the welcome dialog',
+    apply: h => h.replace("box.classList.add('show');", "box.classList.add('show'); box.focus();"),
+  },
+  {
+    name: 'forget which version of the notice was answered',
+    expect: 'the privacy question waits for the welcome dialog',
+    apply: h => h.replace("lsStr('irn_privacy') !== PRIVACY_VERSION", "lsStr('irn_privacy') === null"),
+  },
+  {
+    name: 'let the Settings switch leave the question open',
+    expect: 'the privacy question waits for the welcome dialog',
+    apply: h => h.replace("try{ localStorage.setItem('irn_privacy', PRIVACY_VERSION); }catch(e){}", ''),
+  },
+  {
+    name: 'ask the privacy question for a policy version the pages do not carry',
+    expect: 'every page says it is not legal advice, and the dates and versions agree with the config',
+    apply: h => h.replace(/const PRIVACY_VERSION = '[^']*';/, "const PRIVACY_VERSION = '99';"),
+  },
+  {
+    name: 'delete the whole address\'s storage, not just this app\'s',
+    expect: '"delete all my data" removes this app',
+    apply: h => h.replace("Object.keys(localStorage).filter(k => k.indexOf('irn_') === 0)", 'Object.keys(localStorage)'),
+  },
+  {
+    name: 'leave the offline copies behind when deleting',
+    expect: '"delete all my data" removes this app',
+    apply: h => h.replace("n.indexOf('raynet-') === 0", "n.indexOf('raynet-') === 99"),
+  },
+  {
+    name: 'delete on the first tap',
+    expect: 'the delete button asks twice',
+    apply: h => h.replace('if(!armed){', 'if(false){'),
+  },
+  {
+    name: 'store something outside the irn_ prefix',
+    expect: 'everything the app stores is under the irn_ prefix',
+    apply: h => h.replace('const BUILD = ', "try{ localStorage.setItem('mapprefs', '1'); }catch(e){} const BUILD = "),
+  },
+  {
+    name: 'add an analytics script',
+    expect: 'everything the app stores is under the irn_ prefix',
+    apply: h => h.replace('const BUILD = ', "const GA = 'https://www.googletagmanager.com/gtag/js'; const BUILD = "),
+  },
+  {
+    name: 'ask for an e-mail address',
+    expect: 'there is no sign-up, contact or payment form',
+    apply: h => h.replace('<div class="priv-btns">', '<input type="email" name="email" autocomplete="email"><div class="priv-btns">'),
+  },
+  {
+    name: 'add a sign-up form',
+    expect: 'there is no sign-up, contact or payment form',
+    apply: h => h.replace('<div class="priv-btns">', '<form action="https://example.com/join"></form><div class="priv-btns">'),
+  },
+  {
+    name: 'drop the disclosure under Report a problem',
+    expect: '"Report a problem" says what it opens',
+    apply: h => h.replace('data-i18n="diagPrivacy"', 'data-i18n="diagPrivacyX"'),
+  },
+  {
+    name: 'let a report forget which version of the app it came from',
+    expect: '"Report a problem" says what it opens',
+    apply: h => h.replace(/"app: V[\d.]+ build "/, '"build: "'),
+  },
+  {
+    name: 'drop the terms link from the welcome dialog',
+    expect: 'Settings and the welcome dialog link all four legal pages',
+    apply: h => h.replace('<a data-legal="terms" href="legal/terms.html" target="_blank" rel="noopener" data-i18n="legalTerms">Terms of use</a> · ', ''),
+  },
+  {
+    name: 'drop the cookies-and-stored-data link from Settings',
+    expect: 'Settings and the welcome dialog link all four legal pages',
+    apply: h => h.replace('data-legal="storage"', 'data-legal="storagex"'),
+  },
+  {
+    name: 'send Turkish readers to the English legal pages',
+    expect: 'Settings and the welcome dialog link all four legal pages',
+    apply: h => h.replace("const suffix = (typeof lang !== 'undefined' && lang === 'tr') ? '.tr' : '';", "const suffix = '';"),
+  },
+  {
     name: 'drop the MODELLED label from the arrivals board (French)',
     expect: 'the arrivals board still labels itself modelled',
     apply: h => h.replace('modelled:"MODÉLISÉ", ', ''),

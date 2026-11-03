@@ -362,10 +362,15 @@ let avoidModes = new Set((function(){ const a=lsJSON('irn_avoid'); return Array.
 let homePlace  = lsJSON('irn_home');   // {name,lat,lng} | null
 let workPlace  = lsJSON('irn_work');
 let stepFreePref = lsStr('irn_stepfree')==='1';   // Settings → prefer step-free (elevator) routes
-/* Settings → look places up online. The search runs on the device first; this only decides whether what is NOT in the
-   offline list may be asked of the public Photon service (the text typed, plus the city centre — never the user's own
-   position). On by default, as it always was; off keeps every search on the phone. */
-let onlineSearchPref = lsStr('irn_online') !== '0';
+/* Settings → online look-ups (V4.3: OFF until the person chooses). The search and the planner run on the device first; this
+   decides whether the little they cannot do there may be asked of public services run by others: Photon (the text typed, or the
+   position a "what is near" search is centred on, with the city centre) and the OSRM routing server (the two ends of each
+   walking leg, which can be the person's own position). It used to be on by default and the OSRM half was not mentioned
+   anywhere. Now nothing is sent until the person has said yes, once, in the privacy notice (22-privacy.js) or here. */
+let onlineSearchPref = lsStr('irn_online') === '1';
+/* Which version of the privacy notice was answered. Bump (in legal-config.json) when the notice changes in a way people should
+   be asked about again; the notice then shows once more. */
+const PRIVACY_VERSION = '__POLICY_VERSION__';
 /* Turning the map (V4.2). Read once, when the map is made (08-map.js): off keeps Leaflet's own map, untouched. */
 let mapTurnPref = lsStr('irn_turn') !== '0';
 function setMapTurn(on){
@@ -438,7 +443,10 @@ function setAvoid(mode, on, rerun){
   const sw=document.getElementById(mode==='ferry'?'swAvoidFerry':'swAvoidBus'); if(sw) sw.classList.toggle('on', avoidModes.has(mode));
   if(rerun && originPt && destPt && currentOpts && currentOpts.length) runRoute(); }
 function setOnlineSearch(on){ onlineSearchPref=!!on; try{localStorage.setItem('irn_online',on?'1':'0');}catch(e){}
-  const sw=document.getElementById('swOnline'); if(sw) sw.classList.toggle('on', onlineSearchPref); }
+  const sw=document.getElementById('swOnline'); if(sw){ sw.classList.toggle('on', onlineSearchPref); sw.setAttribute('aria-checked', onlineSearchPref?'true':'false'); }
+  // having used the switch IS an answer: the notice has nothing left to ask
+  try{ localStorage.setItem('irn_privacy', PRIVACY_VERSION); }catch(e){}
+  const n=document.getElementById('privNotice'); if(n) n.classList.remove('show'); }
 function setStepFree(on, rerun){ stepFreePref=!!on; try{localStorage.setItem('irn_stepfree',on?'1':'0');}catch(e){}
   const sw=document.getElementById('swStepFree'); if(sw) sw.classList.toggle('on', stepFreePref);
   if(rerun && originPt && destPt && currentOpts && currentOpts.length) runRoute(); }

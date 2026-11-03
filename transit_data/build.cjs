@@ -179,6 +179,13 @@ html = html.replace('__BUILD__', () => buildStamp)
                      .replace('__CARDIMG_JSON__', () => JSON.stringify(cardImg))
                      .replace('__TRANSLATOR_JS__', () => translatorJS)
                      .replace('__PROVENANCE_JSON__', () => JSON.stringify(provenance));
+/* Who runs the app and how to reach them (V4.3). One file feeds the app (Settings > About & legal, the privacy notice) and the
+   legal pages (legal/*.html, built below), so the two cannot say different things. */
+const LEGAL = JSON.parse(fs.readFileSync(path.join(DIR, 'legal-config.json'), 'utf8'));
+html = html.replace(/__CONTACT_EMAIL__/g, () => LEGAL.contactEmail)
+           .replace(/__REPO_URL__/g, () => LEGAL.repoUrl)
+           .replace(/__POLICY_VERSION__/g, () => LEGAL.policyVersion)
+           .replace(/__APP_VERSION__/g, () => LEGAL.appVersion);
 console.log('İSTANBUL:', cities.istanbul.lines.length, ' ANKARA:', ankara.length, ' İZMİR:', izmir.length, ' BURSA:', bursa.length, ' ANTALYA:', antalya.length, ' KOCAELİ:', kocaeli.length,
             ' INTERCITY:', intercity.length,
             ' BUSES:', Object.entries(busSets).map(([c, s]) => c + ':' + s.dir.length).join(' '),
@@ -232,6 +239,7 @@ html = html.replace('__CSP__', () => CSP);
 
 const outPath = path.join(ROOT, 'index.html');   // GitHub Pages serves the repo-root index.html
 fs.writeFileSync(outPath, html);
+require('./build-legal.cjs').build(LEGAL, ROOT);      // legal/*.html: privacy, terms, cookies & storage, credits - English and Turkish
 console.log('WROTE', outPath, (fs.statSync(outPath).size/1024).toFixed(1), 'KB',
             ' cardArt:', Object.keys(cardImg.cities).map(c=>c+'×'+Object.keys(cardImg.cities[c]).length).join(' '));
 

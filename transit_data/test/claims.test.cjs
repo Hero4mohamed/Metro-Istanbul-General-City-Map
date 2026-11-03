@@ -36,6 +36,13 @@ test('the page title, description, share text and install manifest do not claim 
   for (const k of ['name', 'short_name', 'description']) assert.ok(!LIVE.test(manifest[k] || ''), 'the install manifest ' + k + ' claims something is live: "' + manifest[k] + '"');
 });
 
+test('the title the app sets at run time does not claim live or real-time vehicles either', () => {
+  // the static <title> is replaced the moment the app starts (18-mobile-shell.js), so what people see in the tab is THIS one
+  const sets = [...H.appScript().matchAll(/document\.title\s*=\s*([^;\n]+)/g)].map(m => m[1]);
+  assert.ok(sets.length >= 1, 'no run-time document.title assignment found; has it moved?');
+  for (const s of sets) assert.ok(!LIVE.test(s), 'a run-time page title claims something is live / real-time: ' + s);
+});
+
 test('the arrivals board still labels itself modelled, in every language', () => {
   const dict = H.i18nValues();
   for (const lang of ['en', 'tr', 'ar', 'fr']) {

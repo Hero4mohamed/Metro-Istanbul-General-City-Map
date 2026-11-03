@@ -1306,6 +1306,24 @@
   .wc-go{width:100%;margin-top:14px;padding:11px;border:none;border-radius:12px;cursor:pointer;
     font-weight:800;font-size:13px;color:var(--btn-ink);background:var(--grad-accent);letter-spacing:.3px;}
   .wc-go:active{transform:scale(.98);}
+  .wc-legal{margin:12px 0 0;font-size:11.5px;color:var(--muted);line-height:1.6;}
+  .wc-legal a,.priv-link,.sp-link{color:var(--accent);}
+  /* the one-time privacy choice (V4.3): a card above the bottom bar, never a wall over the map. Both answers share one style, on
+     purpose: no answer is dressed up as the right one. */
+  .priv-notice{position:fixed;z-index:1550;left:50%;transform:translateX(-50%);bottom:calc(14px + env(safe-area-inset-bottom));
+    width:min(440px,calc(100% - 24px));padding:14px 16px 12px;display:none;}
+  body.mobile .priv-notice{bottom:calc(86px + env(safe-area-inset-bottom));}
+  .priv-notice.show{display:block;}
+  .priv-notice h2{font-size:14px;font-weight:800;margin:0 0 6px;color:var(--text);}
+  .priv-notice p{font-size:12px;line-height:1.5;color:var(--muted);margin:0 0 10px;}
+  .priv-btns{display:flex;gap:8px;}
+  .priv-btn{flex:1;min-height:44px;padding:10px 8px;border-radius:12px;cursor:pointer;font-family:var(--font);font-size:12px;font-weight:700;
+    color:var(--text);background:var(--surface);border:1px solid var(--stroke-2);}
+  .priv-btn:hover{border-color:rgba(var(--ok-rgb),.55);}
+  .priv-link{display:inline-block;margin-top:9px;font-size:11.5px;}
+  .sp-links{display:flex;flex-direction:column;gap:2px;}
+  .sp-link{font-size:12.5px;padding:7px 0;text-decoration:underline;text-underline-offset:2px;}
+  #deleteAll.armed{color:#fff;background:#B42318;border-color:#B42318;}
   .settings-overlay{position:fixed;inset:0;background:rgba(3,6,10,.55);backdrop-filter:blur(2px);opacity:0;pointer-events:none;z-index:1650;transition:opacity .25s;}
   .settings-overlay.on{opacity:1;pointer-events:auto;}
   .settings-panel{position:fixed;top:50%;left:50%;transform:translate(-50%,-46%) scale(.98);opacity:0;pointer-events:none;
@@ -1768,7 +1786,19 @@
     <div class="wc-row"><span class="wc-ic">🚇</span><span data-i18n="wcLive">Watch the simulated carriages move &amp; follow lines for alerts</span></div>
     <div class="wc-row"><span class="wc-ic">⚙️</span><span data-i18n="wcLang">Language, dark mode &amp; more in Settings</span></div>
     <button class="wc-go" id="wcGo" data-i18n="wcGo">Start exploring</button>
+    <p class="wc-legal"><a data-legal="privacy" href="legal/privacy.html" target="_blank" rel="noopener" data-i18n="legalPrivacy">Privacy notice</a> · <a data-legal="terms" href="legal/terms.html" target="_blank" rel="noopener" data-i18n="legalTerms">Terms of use</a> · <a data-legal="credits" href="legal/credits.html" target="_blank" rel="noopener" data-i18n="legalCredits">Credits &amp; licences</a></p>
   </div>
+</div>
+
+<!-- the one-time privacy choice (V4.3): a card above the bottom bar, never over the map; both answers look the same -->
+<div class="priv-notice glass" id="privNotice" role="region" aria-labelledby="privTitle">
+  <h2 id="privTitle" data-i18n="privTitle">Your privacy, your choice</h2>
+  <p data-i18n="privBody">This app has no accounts, no ads and no tracking, and keeps your settings only on this device. Two optional extras ask other services for help: place look-ups (what you type) and walking routes (the start and end of a walk). They stay off unless you allow them.</p>
+  <div class="priv-btns">
+    <button class="priv-btn" id="privKeep" data-i18n="privKeep">Keep everything on my device</button>
+    <button class="priv-btn" id="privAllow" data-i18n="privAllow">Allow online look-ups</button>
+  </div>
+  <a class="priv-link" data-legal="privacy" href="legal/privacy.html" target="_blank" rel="noopener" data-i18n="privRead">Read the privacy notice</a>
 </div>
 
 <div class="settings-overlay" id="settingsOverlay"></div>
@@ -1908,13 +1938,17 @@
     <summary><span class="sp-ico" aria-hidden="true">🔒</span><span data-i18n="secSearch">Search &amp; privacy</span></summary>
     <div class="sp-body">
       <div class="sp-item">
-        <div class="sp-row"><span data-i18n="prefOnline">Look places up online</span>
-          <button class="sw" id="swOnline" role="switch" aria-label="Look places up online"><span class="sw-k"></span></button></div>
-        <div class="sp-hint" data-i18n="onlineHint">When a place is not in the offline list, what you type is sent to the Photon service (komoot.io) with the city centre — never your own location. Turn off to keep every search on this device.</div>
+        <div class="sp-row"><span data-i18n="prefOnline">Online look-ups</span>
+          <button class="sw" id="swOnline" role="switch" aria-checked="false" aria-label="Online look-ups"><span class="sw-k"></span></button></div>
+        <div class="sp-hint" data-i18n="onlineHint">Off until you choose. When on, two kinds of thing go to public services run by others: the text you type for a place that is not in the offline list, and the position you search around for "what is near" (to Photon, komoot.io, with the city centre); and the start and end of each walking part of a planned trip (to routing.openstreetmap.de, to follow real streets). If one of those points is your own position, that position is sent. Turn off to keep every search and route on this device.</div>
       </div>
       <div class="sp-item">
         <button class="btn ghost" id="resetTrips" data-i18n="resetTrips">Clear saved trips &amp; favourites</button>
         <div class="sp-hint" data-i18n="privacyNote">Your settings and saved trips stay on this device only.</div>
+      </div>
+      <div class="sp-item">
+        <button class="btn ghost" id="deleteAll" data-i18n="deleteAll">Delete all my data on this device</button>
+        <div class="sp-hint" data-i18n="deleteAllHint">Removes everything this app saved here: settings, saved places, trips, favourites, history, the offline copies of the app and maps, and your choices. The app then starts like a first visit. Nothing is kept anywhere else, so there is nothing to delete elsewhere.</div>
       </div>
     </div>
   </details>
@@ -1946,7 +1980,24 @@
           <button class="off-btn ghost" id="diagClear" data-i18n="diagClear">Clear</button>
         </div>
         <div class="sp-note" id="diagNote"></div>
+        <div class="sp-hint" data-i18n="diagPrivacy">Report a problem opens a public GitHub page with the fault log and your browser's name already typed in. Read it before you post; you need a GitHub account. The app itself sends nothing.</div>
       </div>
+    </div>
+  </details>
+
+  <details class="sp-sec" data-sec="about">
+    <summary><span class="sp-ico" aria-hidden="true">ℹ️</span><span data-i18n="secAbout">About &amp; legal</span></summary>
+    <div class="sp-body">
+      <div class="sp-item"><div class="sp-note" data-i18n="aboutProject">İstanbul Ray-Net is a free, non-commercial, open-source project by its author. It is not an official service of any transit operator.</div></div>
+      <div class="sp-item sp-links">
+        <a class="sp-link" data-legal="privacy" href="legal/privacy.html" target="_blank" rel="noopener" data-i18n="legalPrivacy">Privacy notice</a>
+        <a class="sp-link" data-legal="terms" href="legal/terms.html" target="_blank" rel="noopener" data-i18n="legalTerms">Terms of use</a>
+        <a class="sp-link" data-legal="storage" href="legal/storage.html" target="_blank" rel="noopener" data-i18n="legalStorage">Cookies &amp; stored data</a>
+        <a class="sp-link" data-legal="credits" href="legal/credits.html" target="_blank" rel="noopener" data-i18n="legalCredits">Credits &amp; licences</a>
+      </div>
+      <div class="sp-item sp-row"><span data-i18n="aboutContact">Contact</span><a class="sp-link" href="mailto:__CONTACT_EMAIL__">__CONTACT_EMAIL__</a></div>
+      <div class="sp-item sp-row"><span data-i18n="aboutSource">Source code</span><a class="sp-link" href="__REPO_URL__" target="_blank" rel="noopener">GitHub</a></div>
+      <div class="sp-item sp-row"><span data-i18n="aboutVersion">Version</span><span class="sp-note" id="aboutBuild"></span></div>
     </div>
   </details>
 </div>
