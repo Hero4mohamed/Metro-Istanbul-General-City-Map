@@ -789,7 +789,7 @@ const MUTATIONS = [
   {
     name: 'ship a Paper tier below the contrast threshold',
     expect: 'Paper meets AA on its own surface, in both themes',
-    apply: h => h.replace('--dim:#898172;', '--dim:#6A6357;'),
+    apply: h => h.replace('--dim:#A39A89;', '--dim:#6A6357;'),      // V4.3 raised Paper's dim text from #898172 to #A39A89 (found by the contrast audit)
   },
   {
     // the glass is the default's central visual idea; keeping it makes Paper a recolour
@@ -1472,7 +1472,7 @@ const MUTATIONS = [
   },
   {
     name: "open every section at the start",
-    expect: "settings are seven sections, in this order, with Appearance open to begin with",
+    expect: "settings are eight sections, in this order, with Appearance open to begin with",
     apply: h => h.replace('<details class="sp-sec" data-sec="journey">', '<details class="sp-sec" data-sec="journey" open>'),
   },
   {
