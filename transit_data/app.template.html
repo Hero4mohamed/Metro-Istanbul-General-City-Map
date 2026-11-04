@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
 <!-- Substituted by build.cjs, which hashes the inline script from the final bytes. Pages
      cannot set headers, so this ships as meta; frame-ancestors and report-uri are
      unavailable that way. -->
@@ -154,6 +154,15 @@
   *{box-sizing:border-box;margin:0;padding:0;}
   html,body{height:100%;width:100%;overflow:hidden;background:var(--obsidian);color:var(--text);font-family:var(--font);
     -webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility;}
+  /* An app, not a web page (V4.3). Pinching the tabs or a panel used to zoom the whole page and distort it; only the map zooms and
+     turns. touch-action is the intersection of an element's own value and its ancestors', so `pan-x pan-y` here removes pinch-zoom
+     (and double-tap zoom) from everything, and the map's own `touch-action:none` (.leaflet-container) keeps its gestures. Nothing
+     selects, long-press-menus, rubber-bands or pull-to-refreshes like a document; typing fields still select. The cost is stated
+     on the accessibility page: text is enlarged in Settings > Text size, or with the device's own magnifier / "force zoom". */
+  html,body{touch-action:pan-x pan-y;overscroll-behavior:none;-webkit-tap-highlight-color:transparent;-webkit-touch-callout:none;
+    -webkit-text-size-adjust:100%;text-size-adjust:100%;-webkit-user-select:none;user-select:none;}
+  input,textarea,select,[contenteditable="true"]{-webkit-user-select:text;user-select:text;}
+  img,svg{-webkit-user-drag:none;user-drag:none;}
   ::selection{background:rgba(var(--ok-rgb),.32);color:#fff;}
   #map{position:fixed;inset:0;background:var(--obsidian);}
   #trainCanvas{position:fixed;inset:0;pointer-events:none;z-index:450;}

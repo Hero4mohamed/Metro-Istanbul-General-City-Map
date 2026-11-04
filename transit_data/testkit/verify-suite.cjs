@@ -443,9 +443,39 @@ const MUTATIONS = [
     apply: h => h.replace('width="44" height="44" alt="" aria-hidden="true"', 'width="44" height="44"'),
   },
   {
-    name: 'block pinch zoom',
-    expect: 'keyboard users can see where they are',
-    apply: h => h.replace('viewport-fit=cover', 'viewport-fit=cover, user-scalable=no'),
+    name: 'let the page pinch-zoom again',
+    expect: 'the viewport is locked to the page width and scale',
+    apply: h => h.replace('minimum-scale=1.0, maximum-scale=1.0, user-scalable=no, ', ''),
+  },
+  {
+    name: 'allow pinch zoom on the tabs and panels again',
+    expect: 'html and body allow panning but not pinching',
+    apply: h => h.replace('html,body{touch-action:pan-x pan-y;', 'html,body{touch-action:manipulation;'),
+  },
+  {
+    name: 'take the map\'s own gestures away',
+    expect: 'html and body allow panning but not pinching',
+    apply: h => h.replace('.leaflet-container{touch-action:none;}', '.leaflet-container{touch-action:pan-x pan-y;}'),
+  },
+  {
+    name: 'make typing fields impossible to select in',
+    expect: 'html and body allow panning but not pinching',
+    apply: h => h.replace('input,textarea,select,[contenteditable="true"]{-webkit-user-select:text;user-select:text;}', ''),
+  },
+  {
+    name: 'stop cancelling an iOS pinch that starts on the chrome',
+    expect: 'a pinch that does not start on the map is cancelled',
+    apply: h => h.replace('if(!inMap) e.preventDefault();', ''),
+  },
+  {
+    name: 'cancel an iOS pinch on the map too',
+    expect: 'a pinch that does not start on the map is cancelled',
+    apply: h => h.replace('if(!inMap) e.preventDefault();', 'e.preventDefault();'),
+  },
+  {
+    name: 'remove the in-app text size once page zoom is gone',
+    expect: 'with page zoom gone, text can still be enlarged inside the app',
+    apply: h => h.replace('data-ts="large"', 'data-ts="largeX"'),
   },
   {
     name: 'drop the skip link',

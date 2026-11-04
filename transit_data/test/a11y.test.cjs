@@ -138,12 +138,14 @@ test('Escape closes the newest thing and nothing else, and ends a live journey o
   assert.deepStrictEqual(run({ open: { nearPanel: 'open' }, stack: ['near'] }), ['nearby']);
 });
 
-test('keyboard users can see where they are, can skip the chrome, and nothing blocks zoom or motion preferences', () => {
+test('keyboard users can see where they are, can skip the chrome, and the motion preference is honoured', () => {
   const h = html(), css = H.appStyle();
   assert.match(css, /:focus-visible\{outline:2px solid var\(--accent\)/, 'no global focus ring');
   assert.ok(!/outline\s*:\s*(none|0)\s*[;}][^}]*}\s*(?=[^{]*\{)/.test('') && /button:focus-visible,a:focus-visible,input:focus-visible/.test(css), 'the focus ring rule for controls is gone');
   assert.match(markup(), /<a[^>]*class="skip-link"/, 'no skip link');
-  assert.doesNotMatch(h, /<meta name="viewport"[^>]*(user-scalable\s*=\s*(no|0)|maximum-scale\s*=\s*1(\.0)?\b)/, 'the viewport blocks pinch zoom (WCAG 1.4.4)');
+  // (V4.3: the page no longer pinch-zooms - the app is not a document, only the map zooms - see appfeel.test.cjs. Text is enlarged in
+  // Settings > Text size or with the device's own magnifier, which the accessibility page says.)
+  assert.match(h, /id="textSeg"/, 'with page zoom locked, the app must still let people enlarge text (Settings > Text size)');
   assert.match(css, /@media \(prefers-reduced-motion:reduce\)\{\*\{animation:none!important;transition:none!important;\}\}/, 'the system "reduce motion" setting is ignored');
   assert.match(h, /<html lang="/, 'the page has no language');
 });
