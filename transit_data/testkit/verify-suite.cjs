@@ -453,6 +453,11 @@ const MUTATIONS = [
     apply: h => h.replace('class="skip-link"', 'class="skip-linkX"'),
   },
   {
+    name: 'leave the base map turned back by the angle the pinch started at',
+    expect: 'while two fingers turn the map, the base map is turned back by the angle the map has NOW',
+    apply: h => h.replace('this._irnPlace(map.containerPointToLayerPoint(map.getSize().divideBy(2)).subtract(this.getSize().divideBy(2)), 1);', ''),
+  },
+  {
     name: 'drop the MODELLED label from the arrivals board (French)',
     expect: 'the arrivals board still labels itself modelled',
     apply: h => h.replace('modelled:"MODÉLISÉ", ', ''),
