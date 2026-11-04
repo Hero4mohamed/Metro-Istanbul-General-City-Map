@@ -47,3 +47,28 @@ test('the pinned warning bubble is opaque in every style, so no line or dot show
   const atlas = /body\.atlas \.leaflet-tooltip\.lt\.disr-pin\{([^}]*)\}/.exec(css);
   assert.ok(atlas && /var\(--obsidian\)/.test(atlas[1]), 'in Atlas (a translucent panel colour) the bubble must be laid over a solid colour');
 });
+
+/* ---- station names never print over each other ---- */
+function labelWorld(stations, zoom) {
+  const s = script();
+  const drawn = [];
+  const tctx = { save() {}, restore() {}, strokeText: (n, x, y) => drawn.push([n, x, y, 'stroke']), fillText: (n, x, y) => drawn.push([n, x, y, 'fill']),
+    measureText: n => ({ width: n.length * 6 }), set font(v) {}, set textBaseline(v) {}, set textAlign(v) {}, set lineJoin(v) {}, set lineWidth(v) {}, set strokeStyle(v) {}, set fillStyle(v) {}, set globalAlpha(v) {} };
+  const map = { getZoom: () => zoom, getSize: () => ({ x: 400, y: 800 }), latLngToContainerPoint: ll => ({ x: ll[1], y: ll[0] }) };
+  const ctx = vm.createContext({ labelAlpha: 1, currentTab: 'active', stationList: stations, plannedStationList: [], map, tctx, LABEL_FONT: 'x', MAP_T: () => ({ halo: '#000', label: '#fff', labelMulti: '#fff' }), Map });
+  vm.runInContext('let _lblSrc = null, _lblOrder = []; const _lblWidth = new Map();\n' + fnSource(s, 'drawLabels') + '\ndrawLabels()', ctx);
+  return [...new Set(drawn.filter(d => d[3] === 'fill').map(d => d[0]))];
+}
+const st = (name, lat, lng, lines) => ({ name, lat, lng, lines: new Set(lines) });
+test('station names never print over each other: interchanges are placed first, a name that would overlap is left out, names with room are all drawn', () => {
+  // Plain stop at (100,100) and an interchange 5 px from it: they overlap, so only the interchange (placed first) is drawn
+  const near = labelWorld([st('Plain stop', 100, 100, ['M1']), st('Interchange', 100, 105, ['M1', 'M2'])], 15);
+  assert.deepStrictEqual(near, ['Interchange'], 'overlapping names were both drawn, or the plain one won over the interchange: ' + near);
+  // far apart: both drawn
+  assert.deepStrictEqual(labelWorld([st('Plain stop', 100, 100, ['M1']), st('Other stop', 300, 100, ['M2'])], 15).sort(), ['Other stop', 'Plain stop']);
+  // stacked closely vertically (labels are 16 px tall): the second is left out; 20 px apart is fine
+  assert.strictEqual(labelWorld([st('A', 100, 100, ['M1']), st('B', 108, 100, ['M1'])], 15).length, 1);
+  assert.strictEqual(labelWorld([st('A', 100, 100, ['M1']), st('B', 120, 100, ['M1'])], 15).length, 2);
+  // the existing rule stays: below zoom 14 only interchanges are named
+  assert.deepStrictEqual(labelWorld([st('Plain stop', 100, 100, ['M1']), st('Interchange', 300, 300, ['M1', 'M2'])], 12), ['Interchange']);
+});

@@ -30,7 +30,7 @@ function syncAria(){
   q('.leaflet-control-zoom-in').forEach(a => { a.setAttribute('aria-label', t('zoomIn')); a.title = t('zoomIn'); });
   q('.leaflet-control-zoom-out').forEach(a => { a.setAttribute('aria-label', t('zoomOut')); a.title = t('zoomOut'); });
   const map = document.getElementById('map');
-  if(map){ map.setAttribute('role', 'region'); map.setAttribute('aria-label', t('mapLabel')); }
+  if(map){ map.setAttribute('role', 'region'); map.setAttribute('aria-label', t('mapLabel')); map.setAttribute('aria-describedby', 'mapHelp'); }
   q('.omni-bar svg, .omni svg, .settings-btn svg, .locate-fab svg').forEach(s => s.setAttribute('aria-hidden', 'true'));
   syncSwitches();
   kbEnhance();
@@ -91,6 +91,7 @@ document.addEventListener('keydown', e => {
   const DIALOGS = [
     { id: 'settingsPanel', cls: 'open', modal: true,  first: '#settingsX' },
     { id: 'passPanel',     cls: 'open', modal: true,  first: '#passX' },
+    { id: 'stnFinder',     cls: 'open', modal: true,  first: '#finderList button, #finderX' },     // the first of these that exists
     { id: 'wcOverlay',     cls: 'show', modal: true,  first: '#wcGo', hiddenByDisplay: true },
     { id: 'nearPanel',     cls: 'open', modal: false, first: '#nearX' },
     { id: 'goPanel',       cls: 'open', modal: false, first: '#goExit' },
@@ -108,7 +109,7 @@ document.addEventListener('keydown', e => {
       if(isOpen && !s.open){
         s.open = true; s.opener = document.activeElement && !el.contains(document.activeElement) ? document.activeElement : null;
         // only a modal takes focus: the nearby list and the journey bar open on their own and must not pull the cursor away
-        if(d.modal) setTimeout(() => { const f = el.querySelector(d.first); if(f && visible(f)) f.focus({ preventScroll: true }); }, 60);
+        if(d.modal) setTimeout(() => { const f = d.first.split(',').map(sel => el.querySelector(sel.trim())).find(Boolean); if(f && visible(f)) f.focus({ preventScroll: true }); }, 60);
       } else if(!isOpen && s.open){
         s.open = false;
         const o = s.opener; s.opener = null;

@@ -523,6 +523,66 @@ const MUTATIONS = [
     apply: h => h.replace("'symbol-sort-key': ['get', 'rank'], 'text-letter-spacing'", "'text-letter-spacing'"),
   },
   {
+    name: 'make N pick the farthest station first',
+    expect: 'N steps to the nearest station to the centre first',
+    apply: h => h.replace('return out.sort((a, b) => a.d - b.d);', 'return out.sort((a, b) => b.d - a.d);'),
+  },
+  {
+    name: 'forget the chosen station while drawing its ring (the first version\'s bug)',
+    expect: 'N steps to the nearest station to the centre first',
+    apply: h => h.replace(/function mark\(e\)\{(\s*)unmark\(\);/, 'function mark(e){$1clear();'),
+  },
+  {
+    name: 'announce nothing when a station is chosen',
+    expect: 'N steps to the nearest station to the centre first',
+    apply: h => h.replace('mark(list[idx]); say(describe(list[idx], idx + 1, list.length));', 'mark(list[idx]);'),
+  },
+  {
+    name: 'offer plain stops at every zoom',
+    expect: 'only what is drawn is offered',
+    apply: h => h.replace('lines.length < 2 && z < STOP_MIN_ZOOM', 'false'),
+  },
+  {
+    name: 'offer stations on lines that are switched off',
+    expect: 'only what is drawn is offered',
+    apply: h => h.replace('if(!lines.some(on)) return;', ''),
+  },
+  {
+    name: 'take Ctrl+N and Alt+N from the browser',
+    expect: 'on the Vision tab the planned stops are offered',
+    apply: h => h.replace('|| ev.ctrlKey || ev.altKey || ev.metaKey) return;          // only when the map itself has focus', ') return;          // only when the map itself has focus'),
+  },
+  {
+    name: 'let Escape leave the ring on the map',
+    expect: 'Enter opens the chosen station',
+    apply: h => h.replace("else if(k === 'Escape' && ring)", "else if(k === 'Escape' && false)"),
+  },
+  {
+    name: 'open the first station whatever was chosen',
+    expect: 'Enter opens the chosen station',
+    apply: h => h.replace('openEntry(snap.list[idx]);', 'openEntry(snap.list[0]);'),
+  },
+  {
+    name: 'open a station instead of the line on the Vision tab',
+    expect: 'on the Vision tab the planned stops are offered',
+    apply: h => h.replace("if(currentTab === 'vision' && lineByRef[e.r.ref]) openLine(lineByRef[e.r.ref]); else openStation(e.r);", 'openStation(e.r);'),
+  },
+  {
+    name: 'take the station list out of the back button',
+    expect: 'the list is a modal layer of the back button and the dialog manager',
+    apply: h => h.replace("{ id:'finder',", "{ id:'finderX',"),
+  },
+  {
+    name: 'let station names print over each other again',
+    expect: 'station names never print over each other',
+    apply: h => h.replace('if(placed.some(b =>', 'if(false && placed.some(b =>'),
+  },
+  {
+    name: 'draw plain stop names before interchanges',
+    expect: 'station names never print over each other',
+    apply: h => h.replace('((b.lines ? b.lines.size : 0) - (a.lines ? a.lines.size : 0))', '((a.lines ? a.lines.size : 0) - (b.lines ? b.lines.size : 0))'),
+  },
+  {
     name: 'drop the MODELLED label from the arrivals board (French)',
     expect: 'the arrivals board still labels itself modelled',
     apply: h => h.replace('modelled:"MODÉLISÉ", ', ''),

@@ -693,8 +693,8 @@
     font-size:11px;font-weight:600;border-radius:10px;padding:6px 10px;box-shadow:0 10px 28px rgba(0,0,0,.65);}
   .leaflet-tooltip.lt::before{display:none;}
   /* the bubble that stays until the next press (17-boot.js): wraps like text rather than running off the screen as one line */
-  .leaflet-tooltip.lt.disr-pin{white-space:normal;width:max-content;max-width:min(78vw,300px);line-height:1.4;pointer-events:none;
-    background-color:#090D14;backdrop-filter:none;}          /* fully opaque: the lines and dots under it must not show through the text (V4.3) */
+  .leaflet-tooltip.lt.disr-pin{white-space:normal;width:max-content;max-width:min(78vw,300px);line-height:1.4;
+    background-color:#090D14;backdrop-filter:none;pointer-events:none;}          /* fully opaque: the lines and dots under it must not show through the text (V4.3) */
   body.atlas .leaflet-tooltip.lt.disr-pin{background:linear-gradient(var(--panel),var(--panel)),var(--obsidian);}
   .leaflet-tooltip.lt.disr-pin .pin-hint{margin-top:6px;padding-top:5px;border-top:1px solid var(--stroke-2);font-size:var(--fs-7);font-weight:500;color:var(--muted);}
   .planned-banner{background:rgba(var(--violet-rgb),.1);border:1px solid rgba(var(--violet-rgb),.38);border-radius:12px;padding:10px 12px;font-size:11.5px;font-weight:700;color:var(--violet-ink);}
@@ -1350,6 +1350,15 @@
   .sp-links{display:flex;flex-direction:column;gap:2px;}
   .sp-link{font-size:12.5px;padding:7px 0;text-decoration:underline;text-underline-offset:2px;}
   #deleteAll.armed{color:#fff;background:#B42318;border-color:#B42318;}
+  /* stations by keyboard and screen reader (25-map-keyboard.js, V4.3) */
+  .sr-only,.sr-focusable:not(:focus){position:absolute;width:1px;height:1px;margin:-1px;padding:0;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0;}
+  .sr-focusable:focus{position:fixed;left:14px;bottom:calc(86px + env(safe-area-inset-bottom));z-index:2000;padding:10px 14px;border-radius:12px;
+    background:var(--accent-ink);color:var(--obsidian);font:800 12px var(--font);border:0;}
+  .finder-list{list-style:none;display:flex;flex-direction:column;gap:6px;padding:2px 0 4px;max-height:58vh;overflow-y:auto;overscroll-behavior:contain;}
+  .finder-list button{width:100%;text-align:start;padding:10px 12px;border-radius:11px;cursor:pointer;font:600 12.5px var(--font);color:var(--text);
+    background:var(--surface);border:1px solid var(--stroke-2);display:flex;flex-wrap:wrap;gap:4px 8px;align-items:center;}
+  .finder-list button:hover{border-color:rgba(var(--ok-rgb),.55);}
+  .finder-list .fl-lines{margin-inline-start:auto;font:700 10.5px var(--mono);color:var(--muted);}
   .settings-overlay{position:fixed;inset:0;background:rgba(3,6,10,.55);backdrop-filter:blur(2px);opacity:0;pointer-events:none;z-index:1650;transition:opacity .25s;}
   .settings-overlay.on{opacity:1;pointer-events:auto;}
   .settings-panel{position:fixed;top:50%;left:50%;transform:translate(-50%,-46%) scale(.98);opacity:0;pointer-events:none;
@@ -1749,6 +1758,10 @@
 <a href="#cardPlanner" class="skip-link" data-i18n="skipToPlanner">Skip to trip planner</a>
 <div class="print-sheet" id="printSheet"></div>
 <div id="map"></div>
+<!-- keyboard and screen-reader access to the stations drawn on the map (25-map-keyboard.js): help text, announcements, and a list -->
+<div id="mapHelp" class="sr-only" data-i18n="mapKeys">N and P step through the stations in view, Enter opens the one chosen, L lists them all.</div>
+<div id="mapLive" class="sr-only" role="status" aria-live="polite"></div>
+<button id="stnFinderBtn" class="sr-focusable" type="button" data-i18n="finderBtn">Browse the stations in view</button>
 <canvas id="trainCanvas"></canvas>
 <button id="locateFab" class="locate-fab glass" data-i18n-title="locateMe" title="My location" aria-label="My location">
   <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
@@ -2046,6 +2059,13 @@
 </div>
 
 <div class="settings-overlay" id="passOverlay"></div>
+<div class="settings-overlay" id="finderOverlay"></div>
+<div class="settings-panel glass" id="stnFinder" role="dialog" aria-modal="true" aria-labelledby="finderTitle">
+  <div class="sp-head"><span id="finderTitle" data-i18n="finderTitle">Stations in view</span><button class="x" id="finderX" aria-label="Close" data-i18n-aria="close">✕</button></div>
+  <p class="sp-hint" id="finderNone" data-i18n="finderNone" hidden>No stations in this view. Zoom in or move the map.</p>
+  <ul class="finder-list" id="finderList"></ul>
+</div>
+
 <div class="settings-panel glass" id="passPanel" role="dialog" aria-modal="true" aria-label="Travel passport" data-i18n-aria="passport">
   <div class="sp-head"><span>🎫 <span data-i18n="passport">Your travel passport</span></span><button class="x" id="passX" aria-label="Close" data-i18n-aria="close">✕</button></div>
   <div id="passBody"></div>
