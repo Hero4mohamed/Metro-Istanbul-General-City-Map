@@ -6,7 +6,7 @@
 <!-- Substituted by build.cjs, which hashes the inline script from the final bytes. Pages
      cannot set headers, so this ships as meta; frame-ancestors and report-uri are
      unavailable that way. -->
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-eERqyFFyWwaeYMnNY5FDq/++pDcZzrOgdOTguGiTqps='; style-src 'self' 'unsafe-inline'; font-src 'self' data:; img-src 'self' data: blob: https://server.arcgisonline.com; connect-src 'self' https://server.arcgisonline.com https://tiles.openfreemap.org https://photon.komoot.io https://overpass-api.de https://api.ibb.gov.tr https://api.open-meteo.com https://air-quality-api.open-meteo.com https://routing.openstreetmap.de https://api.anthropic.com; worker-src 'self'; manifest-src 'self'; base-uri 'self'; form-action 'none'; object-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-2iRGjSK42bnqyuRNKNRI79/Fzv45BwA5EjRT5ni0dkc='; style-src 'self' 'unsafe-inline'; font-src 'self' data:; img-src 'self' data: blob: https://server.arcgisonline.com; connect-src 'self' https://server.arcgisonline.com https://tiles.openfreemap.org https://photon.komoot.io https://overpass-api.de https://api.ibb.gov.tr https://api.open-meteo.com https://air-quality-api.open-meteo.com https://routing.openstreetmap.de https://api.anthropic.com; worker-src 'self'; manifest-src 'self'; base-uri 'self'; form-action 'none'; object-src 'none'">
 <title>İSTANBUL RAY-NET · Rail Network Map &amp; Simulation</title>
 <!-- Leaflet 1.9.4, shipped with the app rather than fetched from a CDN (V4.3): see vendor/README.md -->
 <link rel="stylesheet" href="vendor/leaflet/leaflet.css">
@@ -684,7 +684,9 @@
     font-size:11px;font-weight:600;border-radius:10px;padding:6px 10px;box-shadow:0 10px 28px rgba(0,0,0,.65);}
   .leaflet-tooltip.lt::before{display:none;}
   /* the bubble that stays until the next press (17-boot.js): wraps like text rather than running off the screen as one line */
-  .leaflet-tooltip.lt.disr-pin{white-space:normal;width:max-content;max-width:min(78vw,300px);line-height:1.4;pointer-events:none;}
+  .leaflet-tooltip.lt.disr-pin{white-space:normal;width:max-content;max-width:min(78vw,300px);line-height:1.4;pointer-events:none;
+    background-color:#090D14;backdrop-filter:none;}          /* fully opaque: the lines and dots under it must not show through the text (V4.3) */
+  body.atlas .leaflet-tooltip.lt.disr-pin{background:linear-gradient(var(--panel),var(--panel)),var(--obsidian);}
   .leaflet-tooltip.lt.disr-pin .pin-hint{margin-top:6px;padding-top:5px;border-top:1px solid var(--stroke-2);font-size:var(--fs-7);font-weight:500;color:var(--muted);}
   .planned-banner{background:rgba(var(--violet-rgb),.1);border:1px solid rgba(var(--violet-rgb),.38);border-radius:12px;padding:10px 12px;font-size:11.5px;font-weight:700;color:var(--violet-ink);}
   .planned-banner span{display:block;font-weight:400;color:var(--muted);font-size:var(--fs-7);margin-top:4px;line-height:1.4;}
@@ -2311,7 +2313,7 @@
 
    The report carries the fault, the build, the city, the language and the browser. It never
    carries location, saved places, trip history or the API key. ===== */
-const BUILD = "20261103112044";
+const BUILD = "20261104131307";
 const DIAG_MAX = 20;
 let DIAG = [];
 try { DIAG = JSON.parse(localStorage.getItem("irn_diag") || "[]"); } catch (e) { DIAG = []; }
@@ -7149,8 +7151,19 @@ const MAP_TURN = (function(){
         } else if(gl._update !== null && gl._update !== undefined) gl._update(); else gl.update();
       },
       _pinchZoom: function(e){
-        const map = this._map; if(!map._irnTheta) return glOrig._pinchZoom.call(this, e);
+        const map = this._map, c = this._container;
+        if(!map._irnTheta){
+          // the twist came back to exactly north-up while the fingers are still down: the canvas is upright again
+          if(c && c._irnTurned){ c._irnTurned = false; L.DomUtil.removeClass(c, 'leaflet-zoom-animated'); c.style.transformOrigin = ''; L.DomUtil.setPosition(c, map.containerPointToLayerPoint([0, 0])); }
+          return glOrig._pinchZoom.call(this, e);
+        }
         this._glMap.jumpTo({ zoom: map.getZoom() - 1, center: map.getCenter(), bearing: bearingOf(map) });
+        /* While two fingers are down `_zooming` is set and _update() leaves the canvas alone, which is right for a pinch that only
+           zooms. A pinch that also TURNS the map changes the angle every frame, and the canvas has to be turned back by the angle
+           the map has NOW: left at the angle it had when the fingers went down (0, for a first twist) the base map and its names
+           turned twice as far as the lines, and snapped into line only when the fingers lifted (found on a phone, V4.3). */
+        c._irnTurned = true;
+        this._irnPlace(map.containerPointToLayerPoint(map.getSize().divideBy(2)).subtract(this.getSize().divideBy(2)), 1);
       },
       _animateZoom: function(e){
         const map = this._map; if(!map._irnTheta) return glOrig._animateZoom.call(this, e);
@@ -8823,6 +8836,20 @@ function renderOverlay(now){
   if(focusRefs) return;              // focused on one route: no other labels or carriages
   drawLabels();
   if(showTrains && currentTab==='active') drawTrains(now);
+  clearUnderBubbles();
+}
+/* This canvas is one screen-sized layer ABOVE the whole map, because carriages must be drawn above the lines. A bubble the map shows
+   (the pinned warning, a hover tooltip, a popup) lives INSIDE the map, below it, so the canvas drew station names and carriages
+   straight across the bubble's text (V4.3: seen on a phone, "Fikirtepe" printed through a service notice). Whatever such a bubble
+   covers is cleared out of the canvas each frame, so the bubble reads clean and is in front of everything. */
+function clearUnderBubbles(){
+  const els = document.querySelectorAll('.leaflet-tooltip, .leaflet-popup');
+  if(!els.length) return;
+  const o = tcv.getBoundingClientRect();
+  for(const el of els){
+    const r = el.getBoundingClientRect(); if(r.width < 2 || r.height < 2) continue;
+    tctx.clearRect(r.left - o.left - 4, r.top - o.top - 4, r.width + 8, r.height + 8);
+  }
 }
 function drawLabels(){
   if(labelAlpha < 0.03) return;

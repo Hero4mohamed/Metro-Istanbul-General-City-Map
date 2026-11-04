@@ -460,7 +460,7 @@ const MUTATIONS = [
   {
     name: 'draw the carriages and station names across the warning bubble again',
     expect: 'the carriage pass cuts the bubbles out AFTER it has drawn, every frame',
-    apply: h => h.replace(/\n\s*clearUnderBubbles\(\);\n\}/, '\n}'),
+    apply: h => h.replace(/\r?\n\s*clearUnderBubbles\(\);\r?\n\}/, '\n}'),
   },
   {
     name: 'clear the carriage canvas in the wrong place',
