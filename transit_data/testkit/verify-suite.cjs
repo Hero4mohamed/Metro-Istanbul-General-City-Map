@@ -458,6 +458,21 @@ const MUTATIONS = [
     apply: h => h.replace('this._irnPlace(map.containerPointToLayerPoint(map.getSize().divideBy(2)).subtract(this.getSize().divideBy(2)), 1);', ''),
   },
   {
+    name: 'draw the carriages and station names across the warning bubble again',
+    expect: 'the carriage pass cuts the bubbles out AFTER it has drawn, every frame',
+    apply: h => h.replace(/\n\s*clearUnderBubbles\(\);\n\}/, '\n}'),
+  },
+  {
+    name: 'clear the carriage canvas in the wrong place',
+    expect: 'whatever a tooltip, the pinned bubble or a popup covers is cleared out of the carriage canvas',
+    apply: h => h.replace('tctx.clearRect(r.left - o.left - 4,', 'tctx.clearRect(r.left - o.left + 40,'),
+  },
+  {
+    name: 'let the lines show through the pinned bubble',
+    expect: 'the pinned warning bubble is opaque in every style',
+    apply: h => h.replace('background-color:#090D14;backdrop-filter:none;', 'backdrop-filter:blur(10px);'),
+  },
+  {
     name: 'drop the MODELLED label from the arrivals board (French)',
     expect: 'the arrivals board still labels itself modelled',
     apply: h => h.replace('modelled:"MODÉLISÉ", ', ''),

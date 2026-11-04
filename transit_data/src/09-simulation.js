@@ -155,6 +155,20 @@ function renderOverlay(now){
   if(focusRefs) return;              // focused on one route: no other labels or carriages
   drawLabels();
   if(showTrains && currentTab==='active') drawTrains(now);
+  clearUnderBubbles();
+}
+/* This canvas is one screen-sized layer ABOVE the whole map, because carriages must be drawn above the lines. A bubble the map shows
+   (the pinned warning, a hover tooltip, a popup) lives INSIDE the map, below it, so the canvas drew station names and carriages
+   straight across the bubble's text (V4.3: seen on a phone, "Fikirtepe" printed through a service notice). Whatever such a bubble
+   covers is cleared out of the canvas each frame, so the bubble reads clean and is in front of everything. */
+function clearUnderBubbles(){
+  const els = document.querySelectorAll('.leaflet-tooltip, .leaflet-popup');
+  if(!els.length) return;
+  const o = tcv.getBoundingClientRect();
+  for(const el of els){
+    const r = el.getBoundingClientRect(); if(r.width < 2 || r.height < 2) continue;
+    tctx.clearRect(r.left - o.left - 4, r.top - o.top - 4, r.width + 8, r.height + 8);
+  }
 }
 function drawLabels(){
   if(labelAlpha < 0.03) return;
