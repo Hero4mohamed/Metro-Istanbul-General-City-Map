@@ -503,6 +503,26 @@ const MUTATIONS = [
     apply: h => h.replace('background-color:#090D14;backdrop-filter:none;', 'backdrop-filter:blur(10px);'),
   },
   {
+    name: 'let the suburb names crowd the map again',
+    expect: 'the map is not crowded with names',
+    apply: h => h.replace("'place-suburb': [[11.5, 20], [12, 23], [13, 17], [14, 18], [15, 12], [16, 8]],", "'place-suburb': 2,"),
+  },
+  {
+    name: 'repeat every street name every few hundred metres',
+    expect: 'the map is not crowded with names',
+    apply: h => h.replace("g[0] === 'road-label-major' ? 320 : 460", '320'),
+  },
+  {
+    name: 'let places of interest overlap each other',
+    expect: 'the map is not crowded with names',
+    apply: h => h.replace("'text-padding': vecPad('poi'), 'symbol-sort-key'", "'text-padding': vecPad('poi'), 'text-allow-overlap': true, 'symbol-sort-key'"),
+  },
+  {
+    name: 'stop ranking the place names by importance',
+    expect: 'the map is not crowded with names',
+    apply: h => h.replace("'symbol-sort-key': ['get', 'rank'], 'text-letter-spacing'", "'text-letter-spacing'"),
+  },
+  {
     name: 'drop the MODELLED label from the arrivals board (French)',
     expect: 'the arrivals board still labels itself modelled',
     apply: h => h.replace('modelled:"MODÉLISÉ", ', ''),

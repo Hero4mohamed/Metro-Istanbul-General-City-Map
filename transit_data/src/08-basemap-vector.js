@@ -82,6 +82,24 @@ const VEC_TIER = {
 /* Kinds drawn only when well known: a famous park or square, not every pocket garden, gallery or mall. kind: [zoom, the rank needed]. */
 const VEC_NOTABLE = { park: [16, 2], square: [16, 3], mall: [16, 2], beach: [17, 1], garden: [17, 2], theatre: [17, 2], gallery: [17, 2], library: [17, 2], government: [17, 2] };
 const VEC_TIERS = [13, 14, 15, 16, 17];
+/* How much room a name keeps clear around itself, in pixels, by zoom (V4.3). The map showed too many names at once: from zoom 12 to 14
+   the suburbs alone put 30-47 on a phone screen, and at 15-16 the places added 20-50 more. The style already ranks them (the tiles'
+   `rank`, lower = more important, sorts who wins a collision), so more room means the LEAST important ones lose, and what stays is the
+   city, the districts and the places people look for. Measured on the real map at zooms 11-17 over the strait, Kadıköy and the old
+   city (placed names counted after collision): 744 before, 431 after, 40-46% fewer at every zoom. Small and wide at low zoom, where
+   there are most names to thin, and tighter as the names grow. `[zoom, px]` pairs, app zoom numbering. */
+const VEC_PAD = {
+  'place-city': 6,
+  'place-town': [[8, 14], [11, 22], [13, 14], [15, 8]],
+  'place-village': [[11, 26], [14, 20], [16, 12]],
+  'place-suburb': [[11.5, 20], [12, 23], [13, 17], [14, 18], [15, 12], [16, 8]],
+  'place-quarter': [[13.5, 16], [16, 12]],
+  'poi': [[13, 18], [17, 24]],
+  'road-label-major': 8,
+  'road-label-secondary': [[13, 8], [17, 18]],
+  'road-label-minor': [[15, 8], [17, 22]]
+};
+const vecPad = function (id) { const p = VEC_PAD[id]; return Array.isArray(p) ? vecRamp(p) : (p == null ? 3 : p); };
 /* the zoom a given place appears at, or 0 = not drawn on the map at all */
 function vecTierOf(key, rank) {
   const k = VEC_TIER[key];
@@ -192,7 +210,7 @@ function vecStyle(tone, lang, glyphs, part) {
   ].forEach(function (p) {
     L.push({ id: p[0], type: 'symbol', source: VEC_SOURCE, 'source-layer': 'place', minzoom: vecZ(p[2]), maxzoom: vecZ(p[3] + 1),
              filter: ['in', ['get', 'class'], ['literal', p[1]]],
-             layout: text(vecRamp(p[4], 1.2), null, p[5], { 'symbol-sort-key': ['get', 'rank'], 'text-letter-spacing': p[0] === 'place-suburb' ? .04 : 0 }),
+             layout: text(vecRamp(p[4], 1.2), null, p[5], { 'symbol-sort-key': ['get', 'rank'], 'text-letter-spacing': p[0] === 'place-suburb' ? .04 : 0, 'text-padding': vecPad(p[0]) }),
              paint: paintText(p[6], 2) });
   });
   L.push({ id: 'aerodrome-label', type: 'symbol', source: VEC_SOURCE, 'source-layer': 'aerodrome_label', minzoom: vecZ(9),
@@ -211,8 +229,8 @@ function vecStyle(tone, lang, glyphs, part) {
   ].forEach(function (g) {
     L.push({ id: g[0], type: 'symbol', source: VEC_SOURCE, 'source-layer': 'transportation_name', minzoom: vecZ(g[2]),
              filter: ['in', ['get', 'class'], ['literal', g[1]]],
-             layout: text(vecRamp(g[3], 1.2), null, VEC_FONT, { 'symbol-placement': 'line', 'symbol-spacing': 320, 'text-rotation-alignment': 'map', 'text-pitch-alignment': 'viewport',
-                                                               'text-max-angle': 40, 'text-padding': 3, 'text-letter-spacing': .02 }),
+             layout: text(vecRamp(g[3], 1.2), null, VEC_FONT, { 'symbol-placement': 'line', 'symbol-spacing': g[0] === 'road-label-major' ? 320 : 460, 'text-rotation-alignment': 'map', 'text-pitch-alignment': 'viewport',
+                                                               'text-max-angle': 40, 'text-padding': vecPad(g[0]), 'text-letter-spacing': .02 }),
              paint: paintText(V.ink2, 1.9) });
   });
   L.push({ id: 'housenumber', type: 'symbol', source: VEC_SOURCE, 'source-layer': 'housenumber', minzoom: vecZ(17.5),
@@ -226,13 +244,13 @@ function vecStyle(tone, lang, glyphs, part) {
     L.push({ id: 'poi-label-' + tier, type: 'symbol', source: VEC_PLACES, minzoom: vecZ(tier), filter: f,
              layout: { 'text-field': ['coalesce', ['get', lang === 'en' ? 'en' : (lang === 'ar' ? 'ar' : 'n')], ['get', 'n']], 'text-font': VEC_FONT,
                        'text-size': vecRamp([[tier, 10.5], [tier + 2, 12], [tier + 4, 14]], 1.2), 'text-anchor': 'center',
-                       'text-max-width': 9, 'text-padding': 3, 'symbol-sort-key': ['-', 0, ['get', 'r']] },
+                       'text-max-width': 9, 'text-padding': vecPad('poi'), 'symbol-sort-key': ['-', 0, ['get', 'r']] },
              paint: paintText(V.ink, 1.6) });
   });
   // the tiles' own places of interest, until the app's file is there (and for a city that has none): the few the tiles carry
   L.push({ id: 'poi-tiles', type: 'symbol', source: VEC_SOURCE, 'source-layer': 'poi', minzoom: vecZ(15), metadata: { fallback: true },
            filter: ['all', ['<=', ['get', 'rank'], 12], ['!', ['in', ['get', 'class'], ['literal', ['bus', 'railway', 'parking', 'entrance', 'ferry_terminal']]]]],
-           layout: text(vecRamp([[15, 10.5], [18, 13]]), null, VEC_FONT, { 'text-anchor': 'top', 'text-offset': [0, .4], 'text-padding': 3, 'text-optional': true }),
+           layout: text(vecRamp([[15, 10.5], [18, 13]]), null, VEC_FONT, { 'text-anchor': 'top', 'text-offset': [0, .4], 'text-padding': vecPad('poi'), 'text-optional': true }),
            paint: paintText(V.ink, 1.6) });
 
   const wanted = part === 'base' ? function (l) { return l.type !== 'symbol'; } : part === 'labels' ? function (l) { return l.type === 'symbol'; } : null;
