@@ -82,6 +82,7 @@ function render(page, L, cfg) {
     '<meta charset="utf-8">',
     '<meta name="viewport" content="width=device-width, initial-scale=1">',
     '<meta http-equiv="Content-Security-Policy" content="default-src \'none\'; style-src \'unsafe-inline\'; img-src \'self\'; base-uri \'none\'; form-action \'none\'">',
+    '<meta name="referrer" content="no-referrer">',
     '<meta name="color-scheme" content="light dark">',
     '<title>' + doc.title + ' · İstanbul Ray-Net</title>',
     '<meta name="description" content="' + doc.desc.replace(/"/g, '&quot;') + '">',

@@ -228,6 +228,8 @@ const CSP = [
    'https://api.open-meteo.com', 'https://air-quality-api.open-meteo.com', 'https://routing.openstreetmap.de',
    'https://api.anthropic.com'].join(' '),
   "worker-src 'self'",
+  "frame-src 'none'",           // the app embeds nothing, and (see 00-diagnostics.js) refuses to be embedded
+  "media-src 'none'",           // no audio or video
   "manifest-src 'self'",
   "base-uri 'self'",
   "form-action 'none'",

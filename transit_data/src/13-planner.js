@@ -6,7 +6,7 @@ function lsGet(k){ try{ return JSON.parse(localStorage.getItem(k)||'[]'); }catch
 function lsSet(k,v){ try{ localStorage.setItem(k, JSON.stringify(v)); }catch(e){} }
 let planHistory = lsGet(LS_HIST);
 let planFavs = lsGet(LS_FAV);
-const attrEsc = s => (s||'').replace(/&/g,'&amp;').replace(/"/g,'&quot;');
+const attrEsc = s => (s||'').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;');   // V4.3: < and > too, so no markup survives even inside a value
 
 /* ---- door-to-door endpoints: any stop (searchable) or any pinned map point ---- */
 let originPt=null, destPt=null, pickMode=null;

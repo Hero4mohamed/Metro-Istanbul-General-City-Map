@@ -182,7 +182,7 @@ function renderSched(){
     else chips = `<span class="cd-none">${t('schedNone')}</span>`;
     return `<div class="arr-row"><span class="svc-cd" style="background:${b.color};color:${inkOn(b.color)}">${svgEsc(b.ref)}</span>`+
       `<div class="arr-tx"><div class="arr-to">→ ${svgEsc(b.target)}</div><div class="arr-mins">${chips}</div>`+
-      `<div class="arr-fl">${t('firstDep')} ${b.times[0]} · ${t('lastDep')} ${b.times[b.times.length-1]}</div></div></div>`;
+      `<div class="arr-fl">${t('firstDep')} ${svgEsc(b.times[0])} · ${t('lastDep')} ${svgEsc(b.times[b.times.length-1])}</div></div></div>`;     // times come from the İBB API: text, not markup
   }).filter(Boolean);
   el.innerHTML = blocks.length ? `<div class="bt">⏱ ${t('liveArrivals')} <span class="live">${t('official')}</span></div>`+blocks.join('') : '';
 }
@@ -203,7 +203,7 @@ function renderBoard(){
   const liveRows = board.map(b => b.etas.map((sec,i)=>{
     const e=fmtEta(sec);
     return `<div class="arr"><span class="cd" style="background:${b.color};color:${inkOn(b.color)}">${b.ref}</span>
-      <div class="ds">→ ${b.dest}<small>${i===0?t('nextArr'):t('followingArr')}</small></div>
+      <div class="ds">→ ${svgEsc(b.dest)}<small>${i===0?t('nextArr'):t('followingArr')}</small></div>
       <div class="et ${e.now?'now':''}">${e.t}</div></div>`;
   }).join("")).join("");
   // say where these numbers come from, right where they are read

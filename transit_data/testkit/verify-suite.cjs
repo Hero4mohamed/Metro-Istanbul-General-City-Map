@@ -593,6 +593,66 @@ const MUTATIONS = [
     apply: h => h.replace('cardDrawn:"Bu uygulama için çizilmiş bir çizimdir; işletmecinin kendi kartı değildir.",', ''),
   },
   {
+    name: 'print a notice title raw in the warning bubble',
+    expect: 'notice text from operators and feeds is escaped everywhere it reaches the page',
+    apply: h => h.replace('${svgEsc(disTitle(d))}</b><br>', '${disTitle(d)}</b><br>'),
+  },
+  {
+    name: 'print an announcement message raw',
+    expect: 'notice text from operators and feeds is escaped everywhere it reaches the page',
+    apply: h => h.replace('<div class="ann-msg">${disTrTag(d)}${svgEsc(disMsg(d))}</div>', '<div class="ann-msg">${disTrTag(d)}${disMsg(d)}</div>'),
+  },
+  {
+    name: 'print a bus notice title raw',
+    expect: 'notice text from operators and feeds is escaped everywhere it reaches the page',
+    apply: h => h.replace('<span class="ann-ttl">${svgEsc(disTitle(d))}</span></div>', '<span class="ann-ttl">${disTitle(d)}</span></div>'),
+  },
+  {
+    name: 'let markup survive inside an attribute value',
+    expect: 'notice text from operators and feeds is escaped everywhere it reaches the page',
+    apply: h => h.replace(/(\.replace\(\/"\/g,'&quot;'\))\.replace\(\/<\/g,'&lt;'\)\.replace\(\/>\/g,'&gt;'\);/, '$1;'),
+  },
+  {
+    name: 'print the İBB departure times raw',
+    expect: 'the live arrivals board escapes what the İBB API sends',
+    apply: h => h.replace('${svgEsc(b.times[0])}', '${b.times[0]}'),
+  },
+  {
+    name: 'allow framing again',
+    expect: 'the Content-Security-Policy forbids what the app never does',
+    apply: h => h.replace("frame-src 'none'; ", ''),
+  },
+  {
+    name: 'allow a plain http host to be contacted',
+    expect: 'the Content-Security-Policy forbids what the app never does',
+    apply: h => h.replace("connect-src 'self'", "connect-src 'self' http://example.com"),
+  },
+  {
+    name: 'drop the explicit referrer policy',
+    expect: 'the page sets its referrer policy',
+    apply: h => h.replace('<meta name="referrer" content="strict-origin-when-cross-origin">', ''),
+  },
+  {
+    name: 'remove the frame-buster',
+    expect: 'the app takes over the window if it is framed',
+    apply: h => h.replace('if (window.top !== window.self) {', 'if (false) {'),
+  },
+  {
+    name: 'let a framed app stay visible when it cannot break out',
+    expect: 'the app takes over the window if it is framed',
+    apply: h => h.replace('catch (e) { document.documentElement.style.display = "none"; }', 'catch (e) { }'),
+  },
+  {
+    name: 'run a string as code',
+    expect: 'the app uses no way of running a string as code',
+    apply: h => h.replace('const BUILD = ', "const EV = eval('1'); const BUILD = "),
+  },
+  {
+    name: 'open a link in a new tab without noopener',
+    expect: 'every link that opens another site keeps it from controlling this tab',
+    apply: h => h.replace('target="_blank" rel="noopener" data-i18n="legalPrivacy"', 'target="_blank" data-i18n="legalPrivacy"'),
+  },
+  {
     name: 'drop the MODELLED label from the arrivals board (French)',
     expect: 'the arrivals board still labels itself modelled',
     apply: h => h.replace('modelled:"MODÉLISÉ", ', ''),
