@@ -200,7 +200,7 @@ test('Settings and the welcome dialog link all four legal pages and the legal li
   const html = markup();
   const settings = /<details class="sp-sec" data-sec="about">[\s\S]*?<\/details>/.exec(html);
   assert.ok(settings, 'no About & legal section in Settings');
-  for (const p of ['privacy', 'terms', 'storage', 'credits']) assert.ok(settings[0].includes('data-legal="' + p + '"'), 'Settings does not link the ' + p + ' page');
+  for (const p of ['privacy', 'terms', 'storage', 'credits', 'accessibility']) assert.ok(settings[0].includes('data-legal="' + p + '"'), 'Settings does not link the ' + p + ' page');
   const wc = /<div class="wc-overlay"[\s\S]*?<\/div>\s*<\/div>/.exec(html)[0];
   for (const p of ['privacy', 'terms', 'credits']) assert.ok(wc.includes('data-legal="' + p + '"'), 'the welcome dialog does not link the ' + p + ' page');
   const fn = fnSource(script(), 'syncLegalLinks');

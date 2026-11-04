@@ -119,7 +119,8 @@ PAGES.index = {
     ul([a('privacy.html', '<strong>Privacy notice</strong>') + ': what the app keeps, who it talks to, and your choices.',
         a('terms.html', '<strong>Terms of use</strong>') + ': what the app is, what it is not, that it is free (no fees, no refunds needed), and its limits.',
         a('storage.html', '<strong>Cookies and stored data</strong>') + ': exactly what is saved on your device, and how to delete it.',
-        a('credits.html', '<strong>Credits and licences</strong>') + ': whose data, software, typefaces and images the app uses.']) +
+        a('credits.html', '<strong>Credits and licences</strong>') + ': whose data, software, typefaces and images the app uses.',
+        a('accessibility.html', '<strong>Accessibility statement</strong>') + ': what works with a keyboard and a screen reader, what does not yet, and how to report a barrier.']) +
     '<h2 id="who">Who is behind it</h2>' +
     ul(['<strong>Operator:</strong> ' + c.operatorEn + '. There is no company, no registered business address and no tax number: it is a personal project.',
         '<strong>Contact:</strong> ' + a('mailto:' + c.contactEmail, esc(c.contactEmail)) + '. Questions about privacy, a correction or a complaint all go here.',
@@ -130,7 +131,8 @@ PAGES.index = {
     ul([a('privacy.tr.html', '<strong>Gizlilik bildirimi</strong>') + ': uygulamanın neyi sakladığı, kimlerle konuştuğu ve seçimleriniz.',
         a('terms.tr.html', '<strong>Kullanım koşulları</strong>') + ': uygulamanın ne olduğu, ne olmadığı, ücretsiz olduğu (ücret yok, iade gerekmez) ve sınırları.',
         a('storage.tr.html', '<strong>Çerezler ve saklanan veriler</strong>') + ': cihazınızda tam olarak neyin saklandığı ve nasıl silineceği.',
-        a('credits.tr.html', '<strong>Katkılar ve lisanslar</strong>') + ': uygulamanın kimin verilerini, yazılımını, yazı tiplerini ve görsellerini kullandığı.']) +
+        a('credits.tr.html', '<strong>Katkılar ve lisanslar</strong>') + ': uygulamanın kimin verilerini, yazılımını, yazı tiplerini ve görsellerini kullandığı.',
+        a('accessibility.tr.html', '<strong>Erişilebilirlik bildirimi</strong>') + ': klavye ve ekran okuyucuyla nelerin çalıştığı, nelerin henüz çalışmadığı ve bir engelin nasıl bildirileceği.']) +
     '<h2 id="who">Arkasında kim var</h2>' +
     ul(['<strong>İşleten:</strong> ' + c.operatorTr + '. Bir şirket, kayıtlı ticari adres ve vergi numarası yoktur: kişisel bir projedir.',
         '<strong>İletişim:</strong> ' + a('mailto:' + c.contactEmail, esc(c.contactEmail)) + '. Gizlilik soruları, düzeltme ve şikâyetler buraya gelir.',
@@ -278,7 +280,7 @@ PAGES.credits = {
       '<strong>Noto Sans</strong> (the map\'s place names), © 2018 The Noto Project Authors, ' + OFL(true) + '.',
       'The typefaces are served from this app, not from a font service.']) +
     '<h2 id="images">Images and icons</h2>' + ul([
-      '<strong>App icon and share-preview picture</strong>: artwork supplied by the app\'s owner for this project.',
+      '<strong>App icon and share-preview picture</strong>: generated with ChatGPT (OpenAI) from the app owner\'s own description and supplied by the owner. Under ' + a('https://openai.com/policies/terms-of-use/', 'OpenAI\'s terms') + ' the person who asked for the picture owns it to the extent the law allows. In some countries a computer-generated picture may not be protected by copyright, and similar pictures may be made for other people.',
       '<strong>İstanbulkart pictures</strong> (the fare-card choice in Settings): Belbim A.Ş.\'s product artwork via Wikimedia Commons, where it is marked public domain as a simple text-and-logo mark (' + a('https://commons.wikimedia.org/wiki/Category:%C4%B0stanbulkart', 'Commons category') + '). Shown only to identify the card, with a credit; no affiliation is implied.',
       '<strong>Other cities\' fare cards</strong> are drawn by the app itself, as are the line symbols and every other icon (inline vector graphics). The app uses no stock photographs.',
       'Emoji are drawn by your device\'s own emoji font.']) +
@@ -302,12 +304,52 @@ PAGES.credits = {
       '<strong>Noto Sans</strong> (haritadaki yer adları), © 2018 The Noto Project Authors, ' + OFL(false) + '.',
       'Yazı tipleri bir yazı tipi servisinden değil, bu uygulamadan sunulur.']) +
     '<h2 id="images">Görseller ve simgeler</h2>' + ul([
-      '<strong>Uygulama simgesi ve paylaşım önizleme görseli</strong>: uygulamanın sahibinin bu proje için sağladığı çalışma.',
+      '<strong>Uygulama simgesi ve paylaşım önizleme görseli</strong>: uygulamanın sahibinin kendi tarifinden ChatGPT (OpenAI) ile üretilmiş ve sahibi tarafından sağlanmıştır. ' + a('https://openai.com/policies/terms-of-use/', 'OpenAI\'nin koşullarına') + ' göre görseli isteyen kişi, yasaların izin verdiği ölçüde onun sahibidir. Bazı ülkelerde bilgisayarla üretilen bir görsel telif hakkıyla korunmayabilir ve başkaları için de benzer görseller üretilebilir.',
       '<strong>İstanbulkart görselleri</strong> (Ayarlar\'daki ücret kartı seçimi): Belbim A.Ş.\'nin ürün görselleri, Wikimedia Commons üzerinden; orada basit bir yazı-logo işareti olarak kamu malı işaretlenmiştir (' + a('https://commons.wikimedia.org/wiki/Category:%C4%B0stanbulkart', 'Commons kategorisi') + '). Yalnızca kartı tanıtmak için, kaynak gösterilerek kullanılır; bağlantı ima edilmez.',
       '<strong>Diğer şehirlerin ücret kartları</strong>, hat simgeleri ve diğer tüm simgeler (satır içi vektör grafikler) uygulamanın kendisi tarafından çizilir. Uygulama hiç stok fotoğraf kullanmaz.',
       'Emojiler cihazınızın kendi emoji yazı tipiyle çizilir.']) +
     '<h2 id="marks">Adlar ve markalar</h2>' + p('Metro İstanbul, İETT, İBB, Şehir Hatları, TCDD, İstanbulkart, Esri, OpenStreetMap ve diğer adlar sahiplerine aittir ve yalnızca bilginin nereden geldiğini belirtmek için kullanılır.') +
     '<h2 id="report">Eksik ya da yanlış bir şey mi var?</h2>' + p('Bize ' + a('mailto:' + c.contactEmail, esc(c.contactEmail)) + ' adresinden yazın; düzeltir ya da kaldırırız.') }),
+};
+
+/* =============================================================== accessibility */
+PAGES.accessibility = {
+  en: c => ({ title: 'Accessibility statement', desc: 'How accessible İstanbul Ray-Net is, what is not yet, and how to tell us about a barrier.', h1: 'Accessibility statement', updated: true, body:
+    p('We want everyone to be able to use the app. It aims at the <em>Web Content Accessibility Guidelines</em> (WCAG) 2.2, level AA. It has been checked by automated tests and by hand in a browser, <strong>not yet with a real screen reader on a phone</strong>, so we say it <strong>partly</strong> meets that standard and list below what is missing.') +
+    '<h2 id="works">What works</h2>' + ul([
+      '<strong>Keyboard.</strong> Everything in the app can be reached and operated without a mouse or touch: buttons, the legend of lines, notices, Settings and panels. Panels take focus when they open, keep Tab inside while they are open, and give focus back when they close. Escape closes the newest panel.',
+      '<strong>The map\'s stations by keyboard.</strong> Focus the map (Tab), then press <kbd>N</kbd> and <kbd>P</kbd> to step through the stations in view (nearest the centre first); the station is ringed on the map and announced. <kbd>Enter</kbd> opens it, <kbd>L</kbd> lists them all, <kbd>Esc</kbd> clears. A "Browse the stations in view" button does the same for screen readers. Arrow keys pan the map and <kbd>+</kbd> and <kbd>-</kbd> zoom it.',
+      '<strong>Screen readers.</strong> Buttons, switches (with on and off), dialogs and the map have names, in English, Turkish, Arabic and French. Station choices and results are announced.',
+      '<strong>Colour and contrast.</strong> Text colour against its background was measured in every style (Neon, Atlas, Calm, Paper) in dark, light and mixed themes, and with high contrast on, and meets 4.5:1 (WCAG AA). Line chips choose black or white text to stay readable on any line colour.',
+      '<strong>Motion.</strong> The system "reduce motion" setting and Settings, Accessibility, Reduce motion both calm the animations.',
+      '<strong>Text size.</strong> Settings, Text size makes text larger. Languages that read right to left (Arabic) are laid out right to left.']) +
+    '<h2 id="limits">What does not work yet, or works differently</h2>' + ul([
+      '<strong>Pinch-zooming the page is switched off on purpose.</strong> The app should behave like an app: only the map zooms and pans, and pinching a tab or a panel no longer zooms and distorts the whole page. This is a trade-off against the guideline that text should be resizable. To enlarge text use <em>Settings, Text size</em>, or your device\'s own magnifier (Android: Accessibility, Magnification, or "Force enable zoom"; iPhone: Accessibility, Zoom, or Display and Text Size).',
+      '<strong>No real screen reader testing yet.</strong> TalkBack, VoiceOver and NVDA have not been used on the app. Expect rough edges and tell us about them.',
+      '<strong>The names drawn on the map</strong> (streets, districts, places) are part of a map picture and are not read by screen readers; stations can be reached with the keys above, and places with the search box.',
+      '<strong>The moving carriages</strong> are a visual simulation with no equivalent for a screen reader; timetables and departures are available as text.',
+      '<strong>Legal pages</strong> are available in English and Turkish only.',
+      '<strong>Colours of lines on the map</strong> against the map have not been measured against the 3:1 guideline for graphics.']) +
+    '<h2 id="feedback">Tell us about a barrier</h2>' + p('If something does not work for you, write to ' + a('mailto:' + c.contactEmail, esc(c.contactEmail)) + ' and say what you were trying to do, what device and assistive technology you use, and what happened. We read every message and fix what we can; this is a personal project, so we cannot promise a date.') +
+    '<h2 id="date">This statement</h2>' + p('Written on 4 November 2026 from what was tested then. It will be updated when the app changes.') }),
+  tr: c => ({ title: 'Erişilebilirlik bildirimi', desc: 'İstanbul Ray-Net\'in ne kadar erişilebilir olduğu, neyin henüz olmadığı ve bir engeli bize nasıl bildireceğiniz.', h1: 'Erişilebilirlik bildirimi', updated: true, body:
+    p('Uygulamayı herkesin kullanabilmesini istiyoruz. <em>Web İçeriği Erişilebilirlik Yönergeleri</em> (WCAG) 2.2, AA düzeyini hedefler. Otomatik testlerle ve bir tarayıcıda elle denetlendi, <strong>henüz bir telefonda gerçek bir ekran okuyucuyla denenmedi</strong>; bu yüzden bu standardı <strong>kısmen</strong> karşıladığını söylüyoruz ve eksikleri aşağıda sıralıyoruz.') +
+    '<h2 id="works">Çalışanlar</h2>' + ul([
+      '<strong>Klavye.</strong> Uygulamadaki her şeye fare veya dokunma olmadan ulaşılır ve kullanılır: düğmeler, hat göstergesi, duyurular, Ayarlar ve paneller. Paneller açılınca odağı alır, açıkken Tab\'ı kendi içinde tutar, kapanınca odağı geri verir. Esc en yeni paneli kapatır.',
+      '<strong>Haritadaki istasyonlar klavyeyle.</strong> Haritaya odaklanın (Tab), sonra görünümdeki istasyonlar arasında gezinmek için <kbd>N</kbd> ve <kbd>P</kbd> tuşlarına basın (merkeze en yakından başlar); istasyon haritada halkayla işaretlenir ve sesli bildirilir. <kbd>Enter</kbd> açar, <kbd>L</kbd> hepsini listeler, <kbd>Esc</kbd> seçimi temizler. "Görünümdeki istasyonlara göz at" düğmesi aynısını ekran okuyucular için yapar. Ok tuşları haritayı kaydırır, <kbd>+</kbd> ve <kbd>-</kbd> yakınlaştırır.',
+      '<strong>Ekran okuyucular.</strong> Düğmelerin, anahtarların (açık ve kapalı durumuyla), iletişim kutularının ve haritanın İngilizce, Türkçe, Arapça ve Fransızca adları vardır. İstasyon seçimleri ve sonuçlar sesli bildirilir.',
+      '<strong>Renk ve karşıtlık.</strong> Metin renginin arka planına karşı karşıtlığı her stilde (Neon, Atlas, Calm, Paper) koyu, açık ve karma temalarda, ayrıca yüksek karşıtlık açıkken ölçüldü ve 4,5:1\'i (WCAG AA) karşılıyor. Hat etiketleri, her hat renginde okunur kalmak için siyah ya da beyaz metin seçer.',
+      '<strong>Hareket.</strong> Sistemin "hareketi azalt" ayarı ve Ayarlar, Erişilebilirlik, Hareketi azalt animasyonları yumuşatır.',
+      '<strong>Yazı boyutu.</strong> Ayarlar, Yazı boyutu metni büyütür. Sağdan sola okunan diller (Arapça) sağdan sola dizilir.']) +
+    '<h2 id="limits">Henüz çalışmayanlar veya farklı çalışanlar</h2>' + ul([
+      '<strong>Sayfanın çimdikle yakınlaştırılması bilerek kapalıdır.</strong> Uygulama bir uygulama gibi davranmalı: yalnızca harita yakınlaşır ve kayar; bir sekmeyi ya da paneli çimdiklemek artık tüm sayfayı yakınlaştırıp bozmaz. Bu, metnin yeniden boyutlandırılabilmesi yönergesine karşı bir ödünleşimdir. Metni büyütmek için <em>Ayarlar, Yazı boyutu</em>\'nu ya da cihazınızın kendi büyüteçini kullanın (Android: Erişilebilirlik, Büyütme veya "Yakınlaştırmayı zorla"; iPhone: Erişilebilirlik, Zoom veya Ekran ve Metin Boyutu).',
+      '<strong>Henüz gerçek ekran okuyucuyla test yok.</strong> TalkBack, VoiceOver ve NVDA uygulamada kullanılmadı. Pürüzler olabilir; bize bildirin.',
+      '<strong>Haritada çizilen adlar</strong> (sokaklar, ilçeler, yerler) harita resminin parçasıdır ve ekran okuyucular tarafından okunmaz; istasyonlara yukarıdaki tuşlarla, yerlere arama kutusuyla ulaşılır.',
+      '<strong>Hareket eden vagonlar</strong> ekran okuyucu karşılığı olmayan görsel bir simülasyondur; sefer saatleri ve kalkışlar metin olarak bulunur.',
+      '<strong>Yasal sayfalar</strong> yalnızca İngilizce ve Türkçedir.',
+      '<strong>Hat renklerinin</strong> harita karşısındaki karşıtlığı, grafikler için 3:1 yönergesine göre ölçülmedi.']) +
+    '<h2 id="feedback">Bir engeli bize bildirin</h2>' + p('Bir şey sizin için çalışmıyorsa ' + a('mailto:' + c.contactEmail, esc(c.contactEmail)) + ' adresine yazın; ne yapmaya çalıştığınızı, hangi cihaz ve yardımcı teknolojiyi kullandığınızı ve ne olduğunu belirtin. Her mesajı okuruz ve yapabildiğimizi düzeltiriz; bu kişisel bir proje olduğundan tarih sözü veremeyiz.') +
+    '<h2 id="date">Bu bildirim</h2>' + p('4 Kasım 2026\'da, o gün test edilenlere dayanarak yazıldı. Uygulama değiştikçe güncellenecek.') }),
 };
 
 module.exports = { HOSTS, STORAGE, PAGES, NOT_ADVICE };

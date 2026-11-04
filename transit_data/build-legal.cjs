@@ -12,10 +12,10 @@ const fs = require('fs');
 const path = require('path');
 const { PAGES, NOT_ADVICE } = require('./legal-content.cjs');
 
-const ORDER = ['index', 'privacy', 'terms', 'storage', 'credits'];
+const ORDER = ['index', 'privacy', 'terms', 'storage', 'credits', 'accessibility'];
 const NAV = {
-  en: { index: 'Legal and privacy', privacy: 'Privacy notice', terms: 'Terms of use', storage: 'Cookies and stored data', credits: 'Credits and licences' },
-  tr: { index: 'Yasal bilgiler', privacy: 'Gizlilik bildirimi', terms: 'Kullanım koşulları', storage: 'Çerezler ve saklanan veriler', credits: 'Katkılar ve lisanslar' },
+  en: { index: 'Legal and privacy', privacy: 'Privacy notice', terms: 'Terms of use', storage: 'Cookies and stored data', credits: 'Credits and licences', accessibility: 'Accessibility' },
+  tr: { index: 'Yasal bilgiler', privacy: 'Gizlilik bildirimi', terms: 'Kullanım koşulları', storage: 'Çerezler ve saklanan veriler', credits: 'Katkılar ve lisanslar', accessibility: 'Erişilebilirlik' },
 };
 const UI = {
   en: { skip: 'Skip to the content', home: '← Back to İstanbul Ray-Net', other: 'Türkçe', otherLang: 'tr', otherName: 'Türkçe', pages: 'Legal pages', lang: 'Language',
@@ -56,7 +56,8 @@ p,li{max-width:42rem}
 li{margin:.3em 0}
 .meta{color:var(--muted);margin:0 0 1em}
 .note{background:var(--note);border:1px solid var(--line);border-radius:10px;padding:10px 14px;margin:0 0 1.4em}
-code{background:var(--code);padding:.05em .35em;border-radius:5px;font:.9em ui-monospace,SFMono-Regular,Consolas,monospace;overflow-wrap:anywhere}
+code,kbd{background:var(--code);padding:.05em .35em;border-radius:5px;font:.9em ui-monospace,SFMono-Regular,Consolas,monospace;overflow-wrap:anywhere}
+kbd{border:1px solid var(--line);border-bottom-width:2px}
 .tw{overflow-x:auto;margin:.8em 0 1.2em;border:1px solid var(--line);border-radius:10px}
 table{border-collapse:collapse;width:100%;min-width:34rem;font-size:.95rem}
 th,td{padding:9px 12px;text-align:start;vertical-align:top;border-bottom:1px solid var(--line)}

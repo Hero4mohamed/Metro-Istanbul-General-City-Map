@@ -115,7 +115,7 @@ test('the pages cover what a person is entitled to be told: fees, refunds, revie
 
 test('credits name every library, typeface and image source the app ships', () => {
   const credits = page('credits', 'en') + page('credits', 'tr');
-  for (const s of ['Leaflet', 'MapLibre', 'maplibre-gl-leaflet', 'Inter', 'Space Grotesk', 'JetBrains Mono', 'Noto Sans', 'OpenStreetMap', 'OpenFreeMap', 'Esri', 'Open-Meteo', 'Belbim', 'Wikimedia Commons'])
+  for (const s of ['Leaflet', 'MapLibre', 'maplibre-gl-leaflet', 'Inter', 'Space Grotesk', 'JetBrains Mono', 'Noto Sans', 'OpenStreetMap', 'OpenFreeMap', 'Esri', 'Open-Meteo', 'Belbim', 'Wikimedia Commons', 'ChatGPT'])
     assert.ok(credits.includes(s), 'the credits page does not mention ' + s);
   // the İBB Open Data Licence asks for this exact credit and a link to the licence wherever its data is used
   for (const L of LANGS) {
