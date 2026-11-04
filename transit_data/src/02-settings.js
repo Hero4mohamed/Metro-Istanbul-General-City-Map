@@ -295,7 +295,8 @@ function renderCardSeg(){
   // credit the artwork only while it is actually being shown
   const cr=document.getElementById('cardCredit');
   const ci=((CARD_IMG.cities||{})[CITY_ID]||{})[fareCard];
-  if(cr) cr.textContent = ci ? t('cardImgCredit').replace('{who}', ci.credit||'') : '';
+  // a picture says whose it is; a drawing says it is a drawing (so nobody takes a drawn face for the operator's real card)
+  if(cr) cr.textContent = ci ? t('cardImgCredit').replace('{who}', ci.credit||'') : t('cardDrawn');
   const bits=[];
   if(c.unlimited) bits.push(t('cardUnlimited').replace('{n}', c.monthly));
   else bits.push(t('cardPerRide').replace('{n}', c.base));

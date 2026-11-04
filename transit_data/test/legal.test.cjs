@@ -126,11 +126,24 @@ test('credits name every library, typeface and image source the app ships', () =
   for (const f of ['vendor/leaflet/LICENSE', 'vendor/fonts/LICENSE-OFL.txt', 'vendor/maplibre/LICENSE-maplibre-gl.txt', 'vendor/glyphs/LICENSE-NotoSans-OFL.txt']) assert.ok(H.exists(f), f + ' is missing');
 });
 
-test('no picture the app ships has an unclear licence: the card images are the Istanbul ones from Commons, nothing from a municipality site', () => {
+test('every fare-card picture records its maker, where it came from and on what basis it is shown, and only cities whose picture is credited have one', () => {
   const ci = H.json('card-images.json');
-  assert.deepStrictEqual(Object.keys(ci.cities), ['istanbul'], 'a city other than Istanbul has fare-card pictures again: check where they came from and add them to the credits page first');
-  for (const k of Object.keys(ci.cities.istanbul)) assert.match(ci.cities.istanbul[k].credit, /Belbim/, k + ' is not credited to its maker');
-  assert.match(ci._source.istanbul, /Wikimedia Commons/, 'the Istanbul card pictures do not record where they came from');
+  const makers = { istanbul: /Belbim/, bursa: /Burulaş/ };
+  assert.deepStrictEqual(Object.keys(ci.cities).sort(), Object.keys(makers).sort(), 'a city has fare-card pictures that are not in the credits: check where they came from (the İzmir municipality\'s had no licence, the Ankarakart photo does not clear the card\'s printed design) and add them to the credits page first');
+  for (const [city, cards] of Object.entries(ci.cities)) for (const [k, e] of Object.entries(cards)) {
+    assert.match(e.credit, makers[city], city + '/' + k + ' is not credited to its maker');
+    assert.match(e.licence || '', /Wikimedia Commons|permission/i, city + '/' + k + ' does not record on what basis it is shown');
+    assert.match(e.commons || '', /^https:\/\/commons\.wikimedia\.org\/wiki\/File:|^permission:/, city + '/' + k + ' does not link where it came from');
+    assert.ok(/^data:image\/(png|jpeg);base64,/.test(e.src) && e.w > 0 && e.h > 0 && e.product, city + '/' + k + ' is not a complete picture entry');
+  }
+  assert.match(ci._source.istanbul, /Wikimedia Commons/); assert.match(ci._source.bursa, /Wikimedia Commons/);
+  const credits = page('credits', 'en') + page('credits', 'tr');
+  assert.ok(credits.includes('Burulaş') && credits.includes('Belbim'), 'the credits page does not name the makers of the card pictures');
+});
+test('a card with no picture says it is a drawing, in every language', () => {
+  const dict = H.i18nValues();
+  for (const L of LANGS.concat(['ar', 'fr'])) assert.ok(dict[L] && dict[L].cardDrawn && dict[L].cardDrawn.length > 10, L + ' has no "a drawing, not the operator\'s card" note');
+  assert.match(H.appScript(), /t\('cardImgCredit'\)\.replace\('\{who\}', ci\.credit\|\|''\) : t\('cardDrawn'\)/, 'a drawn card face is not labelled as a drawing');
 });
 
 test('the colours of the legal pages pass WCAG AA (4.5:1), light and dark', () => {

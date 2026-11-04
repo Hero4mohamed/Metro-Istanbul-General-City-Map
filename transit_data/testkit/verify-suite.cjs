@@ -583,6 +583,16 @@ const MUTATIONS = [
     apply: h => h.replace('((b.lines ? b.lines.size : 0) - (a.lines ? a.lines.size : 0))', '((a.lines ? a.lines.size : 0) - (b.lines ? b.lines.size : 0))'),
   },
   {
+    name: 'show a drawn card face without saying it is a drawing',
+    expect: 'a card with no picture says it is a drawing',
+    apply: h => h.replace(".replace('{who}', ci.credit||'') : t('cardDrawn');", ".replace('{who}', ci.credit||'') : '';"),
+  },
+  {
+    name: 'lose the drawing note in Turkish',
+    expect: 'a card with no picture says it is a drawing',
+    apply: h => h.replace('cardDrawn:"Bu uygulama için çizilmiş bir çizimdir; işletmecinin kendi kartı değildir.",', ''),
+  },
+  {
     name: 'drop the MODELLED label from the arrivals board (French)',
     expect: 'the arrivals board still labels itself modelled',
     apply: h => h.replace('modelled:"MODÉLISÉ", ', ''),
