@@ -241,7 +241,7 @@ html = html.replace('__CSP__', () => CSP);
 
 const outPath = path.join(ROOT, 'index.html');   // GitHub Pages serves the repo-root index.html
 fs.writeFileSync(outPath, html);
-require('./build-legal.cjs').build(LEGAL, ROOT);      // legal/*.html: privacy, terms, cookies & storage, credits - English and Turkish
+const LEGAL_FILES = require('./build-legal.cjs').build(LEGAL, ROOT);      // legal/*.html: privacy, terms, cookies & storage, credits - English and Turkish
 console.log('WROTE', outPath, (fs.statSync(outPath).size/1024).toFixed(1), 'KB',
             ' cardArt:', Object.keys(cardImg.cities).map(c=>c+'×'+Object.keys(cardImg.cities[c]).length).join(' '));
 
@@ -274,5 +274,6 @@ for (const [city, s] of Object.entries(busSets)) {
 // emit the service worker with a fresh version stamp → installed apps self-update on deploy
 const swTpl = fs.readFileSync(path.join(DIR, 'sw.template.js'), 'utf8');
 const swVersion = buildStamp;   // one stamp for the worker and the diagnostics report
-fs.writeFileSync(path.join(ROOT, 'sw.js'), swTpl.replace('__SW_VERSION__', swVersion));
+/* the pages the worker fetches at install so they open offline (V4.3): the legal pages, as paths under the app's address */
+fs.writeFileSync(path.join(ROOT, 'sw.js'), swTpl.replace('__SW_VERSION__', () => swVersion).replace('__OFFLINE_PAGES__', () => JSON.stringify(LEGAL_FILES)));
 console.log('WROTE sw.js  version', swVersion);

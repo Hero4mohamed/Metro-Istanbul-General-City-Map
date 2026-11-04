@@ -6,6 +6,13 @@ const VERSION = '__SW_VERSION__';
 const SHELL  = 'raynet-shell-' + VERSION;
 const STATIC = 'raynet-static-v1';
 const STATIC_HOSTS = [];     // the page loads no CDN files any more (V4.3): Leaflet and the fonts are shipped with it
+/* V4.3: every page of the app's own address must always come back as a 200, online or not. The Android app (a Trusted Web Activity) has
+   no browser around it, and Chrome counts a page that cannot be loaded offline, or that answers 404 / 5xx, as a CRASH of that app.
+   So the app page and the legal pages are fetched at install (they open offline although never opened), a failed or error answer
+   falls back to the stored copy, and a page with no stored copy gets a small 200 page instead of an error.
+   OFFLINE_PAGES is written by build.cjs from the legal folder (paths under the scope). */
+const PAGES = 'raynet-pages-' + VERSION;
+const OFFLINE_PAGES = __OFFLINE_PAGES__;
 const APP_PATH = (self.registration && self.registration.scope) ? new URL(self.registration.scope).pathname : '/';   // the app's own address, e.g. /Metro-Istanbul-General-City-Map/
 /* v2, and the activate handler below drops v1. Tiles are cached by URL, so the CARTO entries
    would never be read again after the switch to Esri — but a phone that browsed the map during
@@ -48,16 +55,64 @@ const OFFLINE_TILE = new Response(
   '</svg>',
   { headers: { 'Content-Type': 'image/svg+xml', 'Cache-Control': 'no-store' } });
 
-self.addEventListener('install', () => self.skipWaiting());
+const quiet = p => p.catch(() => {});                  // one page that cannot be fetched must not fail the install
+const isHtml = r => { try { return /text\/html/i.test(r.headers.get('content-type') || ''); } catch (_) { return false; } };
+async function precache() {
+  const base = self.registration.scope;
+  const shell = await caches.open(SHELL), pages = await caches.open(PAGES);
+  await Promise.all([
+    quiet(fetch(base).then(r => (r.ok ? shell.put('shell', r) : null))),
+    ...OFFLINE_PAGES.map(p => { const u = new URL(p, base).href; return quiet(fetch(u).then(r => (r.ok && isHtml(r) ? pages.put(u, r) : null))); }),
+  ]);
+}
+self.addEventListener('install', e => {
+  self.skipWaiting();
+  e.waitUntil(precache().catch(() => {}));
+});
 self.addEventListener('activate', e => {
   e.waitUntil((async () => {
     const keys = await caches.keys();
     await Promise.all(keys.filter(k => (k.startsWith('raynet-shell-') && k !== SHELL) ||
+                                       (k.startsWith('raynet-pages-') && k !== PAGES) ||
                                        (k.startsWith('raynet-tiles-')  && k !== TILES))
                           .map(k => caches.delete(k)));
     await self.clients.claim();
   })());
 });
+
+/* what a page of the app's own address gets when it cannot be loaded and nothing is stored: plain, no script, no outside address,
+   in English and Turkish, with a way back to the app. A 200, because anything else is a crash in the Android app. */
+function offlinePage() {
+  const css = 'body{margin:0;font:17px/1.6 system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;background:#f7f8fa;color:#14181f}' +
+    'main{max-width:34rem;margin:0 auto;padding:32px 16px}h1{font-size:1.4rem;line-height:1.25;margin:1.2em 0 .3em}a{color:#0b5cad}' +
+    '@media (prefers-color-scheme:dark){body{background:#0d1117;color:#e6edf3}a{color:#6cb6ff}}';
+  const body = '<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">' +
+    '<meta http-equiv="Content-Security-Policy" content="default-src \'none\'; style-src \'unsafe-inline\'"><meta name="color-scheme" content="light dark">' +
+    '<title>İstanbul Ray-Net</title><style>' + css + '</style></head><body><main>' +
+    '<h1>This page is not available right now</h1><p>You may be offline, or this page may no longer exist.</p><p><a href="' + APP_PATH + '">Open İstanbul Ray-Net</a></p>' +
+    '<h1 lang="tr">Bu sayfa şu anda açılamıyor</h1><p lang="tr">Çevrimdışı olabilirsiniz ya da bu sayfa artık mevcut olmayabilir.</p><p lang="tr"><a href="' + APP_PATH + '">İstanbul Ray-Net\'i aç</a></p>' +
+    '</main></body></html>';
+  return new Response(body, { status: 200, headers: { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store' } });
+}
+
+/* a page of the app's own address: the network first (an update always wins), the stored copy when the network fails or answers an error.
+   The app page is stored as THE shell (the page an offline launch opens); the other pages are stored under their own address. Only the
+   app's own addresses are the shell: the legal index (legal/index.html) is a page like any other and must not become the app. */
+async function openPage(req, url) {
+  const isApp = url.pathname === APP_PATH || url.pathname === APP_PATH + 'index.html';
+  try {
+    const r = await fetch(req);
+    if (r.type === 'opaqueredirect') return r;               // a redirect (legal -> legal/): the browser follows it
+    if (r.ok) {
+      const copy = r.clone();                                // before the page starts reading it
+      if (isApp) caches.open(SHELL).then(c => c.put('shell', copy)).catch(() => {});
+      else if (isHtml(r)) caches.open(PAGES).then(c => c.put(url.origin + url.pathname, copy)).catch(() => {});
+      return r;
+    }
+  } catch (_) { /* offline */ }
+  const kept = isApp ? await caches.match('shell') : await caches.match(url.origin + url.pathname, { cacheName: PAGES, ignoreVary: true });
+  return kept || offlinePage();
+}
 
 self.addEventListener('message', e => {
   const reply = d => e.source && e.source.postMessage(d);
@@ -75,6 +130,12 @@ self.addEventListener('message', e => {
 self.addEventListener('fetch', e => {
   if (e.request.method !== 'GET') return;
   const url = new URL(e.request.url);
+
+  // every page of the app's own address (the app, the legal pages): always a 200 (see the note on OFFLINE_PAGES)
+  if (e.request.mode === 'navigate' && url.origin === location.origin && url.pathname.startsWith(APP_PATH)) {
+    e.respondWith(openPage(e.request, url));
+    return;
+  }
 
   // basemap tiles: serve from cache first (they never change), fill the cache as you browse,
   // and fall back to a neutral tile when offline in an area that was never viewed
@@ -147,22 +208,7 @@ self.addEventListener('fetch', e => {
   }
   if (url.pathname.includes('/transit_data/')) return;   // live disruptions JSON stays no-store
 
-  // the app page: network-first, cache fallback for offline launches
-  // (only the app's own page: a legal page opened from Settings is also a navigation, and must not be stored as the shell, or the
-  // next offline launch would open the privacy notice instead of the app)
-  if ((e.request.mode === 'navigate' && url.pathname === APP_PATH) || url.pathname.endsWith('/index.html')) {
-    e.respondWith((async () => {
-      try {
-        const r = await fetch(e.request);
-        const c = await caches.open(SHELL);
-        c.put('shell', r.clone());
-        return r;
-      } catch (_) {
-        return (await caches.match('shell')) || Response.error();
-      }
-    })());
-    return;
-  }
+  // (the app page and the other pages are handled above, in openPage)
 
   // same-origin static files (Leaflet, MapLibre, the typefaces, icons): stale-while-revalidate
   if (url.origin === location.origin || STATIC_HOSTS.includes(url.host)) {
