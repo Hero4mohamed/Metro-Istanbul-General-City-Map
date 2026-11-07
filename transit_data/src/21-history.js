@@ -28,6 +28,7 @@ const NAV_LAYERS = [
   { id:'linp',     open:() => navHas('linp','show'),          close:() => navClick('linpX') },
   { id:'near',     open:() => navHas('nearPanel','open'),     close:() => closeNearby() },
   { id:'pass',     open:() => navHas('passPanel','open'),     close:() => closePassport() },
+  { id:'finder',   open:() => navHas('stnFinder','open'),     close:() => closeFinder() },       // the list of stations in view (25-map-keyboard.js)
   { id:'settings', open:() => navHas('settingsPanel','open'), close:() => closeSettings() },
   { id:'ai',       open:() => document.body.classList.contains('ai-open'), close:() => aiShut() },
   { id:'omni',     open:() => navHas('omni','open'),          close:() => document.body.click() },   // the search list closes on any click outside it
@@ -96,7 +97,7 @@ window.addEventListener('popstate', e => {
   try{ history.replaceState({ irnNav:true, d:0 }, ''); }catch(err){ return; }
   NAV.ready = true;
   const mo = new MutationObserver(navReconcile);
-  ['stn','linp','nearPanel','passPanel','settingsPanel','omni','wcOverlay'].forEach(id => { const e = document.getElementById(id); if(e) mo.observe(e, { attributes:true, attributeFilter:['class'] }); });
+  ['stn','linp','nearPanel','passPanel','stnFinder','settingsPanel','omni','wcOverlay'].forEach(id => { const e = document.getElementById(id); if(e) mo.observe(e, { attributes:true, attributeFilter:['class'] }); });
   document.querySelectorAll('.msheet').forEach(e => mo.observe(e, { attributes:true, attributeFilter:['class'] }));
   mo.observe(document.body, { attributes:true, attributeFilter:['class'] });
   navReconcile();

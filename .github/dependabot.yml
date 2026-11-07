@@ -1,0 +1,11 @@
+# Keeps the GitHub Actions this repository runs up to date. Each action is pinned to an exact commit (a tag such as @v4 can be moved
+# by whoever controls it); Dependabot proposes the new commit as a pull request, with the release notes, and the tests run on it.
+# The app itself has no npm dependencies (see vendor/README.md for the libraries it ships and how they are pinned).
+version: 2
+updates:
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    commit-message:
+      prefix: "chore(deps)"

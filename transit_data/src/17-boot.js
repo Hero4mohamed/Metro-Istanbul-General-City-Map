@@ -71,7 +71,9 @@ function disruptionPoints(d){
   return pts;
 }
 function disrTip(d){
-  return `<b>⚠ ${d.ref?d.ref+' · ':''}${disTitle(d)}</b><br>${disTrTag(d)}${disMsg(d)}${d.until?'<br>⏱ '+untilText(d):''}`;
+  /* The notice text comes from outside (metro.istanbul's page, İETT's feed): it is TEXT, never markup, so every piece of it is
+     escaped here (V4.3). disTrTag is our own markup. */
+  return `<b>⚠ ${d.ref?svgEsc(d.ref)+' · ':''}${svgEsc(disTitle(d))}</b><br>${disTrTag(d)}${svgEsc(disMsg(d))}${d.until?'<br>⏱ '+svgEsc(untilText(d)):''}`;
 }
 /* The bubble of a warning sign stays until the next PRESS (V4.2). A hover tooltip is the wrong tool on a screen with no hover: it
    opened on the tap, then the map flew to the sign, the warnings were redrawn at the new zoom, and the bubble went with the old
@@ -219,12 +221,12 @@ function annRowHTML(d){
   const glyph = d.mode === 'bus' ? '🚌 ' : (d.mode === 'ferry' ? '⛴ ' : '');
   return `<div class="ann-item" data-id="${attrEsc(d.id)}" style="border-left-color:${col};cursor:pointer">
       <div class="ann-row1">
-        <span class="ann-line" style="background:${chipCol}">${d.ref ? glyph + svgEsc(d.ref) : '📣'}</span>
-        <span class="ann-sev" style="background:${col}">${sevLabel(d.severity)}</span>
-        <span class="ann-ttl">${disTitle(d)}</span>
+        <span class="ann-line" style="background:${chipCol};color:${inkOn(chipCol)}">${d.ref ? glyph + svgEsc(d.ref) : '📣'}</span>
+        <span class="ann-sev" style="background:${col};color:${inkOn(col)}">${sevLabel(d.severity)}</span>
+        <span class="ann-ttl">${svgEsc(disTitle(d))}</span>
       </div>
-      <div class="ann-msg">${disTrTag(d)}${disMsg(d)}</div>
-      ${d.until?`<div class="ann-until">⏱ ${untilText(d)}</div>`:''}</div>`;
+      <div class="ann-msg">${disTrTag(d)}${svgEsc(disMsg(d))}</div>
+      ${d.until?`<div class="ann-until">⏱ ${svgEsc(untilText(d))}</div>`:''}</div>`;
 }
 /* Bus notices, grouped. The same sentence on twelve lines is one announcement with twelve line chips, not
    twelve announcements; and a day's cancelled departures (a line each, forty-odd of them) collapse to a
@@ -250,7 +252,7 @@ function annBusGroupHTML(g){
     ? svgEsc(t('nTripsSummary').replace('{n}', g.items.reduce((n, x) => n + x.tpl.n, 0)).replace('{k}', g.items.length))
     : disTrTag(d) + svgEsc(disMsg(d));
   return `<div class="ann-item ann-bus" data-key="${attrEsc(g.key)}" style="border-left-color:${col}">
-      <div class="ann-row1"><span class="ann-sev" style="background:${col}">${sevLabel(d.severity)}</span><span class="ann-ttl">${disTitle(d)}</span></div>
+      <div class="ann-row1"><span class="ann-sev" style="background:${col};color:${inkOn(col)}">${sevLabel(d.severity)}</span><span class="ann-ttl">${svgEsc(disTitle(d))}</span></div>
       <div class="ann-chips">${chips}${more>0?`<span class="ann-more-n">+${more}</span>`:''}</div>
       <div class="ann-msg">${msg}</div></div>`;
 }
@@ -293,7 +295,7 @@ function renderAnnouncements(){
     const rel = opensRel(o);
     return `<div class="ann-item ann-open" data-open="${i}">
       <div class="ann-row1">
-        <span class="ann-line" style="background:${col}">${o.ref}</span>
+        <span class="ann-line" style="background:${col};color:${inkOn(col)}">${o.ref}</span>
         <span class="ann-sev ann-soon">${t('openSoon')}</span>
         <span class="ann-ttl">🚈 ${t('openTtl')}</span>
       </div>

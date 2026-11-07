@@ -51,7 +51,7 @@ test('no inline event handlers, which no hash can ever allow', () => {
 test('every host the page loads from is permitted by the RIGHT directive', () => {
   const html = H.html();
   // Per-directive, not "anywhere in the policy". Checking the whole string is useless: when
-  // style-src lost unpkg, the host was still listed under script-src and a whole-policy check
+  // style-src lost its CDN host (the page has none since V4.3), the host was still listed under script-src and a whole-policy check
   // stayed green while the app rendered unstyled.
   const wanted = [];   // {origin, directive, what}
 
@@ -64,7 +64,9 @@ test('every host the page loads from is permitted by the RIGHT directive', () =>
     const href = /href="(https:\/\/[^"/]+)/.exec(tag);
     if (href) wanted.push({ origin: href[1], directive: 'style-src', what: 'stylesheet' });
   }
-  for (const m of H.codeOnly(H.appScript()).matchAll(/fetch\(\s*["'](https:\/\/[^"'/]+)/g)) {
+  // the raw script, not H.codeOnly(): that blanks the inside of every string, so the host being looked for was never there and this
+  // scan found nothing at all until V4.3 (what kept the test alive was the CDN stylesheet, which the page no longer loads)
+  for (const m of H.appScript().matchAll(/fetch\(\s*["'](https:\/\/[^"'/]+)/g)) {
     wanted.push({ origin: m[1], directive: 'connect-src', what: 'fetch' });
   }
   // Leaflet substitutes {s} with a real subdomain, so "{s}.example.com" is a request to some

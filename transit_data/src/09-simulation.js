@@ -155,7 +155,23 @@ function renderOverlay(now){
   if(focusRefs) return;              // focused on one route: no other labels or carriages
   drawLabels();
   if(showTrains && currentTab==='active') drawTrains(now);
+  clearUnderBubbles();
 }
+/* This canvas is one screen-sized layer ABOVE the whole map, because carriages must be drawn above the lines. A bubble the map shows
+   (the pinned warning, a hover tooltip, a popup) lives INSIDE the map, below it, so the canvas drew station names and carriages
+   straight across the bubble's text (V4.3: seen on a phone, "Fikirtepe" printed through a service notice). Whatever such a bubble
+   covers is cleared out of the canvas each frame, so the bubble reads clean and is in front of everything. */
+function clearUnderBubbles(){
+  const els = document.querySelectorAll('.leaflet-tooltip, .leaflet-popup');
+  if(!els.length) return;
+  const o = tcv.getBoundingClientRect();
+  for(const el of els){
+    const r = el.getBoundingClientRect(); if(r.width < 2 || r.height < 2) continue;
+    tctx.clearRect(r.left - o.left - 4, r.top - o.top - 4, r.width + 8, r.height + 8);
+  }
+}
+let _lblSrc = null, _lblOrder = [];          // the station list the order was made for, and its interchanges-first order
+const _lblWidth = new Map();                  // a name's width in px at the label font, measured once
 function drawLabels(){
   if(labelAlpha < 0.03) return;
   const list = currentTab==='active' ? stationList : (currentTab==='vision' ? plannedStationList : []);
@@ -167,12 +183,21 @@ function drawLabels(){
   // ink and halo follow what the map is drawn on: dark text in a pale halo by day, the reverse
   // by night and over satellite. Hard-coded light-on-dark was right for exactly one basemap.
   const T = MAP_T();
-  for(const r of list){
+  /* Names never print over each other (V4.3). They used to be drawn all at once, so in a dense centre "Kadıköy", "İskele Camii" and
+     "Kadıköy - İDO - Metro" were one smudge. Interchanges (the places that matter most) are placed first, then the plain stops; a
+     name that would overlap one already placed is left out until the map is zoomed in enough to give it room. */
+  if(_lblSrc !== list){ _lblSrc = list; _lblOrder = list.slice().sort((a, b) => ((b.lines ? b.lines.size : 0) - (a.lines ? a.lines.size : 0))); }
+  const placed = [];
+  for(const r of _lblOrder){
     const multi = r.lines && r.lines.size>1;
     if(z < 14 && !multi) continue;                    // below z14 → interchanges only
     const p = map.latLngToContainerPoint([r.lat, r.lng]);
     if(p.x<-60||p.y<-16||p.x>s.x+60||p.y>s.y+16) continue;
     const x = p.x + 8, y = p.y;
+    let w = _lblWidth.get(r.name); if(w === undefined){ w = tctx.measureText(r.name).width; _lblWidth.set(r.name, w); }
+    const bx = x - 3, by = y - 8, bw = w + 6, bh = 16;
+    if(placed.some(b => bx < b[0] + b[2] && bx + bw > b[0] && by < b[1] + b[3] && by + bh > b[1])) continue;
+    placed.push([bx, by, bw, bh]);
     tctx.lineWidth = 3.2; tctx.strokeStyle = T.halo;
     tctx.strokeText(r.name, x, y);
     tctx.fillStyle = multi ? T.labelMulti : T.label;

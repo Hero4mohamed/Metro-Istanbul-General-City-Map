@@ -2,23 +2,24 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
 <!-- Substituted by build.cjs, which hashes the inline script from the final bytes. Pages
      cannot set headers, so this ships as meta; frame-ancestors and report-uri are
      unavailable that way. -->
 <meta http-equiv="Content-Security-Policy" content="__CSP__">
-<title>İSTANBUL RAY-NET · Live Rail Network Map &amp; Simulation</title>
-<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
-      integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
+<title>İSTANBUL RAY-NET · Rail Network Map &amp; Simulation</title>
+<!-- Leaflet 1.9.4, shipped with the app rather than fetched from a CDN (V4.3): see vendor/README.md -->
+<link rel="stylesheet" href="vendor/leaflet/leaflet.css">
 <!-- the vector base map (MapLibre GL), shipped with the app rather than fetched from a CDN: see vendor/README.md -->
 <link rel="stylesheet" href="vendor/maplibre/maplibre-gl.css">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;600;700&family=JetBrains+Mono:wght@500;700;800&display=swap" rel="stylesheet">
+<link rel="preload" as="font" type="font/woff2" href="vendor/fonts/Inter-latin.woff2" crossorigin>
+<link rel="preload" as="font" type="font/woff2" href="vendor/fonts/SpaceGrotesk-latin.woff2" crossorigin>
 <link rel="icon" type="image/png" sizes="32x32" href="assets/favicon-32.png">
 <link rel="icon" type="image/png" sizes="16x16" href="assets/favicon-16.png">
-<meta name="description" content="Live İstanbul transit map — metro, tram, funicular, cable car, Marmaray, ferry and bus. Real-time carriages, official timetables, multi-stop trip planner, live disruptions and district weather.">
+<meta name="description" content="İstanbul transit map — metro, tram, funicular, cable car, Marmaray, ferry and bus. Simulated carriages, official timetables, multi-stop trip planner, service notices and district weather.">
 <meta name="theme-color" content="#070A12">
+<!-- what the map, weather and look-up services are told about where the request came from: this site's address, never a path or query (V4.3) -->
+<meta name="referrer" content="strict-origin-when-cross-origin">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="preload" as="image" href="assets/splash-bg.jpg">
 <link rel="preload" as="image" href="assets/splash-icon.jpg">
@@ -29,20 +30,29 @@
 <meta name="apple-mobile-web-app-title" content="RAY-NET">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="İSTANBUL · RAY-NET">
-<meta property="og:title" content="İSTANBUL · RAY-NET — Live Transit Network Map">
-<meta property="og:description" content="Metro, tram, ferry &amp; bus on one live map: real-time carriages, official timetables, multi-stop trip planner, live disruptions and district weather.">
+<meta property="og:title" content="İSTANBUL · RAY-NET — Transit Network Map">
+<meta property="og:description" content="Metro, tram, ferry &amp; bus on one map: simulated carriages, official timetables, multi-stop trip planner, service notices and district weather.">
 <meta property="og:url" content="https://hero4mohamed.github.io/Metro-Istanbul-General-City-Map/">
 <meta property="og:image" content="https://hero4mohamed.github.io/Metro-Istanbul-General-City-Map/assets/og-card.png">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
 <meta name="twitter:card" content="summary_large_image">
-<meta name="twitter:title" content="İSTANBUL · RAY-NET — Live Transit Network Map">
-<meta name="twitter:description" content="Metro, tram, ferry &amp; bus on one live map: real-time carriages, official timetables, trip planner, disruptions and weather.">
+<meta name="twitter:title" content="İSTANBUL · RAY-NET — Transit Network Map">
+<meta name="twitter:description" content="Metro, tram, ferry &amp; bus on one map: simulated carriages, official timetables, trip planner, service notices and weather.">
 <meta name="twitter:image" content="https://hero4mohamed.github.io/Metro-Istanbul-General-City-Map/assets/og-card.png">
 <style>
+  /* The three typefaces are shipped with the app (vendor/fonts/, SIL OFL 1.1), not fetched from Google Fonts: a font host would see every
+     visitor's address, and the app promises to send nothing about its users to anyone it does not need to (V4.3). Latin + Latin-Extended
+     (Turkish letters) only; variable fonts, one file per range. */
+  @font-face{font-family:'Inter';font-style:normal;font-weight:400 800;font-display:swap;src:url(vendor/fonts/Inter-latin-ext.woff2) format('woff2');unicode-range:U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF;}
+  @font-face{font-family:'Inter';font-style:normal;font-weight:400 800;font-display:swap;src:url(vendor/fonts/Inter-latin.woff2) format('woff2');unicode-range:U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;}
+  @font-face{font-family:'JetBrains Mono';font-style:normal;font-weight:500 800;font-display:swap;src:url(vendor/fonts/JetBrainsMono-latin-ext.woff2) format('woff2');unicode-range:U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF;}
+  @font-face{font-family:'JetBrains Mono';font-style:normal;font-weight:500 800;font-display:swap;src:url(vendor/fonts/JetBrainsMono-latin.woff2) format('woff2');unicode-range:U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;}
+  @font-face{font-family:'Space Grotesk';font-style:normal;font-weight:500 700;font-display:swap;src:url(vendor/fonts/SpaceGrotesk-latin-ext.woff2) format('woff2');unicode-range:U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF;}
+  @font-face{font-family:'Space Grotesk';font-style:normal;font-weight:500 700;font-display:swap;src:url(vendor/fonts/SpaceGrotesk-latin.woff2) format('woff2');unicode-range:U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;}
   :root{
     --obsidian:#070A12; --panel:rgba(13,17,27,0.74); --stroke:rgba(255,255,255,0.08);
-    --stroke-2:rgba(255,255,255,0.15); --text:#EEF2F8; --muted:#9AA4B8; --dim:#78849C;
+    --stroke-2:rgba(255,255,255,0.15); --text:#EEF2F8; --muted:#9AA4B8; --dim:#8591A8;
     --accent:#34D399; --accent-2:#2DD4BF; --gold:#FBBF24; --btn-ink:#03130A;
     --grad-accent:linear-gradient(135deg,#4ADE80,#14B8A6);
     --surface:rgba(255,255,255,.045); --surface-2:rgba(255,255,255,.08);
@@ -100,15 +110,25 @@
   }
   body.light{
     --obsidian:#E9EEF5; --panel:rgba(255,255,255,0.84); --stroke:rgba(15,23,42,0.10);
-    --stroke-2:rgba(15,23,42,0.16); --text:#141C2B; --muted:#4E5868; --dim:#6B7789;
+    --stroke-2:rgba(15,23,42,0.16); --text:#141C2B; --muted:#4E5868; --dim:#5C6779;
     --surface:rgba(15,23,42,.04); --surface-2:rgba(15,23,42,.07); --track:rgba(15,23,42,.06);
     --ring:rgba(20,140,100,.28); --svg-hole:#ffffff;
     /* The same inks, darkened for a light background. These values already existed, spread
        across ~18 `body.light .something{color:#…}` overrides that repeated one decision per
        component; defining them once removes those overrides entirely. */
-    --ok-ink:#067A54; --warn-ink:#7A5200; --danger-ink:#A32227;
-    --gold-ink:#B45309; --violet-ink:#7C3AED; --sky-ink:#0369A1; --crimson-ink:#B4121F;
+    --ok-ink:#05694A; --warn-ink:#7A5200; --danger-ink:#A32227;
+    --gold-ink:#9A4508; --violet-ink:#7C3AED; --sky-ink:#0369A1; --crimson-ink:#B4121F;
   }
+  /* The accent as TEXT (V4.3). The accent is a fill first: bright emerald on a dark panel reads well, but the same emerald as small
+     text on a light panel is 1.6:1. --accent-ink is the accent where the surface is dark and a darker value where it is light, which
+     is how the other inks (--ok-ink, --warn-ink...) already work; every `color:var(--accent)` became `color:var(--accent-ink)`. A test
+     (contrast.test.cjs) measures it for every style in both themes. */
+  body{--accent-ink:var(--accent);}
+  body.light{--accent-ink:#05694A;}
+  body.calm{--accent-ink:#6FA8FF;}
+  body.calm.light{--accent-ink:#1557B0;}
+  body.paper{--accent-ink:#52BE9D;}
+  body.paper.light{--accent-ink:#0F6B4F;}
   body.light .glass,body.light .card,body.light .topbar{box-shadow:0 12px 34px -14px rgba(20,30,55,.35);}
   /* The fourth theme, "Mixed": a light page whose tabs, Layers card, Trip Planner and announcements stay DARK. The
      page is the light theme (body.light); those panels (and the phone's bottom tab bar) simply restate the DARK
@@ -117,11 +137,11 @@
      under Atlas, Calm and Paper, which restate the tokens on the body. */
   body.mixed #cardTabs,body.mixed #cardLayers,body.mixed #cardPlanner,body.mixed #announce,body.mixed .mnav{
     --obsidian:#070A12; --panel:rgba(13,17,27,0.92); --stroke:rgba(255,255,255,0.08);
-    --stroke-2:rgba(255,255,255,0.15); --text:#EEF2F8; --muted:#9AA4B8; --dim:#78849C;
+    --stroke-2:rgba(255,255,255,0.15); --text:#EEF2F8; --muted:#9AA4B8; --dim:#98A3B8;
     --accent:#34D399; --accent-2:#2DD4BF; --gold:#FBBF24; --btn-ink:#03130A;
     --grad-accent:linear-gradient(135deg,#4ADE80,#14B8A6);
     --surface:rgba(255,255,255,.045); --surface-2:rgba(255,255,255,.08);
-    --track:rgba(4,7,13,.55); --ring:rgba(52,211,153,.28); --svg-hole:#0b0f17;
+    --track:rgba(4,7,13,.55); --ring:rgba(52,211,153,.28); --svg-hole:#0b0f17; --accent-ink:#34D399;
     --ok-ink:#7CF0BE; --warn-ink:#F5A623; --danger-ink:#F08287;
     --gold-ink:#FCD97C; --violet-ink:#DDB9FF; --sky-ink:#38BDF8; --crimson-ink:#FF9AA6;
     --ok-rgb:52,211,153; --warn-rgb:245,166,35; --danger-rgb:229,72,77;
@@ -136,6 +156,15 @@
   *{box-sizing:border-box;margin:0;padding:0;}
   html,body{height:100%;width:100%;overflow:hidden;background:var(--obsidian);color:var(--text);font-family:var(--font);
     -webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility;}
+  /* An app, not a web page (V4.3). Pinching the tabs or a panel used to zoom the whole page and distort it; only the map zooms and
+     turns. touch-action is the intersection of an element's own value and its ancestors', so `pan-x pan-y` here removes pinch-zoom
+     (and double-tap zoom) from everything, and the map's own `touch-action:none` (.leaflet-container) keeps its gestures. Nothing
+     selects, long-press-menus, rubber-bands or pull-to-refreshes like a document; typing fields still select. The cost is stated
+     on the accessibility page: text is enlarged in Settings > Text size, or with the device's own magnifier / "force zoom". */
+  html,body{touch-action:pan-x pan-y;overscroll-behavior:none;-webkit-tap-highlight-color:transparent;-webkit-touch-callout:none;
+    -webkit-text-size-adjust:100%;text-size-adjust:100%;-webkit-user-select:none;user-select:none;}
+  input,textarea,select,[contenteditable="true"]{-webkit-user-select:text;user-select:text;}
+  img,svg{-webkit-user-drag:none;user-drag:none;}
   ::selection{background:rgba(var(--ok-rgb),.32);color:#fff;}
   #map{position:fixed;inset:0;background:var(--obsidian);}
   #trainCanvas{position:fixed;inset:0;pointer-events:none;z-index:450;}
@@ -194,9 +223,9 @@
   /* city switcher: the city name in the title is a dropdown */
   .city-btn{font:inherit;color:var(--text);background:none;border:none;padding:0 2px 0 0;cursor:pointer;
     display:inline-flex;align-items:center;gap:4px;letter-spacing:inherit;border-radius:6px;transition:color .18s var(--ease);}
-  .city-btn:hover{color:var(--accent);}
+  .city-btn:hover{color:var(--accent-ink);}
   .city-caret{font-size:var(--fs-5);color:var(--muted);transition:transform .2s var(--ease);}
-  .city-btn[aria-expanded="true"] .city-caret{transform:rotate(180deg);color:var(--accent);}
+  .city-btn[aria-expanded="true"] .city-caret{transform:rotate(180deg);color:var(--accent-ink);}
   .brand-tail{letter-spacing:inherit;}
   .city-menu{position:absolute;top:calc(100% + 8px);left:0;min-width:232px;z-index:1500;display:none;
     padding:5px;border-radius:14px;flex-direction:column;gap:2px;}
@@ -205,12 +234,12 @@
     background:none;color:var(--text);font-family:var(--font);font-size:12px;font-weight:600;cursor:pointer;
     text-align:start;letter-spacing:.2px;transition:background .13s var(--ease);}
   .city-item:hover{background:var(--surface-2);}
-  .city-item.on{background:rgba(var(--ok-rgb),.14);color:var(--accent);}
+  .city-item.on{background:rgba(var(--ok-rgb),.14);color:var(--accent-ink);}
   .city-item .ci-n{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
   .city-item .ci-m{flex:none;font-size:var(--fs-6);letter-spacing:-1px;opacity:.75;filter:grayscale(.35);}
   .city-item.on .ci-m{opacity:1;filter:none;}
   .city-item .ci-c{font-size:var(--fs-4);color:var(--dim);font-weight:700;letter-spacing:.4px;flex:none;}
-  .city-item.on .ci-c{color:var(--accent);}
+  .city-item.on .ci-c{color:var(--accent-ink);}
   .topbar .sub{font-size:var(--fs-6);color:var(--muted);letter-spacing:1.4px;margin-top:6px;text-transform:uppercase;font-weight:600;}
   .stats{display:flex;gap:8px;margin-top:12px;}
   .stats .kv{flex:1;background:var(--surface);border:1px solid var(--stroke);border-radius:11px;padding:7px 4px 6px;text-align:center;}
@@ -236,6 +265,9 @@
     --accent:#1A73E8; --accent-2:#0B7DDA; --grad-accent:linear-gradient(135deg,#1A73E8,#1557B0);
     --ring:rgba(26,115,232,.22);
     --panel:rgba(255,255,255,0.92); --stroke:rgba(15,23,42,0.09); --stroke-2:rgba(15,23,42,0.14);
+    /* body.calm restates the DARK surface and track tokens, and nothing here took them back for the light theme: the tab strips were
+       dark grey under dark text (1.9:1, found by the V4.3 contrast audit) */
+    --surface:rgba(15,23,42,.04); --surface-2:rgba(15,23,42,.07); --track:rgba(15,23,42,.06);
   }
   /* flatter chrome: drop the neon bloom, keep a soft depth shadow */
   body.calm .glass,body.calm .card,body.calm .topbar,body.calm .announce,body.calm .station,
@@ -250,6 +282,7 @@
   body.calm .wc-go{color:#fff;}
   body.calm .tabs button.active,body.calm .seg button.active{box-shadow:inset 0 0 0 1px var(--ring);}
   body.calm .tabs button[data-tab="active"].active{background:rgba(59,130,246,.16);color:#BBD8FF;}
+  body.calm.light .tabs button[data-tab="active"].active{color:var(--accent-ink);}   /* the pale blue is for the dark theme (1.1:1 on light) */
   body.calm .badge,body.calm .ac-item .ac-dot{box-shadow:none;}
   body.calm .kv{border-radius:13px;}
   body.calm .sec::before{box-shadow:none;}
@@ -280,7 +313,7 @@
     /* --dim is the faintest tier — hints and footnotes — and at #7F7768 it measured 4.19 on
        this stock, just under AA. Lightened until it clears: a variant whose argument is
        readability should not ship a tier that fails the threshold. */
-    --stroke-2:rgba(240,235,225,.22); --text:#F2EDE3; --muted:#ABA396; --dim:#898172;
+    --stroke-2:rgba(240,235,225,.22); --text:#F2EDE3; --muted:#ABA396; --dim:#A39A89;
     --accent:#3FA98A; --accent-2:#38998F; --gold:#D9A441; --btn-ink:#0B1A14;
     --grad-accent:linear-gradient(135deg,#3FA98A,#2F8F86);
     --surface:rgba(240,235,225,.05); --surface-2:rgba(240,235,225,.09);
@@ -475,7 +508,7 @@
   .tabs button:focus-visible,.seg button:focus-visible{outline-offset:-1px;}
   /* skip-link: first tab stop, jumps keyboard users straight to the trip planner */
   .skip-link{position:fixed;top:-60px;left:14px;z-index:2000;padding:9px 14px;border-radius:0 0 12px 12px;
-    background:var(--accent);color:var(--btn-ink);font-size:12px;font-weight:800;text-decoration:none;transition:top .18s var(--ease);}
+    background:var(--accent-ink);color:var(--obsidian);font-size:12px;font-weight:800;text-decoration:none;transition:top .18s var(--ease);}
   .skip-link:focus{top:0;}
 
   /* Right control stack */
@@ -527,7 +560,7 @@
   .ic-b.ic-border{background:rgba(0,105,192,.14);color:#8FC6FF;}
   .ic-appx{font-size:var(--fs-4);color:var(--warn-ink);margin-top:3px;font-weight:600;}
   .ic-all{width:100%;margin-bottom:8px;padding:8px;border:1px solid var(--stroke);border-radius:11px;cursor:pointer;
-    background:var(--surface);color:var(--accent);font-weight:700;font-size:11px;font-family:var(--font);transition:all .15s var(--ease);}
+    background:var(--surface);color:var(--accent-ink);font-weight:700;font-size:11px;font-family:var(--font);transition:all .15s var(--ease);}
   .ic-all:hover{background:var(--surface-2);border-color:var(--ring);}
   /* map terminus labels for the highlighted route (permanent tooltips) */
   .ic-lbl{background:rgba(8,12,20,.92)!important;border:1px solid rgba(255,255,255,.18)!important;color:#fff!important;
@@ -541,12 +574,13 @@
   .ic-when{font-size:var(--fs-6);color:var(--muted);margin-top:4px;font-weight:600;}
   .ic-stops{font-size:var(--fs-5);color:var(--dim);margin-top:3px;}
   .ic-foot{font-size:var(--fs-5);color:var(--dim);padding-top:7px;margin-top:7px;border-top:1px solid var(--stroke);line-height:1.55;}
-  .ic-foot a{color:var(--accent);text-decoration:none;font-weight:700;display:block;margin-top:3px;}
+  .ic-foot a{color:var(--accent-ink);text-decoration:none;font-weight:700;display:block;margin-top:3px;}
   .ic-foot a:hover{text-decoration:underline;}
   
   /* weather card */
   .wx-clockrow{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:2px 0 9px;}
   .wx-clock{font-family:var(--mono);font-size:21px;font-weight:700;letter-spacing:2px;color:#A5DFFC;text-shadow:0 0 22px rgba(var(--sky-rgb),.5);}
+  body.light .wx-clock{color:var(--sky-ink);text-shadow:none;}
   .wx-dtz{display:flex;flex-direction:column;align-items:flex-end;}
   .wx-date{font-size:11px;color:var(--text);font-weight:600;}
   .wx-tz{font-size:var(--fs-4);color:var(--dim);letter-spacing:.9px;text-transform:uppercase;font-weight:600;}
@@ -624,7 +658,7 @@
   .wx-hint.k-raining,.wx-hint.k-rain{border-color:rgba(var(--sky-rgb),.45);background:rgba(var(--sky-rgb),.1);color:#9FD8F5;}
   body.light .wx-hint.k-raining,body.light .wx-hint.k-rain{color:#0b5d85;}
   .wx-hintnote{font-size:var(--fs-6);color:var(--dim);margin:3px 1px 0;line-height:1.4;}
-  .wx-hintnote a{color:var(--accent);text-decoration:none;}
+  .wx-hintnote a{color:var(--accent-ink);text-decoration:none;}
   .wx-sechd{font-size:var(--fs-5);font-weight:800;letter-spacing:.8px;text-transform:uppercase;color:var(--dim);margin:13px 2px 5px;}
   .wx-hourly{display:flex;gap:3px;overflow-x:auto;padding-bottom:5px;scrollbar-width:thin;}
   .wx-hr{flex:0 0 40px;display:flex;flex-direction:column;align-items:center;gap:2px;padding:5px 0;border-radius:10px;background:var(--surface);font-size:var(--fs-7);}
@@ -661,7 +695,9 @@
     font-size:11px;font-weight:600;border-radius:10px;padding:6px 10px;box-shadow:0 10px 28px rgba(0,0,0,.65);}
   .leaflet-tooltip.lt::before{display:none;}
   /* the bubble that stays until the next press (17-boot.js): wraps like text rather than running off the screen as one line */
-  .leaflet-tooltip.lt.disr-pin{white-space:normal;width:max-content;max-width:min(78vw,300px);line-height:1.4;pointer-events:none;}
+  .leaflet-tooltip.lt.disr-pin{white-space:normal;width:max-content;max-width:min(78vw,300px);line-height:1.4;
+    background-color:#090D14;backdrop-filter:none;pointer-events:none;}          /* fully opaque: the lines and dots under it must not show through the text (V4.3) */
+  body.atlas .leaflet-tooltip.lt.disr-pin{background:linear-gradient(var(--panel),var(--panel)),var(--obsidian);}
   .leaflet-tooltip.lt.disr-pin .pin-hint{margin-top:6px;padding-top:5px;border-top:1px solid var(--stroke-2);font-size:var(--fs-7);font-weight:500;color:var(--muted);}
   .planned-banner{background:rgba(var(--violet-rgb),.1);border:1px solid rgba(var(--violet-rgb),.38);border-radius:12px;padding:10px 12px;font-size:11.5px;font-weight:700;color:var(--violet-ink);}
   .planned-banner span{display:block;font-weight:400;color:var(--muted);font-size:var(--fs-7);margin-top:4px;line-height:1.4;}
@@ -694,12 +730,12 @@
   .pl-stns li{counter-increment:s;color:var(--dim);break-inside:avoid;padding:1px 0;}
   .pl-stns li::before{content:counter(s) ". ";color:var(--dim);font-variant-numeric:tabular-nums;}
   .pl-stns li.go{color:var(--text);cursor:pointer;}
-  .pl-stns li.go:hover{color:var(--accent);text-decoration:underline;}
+  .pl-stns li.go:hover{color:var(--accent-ink);text-decoration:underline;}
   .pl-none,.pl-geo,.pl-cmp,.pl-ver,.pl-unv{font-size:var(--fs-7);color:var(--muted);line-height:1.45;}
   .pl-cmp{color:var(--dim);margin-top:2px;}
   .pl-unv{color:var(--warn-ink);}
   .pl-srcs{display:flex;flex-direction:column;gap:4px;font-size:var(--fs-7);line-height:1.35;}
-  .pl-srcs a{color:var(--accent);text-decoration:none;overflow-wrap:anywhere;}
+  .pl-srcs a{color:var(--accent-ink);text-decoration:none;overflow-wrap:anywhere;}
   .pl-srcs a:hover{text-decoration:underline;}
   .vis-sum{font-size:var(--fs-6);color:var(--muted);margin:0 0 8px;font-weight:600;}
   .grp-h.ph-construction{color:var(--gold-ink);}
@@ -746,8 +782,8 @@
   .ac-pin:hover{opacity:1;background:var(--surface-2);}
   .ac-pin.armed{background:rgba(var(--ok-rgb),.28);opacity:1;box-shadow:0 0 0 1px rgba(var(--ok-rgb),.5);}
   .ac-geo{position:absolute;right:33px;top:5px;width:27px;height:27px;border:none;background:transparent;cursor:pointer;border-radius:9px;opacity:.7;color:var(--text);display:flex;align-items:center;justify-content:center;transition:all .15s var(--ease);}
-  .ac-geo:hover{opacity:1;background:var(--surface-2);color:var(--accent);}
-  .ac-geo.busy{color:var(--accent);animation:spin 1s linear infinite;}
+  .ac-geo:hover{opacity:1;background:var(--surface-2);color:var(--accent-ink);}
+  .ac-geo.busy{color:var(--accent-ink);animation:spin 1s linear infinite;}
   .ac-list{position:absolute;left:0;right:0;top:40px;z-index:30;background:rgba(10,14,22,.97);backdrop-filter:blur(16px);
     border:1px solid var(--stroke-2);border-radius:12px;max-height:230px;overflow-y:auto;display:none;
     box-shadow:0 20px 48px -12px rgba(0,0,0,.85);}
@@ -779,7 +815,7 @@
   .btn.ghost:hover{color:var(--text);border-color:rgba(var(--ok-rgb),.55);background:var(--surface-2);transform:none;}
   .swapb{display:flex;justify-content:center;margin:-2px 0;}
   .swapb button{background:var(--surface);border:1px solid var(--stroke);color:var(--muted);border-radius:var(--r-pill);width:32px;height:22px;cursor:pointer;transition:all .15s var(--ease);}
-  .swapb button:hover{color:var(--accent);border-color:var(--accent);transform:rotate(180deg);}
+  .swapb button:hover{color:var(--accent-ink);border-color:var(--accent);transform:rotate(180deg);}
 
   .route-out{display:none;flex-direction:column;margin-top:12px;font-size:12px;}
   .route-out.show{display:flex;}
@@ -843,7 +879,7 @@
   .plan-item .pi-to{color:var(--muted);}
   .plan-item .pi-to::before{content:"→ ";color:var(--dim);}
   .plan-item .pi-meta{flex:none;display:flex;align-items:center;gap:5px;}
-  .plan-item .pi-eta{font-family:var(--mono);font-size:var(--fs-7);color:var(--accent);flex:none;font-weight:700;}
+  .plan-item .pi-eta{font-family:var(--mono);font-size:var(--fs-7);color:var(--accent-ink);flex:none;font-weight:700;}
   .plan-item .pi-star,.plan-item .pi-del{flex:none;background:none;border:none;cursor:pointer;font-size:12px;color:var(--dim);padding:0 1px;line-height:1;transition:color .12s;}
   .plan-item .pi-star.on{color:var(--gold);}
   .plan-item .pi-star:hover{color:var(--gold);}
@@ -875,7 +911,7 @@
   .arr .et.now{color:var(--gold-ink);text-shadow:0 0 12px rgba(var(--gold-rgb),.5);}
   .rowbtns{display:flex;gap:6px;margin-bottom:11px;}
   .rowbtns button{flex:1;padding:8px 0;border-radius:10px;border:1px solid var(--stroke-2);background:var(--surface);color:var(--muted);font-size:var(--fs-7);font-weight:700;cursor:pointer;letter-spacing:.4px;transition:all .15s var(--ease);}
-  .rowbtns button:hover{color:var(--accent);border-color:rgba(var(--ok-rgb),.55);background:rgba(var(--ok-rgb),.07);}
+  .rowbtns button:hover{color:var(--accent-ink);border-color:rgba(var(--ok-rgb),.55);background:rgba(var(--ok-rgb),.07);}
   .none{font-size:11px;color:var(--dim);font-style:italic;padding:5px 0;}
   #stnService{margin-top:10px;}
   .svc-row{display:flex;align-items:center;gap:8px;font-size:var(--fs-8);color:var(--muted);padding:3.5px 0;}
@@ -944,8 +980,8 @@
   /* "shown in Turkish" badge: an alert the phrase rules could not carry into English is
      printed in the operator’s own words, and says so rather than pretending to be a translation */
   .ann-tr{display:inline-block;font-size:var(--fs-4);font-weight:800;letter-spacing:.4px;text-transform:uppercase;
-    padding:1px 6px;border-radius:var(--r-pill);border:1px solid var(--stroke);color:var(--dim);
-    background:var(--surface-2);vertical-align:1px;margin-inline-end:2px;white-space:nowrap;cursor:help;}
+    padding:1px 6px;border-radius:var(--r-pill);border:1px solid var(--stroke);color:var(--muted);
+    background:var(--surface);vertical-align:1px;margin-inline-end:2px;white-space:nowrap;cursor:help;}
   /* --- right to left ------------------------------------------------------------------
      Arabic sets dir=rtl on the document, which is what its prose needs. The side effect is
      that the bidi algorithm reorders a run of Latin text around any neutral character in
@@ -959,7 +995,7 @@
 
   .ann-item .ann-tx small{display:block;color:var(--muted);font-size:var(--fs-6);margin-top:1px;}
   .ann-foot{font-size:var(--fs-5);color:var(--dim);padding-top:4px;border-top:1px solid var(--stroke);margin-top:2px;line-height:1.55;}
-  .ann-foot a{color:var(--accent);text-decoration:none;}
+  .ann-foot a{color:var(--accent-ink);text-decoration:none;}
   .ann-foot a:hover{text-decoration:underline;}
   .ann-age{margin-bottom:2px;}
   .ann-age.stale{color:var(--warn-ink);font-weight:700;}
@@ -970,7 +1006,7 @@
   .ann-none{font-size:11px;color:var(--ok-ink);padding:8px 9px;}
   .ann-open{border-left-color:#2FBF71;}
   .ann-open .ann-until{color:var(--ok-ink);}
-  .ann-soon{background:#2FBF71 !important;}
+  .ann-soon{background:#2FBF71 !important;color:#06210F !important;}   /* dark ink: white on this green is 2.4:1 */
   .ann-sub{font-size:var(--fs-5);font-weight:800;letter-spacing:.8px;text-transform:uppercase;color:var(--dim);margin:10px 2px 2px;display:flex;align-items:center;gap:5px;}
   .ann-note{font-size:var(--fs-4);color:var(--dim);margin:3px 2px 0;font-style:italic;line-height:1.5;}
   /* bus and ferry notices: a collapsed section, with the line chips of each group on one row */
@@ -982,14 +1018,14 @@
   .ann-busbox{display:flex;flex-direction:column;gap:6px;}
   .ann-busbox[hidden]{display:none;}
   .ann-chips{display:flex;flex-wrap:wrap;gap:4px;margin:2px 0 4px;}
-  .ann-chip{border:1px solid rgba(var(--gold-rgb),.5);background:rgba(var(--gold-rgb),.12);color:var(--gold);font:inherit;font-family:var(--mono);font-weight:700;font-size:var(--fs-5);
+  .ann-chip{border:1px solid rgba(var(--gold-rgb),.5);background:rgba(var(--gold-rgb),.12);color:var(--gold-ink);font:inherit;font-family:var(--mono);font-weight:700;font-size:var(--fs-5);
     padding:2px 7px;border-radius:7px;cursor:pointer;}
   .ann-chip:hover{background:rgba(var(--gold-rgb),.25);}
   .ann-chip small{margin-left:3px;color:var(--muted);font-weight:600;}
   .ann-more-n{font-size:var(--fs-5);color:var(--dim);align-self:center;padding:0 3px;}
   .ann-bus{cursor:default;}
   .ann-bus .ann-msg{overflow-wrap:anywhere;}
-  .ann-moreb{align-self:flex-start;border:none;background:none;color:var(--accent);font:inherit;font-size:var(--fs-6);font-weight:700;cursor:pointer;padding:3px 2px;}
+  .ann-moreb{align-self:flex-start;border:none;background:none;color:var(--accent-ink);font:inherit;font-size:var(--fs-6);font-weight:700;cursor:pointer;padding:3px 2px;}
   .ann-moreb:hover{text-decoration:underline;}
   .bus-row .bn-warn{flex:none;color:var(--warn-ink);font-size:12px;}
   .bn-item{margin:0 0 6px;padding:7px 9px;border-radius:9px;background:var(--surface);border:1px solid var(--stroke);border-left:3px solid var(--muted);font-size:var(--fs-7);line-height:1.45;color:var(--text);}
@@ -1005,7 +1041,7 @@
   .lp-strip{margin:2px 0 6px;}
   .strip-dir{display:flex;align-items:center;gap:7px;font-size:11px;color:var(--muted);margin-bottom:7px;flex-wrap:wrap;}
   .strip-dir b{color:var(--text);font-weight:700;}
-  .strip-dir .ar{color:var(--accent);font-weight:700;}
+  .strip-dir .ar{color:var(--accent-ink);font-weight:700;}
   .strip-dir .strip-hint{flex-basis:100%;color:var(--dim);font-size:var(--fs-6);letter-spacing:.2px;}
   .strip-scroll,.jmap-scroll{overflow-x:auto;overflow-y:hidden;-webkit-overflow-scrolling:touch;
     border-radius:14px;border:1px solid var(--stroke);padding:5px 3px 3px;
@@ -1023,7 +1059,7 @@
     display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--text);
     border:1px solid var(--stroke-2);background:var(--panel);box-shadow:0 8px 22px -10px rgba(0,0,0,.7);
     transition:all .18s var(--ease);}
-  .locate-fab:hover{color:var(--accent);border-color:var(--ring);transform:translateY(-1px);}
+  .locate-fab:hover{color:var(--accent-ink);border-color:var(--ring);transform:translateY(-1px);}
   .locate-fab:active{transform:scale(.94);}
   .locate-fab.on{color:#2f8fff;border-color:rgba(47,143,255,.5);box-shadow:0 0 0 1px rgba(47,143,255,.4),0 8px 22px -10px rgba(0,0,0,.7);}
   .locate-fab.busy svg{animation:spin 1s linear infinite;}
@@ -1032,7 +1068,7 @@
     display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--text);padding:0;
     border:1px solid var(--stroke-2);background:var(--panel);box-shadow:0 8px 22px -10px rgba(0,0,0,.7);transition:opacity .2s,transform .18s var(--ease);}
   .compass-fab[hidden]{display:none;}
-  .compass-fab:hover{color:var(--accent);border-color:var(--ring);}
+  .compass-fab:hover{color:var(--accent-ink);border-color:var(--ring);}
   .compass-fab:active{transform:scale(.94);}
   body.mobile .compass-fab{left:auto;top:auto;right:14px;bottom:calc(204px + env(safe-area-inset-bottom));}
   body.ai-open .compass-fab,body.omni-open .compass-fab{opacity:0;pointer-events:none;}
@@ -1065,7 +1101,7 @@
     border:1px solid var(--stroke-2);background:var(--surface);transition:border-color .16s var(--ease);}
   .omni-bar:focus-within{border-color:var(--accent);}
   .omni-ic{flex:none;color:var(--dim);}
-  .omni-bar:focus-within .omni-ic{color:var(--accent);}
+  .omni-bar:focus-within .omni-ic{color:var(--accent-ink);}
   .omni-in{flex:1;min-width:0;border:none;background:none;outline:none;color:var(--text);
     font-family:var(--font);font-size:11.5px;}
   .omni-in::placeholder{color:var(--dim);}
@@ -1097,14 +1133,14 @@
   .omni-chip{border:1px solid var(--stroke-2);background:var(--surface);color:var(--muted);
     border-radius:var(--r-pill);padding:5px 9px;font-size:var(--fs-6);font-family:var(--font);cursor:pointer;
     transition:all .14s var(--ease);}
-  .omni-chip:hover{border-color:var(--accent);color:var(--accent);}
+  .omni-chip:hover{border-color:var(--accent);color:var(--accent-ink);}
   .omni-note{font-size:var(--fs-6);color:var(--dim);padding:9px 10px;line-height:1.5;}
   /* the part of a name the search matched, the way every map's search shows it */
-  .omni-nm b{color:var(--accent);font-weight:800;}
+  .omni-nm b{color:var(--accent-ink);font-weight:800;}
   .omni-more{display:block;width:calc(100% - 10px);margin:4px 5px;padding:7px;border:1px dashed var(--stroke-2);border-radius:9px;
     background:none;color:var(--muted);font-size:var(--fs-6);cursor:pointer;}
-  .omni-more:hover{border-color:var(--accent);color:var(--accent);}
-  .pin-type{font-size:var(--fs-5);color:var(--accent);margin:-1px 0 4px;}
+  .omni-more:hover{border-color:var(--accent);color:var(--accent-ink);}
+  .pin-type{font-size:var(--fs-5);color:var(--accent-ink);margin:-1px 0 4px;}
   /* .topbar owns a stacking context at z-index 1000, so the list inside it would otherwise
      sit under the z-1200 left rail no matter what z-index the list itself carries */
   body.omni-open .topbar{z-index:1300;}
@@ -1123,9 +1159,9 @@
   .pv-row:last-child{border-bottom:none;}
   .pv-k{flex:none;width:64px;font-family:var(--mono);font-size:var(--fs-4);letter-spacing:.06em;
     text-transform:uppercase;padding:2px 4px;border-radius:4px;text-align:center;}
-  .pv-ok{background:rgba(var(--ok-rgb),.13);color:var(--accent);}
+  .pv-ok{background:rgba(var(--ok-rgb),.13);color:var(--accent-ink);}
   .pv-warn{background:rgba(var(--warn-rgb),.14);color:var(--warn-ink);}
-  .pv-dim{background:var(--surface);color:var(--dim);border:1px solid var(--stroke);}
+  .pv-dim{background:var(--surface);color:var(--muted);border:1px solid var(--stroke);}
   .pv-t{flex:1;min-width:0;display:flex;flex-direction:column;gap:1px;}
   .pv-t b{font-size:var(--fs-7);color:var(--text);font-weight:600;line-height:1.35;}
   .pv-s{font-size:var(--fs-5);color:var(--dim);line-height:1.35;}
@@ -1149,13 +1185,13 @@
   /* How far a quoted time can be trusted. Deliberately quiet — this is a qualifier on a number
      the user already has, not an alarm, so only the low tier gets a warm colour and none of the
      three shouts. Colour is never the only signal: the label says which it is in words. */
-  .tt-row .tt-conf-high{color:var(--accent);}
+  .tt-row .tt-conf-high{color:var(--accent-ink);}
   .tt-row .tt-conf-medium{color:var(--muted);}
   .tt-row .tt-conf-low{color:#C99A4B;}
   /* A change's verdict. Same rule: the word carries the meaning, colour only reinforces it,
      so this stays legible to a colour-blind reader and in high-contrast mode. */
   .xfer-v{font-size:var(--fs-6);font-weight:650;letter-spacing:.02em;margin-top:2px;}
-  .xfer-safe,.xfer-ok{color:var(--accent);}
+  .xfer-safe,.xfer-ok{color:var(--accent-ink);}
   .xfer-tight{color:#E0A32E;}
   .xfer-risky,.xfer-infeasible{color:#F0665A;}
   .xfer-frequency{color:var(--dim);font-weight:500;}
@@ -1184,7 +1220,7 @@
   /* the assistant owns the bottom-left while it is open, so nothing stacks on top of it */
   body.ai-open .announce{display:none;}
   .ai-h{display:flex;align-items:center;gap:8px;padding:11px 13px;border-bottom:1px solid var(--stroke);}
-  .ai-h b{font-size:var(--fs-8);letter-spacing:1px;text-transform:uppercase;color:var(--accent);font-weight:800;}
+  .ai-h b{font-size:var(--fs-8);letter-spacing:1px;text-transform:uppercase;color:var(--accent-ink);font-weight:800;}
   .ai-x{margin-left:auto;border:none;background:none;color:var(--dim);cursor:pointer;font-size:13px;padding:2px 4px;}
   .ai-x:hover{color:var(--text);}
   .ai-log{flex:1;overflow-y:auto;overscroll-behavior:contain;padding:11px 12px;display:flex;
@@ -1200,7 +1236,7 @@
   .ai-hit:hover{border-color:rgba(var(--ok-rgb),.5);background:rgba(var(--ok-rgb),.07);}
   .ai-hit .n{flex:1;min-width:0;font-size:var(--fs-7);color:var(--text);overflow:hidden;
     text-overflow:ellipsis;white-space:nowrap;}
-  .ai-hit .d{flex:none;font-family:var(--mono);font-size:var(--fs-5);color:var(--accent);}
+  .ai-hit .d{flex:none;font-family:var(--mono);font-size:var(--fs-5);color:var(--accent-ink);}
   /* pulsing ring behind a station-level fault, so it reads as live rather than as a pin */
   .disr-halo{animation:disrPulse 2.3s ease-in-out infinite;}
   @keyframes disrPulse{0%,100%{opacity:.30;}50%{opacity:1;}}
@@ -1212,7 +1248,7 @@
   .ai-in{flex:1;min-width:0;border:1px solid var(--stroke-2);background:var(--surface);border-radius:10px;
     padding:8px 10px;color:var(--text);font-family:var(--font);font-size:var(--fs-8);outline:none;}
   .ai-in:focus{border-color:var(--accent);}
-  .ai-send{flex:none;border:1px solid var(--stroke-2);background:var(--surface);color:var(--accent);
+  .ai-send{flex:none;border:1px solid var(--stroke-2);background:var(--surface);color:var(--accent-ink);
     border-radius:10px;padding:8px 11px;cursor:pointer;font-size:12px;line-height:1;}
   .ai-send:hover{border-color:var(--accent);}
   /* place pin dropped by search / assistant */
@@ -1224,7 +1260,7 @@
   .pin-acts{display:flex;gap:5px;flex-wrap:wrap;}
   .pin-acts button{border:1px solid var(--stroke-2);background:var(--surface);color:var(--text);
     border-radius:8px;padding:5px 8px;font-size:var(--fs-6);font-family:var(--font);cursor:pointer;}
-  .pin-acts button:hover{border-color:var(--accent);color:var(--accent);}
+  .pin-acts button:hover{border-color:var(--accent);color:var(--accent-ink);}
 
   /* ============ MOBILE APP SHELL (PWA) ============ */
   .mnav,.msheet,.mbackdrop{display:none;}
@@ -1274,7 +1310,7 @@
   /* Settings: gear button + panel */
   .settings-btn{position:absolute;top:13px;right:13px;width:32px;height:32px;border-radius:10px;border:1px solid var(--stroke-2);
     background:var(--surface);color:var(--text);cursor:pointer;display:flex;align-items:center;justify-content:center;opacity:.85;transition:all .2s var(--ease);z-index:3;}
-  .settings-btn:hover{opacity:1;color:var(--accent);border-color:var(--ring);transform:rotate(40deg);}
+  .settings-btn:hover{opacity:1;color:var(--accent-ink);border-color:var(--ring);transform:rotate(40deg);}
   .settings-btn:active{transform:scale(.9) rotate(40deg);}
   /* clear BOTH action buttons (settings at right:13 + help at right:49, 32px each) — with only
      30px the gear sat on top of "RAY-NET" once the help button was added */
@@ -1282,7 +1318,7 @@
   body.mobile .topbar h1{padding-right:4px;}
   body.mobile .settings-btn{position:static;flex:0 0 auto;}
   .help-btn{right:49px;font-size:14px;font-weight:800;color:var(--muted);}
-  .help-btn:hover{transform:none;color:var(--accent);}
+  .help-btn:hover{transform:none;color:var(--accent-ink);}
   .help-btn:active{transform:scale(.9);}
   /* first-visit welcome card */
   .wc-overlay{position:fixed;inset:0;z-index:1600;display:none;align-items:center;justify-content:center;
@@ -1298,6 +1334,33 @@
   .wc-go{width:100%;margin-top:14px;padding:11px;border:none;border-radius:12px;cursor:pointer;
     font-weight:800;font-size:13px;color:var(--btn-ink);background:var(--grad-accent);letter-spacing:.3px;}
   .wc-go:active{transform:scale(.98);}
+  .wc-legal{margin:12px 0 0;font-size:11.5px;color:var(--muted);line-height:1.6;}
+  .wc-legal a,.priv-link,.sp-link{color:var(--accent-ink);}
+  /* the one-time privacy choice (V4.3): a card above the bottom bar, never a wall over the map. Both answers share one style, on
+     purpose: no answer is dressed up as the right one. */
+  .priv-notice{position:fixed;z-index:1550;left:50%;transform:translateX(-50%);bottom:calc(14px + env(safe-area-inset-bottom));
+    width:min(440px,calc(100% - 24px));padding:14px 16px 12px;display:none;}
+  body.mobile .priv-notice{bottom:calc(86px + env(safe-area-inset-bottom));}
+  .priv-notice.show{display:block;}
+  .priv-notice h2{font-size:14px;font-weight:800;margin:0 0 6px;color:var(--text);}
+  .priv-notice p{font-size:12px;line-height:1.5;color:var(--muted);margin:0 0 10px;}
+  .priv-btns{display:flex;gap:8px;}
+  .priv-btn{flex:1;min-height:44px;padding:10px 8px;border-radius:12px;cursor:pointer;font-family:var(--font);font-size:12px;font-weight:700;
+    color:var(--text);background:var(--surface);border:1px solid var(--stroke-2);}
+  .priv-btn:hover{border-color:rgba(var(--ok-rgb),.55);}
+  .priv-link{display:inline-block;margin-top:9px;font-size:11.5px;}
+  .sp-links{display:flex;flex-direction:column;gap:2px;}
+  .sp-link{font-size:12.5px;padding:7px 0;text-decoration:underline;text-underline-offset:2px;}
+  #deleteAll.armed{color:#fff;background:#B42318;border-color:#B42318;}
+  /* stations by keyboard and screen reader (25-map-keyboard.js, V4.3) */
+  .sr-only,.sr-focusable:not(:focus){position:absolute;width:1px;height:1px;margin:-1px;padding:0;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0;}
+  .sr-focusable:focus{position:fixed;left:14px;bottom:calc(86px + env(safe-area-inset-bottom));z-index:2000;padding:10px 14px;border-radius:12px;
+    background:var(--accent-ink);color:var(--obsidian);font:800 12px var(--font);border:0;}
+  .finder-list{list-style:none;display:flex;flex-direction:column;gap:6px;padding:2px 0 4px;max-height:58vh;overflow-y:auto;overscroll-behavior:contain;}
+  .finder-list button{width:100%;text-align:start;padding:10px 12px;border-radius:11px;cursor:pointer;font:600 12.5px var(--font);color:var(--text);
+    background:var(--surface);border:1px solid var(--stroke-2);display:flex;flex-wrap:wrap;gap:4px 8px;align-items:center;}
+  .finder-list button:hover{border-color:rgba(var(--ok-rgb),.55);}
+  .finder-list .fl-lines{margin-inline-start:auto;font:700 10.5px var(--mono);color:var(--muted);}
   .settings-overlay{position:fixed;inset:0;background:rgba(3,6,10,.55);backdrop-filter:blur(2px);opacity:0;pointer-events:none;z-index:1650;transition:opacity .25s;}
   .settings-overlay.on{opacity:1;pointer-events:auto;}
   .settings-panel{position:fixed;top:50%;left:50%;transform:translate(-50%,-46%) scale(.98);opacity:0;pointer-events:none;
@@ -1362,7 +1425,7 @@
   .sp-p-nm{flex:1;color:var(--text);font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
   .sp-place .mini{flex:0 0 auto;background:var(--surface-2);border:1px solid var(--stroke);color:var(--text);
     font:600 10.5px var(--font);padding:5px 11px;border-radius:8px;cursor:pointer;transition:all .15s var(--ease);}
-  .sp-place .mini:hover{border-color:var(--ring);color:var(--accent);}
+  .sp-place .mini:hover{border-color:var(--ring);color:var(--accent-ink);}
   .sp-place .mini[data-act="clear"]{color:var(--muted);background:transparent;}
   .sp-place .mini[data-act="clear"]:hover{color:#ff7a7a;border-color:rgba(var(--danger-rgb),.5);}
   /* fare row */
@@ -1439,7 +1502,7 @@
   }
   .go-follow{margin-left:auto;margin-right:6px;width:26px;height:26px;border-radius:9px;border:1px solid var(--stroke-2);
     background:var(--surface);color:var(--muted);cursor:pointer;font-size:13px;line-height:1;transition:all .18s var(--ease);}
-  .go-follow.on{color:var(--accent);border-color:var(--ring);background:rgba(var(--ok-rgb),.14);}
+  .go-follow.on{color:var(--accent-ink);border-color:var(--ring);background:rgba(var(--ok-rgb),.14);}
   .bd-stops{margin-top:7px;border:1px solid var(--stroke);border-radius:11px;background:var(--surface);overflow:hidden;}
   .bd-stops summary{display:flex;align-items:center;gap:7px;padding:8px 10px;cursor:pointer;font-size:var(--fs-8);
     font-weight:700;color:var(--text);list-style:none;}
@@ -1460,7 +1523,7 @@
   .mchip{display:inline-flex;align-items:center;gap:5px;padding:5px 9px;border-radius:var(--r-pill);cursor:pointer;
     border:1px solid var(--stroke);background:var(--surface);color:var(--muted);
     font-family:var(--font);font-size:var(--fs-7);font-weight:700;transition:all .15s var(--ease);}
-  .mchip.on{background:rgba(var(--ok-rgb),.14);border-color:var(--ring);color:var(--accent);}
+  .mchip.on{background:rgba(var(--ok-rgb),.14);border-color:var(--ring);color:var(--accent-ink);}
   body.calm .mchip.on{background:rgba(59,130,246,.15);}
   .mchip.off{opacity:.45;text-decoration:line-through;}
   .avoid-row{display:flex;flex-wrap:wrap;gap:5px;margin:6px 0 0;}
@@ -1471,7 +1534,7 @@
   .ropts-sort{display:flex;gap:4px;margin:2px 0 6px;}
   .ropts-sort button{flex:1;padding:5px 0;border-radius:8px;border:1px solid var(--stroke);background:var(--surface);
     color:var(--muted);font-family:var(--font);font-size:var(--fs-5);font-weight:700;cursor:pointer;letter-spacing:.2px;}
-  .ropts-sort button.on{background:var(--surface-2);color:var(--accent);border-color:var(--ring);}
+  .ropts-sort button.on{background:var(--surface-2);color:var(--accent-ink);border-color:var(--ring);}
   .st-avoid{margin-left:auto;background:none;border:none;color:var(--dim);cursor:pointer;font-size:var(--fs-6);padding:2px 4px;border-radius:6px;}
   .st-avoid:hover{color:var(--danger-ink);background:rgba(var(--danger-rgb),.1);}
   .sp-row.sp-col{flex-direction:column;align-items:stretch;gap:7px;}
@@ -1504,7 +1567,7 @@
   /* Layers card header — folds the whole card. It lives inside the card rather than floating
      over the map, where it used to sit on top of the Buses tab and hide it completely. */
   .lyr-head{display:flex;align-items:center;gap:8px;width:100%;padding:2px 2px 9px;border:none;
-    background:none;cursor:pointer;color:var(--accent);font-family:var(--font);font-size:var(--fs-7);
+    background:none;cursor:pointer;color:var(--accent-ink);font-family:var(--font);font-size:var(--fs-7);
     font-weight:800;letter-spacing:1.2px;text-transform:uppercase;}
   .lyr-head::after{content:"▾";margin-left:auto;font-size:11px;color:var(--dim);
     transition:transform .18s var(--ease);}
@@ -1528,7 +1591,7 @@
   body.focus-route .leaflet-container::after{content:attr(data-focus-note);position:absolute;left:50%;
     transform:translateX(-50%);bottom:14px;z-index:900;pointer-events:none;
     padding:6px 12px;border-radius:999px;font-family:var(--font);font-size:var(--fs-7);font-weight:700;
-    letter-spacing:.3px;color:var(--accent);background:rgba(7,10,18,.82);border:1px solid var(--stroke-2);}
+    letter-spacing:.3px;color:var(--accent-ink);background:rgba(7,10,18,.82);border:1px solid var(--stroke-2);}
   .off-wrap{display:flex;gap:7px;}
   .off-btn{flex:1;padding:8px 10px;border-radius:10px;border:1px solid var(--stroke-2);cursor:pointer;
     background:var(--grad-accent);color:var(--btn-ink);font-family:var(--font);font-size:var(--fs-8);font-weight:800;}
@@ -1550,13 +1613,13 @@
   body.calm .fc-row.on{background:rgba(59,130,246,.10);}
   .fc-nm{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:600;}
   .fc-tl{font-family:var(--mono);font-weight:800;}
-  .fc-you{font-size:var(--fs-3);font-weight:800;letter-spacing:.5px;text-transform:uppercase;color:var(--accent);}
+  .fc-you{font-size:var(--fs-3);font-weight:800;letter-spacing:.5px;text-transform:uppercase;color:var(--accent-ink);}
   .fc-save{font-size:var(--fs-5);font-weight:800;color:var(--ok-ink);}
   .fc-more{font-size:var(--fs-5);font-weight:700;color:var(--dim);}
   
   .fc-note{font-size:var(--fs-4);color:var(--dim);padding:6px 10px 8px;line-height:1.5;border-top:1px solid var(--stroke);}
   .rf-refund{display:flex;align-items:center;gap:7px;margin-top:6px;padding:7px 10px;border-radius:11px;
-    background:rgba(var(--ok-rgb),.10);border:1px solid rgba(var(--ok-rgb),.32);font-size:var(--fs-7);font-weight:600;color:var(--accent);}
+    background:rgba(var(--ok-rgb),.10);border:1px solid rgba(var(--ok-rgb),.32);font-size:var(--fs-7);font-weight:600;color:var(--accent-ink);}
   body.calm .rf-refund{background:rgba(59,130,246,.10);border-color:rgba(59,130,246,.32);}
   .rf-refund b{font-family:var(--mono);}
   .rf-net{margin-left:auto;font-family:var(--mono);font-weight:800;}
@@ -1573,8 +1636,8 @@
   .rf-sub{font-size:var(--fs-8);color:var(--muted);} .rf-i{margin-left:auto;color:var(--dim);cursor:help;font-size:12px;}
   /* nearby-stops button + panel */
   .near-btn{width:100%;padding:8px;margin-bottom:9px;border:1px dashed var(--stroke-2);border-radius:11px;background:var(--surface);color:var(--text);font:650 11.5px var(--font);cursor:pointer;transition:all .15s var(--ease);}
-  .near-btn::before{content:"◎ ";color:var(--accent);font-weight:800;}
-  .near-btn:hover{border-color:var(--ring);color:var(--accent);}
+  .near-btn::before{content:"◎ ";color:var(--accent-ink);font-weight:800;}
+  .near-btn:hover{border-color:var(--ring);color:var(--accent-ink);}
   .near-panel{position:fixed;left:14px;bottom:14px;width:300px;max-height:60vh;overflow-y:auto;z-index:1360;padding:13px;
     transform:translateY(14px) scale(.98);opacity:0;pointer-events:none;transition:all .28s var(--ease);}
   .near-panel.open{transform:none;opacity:1;pointer-events:auto;}
@@ -1615,7 +1678,7 @@
   body.mobile .go-panel{width:100%;left:0;bottom:0;border-radius:22px 22px 0 0;transform:translateY(105%);}
   body.mobile .go-panel.open{transform:translateY(0);}
   .go-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:11px;}
-  .go-title{font-family:var(--display);font-weight:700;font-size:14px;letter-spacing:.4px;color:var(--accent);}
+  .go-title{font-family:var(--display);font-weight:700;font-size:14px;letter-spacing:.4px;color:var(--accent-ink);}
   .go-head .x{background:none;border:none;color:var(--muted);font-size:15px;cursor:pointer;width:28px;height:28px;border-radius:8px;transition:all .15s var(--ease);}
   .go-head .x:hover{background:var(--surface-2);color:var(--text);}
   .go-now{display:flex;align-items:center;gap:13px;padding:13px;border-radius:16px;background:var(--surface);border:1px solid var(--stroke);margin-bottom:12px;}
@@ -1631,7 +1694,7 @@
   .gp-badge{font:700 9px var(--mono);padding:1px 5px;border-radius:5px;}
   .go-controls{display:flex;align-items:center;gap:10px;}
   .go-controls button{flex:0 0 auto;width:46px;height:40px;border-radius:12px;border:1px solid var(--stroke-2);background:var(--surface);color:var(--text);font-size:15px;cursor:pointer;transition:all .15s var(--ease);}
-  .go-controls button:hover{border-color:var(--ring);color:var(--accent);} .go-controls button:active{transform:scale(.94);}
+  .go-controls button:hover{border-color:var(--ring);color:var(--accent-ink);} .go-controls button:active{transform:scale(.94);}
   .go-arrive{flex:1;text-align:center;font-size:12.5px;font-weight:700;color:var(--text);font-family:var(--mono);}
   /* live arrivals countdown board */
   .arr-row{display:flex;align-items:flex-start;gap:9px;padding:6px 0;border-top:1px solid var(--stroke);}
@@ -1640,7 +1703,7 @@
   .arr-to{font-size:11.5px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
   .arr-mins{display:flex;align-items:baseline;gap:7px;margin-top:2px;}
   .cd-min{font-family:var(--mono);font-weight:800;font-size:15px;color:var(--muted);}
-  .cd-min.soon{color:var(--accent);font-size:19px;text-shadow:0 0 14px rgba(var(--ok-rgb),.4);}
+  .cd-min.soon{color:var(--accent-ink);font-size:19px;text-shadow:0 0 14px rgba(var(--ok-rgb),.4);}
   .cd-unit{font-size:var(--fs-7);color:var(--dim);margin-left:-3px;}
   .cd-none,.cd-next{font-size:11px;color:var(--dim);font-weight:600;}
   .cd-next{color:var(--muted);font-family:var(--mono);}
@@ -1658,13 +1721,13 @@
   .st-attr .bt{margin-top:8px;}
   .sa-list{display:flex;flex-wrap:wrap;gap:6px;margin:2px 0;}
   .sa-chip{font-size:11px;padding:4px 9px;border-radius:var(--r-pill);background:var(--surface);border:1px solid var(--stroke-2);color:var(--text);cursor:pointer;transition:all .15s var(--ease);}
-  .sa-chip:hover{border-color:var(--ring);color:var(--accent);}
+  .sa-chip:hover{border-color:var(--ring);color:var(--accent-ink);}
   /* share row */
   .route-btns{display:flex;gap:6px;} .route-btns .btn{margin-top:0;flex:1;}
   /* travel passport */
   .pp-stats{display:flex;gap:8px;margin:2px 0 13px;}
   .pp-stat{flex:1;text-align:center;padding:11px 4px;border-radius:13px;background:var(--surface);border:1px solid var(--stroke);}
-  .pp-stat b{display:block;font-family:var(--display);font-size:22px;font-weight:700;color:var(--accent);line-height:1;}
+  .pp-stat b{display:block;font-family:var(--display);font-size:22px;font-weight:700;color:var(--accent-ink);line-height:1;}
   .pp-stat span{font-size:var(--fs-6);color:var(--muted);}
   .pp-grid{display:flex;flex-wrap:wrap;gap:5px;margin-bottom:11px;}
   .pp-badge{font:700 10px var(--mono);padding:4px 8px;border-radius:7px;background:var(--surface-2);color:var(--dim);border:1px solid var(--stroke);opacity:.55;}
@@ -1677,11 +1740,11 @@
   .leave-remind{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-top:10px;font-size:var(--fs-8);color:var(--muted);}
   .leave-remind .lr-mins{display:inline-flex;gap:4px;}
   .leave-remind button{width:31px;height:26px;border:1px solid var(--stroke-2);border-radius:8px;background:var(--surface);color:var(--text);font:700 10.5px var(--mono);cursor:pointer;transition:all .15s var(--ease);}
-  .leave-remind button:hover{border-color:var(--ring);color:var(--accent);} .leave-remind button:active{transform:scale(.92);}
+  .leave-remind button:hover{border-color:var(--ring);color:var(--accent-ink);} .leave-remind button:active{transform:scale(.92);}
   /* planner quick chips */
   .place-chips{display:flex;gap:6px;margin:2px 0 9px;}
   .pchip{flex:1;padding:8px;border-radius:10px;border:1px solid var(--stroke-2);background:var(--surface);color:var(--text);font:650 11.5px var(--font);cursor:pointer;transition:all .15s var(--ease);}
-  .pchip:hover{border-color:var(--ring);color:var(--accent);background:var(--surface-2);} .pchip:active{transform:scale(.96);}
+  .pchip:hover{border-color:var(--ring);color:var(--accent-ink);background:var(--surface-2);} .pchip:active{transform:scale(.96);}
   /* accessibility: larger text + high contrast + reduce motion */
   body.large-text .step .nm,body.large-text .step .mt,body.large-text .ann-msg,body.large-text .st-nm,
   body.large-text .lp-name,body.large-text .bus-row,body.large-text .wx-row,body.large-text .plan-item,
@@ -1693,10 +1756,14 @@
 </style>
 </head>
 <body>
-<div id="bootSplash" role="status" aria-label="Loading"><div class="bs-bg"></div><img class="bs-icon" src="assets/splash-icon.jpg" width="384" height="384" alt=""><div class="bs-bar"><i></i></div></div>
+<div id="bootSplash" role="status" aria-label="Loading" data-i18n-aria="ariaLoading"><div class="bs-bg"></div><img class="bs-icon" src="assets/splash-icon.jpg" width="384" height="384" alt=""><div class="bs-bar"><i></i></div></div>
 <a href="#cardPlanner" class="skip-link" data-i18n="skipToPlanner">Skip to trip planner</a>
 <div class="print-sheet" id="printSheet"></div>
 <div id="map"></div>
+<!-- keyboard and screen-reader access to the stations drawn on the map (25-map-keyboard.js): help text, announcements, and a list -->
+<div id="mapHelp" class="sr-only" data-i18n="mapKeys">N and P step through the stations in view, Enter opens the one chosen, L lists them all.</div>
+<div id="mapLive" class="sr-only" role="status" aria-live="polite"></div>
+<button id="stnFinderBtn" class="sr-focusable" type="button" data-i18n="finderBtn">Browse the stations in view</button>
 <canvas id="trainCanvas"></canvas>
 <button id="locateFab" class="locate-fab glass" data-i18n-title="locateMe" title="My location" aria-label="My location">
   <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
@@ -1726,8 +1793,8 @@
 
 <div class="topbar glass">
   <h1><img class="logo" src="assets/logo-96.png" width="30" height="30" alt="" aria-hidden="true" decoding="async"><button id="cityBtn" class="city-btn" aria-haspopup="listbox" aria-expanded="false"><span id="cityName">İSTANBUL</span><span class="city-caret" aria-hidden="true">▾</span></button><span class="brand-tail">· RAY-NET</span>
-    <div class="city-menu glass" id="cityMenu" role="listbox" aria-label="City"></div></h1>
-  <div class="sub"><span data-i18n="liveNet">Live Rail Network</span> · <a href="https://github.com/Hero4mohamed/Metro-Istanbul-General-City-Map" target="_blank" rel="noopener" style="color:var(--accent);text-decoration:none;font-weight:700;" data-i18n="source">source ↗</a></div>
+    <div class="city-menu glass" id="cityMenu" role="listbox" aria-label="City" data-i18n-aria="ariaCity"></div></h1>
+  <div class="sub"><span data-i18n="liveNet">Rail Network</span> · <a href="https://github.com/Hero4mohamed/Metro-Istanbul-General-City-Map" target="_blank" rel="noopener" style="color:var(--accent-ink);text-decoration:none;font-weight:700;" data-i18n="source">source ↗</a></div>
   <div class="stats">
     <div class="kv"><b id="sLines">0</b><span data-i18n="lines">Lines</span></div>
     <div class="kv"><b id="sStations">0</b><span data-i18n="stations">Stations</span></div>
@@ -1755,19 +1822,31 @@
   <div class="wc-card glass" role="dialog" aria-modal="true" aria-labelledby="wcTitle">
     <img class="wc-logo" src="assets/logo-96.png" width="44" height="44" alt="" aria-hidden="true" decoding="async">
     <h2 id="wcTitle" data-i18n="wcTitle">Welcome aboard!</h2>
-    <div class="wc-row"><span class="wc-ic">🗺️</span><span data-i18n="wcTap">Tap any line or station for live details &amp; arrivals</span></div>
+    <div class="wc-row"><span class="wc-ic">🗺️</span><span data-i18n="wcTap">Tap any line or station for details &amp; next departures</span></div>
     <div class="wc-row"><span class="wc-ic">🧭</span><span data-i18n="wcPlan">Plan door-to-door trips — metro, tram, ferry &amp; bus</span></div>
-    <div class="wc-row"><span class="wc-ic">🚇</span><span data-i18n="wcLive">Watch carriages move live &amp; follow lines for alerts</span></div>
+    <div class="wc-row"><span class="wc-ic">🚇</span><span data-i18n="wcLive">Watch the simulated carriages move &amp; follow lines for alerts</span></div>
     <div class="wc-row"><span class="wc-ic">⚙️</span><span data-i18n="wcLang">Language, dark mode &amp; more in Settings</span></div>
     <button class="wc-go" id="wcGo" data-i18n="wcGo">Start exploring</button>
+    <p class="wc-legal"><a data-legal="privacy" href="legal/privacy.html" target="_blank" rel="noopener" data-i18n="legalPrivacy">Privacy notice</a> · <a data-legal="terms" href="legal/terms.html" target="_blank" rel="noopener" data-i18n="legalTerms">Terms of use</a> · <a data-legal="credits" href="legal/credits.html" target="_blank" rel="noopener" data-i18n="legalCredits">Credits &amp; licences</a></p>
   </div>
 </div>
 
+<!-- the one-time privacy choice (V4.3): a card above the bottom bar, never over the map; both answers look the same -->
+<div class="priv-notice glass" id="privNotice" role="region" aria-labelledby="privTitle">
+  <h2 id="privTitle" data-i18n="privTitle">Your privacy, your choice</h2>
+  <p data-i18n="privBody">This app has no accounts, no ads and no tracking, and keeps your settings only on this device. Two optional extras ask other services for help: place look-ups (what you type) and walking routes (the start and end of a walk). They stay off unless you allow them.</p>
+  <div class="priv-btns">
+    <button class="priv-btn" id="privKeep" data-i18n="privKeep">Keep everything on my device</button>
+    <button class="priv-btn" id="privAllow" data-i18n="privAllow">Allow online look-ups</button>
+  </div>
+  <a class="priv-link" data-legal="privacy" href="legal/privacy.html" target="_blank" rel="noopener" data-i18n="privRead">Read the privacy notice</a>
+</div>
+
 <div class="settings-overlay" id="settingsOverlay"></div>
-<div class="settings-panel glass" id="settingsPanel" role="dialog" aria-modal="true" aria-label="Settings">
-  <div class="sp-head"><span data-i18n="settings">Settings</span><button class="x" id="settingsX" aria-label="Close">✕</button></div>
+<div class="settings-panel glass" id="settingsPanel" role="dialog" aria-modal="true" aria-label="Settings" data-i18n-aria="settings">
+  <div class="sp-head"><span data-i18n="settings">Settings</span><button class="x" id="settingsX" aria-label="Close" data-i18n-aria="close">✕</button></div>
   <div class="sp-find">
-    <input id="spSearch" type="search" data-i18n-ph="setSearchPh" placeholder="Search settings…" autocomplete="off" spellcheck="false" aria-label="Search settings">
+    <input id="spSearch" type="search" data-i18n-ph="setSearchPh" placeholder="Search settings…" autocomplete="off" spellcheck="false" aria-label="Search settings" data-i18n-aria="setSearchPh">
     <div class="sp-none" id="spNone" role="status" data-i18n="setNone">No setting matches that.</div>
   </div>
 
@@ -1900,13 +1979,17 @@
     <summary><span class="sp-ico" aria-hidden="true">🔒</span><span data-i18n="secSearch">Search &amp; privacy</span></summary>
     <div class="sp-body">
       <div class="sp-item">
-        <div class="sp-row"><span data-i18n="prefOnline">Look places up online</span>
-          <button class="sw" id="swOnline" role="switch" aria-label="Look places up online"><span class="sw-k"></span></button></div>
-        <div class="sp-hint" data-i18n="onlineHint">When a place is not in the offline list, what you type is sent to the Photon service (komoot.io) with the city centre — never your own location. Turn off to keep every search on this device.</div>
+        <div class="sp-row"><span data-i18n="prefOnline">Online look-ups</span>
+          <button class="sw" id="swOnline" role="switch" aria-checked="false" aria-label="Online look-ups"><span class="sw-k"></span></button></div>
+        <div class="sp-hint" data-i18n="onlineHint">Off until you choose. When on, two kinds of thing go to public services run by others: the text you type for a place that is not in the offline list, and the position you search around for "what is near" (to Photon, komoot.io, with the city centre); and the start and end of each walking part of a planned trip (to routing.openstreetmap.de, to follow real streets). If one of those points is your own position, that position is sent. Turn off to keep every search and route on this device.</div>
       </div>
       <div class="sp-item">
         <button class="btn ghost" id="resetTrips" data-i18n="resetTrips">Clear saved trips &amp; favourites</button>
         <div class="sp-hint" data-i18n="privacyNote">Your settings and saved trips stay on this device only.</div>
+      </div>
+      <div class="sp-item">
+        <button class="btn ghost" id="deleteAll" data-i18n="deleteAll">Delete all my data on this device</button>
+        <div class="sp-hint" data-i18n="deleteAllHint">Removes everything this app saved here: settings, saved places, trips, favourites, history, the offline copies of the app and maps, and your choices. The app then starts like a first visit. Nothing is kept anywhere else, so there is nothing to delete elsewhere.</div>
       </div>
     </div>
   </details>
@@ -1925,7 +2008,7 @@
       <div class="sp-item sp-row sp-col" id="aiKeyRow"><span data-i18n="aiKeyLabel">Assistant AI (optional)</span>
         <div class="off-wrap">
           <input type="password" id="aiKeyIn" class="ai-key" autocomplete="off" spellcheck="false"
-                 placeholder="sk-ant-…" aria-label="Anthropic API key" />
+                 placeholder="sk-ant-…" aria-label="Anthropic API key" data-i18n-aria="ariaApiKey" />
           <button class="off-btn" id="aiKeySave" data-i18n="aiKeySave">Save</button>
           <button class="off-btn ghost" id="aiKeyClear" data-i18n="aiKeyClear">Clear</button>
         </div>
@@ -1938,37 +2021,62 @@
           <button class="off-btn ghost" id="diagClear" data-i18n="diagClear">Clear</button>
         </div>
         <div class="sp-note" id="diagNote"></div>
+        <div class="sp-hint" data-i18n="diagPrivacy">Report a problem opens a public GitHub page with the fault log and your browser's name already typed in. Read it before you post; you need a GitHub account. The app itself sends nothing.</div>
       </div>
+    </div>
+  </details>
+
+  <details class="sp-sec" data-sec="about">
+    <summary><span class="sp-ico" aria-hidden="true">ℹ️</span><span data-i18n="secAbout">About &amp; legal</span></summary>
+    <div class="sp-body">
+      <div class="sp-item"><div class="sp-note" data-i18n="aboutProject">İstanbul Ray-Net is a free, non-commercial, open-source project by its author. It is not an official service of any transit operator.</div></div>
+      <div class="sp-item sp-links">
+        <a class="sp-link" data-legal="privacy" href="legal/privacy.html" target="_blank" rel="noopener" data-i18n="legalPrivacy">Privacy notice</a>
+        <a class="sp-link" data-legal="terms" href="legal/terms.html" target="_blank" rel="noopener" data-i18n="legalTerms">Terms of use</a>
+        <a class="sp-link" data-legal="storage" href="legal/storage.html" target="_blank" rel="noopener" data-i18n="legalStorage">Cookies &amp; stored data</a>
+        <a class="sp-link" data-legal="credits" href="legal/credits.html" target="_blank" rel="noopener" data-i18n="legalCredits">Credits &amp; licences</a>
+        <a class="sp-link" data-legal="accessibility" href="legal/accessibility.html" target="_blank" rel="noopener" data-i18n="legalAccess">Accessibility</a>
+      </div>
+      <div class="sp-item sp-row"><span data-i18n="aboutContact">Contact</span><a class="sp-link" href="mailto:__CONTACT_EMAIL__">__CONTACT_EMAIL__</a></div>
+      <div class="sp-item sp-row"><span data-i18n="aboutSource">Source code</span><a class="sp-link" href="__REPO_URL__" target="_blank" rel="noopener">GitHub</a></div>
+      <div class="sp-item sp-row"><span data-i18n="aboutVersion">Version</span><span class="sp-note" id="aboutBuild"></span></div>
     </div>
   </details>
 </div>
 
 <div class="near-panel glass" id="nearPanel">
-  <div class="np-head"><span data-i18n="nearbyTitle">Nearest stops</span><button class="x" id="nearX" aria-label="Close">✕</button></div>
+  <div class="np-head"><span data-i18n="nearbyTitle">Nearest stops</span><button class="x" id="nearX" aria-label="Close" data-i18n-aria="close">✕</button></div>
   <div class="np-body" id="nearBody"></div>
 </div>
 
 <div class="go-overlay" id="goOverlay"></div>
-<div class="go-panel glass" id="goPanel" role="dialog" aria-label="Live journey">
-  <div class="go-head"><span class="go-title">▶ <span data-i18n="liveJourney">Live journey</span></span><button class="go-follow on" id="goFollowBtn" data-i18n-title="followMe" title="Follow me">◎</button><button class="x" id="goExit" aria-label="Close">✕</button></div>
+<div class="go-panel glass" id="goPanel" role="dialog" aria-label="Live journey" data-i18n-aria="liveJourney">
+  <div class="go-head"><span class="go-title">▶ <span data-i18n="liveJourney">Live journey</span></span><button class="go-follow on" id="goFollowBtn" data-i18n-title="followMe" title="Follow me">◎</button><button class="x" id="goExit" aria-label="Close" data-i18n-aria="close">✕</button></div>
   <div class="go-now" id="goNow"></div>
   <div class="go-progress" id="goProgress"></div>
   <div class="go-controls">
-    <button id="goPrev" aria-label="Previous step">◀</button>
+    <button id="goPrev" aria-label="Previous step" data-i18n-aria="ariaPrevStep">◀</button>
     <span class="go-arrive" id="goArrive"></span>
-    <button id="goNext" aria-label="Next step">▶</button>
+    <button id="goNext" aria-label="Next step" data-i18n-aria="ariaNextStep">▶</button>
   </div>
 </div>
 
 <div class="settings-overlay" id="passOverlay"></div>
-<div class="settings-panel glass" id="passPanel" role="dialog" aria-label="Travel passport">
-  <div class="sp-head"><span>🎫 <span data-i18n="passport">Your travel passport</span></span><button class="x" id="passX" aria-label="Close">✕</button></div>
+<div class="settings-overlay" id="finderOverlay"></div>
+<div class="settings-panel glass" id="stnFinder" role="dialog" aria-modal="true" aria-labelledby="finderTitle">
+  <div class="sp-head"><span id="finderTitle" data-i18n="finderTitle">Stations in view</span><button class="x" id="finderX" aria-label="Close" data-i18n-aria="close">✕</button></div>
+  <p class="sp-hint" id="finderNone" data-i18n="finderNone" hidden>No stations in this view. Zoom in or move the map.</p>
+  <ul class="finder-list" id="finderList"></ul>
+</div>
+
+<div class="settings-panel glass" id="passPanel" role="dialog" aria-modal="true" aria-label="Travel passport" data-i18n-aria="passport">
+  <div class="sp-head"><span>🎫 <span data-i18n="passport">Your travel passport</span></span><button class="x" id="passX" aria-label="Close" data-i18n-aria="close">✕</button></div>
   <div id="passBody"></div>
 </div>
 
 <div class="controls" id="controls">
   <div class="card glass" id="cardTabs" style="padding:7px;">
-    <div class="tabs" id="tabs" role="tablist" aria-label="Map view">
+    <div class="tabs" id="tabs" role="tablist" aria-label="Map view" data-i18n-aria="ariaMapView">
       <button data-tab="active" class="active" role="tab" aria-selected="true" data-i18n="tabActive">● Active</button>
       <button data-tab="vision" role="tab" aria-selected="false" data-i18n="tabVision">◇ Vision</button>
       <button data-tab="bus" role="tab" aria-selected="false" data-i18n="tabBus">▤ Buses</button>
@@ -1993,7 +2101,7 @@
     </details>
     <details class="lyr" open>
       <summary><span data-i18n="showOnMap">Show on map</span></summary>
-      <div class="row"><span data-i18n="liveCarr">Live carriages</span>
+      <div class="row"><span data-i18n="liveCarr">Simulated carriages</span>
         <label class="switch"><input type="checkbox" id="tglTrains" checked><span class="sl"></span></label>
       </div>
       <div class="row"><span data-i18n="stationMarkers">Station markers</span>
@@ -2222,8 +2330,7 @@
 
 <div class="hint glass" data-i18n-html="hint">Drag to pan · Scroll to zoom · Click a <b>station</b> or a <b>line</b> for details</div>
 
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
-        integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+<script src="vendor/leaflet/leaflet.js"></script>
 <script src="vendor/maplibre/maplibre-gl-csp.js"></script>
 <script src="vendor/maplibre/leaflet-maplibre-gl.js"></script>
 <script>

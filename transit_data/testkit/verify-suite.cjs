@@ -27,7 +27,8 @@ const TMP = path.join(os.tmpdir(), 'raynet-mutant-' + process.pid + '.html');
 const TESTS = path.join(ROOT, 'transit_data', 'test');
 const SUITES = fs.readdirSync(TESTS).filter(f => f.endsWith('.test.cjs')).map(f => path.join(TESTS, f));
 
-const SRI_ON_SCRIPT = new RegExp('(<script[^>]+unpkg\\.com[^>]*?)\\s+integrity="[^"]*"');
+/* V4.3: Leaflet and the typefaces ship with the app, so the third-party-host rows below ADD a host the page must not name,
+   instead of stripping an integrity hash from a CDN file the page no longer loads. */
 
 /* Anchor on ONE line. The sources carry mixed line endings, so index.html does too, and a
    two-line anchor joined with \n silently fails to match — the mutation is then reported
@@ -169,9 +170,9 @@ const MUTATIONS = [
     apply: h => h.replace('id="aiOrb"', 'id="aiOrbRenamed"'),
   },
   {
-    name: 'strip Subresource Integrity from the Leaflet script',
-    expect: 'every CDN resource is integrity-pinned',
-    apply: h => h.replace(SRI_ON_SCRIPT, (m, keep) => keep),
+    name: 'load Leaflet from a CDN again',
+    expect: 'the page loads no file from a CDN or any other host',
+    apply: h => h.replace('src="vendor/leaflet/leaflet.js"', 'src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"'),
   },
   {
     name: 'leave a build token unreplaced',
@@ -180,11 +181,481 @@ const MUTATIONS = [
       'const OPENINGS_PLACEHOLDER = __OPENINGS_JSON__;\nconst OPENINGS'),
   },
   {
-    name: 'drop a CDN host from the directive that governs it',
+    name: 'move an API host out of the directive that governs it',
     expect: 'every host the page loads from is permitted by the RIGHT directive',
-    // the exact first-attempt CSP bug: the host stayed in script-src, so a whole-policy
-    // check saw it and stayed green while every stylesheet was blocked
-    apply: h => h.replace(new RegExp('(style-src[^;]*?) https://unpkg\\.com'), (m, keep) => keep),
+    // the exact first-attempt CSP bug: the host stayed somewhere else in the policy, so a whole-policy
+    // check saw it and stayed green while the fetch was blocked. (Moved to img-src here: still in the policy, wrong directive.)
+    apply: h => h.replace(new RegExp('(connect-src[^;]*?) https://api\\.anthropic\\.com'), (m, keep) => keep).replace("img-src 'self'", "img-src 'self' https://api.anthropic.com"),
+  },
+  {
+    name: 'let a Google font host back into the policy',
+    expect: 'neither the page, its policy nor its service worker names a third-party file host',
+    apply: h => h.replace("style-src 'self'", "style-src 'self' https://fonts.googleapis.com"),
+  },
+  {
+    name: 'point a typeface at a file that is not shipped',
+    expect: 'every @font-face file exists',
+    apply: h => h.replace('url(vendor/fonts/Inter-latin.woff2)', 'url(vendor/fonts/Inter-latin-gone.woff2)'),
+  },
+  {
+    name: 'preload a typeface without crossorigin (fetched twice)',
+    expect: 'every @font-face file exists',
+    apply: h => h.replace('href="vendor/fonts/Inter-latin.woff2" crossorigin>', 'href="vendor/fonts/Inter-latin.woff2">'),
+  },
+  {
+    name: 'let a typeface hide the text until it has loaded',
+    expect: 'every @font-face file exists',
+    apply: h => h.replace('font-display:swap;src:url(vendor/fonts/Inter-latin.woff2)', 'font-display:block;src:url(vendor/fonts/Inter-latin.woff2)'),
+  },
+  {
+    name: 'name a shipped library file that is not there',
+    expect: 'every vendor/ file the page names exists',
+    apply: h => h.replace('href="vendor/leaflet/leaflet.css"', 'href="vendor/leaflet/leaflet-gone.css"'),
+  },
+  {
+    name: 'call the simulated carriages live again (English)',
+    expect: 'no language calls the carriages live or real-time',
+    apply: h => h.replace('liveCarr:"Simulated carriages"', 'liveCarr:"Live carriages"'),
+  },
+  {
+    name: 'call the simulated carriages live again (Arabic)',
+    expect: 'no language calls the carriages live or real-time',
+    apply: h => h.replace('liveCarr:"عربات محاكاة"', 'liveCarr:"عربات مباشرة"'),
+  },
+  {
+    name: 'call the carriages real-time in the page description',
+    expect: 'the page title, description, share text and install manifest do not claim live or real-time vehicles',
+    apply: h => h.replace('Simulated carriages, official timetables', 'Real-time carriages, official timetables'),
+  },
+  {
+    name: 'call the page live again in the title the app sets at run time',
+    expect: 'the title the app sets at run time does not claim live or real-time vehicles either',
+    apply: h => h.replace("' · RAY-NET — Transit Network Map';", "' · RAY-NET — Live Transit Network Map';"),
+  },
+  {
+    name: 'turn online look-ups back on by default',
+    expect: 'online look-ups are off until the person chooses',
+    apply: h => h.replace("let onlineSearchPref = lsStr('irn_online') === '1';", "let onlineSearchPref = lsStr('irn_online') !== '0';"),
+  },
+  {
+    name: 'let walking routes go to the routing server without asking',
+    expect: 'with look-ups off, the walking-route, text-search and nearby-search calls never reach the network',
+    apply: h => h.replace('async function fetchFoot(a,b){', 'async function fetchFoot(a,b){ var onlineSearchPref = true;'),
+  },
+  {
+    name: 'let a nearby search send a position to Photon without asking',
+    expect: 'with look-ups off, the walking-route, text-search and nearby-search calls never reach the network',
+    apply: h => h.replace('async function poiNear(lat, lng, tag, radiusKm, limit){', 'async function poiNear(lat, lng, tag, radiusKm, limit){ var onlineSearchPref = true;'),
+  },
+  {
+    name: 'let typed text go to Photon without asking',
+    expect: 'with look-ups off, the walking-route, text-search and nearby-search calls never reach the network',
+    apply: h => h.replace('async function photonSearch(q){', 'async function photonSearch(q){ var onlineSearchPref = true;'),
+  },
+  {
+    name: 'add a fourth way to reach Photon that skips the gate',
+    expect: 'no code path sends text or coordinates to Photon or the routing server except through those three gated functions',
+    apply: h => h.replace('const BUILD = ', "const LEAK = p => fetch('https://photon.komoot.io/api/?q=' + p); const BUILD = "),
+  },
+  {
+    name: 'make one answer to the privacy question look like the right one',
+    expect: 'the privacy question gives both answers the same size and style',
+    apply: h => h.replace('<button class="priv-btn" id="privAllow"', '<button class="priv-btn primary" id="privAllow"'),
+  },
+  {
+    name: 'show the privacy question on top of the welcome dialog',
+    expect: 'the privacy question waits for the welcome dialog',
+    apply: h => h.replace("if(welcome && welcome.classList.contains('show')) return;", ''),
+  },
+  {
+    name: 'let the privacy question steal the keyboard focus',
+    expect: 'the privacy question waits for the welcome dialog',
+    apply: h => h.replace("box.classList.add('show');", "box.classList.add('show'); box.focus();"),
+  },
+  {
+    name: 'forget which version of the notice was answered',
+    expect: 'the privacy question waits for the welcome dialog',
+    apply: h => h.replace("lsStr('irn_privacy') !== PRIVACY_VERSION", "lsStr('irn_privacy') === null"),
+  },
+  {
+    name: 'let the Settings switch leave the question open',
+    expect: 'the privacy question waits for the welcome dialog',
+    apply: h => h.replace("try{ localStorage.setItem('irn_privacy', PRIVACY_VERSION); }catch(e){}", ''),
+  },
+  {
+    name: 'ask the privacy question for a policy version the pages do not carry',
+    expect: 'every page says it is not legal advice, and the dates and versions agree with the config',
+    apply: h => h.replace(/const PRIVACY_VERSION = '[^']*';/, "const PRIVACY_VERSION = '99';"),
+  },
+  {
+    name: 'delete the whole address\'s storage, not just this app\'s',
+    expect: '"delete all my data" removes this app',
+    apply: h => h.replace("Object.keys(localStorage).filter(k => k.indexOf('irn_') === 0)", 'Object.keys(localStorage)'),
+  },
+  {
+    name: 'leave the offline copies behind when deleting',
+    expect: '"delete all my data" removes this app',
+    apply: h => h.replace("n.indexOf('raynet-') === 0", "n.indexOf('raynet-') === 99"),
+  },
+  {
+    name: 'delete on the first tap',
+    expect: 'the delete button asks twice',
+    apply: h => h.replace('if(!armed){', 'if(false){'),
+  },
+  {
+    name: 'store something outside the irn_ prefix',
+    expect: 'everything the app stores is under the irn_ prefix',
+    apply: h => h.replace('const BUILD = ', "try{ localStorage.setItem('mapprefs', '1'); }catch(e){} const BUILD = "),
+  },
+  {
+    name: 'add an analytics script',
+    expect: 'everything the app stores is under the irn_ prefix',
+    apply: h => h.replace('const BUILD = ', "const GA = 'https://www.googletagmanager.com/gtag/js'; const BUILD = "),
+  },
+  {
+    name: 'ask for an e-mail address',
+    expect: 'there is no sign-up, contact or payment form',
+    apply: h => h.replace('<div class="priv-btns">', '<input type="email" name="email" autocomplete="email"><div class="priv-btns">'),
+  },
+  {
+    name: 'add a sign-up form',
+    expect: 'there is no sign-up, contact or payment form',
+    apply: h => h.replace('<div class="priv-btns">', '<form action="https://example.com/join"></form><div class="priv-btns">'),
+  },
+  {
+    name: 'drop the disclosure under Report a problem',
+    expect: '"Report a problem" says what it opens',
+    apply: h => h.replace('data-i18n="diagPrivacy"', 'data-i18n="diagPrivacyX"'),
+  },
+  {
+    name: 'let a report forget which version of the app it came from',
+    expect: '"Report a problem" says what it opens',
+    apply: h => h.replace(/"app: V[\d.]+ build "/, '"build: "'),
+  },
+  {
+    name: 'drop the terms link from the welcome dialog',
+    expect: 'Settings and the welcome dialog link all four legal pages',
+    apply: h => h.replace('<a data-legal="terms" href="legal/terms.html" target="_blank" rel="noopener" data-i18n="legalTerms">Terms of use</a> · ', ''),
+  },
+  {
+    name: 'drop the cookies-and-stored-data link from Settings',
+    expect: 'Settings and the welcome dialog link all four legal pages',
+    apply: h => h.replace('data-legal="storage"', 'data-legal="storagex"'),
+  },
+  {
+    name: 'send Turkish readers to the English legal pages',
+    expect: 'Settings and the welcome dialog link all four legal pages',
+    apply: h => h.replace("const suffix = (typeof lang !== 'undefined' && lang === 'tr') ? '.tr' : '';", "const suffix = '';"),
+  },
+  {
+    name: 'paint text with the raw accent again (1.6:1 on a light panel)',
+    expect: 'the accent is never used as text colour directly',
+    apply: h => h.replace(/color:var\(--accent-ink\)/g, 'color:var(--accent)'),
+  },
+  {
+    name: 'let Calm + Light keep the dark surface and track tokens',
+    expect: 'a style that restates dark surface tokens restates the light ones for the light theme',
+    apply: h => h.replace(/(contrast audit\) \*\/\s*)--surface:[^;]+; --surface-2:[^;]+; --track:[^;]+;/, '$1'),
+  },
+  {
+    name: 'make the light theme\'s dim text too pale',
+    expect: 'text on panels, chips and tinted chips passes AA: neon light',
+    apply: h => h.replace('--dim:#5C6779', '--dim:#9AA5B5'),
+  },
+  {
+    name: 'make the mixed theme\'s dim text too dark',
+    expect: 'the "mixed" theme (dark panels on a light page) passes AA too',
+    apply: h => h.replace('--dim:#98A3B8;', '--dim:#555566;'),
+  },
+  {
+    name: 'make the accent ink too pale for the light theme',
+    expect: 'text on panels, chips and tinted chips passes AA: atlas light',
+    apply: h => h.replace('body.light{--accent-ink:#05694A;}', 'body.light{--accent-ink:#34D399;}'),
+  },
+  {
+    name: 'go back to the brightness shortcut for text on coloured chips',
+    expect: 'inkOn() gives every line colour, severity colour and a sweep of all colours text',
+    apply: h => h.replace(/function inkOn\(hex\)\{[\s\S]*?\n\}/, "function inkOn(hex){ const c=(hex||'').replace('#',''); if(c.length<6) return '#fff'; const r=parseInt(c.slice(0,2),16), g=parseInt(c.slice(2,4),16), b=parseInt(c.slice(4,6),16); return (0.299*r+0.587*g+0.114*b)>150 ? '#0b0f17' : '#fff'; }"),
+  },
+  {
+    name: 'paint a station-panel line chip without choosing its text colour',
+    expect: 'every chip that paints a line or severity colour also chooses its text colour',
+    apply: h => h.replace(";color:${inkOn(ln?ln.color:'#888')}", ''),
+  },
+  {
+    name: 'give a close button a fixed English name again',
+    expect: 'every hard-coded accessible name in the markup follows the language',
+    apply: h => h.replace('id="settingsX" aria-label="Close" data-i18n-aria="close"', 'id="settingsX" aria-label="Close"'),
+  },
+  {
+    name: 'lose a translated accessible name in Turkish',
+    expect: 'every translated name has its key in all four languages',
+    apply: h => h.replace('ariaPrevStep:"Önceki adım", ', ''),
+  },
+  {
+    name: 'stop translating accessible names when the language changes',
+    expect: 'applyI18n renames the accessible names when the language changes',
+    apply: h => h.replace("'[data-i18n-aria]'", "'[data-i18n-ariaX]'"),
+  },
+  {
+    name: 'stop announcing whether a switch is on',
+    expect: 'every on/off switch announces its state',
+    apply: h => h.replace("el.setAttribute('aria-checked', el.classList.contains('on')", "el.setAttribute('aria-checkedX', el.classList.contains('on')"),
+  },
+  {
+    name: 'leave a switch without the label printed beside it',
+    expect: 'syncAria names switches by the label beside them',
+    apply: h => h.replace("el.setAttribute('aria-labelledby', label.id); el.removeAttribute('aria-label');", "el.removeAttribute('aria-label');"),
+  },
+  {
+    name: 'leave the zoom buttons in English',
+    expect: 'syncAria names switches by the label beside them',
+    apply: h => h.replace("a.setAttribute('aria-label', t('zoomIn'));", "a.setAttribute('aria-label', 'Zoom in');"),
+  },
+  {
+    name: 'stop making legend chips keyboard-operable',
+    expect: 'the things you click that are not buttons become buttons',
+    apply: h => h.replace("var KB_CLICKABLE = '.lchip, .lchip > .sw, ", "var KB_CLICKABLE = '.lchip > .sw, "),
+  },
+  {
+    name: 'let a swatch also activate its chip',
+    expect: 'the things you click that are not buttons become buttons',
+    apply: h => h.replace('el.matches(KB_CLICKABLE)', 'el.closest(KB_CLICKABLE)'),
+  },
+  {
+    name: 'let one Escape close Settings and end the journey too',
+    expect: 'Escape closes the newest thing and nothing else',
+    apply: h => h.replace("if(open('settingsPanel', 'open')){ closeSettings(); e.preventDefault(); return; }", "if(open('settingsPanel', 'open')){ closeSettings(); closeNearby(); exitGo(); e.preventDefault(); return; }"),
+  },
+  {
+    name: 'let Tab reach a closed Settings panel',
+    expect: 'dialogs are named dialogs',
+    apply: h => h.replace('if(!d.hiddenByDisplay) el.inert = !isOpen;', ''),
+  },
+  {
+    name: 'take the name off the Settings dialog',
+    expect: 'dialogs are named dialogs',
+    apply: h => h.replace('id="settingsPanel" role="dialog" aria-modal="true" aria-label="Settings" data-i18n-aria="settings"', 'id="settingsPanel" role="dialog" aria-modal="true"'),
+  },
+  {
+    name: 'take the alt attribute off an image',
+    expect: 'every image has alt text',
+    apply: h => h.replace('width="44" height="44" alt="" aria-hidden="true"', 'width="44" height="44"'),
+  },
+  {
+    name: 'let the page pinch-zoom again',
+    expect: 'the viewport is locked to the page width and scale',
+    apply: h => h.replace('minimum-scale=1.0, maximum-scale=1.0, user-scalable=no, ', ''),
+  },
+  {
+    name: 'allow pinch zoom on the tabs and panels again',
+    expect: 'html and body allow panning but not pinching',
+    apply: h => h.replace('html,body{touch-action:pan-x pan-y;', 'html,body{touch-action:manipulation;'),
+  },
+  {
+    name: 'take the map\'s own gestures away',
+    expect: 'html and body allow panning but not pinching',
+    apply: h => h.replace('.leaflet-container{touch-action:none;}', '.leaflet-container{touch-action:pan-x pan-y;}'),
+  },
+  {
+    name: 'make typing fields impossible to select in',
+    expect: 'html and body allow panning but not pinching',
+    apply: h => h.replace('input,textarea,select,[contenteditable="true"]{-webkit-user-select:text;user-select:text;}', ''),
+  },
+  {
+    name: 'stop cancelling an iOS pinch that starts on the chrome',
+    expect: 'a pinch that does not start on the map is cancelled',
+    apply: h => h.replace('if(!inMap) e.preventDefault();', ''),
+  },
+  {
+    name: 'cancel an iOS pinch on the map too',
+    expect: 'a pinch that does not start on the map is cancelled',
+    apply: h => h.replace('if(!inMap) e.preventDefault();', 'e.preventDefault();'),
+  },
+  {
+    name: 'remove the in-app text size once page zoom is gone',
+    expect: 'with page zoom gone, text can still be enlarged inside the app',
+    apply: h => h.replace('data-ts="large"', 'data-ts="largeX"'),
+  },
+  {
+    name: 'drop the skip link',
+    expect: 'keyboard users can see where they are',
+    apply: h => h.replace('class="skip-link"', 'class="skip-linkX"'),
+  },
+  {
+    name: 'leave the base map turned back by the angle the pinch started at',
+    expect: 'while two fingers turn the map, the base map is turned back by the angle the map has NOW',
+    apply: h => h.replace('this._irnPlace(map.containerPointToLayerPoint(map.getSize().divideBy(2)).subtract(this.getSize().divideBy(2)), 1);', ''),
+  },
+  {
+    name: 'draw the carriages and station names across the warning bubble again',
+    expect: 'the carriage pass cuts the bubbles out AFTER it has drawn, every frame',
+    apply: h => h.replace(/\r?\n\s*clearUnderBubbles\(\);\r?\n\}/, '\n}'),
+  },
+  {
+    name: 'clear the carriage canvas in the wrong place',
+    expect: 'whatever a tooltip, the pinned bubble or a popup covers is cleared out of the carriage canvas',
+    apply: h => h.replace('tctx.clearRect(r.left - o.left - 4,', 'tctx.clearRect(r.left - o.left + 40,'),
+  },
+  {
+    name: 'let the lines show through the pinned bubble',
+    expect: 'the pinned warning bubble is opaque in every style',
+    apply: h => h.replace('background-color:#090D14;backdrop-filter:none;', 'backdrop-filter:blur(10px);'),
+  },
+  {
+    name: 'let the suburb names crowd the map again',
+    expect: 'the map is not crowded with names',
+    apply: h => h.replace("'place-suburb': [[11.5, 20], [12, 23], [13, 17], [14, 18], [15, 12], [16, 8]],", "'place-suburb': 2,"),
+  },
+  {
+    name: 'repeat every street name every few hundred metres',
+    expect: 'the map is not crowded with names',
+    apply: h => h.replace("g[0] === 'road-label-major' ? 320 : 460", '320'),
+  },
+  {
+    name: 'let places of interest overlap each other',
+    expect: 'the map is not crowded with names',
+    apply: h => h.replace("'text-padding': vecPad('poi'), 'symbol-sort-key'", "'text-padding': vecPad('poi'), 'text-allow-overlap': true, 'symbol-sort-key'"),
+  },
+  {
+    name: 'stop ranking the place names by importance',
+    expect: 'the map is not crowded with names',
+    apply: h => h.replace("'symbol-sort-key': ['get', 'rank'], 'text-letter-spacing'", "'text-letter-spacing'"),
+  },
+  {
+    name: 'make N pick the farthest station first',
+    expect: 'N steps to the nearest station to the centre first',
+    apply: h => h.replace('return out.sort((a, b) => a.d - b.d);', 'return out.sort((a, b) => b.d - a.d);'),
+  },
+  {
+    name: 'forget the chosen station while drawing its ring (the first version\'s bug)',
+    expect: 'N steps to the nearest station to the centre first',
+    apply: h => h.replace(/function mark\(e\)\{(\s*)unmark\(\);/, 'function mark(e){$1clear();'),
+  },
+  {
+    name: 'announce nothing when a station is chosen',
+    expect: 'N steps to the nearest station to the centre first',
+    apply: h => h.replace('mark(list[idx]); say(describe(list[idx], idx + 1, list.length));', 'mark(list[idx]);'),
+  },
+  {
+    name: 'offer plain stops at every zoom',
+    expect: 'only what is drawn is offered',
+    apply: h => h.replace('lines.length < 2 && z < STOP_MIN_ZOOM', 'false'),
+  },
+  {
+    name: 'offer stations on lines that are switched off',
+    expect: 'only what is drawn is offered',
+    apply: h => h.replace('if(!lines.some(on)) return;', ''),
+  },
+  {
+    name: 'take Ctrl+N and Alt+N from the browser',
+    expect: 'on the Vision tab the planned stops are offered',
+    apply: h => h.replace('|| ev.ctrlKey || ev.altKey || ev.metaKey) return;          // only when the map itself has focus', ') return;          // only when the map itself has focus'),
+  },
+  {
+    name: 'let Escape leave the ring on the map',
+    expect: 'Enter opens the chosen station',
+    apply: h => h.replace("else if(k === 'Escape' && ring)", "else if(k === 'Escape' && false)"),
+  },
+  {
+    name: 'open the first station whatever was chosen',
+    expect: 'Enter opens the chosen station',
+    apply: h => h.replace('openEntry(snap.list[idx]);', 'openEntry(snap.list[0]);'),
+  },
+  {
+    name: 'open a station instead of the line on the Vision tab',
+    expect: 'on the Vision tab the planned stops are offered',
+    apply: h => h.replace("if(currentTab === 'vision' && lineByRef[e.r.ref]) openLine(lineByRef[e.r.ref]); else openStation(e.r);", 'openStation(e.r);'),
+  },
+  {
+    name: 'take the station list out of the back button',
+    expect: 'the list is a modal layer of the back button and the dialog manager',
+    apply: h => h.replace("{ id:'finder',", "{ id:'finderX',"),
+  },
+  {
+    name: 'let station names print over each other again',
+    expect: 'station names never print over each other',
+    apply: h => h.replace('if(placed.some(b =>', 'if(false && placed.some(b =>'),
+  },
+  {
+    name: 'draw plain stop names before interchanges',
+    expect: 'station names never print over each other',
+    apply: h => h.replace('((b.lines ? b.lines.size : 0) - (a.lines ? a.lines.size : 0))', '((a.lines ? a.lines.size : 0) - (b.lines ? b.lines.size : 0))'),
+  },
+  {
+    name: 'show a drawn card face without saying it is a drawing',
+    expect: 'a card with no picture says it is a drawing',
+    apply: h => h.replace(".replace('{who}', ci.credit||'') : t('cardDrawn');", ".replace('{who}', ci.credit||'') : '';"),
+  },
+  {
+    name: 'lose the drawing note in Turkish',
+    expect: 'a card with no picture says it is a drawing',
+    apply: h => h.replace('cardDrawn:"Bu uygulama için çizilmiş bir çizimdir; işletmecinin kendi kartı değildir.",', ''),
+  },
+  {
+    name: 'print a notice title raw in the warning bubble',
+    expect: 'notice text from operators and feeds is escaped everywhere it reaches the page',
+    apply: h => h.replace('${svgEsc(disTitle(d))}</b><br>', '${disTitle(d)}</b><br>'),
+  },
+  {
+    name: 'print an announcement message raw',
+    expect: 'notice text from operators and feeds is escaped everywhere it reaches the page',
+    apply: h => h.replace('<div class="ann-msg">${disTrTag(d)}${svgEsc(disMsg(d))}</div>', '<div class="ann-msg">${disTrTag(d)}${disMsg(d)}</div>'),
+  },
+  {
+    name: 'print a bus notice title raw',
+    expect: 'notice text from operators and feeds is escaped everywhere it reaches the page',
+    apply: h => h.replace('<span class="ann-ttl">${svgEsc(disTitle(d))}</span></div>', '<span class="ann-ttl">${disTitle(d)}</span></div>'),
+  },
+  {
+    name: 'let markup survive inside an attribute value',
+    expect: 'notice text from operators and feeds is escaped everywhere it reaches the page',
+    apply: h => h.replace(/(\.replace\(\/"\/g,'&quot;'\))\.replace\(\/<\/g,'&lt;'\)\.replace\(\/>\/g,'&gt;'\);/, '$1;'),
+  },
+  {
+    name: 'print the İBB departure times raw',
+    expect: 'the live arrivals board escapes what the İBB API sends',
+    apply: h => h.replace('${svgEsc(b.times[0])}', '${b.times[0]}'),
+  },
+  {
+    name: 'allow framing again',
+    expect: 'the Content-Security-Policy forbids what the app never does',
+    apply: h => h.replace("frame-src 'none'; ", ''),
+  },
+  {
+    name: 'allow a plain http host to be contacted',
+    expect: 'the Content-Security-Policy forbids what the app never does',
+    apply: h => h.replace("connect-src 'self'", "connect-src 'self' http://example.com"),
+  },
+  {
+    name: 'drop the explicit referrer policy',
+    expect: 'the page sets its referrer policy',
+    apply: h => h.replace('<meta name="referrer" content="strict-origin-when-cross-origin">', ''),
+  },
+  {
+    name: 'remove the frame-buster',
+    expect: 'the app takes over the window if it is framed',
+    apply: h => h.replace('if (window.top !== window.self) {', 'if (false) {'),
+  },
+  {
+    name: 'let a framed app stay visible when it cannot break out',
+    expect: 'the app takes over the window if it is framed',
+    apply: h => h.replace('catch (e) { document.documentElement.style.display = "none"; }', 'catch (e) { }'),
+  },
+  {
+    name: 'run a string as code',
+    expect: 'the app uses no way of running a string as code',
+    apply: h => h.replace('const BUILD = ', "const EV = eval('1'); const BUILD = "),
+  },
+  {
+    name: 'open a link in a new tab without noopener',
+    expect: 'every link that opens another site keeps it from controlling this tab',
+    apply: h => h.replace('target="_blank" rel="noopener" data-i18n="legalPrivacy"', 'target="_blank" data-i18n="legalPrivacy"'),
+  },
+  {
+    name: 'drop the MODELLED label from the arrivals board (French)',
+    expect: 'the arrivals board still labels itself modelled',
+    apply: h => h.replace('modelled:"MODÉLISÉ", ', ''),
   },
   {
     name: 'hash the bytes on disk instead of the text the parser sees',
@@ -518,7 +989,7 @@ const MUTATIONS = [
   {
     name: 'ship a Paper tier below the contrast threshold',
     expect: 'Paper meets AA on its own surface, in both themes',
-    apply: h => h.replace('--dim:#898172;', '--dim:#6A6357;'),
+    apply: h => h.replace('--dim:#A39A89;', '--dim:#6A6357;'),      // V4.3 raised Paper's dim text from #898172 to #A39A89 (found by the contrast audit)
   },
   {
     // the glass is the default's central visual idea; keeping it makes Paper a recolour
@@ -1041,7 +1512,7 @@ const MUTATIONS = [
   {
     name: 'stop announcing the loading screen to a screen reader',
     expect: 'the loading screen is the first thing in the page, is announced as a status, and its pictures are preloaded',
-    apply: h => h.replace('<div id="bootSplash" role="status" aria-label="Loading">', '<div id="bootSplash" aria-label="Loading">'),
+    apply: h => h.replace('<div id="bootSplash" role="status" aria-label="Loading"', '<div id="bootSplash" aria-label="Loading"'),
   },
   // ---- V4.2: four bottom buttons, the back button, the warning bubble, buses, rotation ----
   {
@@ -1201,7 +1672,7 @@ const MUTATIONS = [
   },
   {
     name: "open every section at the start",
-    expect: "settings are seven sections, in this order, with Appearance open to begin with",
+    expect: "settings are eight sections, in this order, with Appearance open to begin with",
     apply: h => h.replace('<details class="sp-sec" data-sec="journey">', '<details class="sp-sec" data-sec="journey" open>'),
   },
   {

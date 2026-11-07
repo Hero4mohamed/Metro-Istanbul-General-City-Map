@@ -65,7 +65,7 @@ function openStation(reg){
   document.getElementById('linp').classList.remove('show');
   document.getElementById('stnNm').textContent = reg.name;
   document.getElementById('stnLines').innerHTML = [...reg.lines]
-    .map(ref=>`<span class="badge" style="background:${colorForLine(ref)}">${ref}</span>`).join("");
+    .map(ref=>`<span class="badge" style="background:${colorForLine(ref)};color:${inkOn(colorForLine(ref))}">${ref}</span>`).join("");
   const nL=reg.lines.size;
   let meta = t('servedBy').replace('{n}', nL);
   if(lang==='en') meta = `Served by ${nL} line${nL>1?"s":""}.`;   // proper English plural
@@ -75,7 +75,7 @@ function openStation(reg){
   const svc = [...reg.lines].map(ref=>{
     const ln=lineByRef[ref]; if(!ln) return '';
     const tm=lineTiming(ref);
-    return `<div class="svc-row"><span class="svc-cd" style="background:${ln.color}">${ref}</span><span class="svc-tx"><b>${tm.freq}</b> · ${tm.hours}</span></div>`;
+    return `<div class="svc-row"><span class="svc-cd" style="background:${ln.color};color:${inkOn(ln.color)}">${ref}</span><span class="svc-tx"><b>${tm.freq}</b> · ${tm.hours}</span></div>`;
   }).filter(Boolean).join('');
   document.getElementById('stnService').innerHTML = svc ? `<div class="bt">${t('serviceHours')}</div>${svc}` : '';
   // step-free / accessibility (İBB elevator + escalator data, OSM wheelchair tags)
@@ -180,9 +180,9 @@ function renderSched(){
     if(mins.length) chips = mins.map((dm,i)=>`<span class="cd-min ${i===0?'soon':''}">${dm===0?t('dueNow'):dm}</span>`).join('')+(mins[0]===0&&mins.length===1?'':`<span class="cd-unit">${t('minUnit')}</span>`);
     else if(allDm.length){ const nm=(nowM+allDm[0])%1440; chips = `<span class="cd-next">${t('nextArr')} ${String(Math.floor(nm/60)).padStart(2,'0')}:${String(nm%60).padStart(2,'0')}</span>`; }
     else chips = `<span class="cd-none">${t('schedNone')}</span>`;
-    return `<div class="arr-row"><span class="svc-cd" style="background:${b.color}">${svgEsc(b.ref)}</span>`+
+    return `<div class="arr-row"><span class="svc-cd" style="background:${b.color};color:${inkOn(b.color)}">${svgEsc(b.ref)}</span>`+
       `<div class="arr-tx"><div class="arr-to">→ ${svgEsc(b.target)}</div><div class="arr-mins">${chips}</div>`+
-      `<div class="arr-fl">${t('firstDep')} ${b.times[0]} · ${t('lastDep')} ${b.times[b.times.length-1]}</div></div></div>`;
+      `<div class="arr-fl">${t('firstDep')} ${svgEsc(b.times[0])} · ${t('lastDep')} ${svgEsc(b.times[b.times.length-1])}</div></div></div>`;     // times come from the İBB API: text, not markup
   }).filter(Boolean);
   el.innerHTML = blocks.length ? `<div class="bt">⏱ ${t('liveArrivals')} <span class="live">${t('official')}</span></div>`+blocks.join('') : '';
 }
@@ -196,14 +196,14 @@ function renderBoard(){
   const closedRows=[...selected.lines].filter(r=>closedCache[r]).map(r=>{
     const c=closedCache[r], ln=lineByRef[r];
     const msg = c.why==='susp' ? `⚠ ${t('boardSusp')}` : `🌙 ${t('boardClosed')} · ${c.hours}`;
-    return `<div class="arr"><span class="cd" style="background:${ln?ln.color:'#888'}">${r}</span>
+    return `<div class="arr"><span class="cd" style="background:${ln?ln.color:'#888'};color:${inkOn(ln?ln.color:'#888')}">${r}</span>
       <div class="ds">${msg}<small>${c.why==='susp'?t('seeAnn'):t('opensAt')+' '+c.opens}</small></div></div>`;
   }).join("");
   const board = buildBoard(selected);
   const liveRows = board.map(b => b.etas.map((sec,i)=>{
     const e=fmtEta(sec);
-    return `<div class="arr"><span class="cd" style="background:${b.color}">${b.ref}</span>
-      <div class="ds">→ ${b.dest}<small>${i===0?t('nextArr'):t('followingArr')}</small></div>
+    return `<div class="arr"><span class="cd" style="background:${b.color};color:${inkOn(b.color)}">${b.ref}</span>
+      <div class="ds">→ ${svgEsc(b.dest)}<small>${i===0?t('nextArr'):t('followingArr')}</small></div>
       <div class="et ${e.now?'now':''}">${e.t}</div></div>`;
   }).join("")).join("");
   // say where these numbers come from, right where they are read

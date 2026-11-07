@@ -1,7 +1,7 @@
 {
-  "name": "İSTANBUL RAY-NET — Live Transit Map",
+  "name": "İSTANBUL RAY-NET — Transit Map",
   "short_name": "RAY-NET",
-  "description": "Live İstanbul transit map: metro, tram, ferry, bus & cable car with real-time carriages, official timetables, trip planner, disruptions and weather.",
+  "description": "İstanbul transit map: metro, tram, ferry, bus & cable car with simulated carriages, official timetables, trip planner, service notices and weather.",
   "id": "./",
   "start_url": "./",
   "scope": "./",

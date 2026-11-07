@@ -211,8 +211,19 @@ const MAP_TURN = (function(){
         } else if(gl._update !== null && gl._update !== undefined) gl._update(); else gl.update();
       },
       _pinchZoom: function(e){
-        const map = this._map; if(!map._irnTheta) return glOrig._pinchZoom.call(this, e);
+        const map = this._map, c = this._container;
+        if(!map._irnTheta){
+          // the twist came back to exactly north-up while the fingers are still down: the canvas is upright again
+          if(c && c._irnTurned){ c._irnTurned = false; L.DomUtil.removeClass(c, 'leaflet-zoom-animated'); c.style.transformOrigin = ''; L.DomUtil.setPosition(c, map.containerPointToLayerPoint([0, 0])); }
+          return glOrig._pinchZoom.call(this, e);
+        }
         this._glMap.jumpTo({ zoom: map.getZoom() - 1, center: map.getCenter(), bearing: bearingOf(map) });
+        /* While two fingers are down `_zooming` is set and _update() leaves the canvas alone, which is right for a pinch that only
+           zooms. A pinch that also TURNS the map changes the angle every frame, and the canvas has to be turned back by the angle
+           the map has NOW: left at the angle it had when the fingers went down (0, for a first twist) the base map and its names
+           turned twice as far as the lines, and snapped into line only when the fingers lifted (found on a phone, V4.3). */
+        c._irnTurned = true;
+        this._irnPlace(map.containerPointToLayerPoint(map.getSize().divideBy(2)).subtract(this.getSize().divideBy(2)), 1);
       },
       _animateZoom: function(e){
         const map = this._map; if(!map._irnTheta) return glOrig._animateZoom.call(this, e);

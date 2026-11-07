@@ -2,17 +2,18 @@
   <img src="assets/icon-192.png" width="110" alt="İstanbul Ray-Net icon — a green M with a map pin over the İstanbul skyline and metro lines">
 </p>
 
-<h1 align="center">İstanbul Ray-Net — Live Transit Network Map</h1>
+<h1 align="center">İstanbul Ray-Net — Transit Network Map</h1>
 
 <p align="center">
-  <img src="assets/og-card.png" width="640" alt="İSTANBUL · RAY-NET — live transit network map of İstanbul">
+  <img src="assets/og-card.png" width="640" alt="İSTANBUL · RAY-NET — transit network map of İstanbul">
 </p>
 
 An interactive map of Istanbul's transit network (metro, Marmaray, trams, funiculars,
-cable cars, Metrobüs, ferries and buses) on a real dark basemap, with animated "live"
-carriages, official exact timetables, multimodal + multi-stop trip planning, live
-auto-updating disruptions, per-district weather, and a Vision & Expansion tab showing
-official future projects. Bilingual (EN/TR).
+cable cars, Metrobüs, ferries and buses) on a real dark basemap, with animated
+carriages (a **simulation** worked out from the published timetables and frequencies, not
+vehicle positions), official timetables, multimodal + multi-stop trip planning, service
+notices that show how old they are, per-district weather, and a Vision & Expansion tab showing
+official future projects. English, Turkish, Arabic and French.
 
 **Live site:** https://hero4mohamed.github.io/Metro-Istanbul-General-City-Map/
 
@@ -23,13 +24,14 @@ mobile UI (bottom navigation + slide-up sheets) and **auto-updates on every depl
   (or the browser's "Install app / Add to Home screen" menu).
 - **iPhone (Safari):** Share → **Add to Home Screen**.
 
-It's a single self-contained file — open [`index.html`](index.html) in any modern
-browser (it needs internet for the map tiles, the Leaflet library, and on-demand
-bus-route lookups).
+The page, its scripts and typefaces (`vendor/`) and its data are all served from this one site, so
+the only things that need the internet are the map tiles and the live lookups (notices, weather,
+on-demand bus-route lines). What it contacts, and what is sent, is listed in
+[`legal/privacy.html`](legal/privacy.html) and [`DATA-SOURCES.md`](DATA-SOURCES.md).
 
 ## Features
 - Real OpenStreetMap-derived geometry for every operational line.
-- Animated carriages with station dwell + predictive arrivals.
+- Animated carriages with station dwell + modelled arrivals (a simulation from published frequencies; the app labels it MODELLED).
 - Trip planner (Dijkstra over the whole network) with refresh-safe history & favourites.
 - **A search for everywhere you might want to go**, on the device: type a place, street, district, neighbourhood, landmark, shop, café, pharmacy, hospital, school or mosque (or just "eczane", "coffee shop", "kadikoy eczane") for any of the six cities. It reads a file of every named street, area and place from OpenStreetMap (about 1.4 MB for İstanbul), so it answers from the first letters, works offline and in Turkish, English, Arabic and French, finds names typed without accents or without spaces, forgives a typo, and ranks the well-known and the near first. The same search backs the map's search box and the trip planner's From/To fields. A public geocoder (Photon) is only a top-up for house numbers and places the file cannot hold, and can be switched off in Settings.
 - **Tabs:** Active Network · Vision & Expansion (official + İBB projects, dashed) · Bus Directory (855 İETT lines, click to draw the real route).

@@ -6,10 +6,16 @@
 const svgEsc = s => (s==null?'':(''+s)).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
 const MODE_GLYPH = { subway:'🚇', marmaray:'🚆', suburban:'🚆', tram:'🚊', funicular:'🚡', cable:'🚠', metrobus:'🚌', ferry:'⛴', bus:'🚌' };
 function mGlyph(kind, bus){ return bus ? '🚌' : (MODE_GLYPH[kind] || '🚇'); }
-function inkOn(hex){                                    // pick black/white text for a colored chip
-  const c=(hex||'').replace('#',''); if(c.length<6) return '#fff';
-  const r=parseInt(c.slice(0,2),16), g=parseInt(c.slice(2,4),16), b=parseInt(c.slice(4,6),16);
-  return (0.299*r+0.587*g+0.114*b)>150 ? '#0b0f17' : '#fff';
+/* Black or white text for a coloured chip: whichever is more legible on it, by WCAG relative luminance. It used a brightness
+   shortcut (> 150 of 255) that put white text on mid greens at 2.4:1 (V4.3). The better of the two is never below 4.58:1, whatever the
+   colour, so a chip painted in a line's or a severity's own colour is always readable. */
+function inkOn(hex){
+  let c=String(hex||'').trim().replace('#','');
+  if(c.length===3) c=c.replace(/./g, ch=>ch+ch);
+  if(!/^[0-9a-f]{6}$/i.test(c)) return '#fff';
+  const lin=v=>{ v/=255; return v<=0.03928 ? v/12.92 : Math.pow((v+0.055)/1.055, 2.4); };
+  const L=0.2126*lin(parseInt(c.slice(0,2),16)) + 0.7152*lin(parseInt(c.slice(2,4),16)) + 0.0722*lin(parseInt(c.slice(4,6),16));
+  return ((L+0.05)/0.05) >= (1.05/(L+0.05)) ? '#000' : '#fff';
 }
 function svgPill(cx, baseY, text, bg, fg){
   const w=Math.max(28, text.length*6.1+16), x=cx-w/2;
@@ -188,7 +194,7 @@ function openLine(line){
   document.getElementById('lpConn').innerHTML = !live
     ? `<div class="planned-banner">◷ ${line.status||'Planned'}${line.launch?(' · targeting '+fmtLaunch(line.launch)):''}<span>Excluded from live pathfinding &amp; carriage simulation until launch.${line.approx?' ⚠ Approximate alignment — hand-placed from the published station list.':''}</span></div>`
     : (conns.length
-        ? conns.map(c=>`<div class="cn"><span class="at">${c.at}</span><span class="ls">${c.others.map(r=>`<span class="badge" style="background:${colorForLine(r)}">${r}</span>`).join('')}</span></div>`).join('')
+        ? conns.map(c=>`<div class="cn"><span class="at">${c.at}</span><span class="ls">${c.others.map(r=>`<span class="badge" style="background:${colorForLine(r)};color:${inkOn(colorForLine(r))}">${r}</span>`).join('')}</span></div>`).join('')
         : '<div class="none">Terminus-to-terminus · no mid-line interchanges.</div>');
   if(!live){
     document.getElementById('lpExp').innerHTML =

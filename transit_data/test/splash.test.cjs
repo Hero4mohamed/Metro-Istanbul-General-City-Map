@@ -39,7 +39,7 @@ test('the splash pictures are real JPEGs of the sizes the page expects, light en
 test('the loading screen is the first thing in the page, is announced as a status, and its pictures are preloaded', () => {
   const html = H.html();
   const body = html.slice(html.indexOf('<body>') + 6);
-  assert.ok(/^\s*<div id="bootSplash" role="status" aria-label="Loading">/.test(body), 'the loading screen is not the first element of the body');
+  assert.ok(/^\s*<div id="bootSplash" role="status" aria-label="Loading"[^>]*>/.test(body), 'the loading screen is not the first element of the body');
   assert.ok(/<img class="bs-icon" src="assets\/splash-icon\.jpg" width="384" height="384" alt="">/.test(body), 'the icon on the loading screen changed or lost its size');
   assert.ok(/<div class="bs-bg"><\/div>/.test(body.slice(0, 400)), 'the background art is not on the loading screen');
   assert.ok(/<link rel="preload" as="image" href="assets\/splash-bg\.jpg">/.test(html) && /<link rel="preload" as="image" href="assets\/splash-icon\.jpg">/.test(html), 'the pictures are not preloaded, so the screen would paint empty first');

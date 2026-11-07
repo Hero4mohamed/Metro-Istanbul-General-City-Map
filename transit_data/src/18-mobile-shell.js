@@ -227,7 +227,7 @@ if(HAS.disruptions) setInterval(() => { if(!document.hidden) loadLiveDisruptions
         nameEl=document.getElementById('cityName');
   if(!btn||!menu) return;
   nameEl.textContent = CITY.name;
-  document.title = CITY.name + ' · RAY-NET — Live Transit Network Map';
+  document.title = CITY.name + ' · RAY-NET — Transit Network Map';
   const lineCount = id => (CITIES[id].lines||[]).filter(l=>!l.partOf && l.scope!=='planned').length;
   // biggest network first, so the list reads İstanbul → Ankara → İzmir → Bursa → Antalya
   // which modes a city runs — same glyphs the trip planner uses, deduped in TRIP_MODES order

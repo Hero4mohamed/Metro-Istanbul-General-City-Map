@@ -198,7 +198,7 @@ function stepsHTML(it){
       const fl = _fare.legs[_fi++];                                     // this boarding's charge
       const fare = fl ? `<span class="st-fare${fl.tl===0?' free':''}">🎫 ${fl.tl===0?t('freeXfer'):fmtTL(fl.tl)}</span>` : '';
       return `<div class="step"><div class="rail"><span class="nd" style="border-color:${c}"></span><span class="pipe" style="background:${c}"></span></div>
-        <div class="tx"><div class="nm"><span class="badge" style="background:${c}">${s.bus?'🚌 '+s.ref:s.ref}</span>${label}${fare}<button class="st-avoid" data-ref="${attrEsc(s.ref)}" title="${attrEsc(t('avoidThis'))}">⊘</button></div>
+        <div class="tx"><div class="nm"><span class="badge" style="background:${c};color:${inkOn(c)}">${s.bus?'🚌 '+s.ref:s.ref}</span>${label}${fare}<button class="st-avoid" data-ref="${attrEsc(s.ref)}" title="${attrEsc(t('avoidThis'))}">⊘</button></div>
         <div class="mt">${s.from} → ${s.to} · ${s.stops} ${s.stops===1?t('stop_one'):t('stop_many')}${freq}</div>${alt}</div></div>`;
     } else {
       const c = s.bus ? BUS_COLOR : colorForLine(s.ref);
@@ -225,7 +225,7 @@ function stepsHTML(it){
       }
       return `<div class="step"><div class="rail"><span class="nd" style="border-color:var(--gold)"></span><span class="pipe" style="background:var(--gold)"></span></div>
         <div class="tx"><div class="nm" style="color:var(--gold)">⇄ ${t('transferAt')} ${s.at}</div>
-        <div class="mt">${t('walkToShort')} <span class="badge" style="background:${c}">${s.bus?'🚌 '+s.ref:s.ref}</span> ${detail}</div>${verdict}</div></div>`;
+        <div class="mt">${t('walkToShort')} <span class="badge" style="background:${c};color:${inkOn(c)}">${s.bus?'🚌 '+s.ref:s.ref}</span> ${detail}</div>${verdict}</div></div>`;
     }
   }).join("");
 }

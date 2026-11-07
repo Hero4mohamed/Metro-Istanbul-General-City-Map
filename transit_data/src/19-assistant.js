@@ -42,6 +42,9 @@ function matchCat(q){
 /* category lookup around a point. Photon reverse takes radius in KM and sorts by distance. */
 const POI_CACHE = new Map();
 async function poiNear(lat, lng, tag, radiusKm, limit){
+  /* V4.3: this sends a position (the person's own, for "near me") to Photon, so it waits for the person's yes, like the text
+     search does. null is what callers already treat as "no answer"; the two assistant callers say why when the cause is the switch. */
+  if(typeof onlineSearchPref !== 'undefined' && !onlineSearchPref) return null;
   const key = tag + "@" + lat.toFixed(3) + "," + lng.toFixed(3) + "/" + (radiusKm||2);
   if(POI_CACHE.has(key)) return POI_CACHE.get(key);
   const langP = /^(en|de|fr|it)$/.test(lang) ? "&lang=" + lang : "";
@@ -627,7 +630,7 @@ function transportTool(name, args){
       const anchor = await resolve(a.place || "here");
       if(!anchor) return { error:"could not resolve " + (a.place||"") };
       const hits = await poiNear(anchor.lat, anchor.lng, cat.tag, 3, 12);
-      if(hits === null) return { error:"place lookup unavailable (offline)" };
+      if(hits === null) return { error: onlineSearchPref ? "place lookup unavailable (offline)" : "the user has switched online look-ups off, so nearby places cannot be searched; tell them to turn them on in Settings > Search & privacy" };
       if(hits.length) dropPin(hits[0]);
       return { near:anchor.name, category:catLabel(cat),
                results:hits.slice(0,8).map(h=>({ name:h.name, metres:Math.round(h.m), area:h.ctx })) };
@@ -1062,7 +1065,7 @@ function transportTool(name, args){
       }
       if(!anchor) anchor = await resolve("here");
       const hits = await poiNear(anchor.lat, anchor.lng, cat.tag, 3, 20);
-      if(hits === null){ aiSay(svgEsc(t("aiOffline"))); return; }
+      if(hits === null){ aiSay(svgEsc(t(onlineSearchPref ? "aiOffline" : "aiLookupOff"))); return; }
       if(!hits.length){ aiSay(svgEsc(t("omniNone"))); return; }
       const top = hits.slice(0,6);
       aiSay("<b>" + cat.ic + " " + svgEsc(catLabel(cat)) + "</b> — " + svgEsc(anchor.name) +
@@ -1152,7 +1155,7 @@ renderProvenance();
 /* ---- diagnostics: show what was recorded, and let the user send it if they choose ---- */
 function diagReportText(){
   const env = [
-    "build: " + BUILD,
+    "app: __APP_VERSION__ build " + BUILD,
     "city: " + CITY_ID,
     "lang: " + lang,
     "screen: " + innerWidth + "x" + innerHeight + " dpr" + (devicePixelRatio || 1),

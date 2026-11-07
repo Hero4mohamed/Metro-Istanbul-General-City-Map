@@ -179,6 +179,13 @@ html = html.replace('__BUILD__', () => buildStamp)
                      .replace('__CARDIMG_JSON__', () => JSON.stringify(cardImg))
                      .replace('__TRANSLATOR_JS__', () => translatorJS)
                      .replace('__PROVENANCE_JSON__', () => JSON.stringify(provenance));
+/* Who runs the app and how to reach them (V4.3). One file feeds the app (Settings > About & legal, the privacy notice) and the
+   legal pages (legal/*.html, built below), so the two cannot say different things. */
+const LEGAL = JSON.parse(fs.readFileSync(path.join(DIR, 'legal-config.json'), 'utf8'));
+html = html.replace(/__CONTACT_EMAIL__/g, () => LEGAL.contactEmail)
+           .replace(/__REPO_URL__/g, () => LEGAL.repoUrl)
+           .replace(/__POLICY_VERSION__/g, () => LEGAL.policyVersion)
+           .replace(/__APP_VERSION__/g, () => LEGAL.appVersion);
 console.log('İSTANBUL:', cities.istanbul.lines.length, ' ANKARA:', ankara.length, ' İZMİR:', izmir.length, ' BURSA:', bursa.length, ' ANTALYA:', antalya.length, ' KOCAELİ:', kocaeli.length,
             ' INTERCITY:', intercity.length,
             ' BUSES:', Object.entries(busSets).map(([c, s]) => c + ':' + s.dir.length).join(' '),
@@ -209,9 +216,9 @@ if (!inlineScript) { console.error('CSP: inline script not found'); process.exit
 
 const CSP = [
   "default-src 'self'",
-  "script-src 'self' " + sha256(inlineScript[1]) + ' https://unpkg.com',
-  "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://unpkg.com",
-  'font-src https://fonts.gstatic.com data:',
+  "script-src 'self' " + sha256(inlineScript[1]),
+  "style-src 'self' 'unsafe-inline'",
+  "font-src 'self' data:",
   // all three basemaps come from Esri; card art and marker icons are data: URIs
   "img-src 'self' data: blob: https://server.arcgisonline.com",
   // every host the app fetches from, including tiles (the offline save uses fetch, not <img>)
@@ -221,6 +228,8 @@ const CSP = [
    'https://api.open-meteo.com', 'https://air-quality-api.open-meteo.com', 'https://routing.openstreetmap.de',
    'https://api.anthropic.com'].join(' '),
   "worker-src 'self'",
+  "frame-src 'none'",           // the app embeds nothing, and (see 00-diagnostics.js) refuses to be embedded
+  "media-src 'none'",           // no audio or video
   "manifest-src 'self'",
   "base-uri 'self'",
   "form-action 'none'",
@@ -232,6 +241,7 @@ html = html.replace('__CSP__', () => CSP);
 
 const outPath = path.join(ROOT, 'index.html');   // GitHub Pages serves the repo-root index.html
 fs.writeFileSync(outPath, html);
+const LEGAL_FILES = require('./build-legal.cjs').build(LEGAL, ROOT);      // legal/*.html: privacy, terms, cookies & storage, credits - English and Turkish
 console.log('WROTE', outPath, (fs.statSync(outPath).size/1024).toFixed(1), 'KB',
             ' cardArt:', Object.keys(cardImg.cities).map(c=>c+'×'+Object.keys(cardImg.cities[c]).length).join(' '));
 
@@ -264,5 +274,6 @@ for (const [city, s] of Object.entries(busSets)) {
 // emit the service worker with a fresh version stamp → installed apps self-update on deploy
 const swTpl = fs.readFileSync(path.join(DIR, 'sw.template.js'), 'utf8');
 const swVersion = buildStamp;   // one stamp for the worker and the diagnostics report
-fs.writeFileSync(path.join(ROOT, 'sw.js'), swTpl.replace('__SW_VERSION__', swVersion));
+/* the pages the worker fetches at install so they open offline (V4.3): the legal pages, as paths under the app's address */
+fs.writeFileSync(path.join(ROOT, 'sw.js'), swTpl.replace('__SW_VERSION__', () => swVersion).replace('__OFFLINE_PAGES__', () => JSON.stringify(LEGAL_FILES)));
 console.log('WROTE sw.js  version', swVersion);
