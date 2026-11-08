@@ -115,9 +115,11 @@ function wrapCardName(s, max){
   if(cur) out.push(cur);
   return out.length>2 ? [out[0], out.slice(1).join(' ')] : out;
 }
+// the real card picture when its exact product is confirmed, none otherwise; never in the Android app, which shows the drawn face (00a-play-build.js)
+function cardPicture(key){ return PLAY_APP ? null : ((CARD_IMG.cities||{})[CITY_ID]||{})[key]; }
 // the real card when its exact product is confirmed, the drawn face otherwise
 function cardFaceHTML(key, c){
-  const img=((CARD_IMG.cities||{})[CITY_ID]||{})[key];
+  const img=cardPicture(key);
   if(img) return `<img class="ca-img" src="${img.src}"
     alt="${svgEsc(c.label||'')}" title="${svgEsc(img.product||'')}" decoding="async">`;
   return cardArtSVG(key, c);
@@ -294,7 +296,7 @@ function renderCardSeg(){
   if(art) art.innerHTML=cardFaceHTML(fareCard, c);
   // credit the artwork only while it is actually being shown
   const cr=document.getElementById('cardCredit');
-  const ci=((CARD_IMG.cities||{})[CITY_ID]||{})[fareCard];
+  const ci=cardPicture(fareCard);
   // a picture says whose it is; a drawing says it is a drawing (so nobody takes a drawn face for the operator's real card)
   if(cr) cr.textContent = ci ? t('cardImgCredit').replace('{who}', ci.credit||'') : t('cardDrawn');
   const bits=[];
