@@ -98,7 +98,7 @@ function text(str,x,y,sc,r,g,b){
 // wordmark + subtitle + accent underline
 text("İSTANBUL · RAY-NET", 520, 205, 5, 238,242,248);
 fill(520, 262, 520+230, 268, 52,211,153);
-text("LIVE TRANSIT NETWORK MAP", 520, 296, 3, 147,157,178);
+text("TRANSIT NETWORK MAP", 520, 296, 3, 147,157,178);   // V4.3: was "LIVE ..." - the carriages are a simulation
 text("METRO · TRAM · FERRY · BUS · CABLE CAR", 520, 332, 2, 94,104,128);
 
 /* encode */

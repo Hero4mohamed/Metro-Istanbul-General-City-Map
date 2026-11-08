@@ -12,7 +12,12 @@ const path = require('node:path');
 const H = require('../testkit/helpers.cjs');
 
 /* the module is taken out of the BUILT page, so that what is tested is what is shipped (and what the mutation check alters) */
-const SRC = (() => { const s = H.appScript(), i = s.indexOf('var NAV = {'); assert.ok(i > 0, 'the history module is not in the page'); return s.slice(i); })();
+const SRC = (() => {
+  const s = H.appScript(), i = s.indexOf('var NAV = {'); assert.ok(i > 0, 'the history module is not in the page');
+  // 21-history.js used to be the last file; the module ends where the next one (22-privacy.js) begins
+  const j = s.search(/\/\* =+\s+PRIVACY CHOICE/);
+  return s.slice(i, j > i ? j : undefined);
+})();
 const tick = (ms = 6) => new Promise(r => setTimeout(r, ms));
 
 function world({ mobile = true, preset = null, welcome = false } = {}) {

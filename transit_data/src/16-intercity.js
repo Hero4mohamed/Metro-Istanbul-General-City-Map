@@ -548,7 +548,8 @@ document.getElementById('passOverlay').addEventListener('click', closePassport);
 document.getElementById('lpFollow').addEventListener('click', toggleFollow);
 document.getElementById('leaveRemind').addEventListener('click', e=>{ const b=e.target.closest('button[data-min]'); if(b) remindLeave(+b.dataset.min); });
 document.getElementById('resetTrips').addEventListener('click', resetTrips);
-document.addEventListener('keydown', e=>{ if(e.key==='Escape'){ closeSettings(); closeNearby(); exitGo(); closePassport(); } });
+// Escape is handled in one place, 23-a11y.js: it closes the newest thing and nothing else (it used to close Settings, the nearby list, the
+// passport AND end a live journey in one press, whichever was open)
 document.getElementById('speedSeg').addEventListener('click', e=>{
   const s=e.target.dataset.s; if(!s) return;
   [...e.currentTarget.children].forEach(x=>x.classList.toggle('active', x.dataset.s===s));

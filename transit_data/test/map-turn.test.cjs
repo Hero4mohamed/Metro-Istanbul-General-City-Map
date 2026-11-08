@@ -201,6 +201,22 @@ test('a pinch and a zoom animation carry the angle and the scale to the base map
   assert.ok(/leaflet-zoom-animated/.test(layer._container.className), 'the box is not animated with the other layers');
 });
 
+test('while two fingers turn the map, the base map is turned back by the angle the map has NOW, every frame (it used to keep the angle from when the fingers went down)', () => {
+  const { map, layer, MAP_TURN } = glWorld(0);
+  layer._zooming = true;                       // zoomstart has fired: this is what _update() sees for the whole of a pinch
+  const back = deg => (deg === 0 ? '' : 'rotate(' + (-deg * MAP_TURN.RAD) + 'rad)');
+  for (const deg of [10, 25, 40, -15]) {
+    map.setRotation(deg); layer._pinchZoom();
+    assert.ok(layer._container.style.transform.indexOf(back(deg)) > 0, 'at ' + deg + ' degrees the base map box is not turned back by ' + deg + ': ' + layer._container.style.transform);
+    near(layer._glMap.jumped.bearing, -deg, 1e-9, 'MapLibre bearing at ' + deg);
+    assert.ok(layer._container._irnTurned, 'the box is not marked as turned');
+  }
+  // the lines are in the rotor, turned by the map's angle: the box inside it must be turned by minus that, so the two cancel
+  assert.ok(Math.abs(map.getRotation() - (-15)) < 1e-6);
+  map.setRotation(0); layer._pinchZoom();
+  assert.ok(!layer._container._irnTurned && !/rotate/.test(layer._container.style.transform) && !/leaflet-zoom-animated/.test(layer._container.className), 'back at north-up the box keeps a turn it no longer needs');
+});
+
 /* ---- fingers ---- */
 const touch = pts => ({ touches: pts.map(p => ({ clientX: p[0], clientY: p[1] })), defaultPrevented: false });
 const pinchAt = (mid, ang, dist) => [[mid[0] - Math.cos(ang) * dist / 2, mid[1] - Math.sin(ang) * dist / 2], [mid[0] + Math.cos(ang) * dist / 2, mid[1] + Math.sin(ang) * dist / 2]];

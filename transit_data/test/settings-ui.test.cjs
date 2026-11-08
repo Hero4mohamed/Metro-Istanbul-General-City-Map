@@ -15,10 +15,10 @@ const CONTROLS = ['themeSeg', 'styleSeg', 'textSeg', 'langSeg', 'swMotion', 'swC
   'diagRow', 'diagReport', 'diagCopy', 'diagClear', 'diagNote'];
 const panelHTML = () => { const h = H.html(), a = h.indexOf('<div class="settings-panel glass" id="settingsPanel"'), b = h.indexOf('<div class="near-panel glass"'); assert.ok(a > 0 && b > a); return h.slice(a, b); };
 
-test('settings are seven sections, in this order, with Appearance open to begin with', () => {
+test('settings are eight sections, in this order, with Appearance open to begin with', () => {
   const p = panelHTML();
   const secs = [...p.matchAll(/<details class="sp-sec" data-sec="(\w+)"( open)?>/g)].map(m => m[1] + (m[2] ? '*' : ''));
-  assert.deepStrictEqual(secs, ['appearance*', 'accessibility', 'journey', 'map', 'you', 'privacy', 'app']);
+  assert.deepStrictEqual(secs, ['appearance*', 'accessibility', 'journey', 'map', 'you', 'privacy', 'app', 'about']);   // V4.3 added About & legal
   assert.ok(/<input id="spSearch" type="search"/.test(p) && /id="spNone"/.test(p), 'the search box is gone');
 });
 
@@ -59,7 +59,7 @@ function world(saved = {}) {
   const inp = Object.assign({ value: '', listeners: {}, addEventListener(t, f) { this.listeners[t] = f; }, type(v) { this.value = v; this.listeners.input(); } }, mkClass());
   const none = mkClass();
   const document = { getElementById: id => ({ settingsPanel: panel, spSearch: inp, spNone: none })[id] || null };
-  const src = H.appScript(), a = src.indexOf('var spResetFn = null;'), endMark = "spResetFn = function(){ if(inp.value){ inp.value = ''; find(); } };\n})();";
+  const src = H.appScript().replace(/\r\n/g, '\n'), a = src.indexOf('var spResetFn = null;'), endMark = "spResetFn = function(){ if(inp.value){ inp.value = ''; find(); } };\n})();";
   const b = src.indexOf(endMark, a); assert.ok(a > 0 && b > a, 'the settings search code is not in the page');
   const api = new Function('document', 'foldQ', 'lsStr', 'localStorage', src.slice(a, b + endMark.length) + '\nreturn { spReset };')(
     document, fold, (k, d) => (k in store ? store[k] : d), { setItem: (k, v) => { store[k] = v; } });

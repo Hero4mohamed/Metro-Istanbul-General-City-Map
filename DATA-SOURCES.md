@@ -23,10 +23,11 @@ redistribute it.
 | **Municipal, ministry and press sources** (EGO, İzmir BB, Bursa BB, Kocaeli BB, news reports) | Vision tab status, progress and opening targets, read by hand and cited per entry with an as-of date in `planned-registry.json` | n/a: facts cited, nothing copied or scraped | yes, each source linked in the line panel |
 | **Kocaeli Büyükşehir / UlaşımPark** | Kocaeli bus routes (scraped from published route pages) | No published open-data licence | yes, operator named |
 | **TCDD Taşımacılık** | Intercity rail lines | No published open-data licence | yes |
-| **Photon** (komoot) | Optional top-up only: when the offline places file has fewer than two answers, or the query has a number in it (a house number is the one thing the file does not hold), what the user typed (plus the city centre, never their own position) is sent here for what the file cannot hold, such as a house number or a shop that opened last week. Switchable off in Settings → "Look places up online". **Not a dependency**: its own README says heavy use "will be throttled or completely banned" and it promises no availability, so nothing relies on it. A commercial release should self-host Photon, use a paid geocoder, or ship with this off | Free for reasonable use, no guarantee; underlying data ODbL; software Apache-2.0 | yes |
+| **Photon** (komoot) | Optional top-up only: when the offline places file has fewer than two answers, or the query has a number in it (a house number is the one thing the file does not hold), what the user typed (plus the city centre, never their own position) is sent here for what the file cannot hold, such as a house number or a shop that opened last week. Also used for "what is near" searches (the coordinates searched around are sent, the user's own position for "near me"). **Off until the person allows "Online look-ups"** (Settings → Search & privacy, or the one-time privacy notice; V4.3). **Not a dependency**: its own README says heavy use "will be throttled or completely banned" and it promises no availability, so nothing relies on it. A commercial release should self-host Photon, use a paid geocoder, or ship with this off | Free for reasonable use, no guarantee; underlying data ODbL; software Apache-2.0 | yes |
 | **Open-Meteo** (forecast + air-quality services) | The Weather tab, for every city: now, the next 24 hours and 7 days for the city centre and each district, plus the European Air Quality Index. One request per refresh (all places at once), nothing stored. The "hints" on the card (rain, gusts, heat, frost, UV, poor air) are arithmetic on those numbers with the thresholds written in the code and tests; they are labelled as not being warnings, and link to the State Meteorological Service for the official ones | Free for non-commercial use, CC-BY 4.0 | yes |
-| **OSRM** (routing.openstreetmap.de) | Walking-leg geometry refinement | Public demo server, no SLA; ODbL data | yes |
-| **Leaflet** | Map rendering | BSD-2-Clause | in the map credit |
+| **OSRM** (routing.openstreetmap.de, run by FOSSGIS) | Walking-leg geometry refinement: the start and end of each walking part of a planned trip (which can be the user's own position) are sent. **Only after the person allows "Online look-ups"** (off by default, V4.3); without it a walk keeps its straight-line estimate | Public demo server, no SLA; ODbL data | yes |
+| **Leaflet** 1.9.4 | Map rendering. Shipped in `vendor/leaflet/` (until V4.3 it was loaded from unpkg.com on every visit, which told that host the visitor's address); the version and a hash of each file are recorded in `vendor/README.md` and a test fails if a file changes without the record | BSD-2-Clause (`vendor/leaflet/LICENSE`) | in the map credit |
+| **Inter** · **Space Grotesk** · **JetBrains Mono** | The app's three typefaces, shipped in `vendor/fonts/` as WOFF2 files (until V4.3 they were loaded from Google Fonts on every visit, which told Google the visitor's address — now removed, and the policy no longer allows either Google host) | SIL Open Font License 1.1 (`vendor/fonts/LICENSE-OFL.txt`) | on the credits page |
 | **MapLibre GL JS** 4.7.1 · **maplibre-gl-leaflet** 0.0.22 | Draws the vector basemap inside the Leaflet map. Shipped in `vendor/` (not loaded from a CDN) with the version and a hash of each file recorded in `vendor/README.md`; a test fails if a file changes without the record | BSD-3-Clause · BSD-2-Clause (licence files in `vendor/maplibre/`) | no |
 | **Noto Sans** (as MapLibre glyph files) | The typeface of the map's names, shipped in `vendor/glyphs/` so every name draws offline and a cold start never waits on a font server | SIL Open Font License 1.1 (`vendor/glyphs/LICENSE-NotoSans-OFL.txt`) | no |
 
@@ -69,12 +70,32 @@ that names the current version is read from the network whenever there is one.
 ## Third-party services the browser contacts
 
 Every host the app can reach at run time is enumerated in the Content-Security-Policy emitted by
-`transit_data/build.cjs`. Nothing else can be contacted, by design. No user location, saved
-place or trip is transmitted to any of them.
+`transit_data/build.cjs`. Nothing else can be contacted, by design. Since V4.3 that list no longer
+includes any CDN or font host: Leaflet and the three typefaces ship with the app (`vendor/`).
 
-The one exception is entirely user-driven: if you paste your own Anthropic API key into
-Settings, your assistant questions go to `api.anthropic.com`. The key is stored only in that
-browser and is never committed, bundled or sent anywhere else.
+What each host is sent is written, for people, in `legal/privacy.html` (and `.tr.html`), and
+`test/legal.test.cjs` fails if a host the policy allows is missing from that page. In short:
+
+- **Always, as part of showing the app:** the page host (GitHub Pages), the map tiles
+  (OpenFreeMap; Esri for the satellite layer and the fallback map), İBB (the station you open
+  for its timetable; bus notices), Open-Meteo (the city and district centres, never the user's
+  own position) and Overpass (the route number of a bus line whose shape is not shipped). These
+  see an IP address and browser details, like any host.
+- **Only after the person says yes to "Online look-ups"** (off by default since V4.3, asked once
+  by a notice and changeable in Settings): **Photon** gets the text typed into a place search
+  with the city centre, and the coordinates a "what is near" search is centred on, which is the
+  person's own position for "near me"; the **OSRM routing server** (`routing.openstreetmap.de`)
+  gets the two ends of each walking leg of a planned trip, which can also be the person's own
+  position. (Before V4.3 both were on by default and the routing call was not mentioned
+  anywhere, and this section claimed no location was transmitted: that was wrong.)
+- **Only if the person pastes their own Anthropic API key:** their assistant questions and the
+  key go to `api.anthropic.com`. The key is stored only in that browser and is never committed,
+  bundled or sent anywhere else.
+
+The app sets no cookies, has no analytics or advertising and uses no IndexedDB or session
+storage; the keys it does write to local storage are listed in `legal/storage.html`, and
+"Delete all my data on this device" (Settings > Search & privacy) removes them, the offline
+copies and the service worker, and nothing else at that address.
 
 ## If you reuse this
 

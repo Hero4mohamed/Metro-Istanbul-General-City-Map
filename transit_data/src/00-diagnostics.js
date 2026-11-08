@@ -44,6 +44,13 @@ window.addEventListener("unhandledrejection", e => {
   diagRecord("promise", (r && r.message) || String(r), r && r.stack);
 });
 
+/* Never run inside someone else's page (V4.3). A page's own Content-Security-Policy cannot say frame-ancestors (only a response
+   header can, and GitHub Pages sets none), so a site that framed this app, to lay an invisible layer over its buttons ("clickjacking"),
+   is stopped here: the app takes over the window, and if the browser forbids that (a sandboxed frame) it hides itself. */
+if (window.top !== window.self) {
+  try { window.top.location.href = window.self.location.href; } catch (e) { document.documentElement.style.display = "none"; }
+}
+
 /* ---------------------------------------------------------------------------
    CITY SELECTION. Every city ships its own line set + centre, fare table,
    districts (weather), landmarks and feature flags. The chosen city is picked

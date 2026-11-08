@@ -6,7 +6,7 @@ function lsGet(k){ try{ return JSON.parse(localStorage.getItem(k)||'[]'); }catch
 function lsSet(k,v){ try{ localStorage.setItem(k, JSON.stringify(v)); }catch(e){} }
 let planHistory = lsGet(LS_HIST);
 let planFavs = lsGet(LS_FAV);
-const attrEsc = s => (s||'').replace(/&/g,'&amp;').replace(/"/g,'&quot;');
+const attrEsc = s => (s||'').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;');   // V4.3: < and > too, so no markup survives even inside a value
 
 /* ---- door-to-door endpoints: any stop (searchable) or any pinned map point ---- */
 let originPt=null, destPt=null, pickMode=null;
@@ -336,6 +336,9 @@ async function fetchBusGeom(ref){
   }catch(e){ return busGeoCache[ref]=null; }
 }
 async function fetchFoot(a,b){                           // FOSSGIS public OSRM foot profile
+  /* V4.3: this sends the two ends of a walk to a public server, and an end can be the person's own position, so it waits for the
+     person's yes (Settings > Online look-ups, or the privacy notice). Without it the walk keeps its straight-line estimate. */
+  if(typeof onlineSearchPref !== 'undefined' && !onlineSearchPref) return null;
   const key=a[0].toFixed(4)+','+a[1].toFixed(4)+'|'+b[0].toFixed(4)+','+b[1].toFixed(4);
   if(key in footCache) return footCache[key];
   try{
