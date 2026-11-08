@@ -1208,7 +1208,7 @@ function refreshDiagRow(){
    A public static site cannot ship a key, so the assistant is local by default. If you paste
    your own key it is written to localStorage on this device and sent to api.anthropic.com and
    nowhere else — it is never committed, never bundled, and never reaches this repo. */
-function aiKey(){ try{ return localStorage.getItem("irn_ai_key") || ""; }catch(e){ return ""; } }
+function aiKey(){ if(PLAY_APP) return ""; try{ return localStorage.getItem("irn_ai_key") || ""; }catch(e){ return ""; } }   // the Android app has no Claude layer (see 00a-play-build.js)
 function refreshAiKeyRow(){
   const inp=document.getElementById("aiKeyIn"), note=document.getElementById("aiKeyNote");
   if(!inp || !note) return;

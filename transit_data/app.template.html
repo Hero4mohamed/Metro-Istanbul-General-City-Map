@@ -1197,6 +1197,8 @@
   .xfer-frequency{color:var(--dim);font-weight:500;}
 
   /* ---------- assistant orb + panel ---------- */
+  /* the Android app (Google Play) has no Claude layer, so the box for the key is not shown (00a-play-build.js adds .play-app) */
+  .play-app #aiKeyRow{display:none !important;}
   .ai-orb{position:fixed;left:var(--gutter);top:calc(var(--rail-top) + var(--rail-step));
     z-index:1200;width:44px;height:44px;border-radius:var(--r-round);border:1px solid var(--stroke-2);
     background:var(--panel);cursor:pointer;display:flex;align-items:center;justify-content:center;

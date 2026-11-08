@@ -1857,6 +1857,52 @@ const MUTATIONS = [
     expect: '"save this area" asks for the tile the vector map will really ask for, once',
     apply: h => h.replace('  const CONC = vec ? 4 : 6;', '  const CONC = 6;'),
   },
+  /* ---- the Android app (src/00a-play-build.js): no Claude layer, drawn cards ---- */
+  {
+    name: 'the Android app reads the Anthropic key again',
+    expect: 'play build: the Android app never reads the Anthropic key',
+    apply: h => h.replace('function aiKey(){ if(PLAY_APP) return "";', 'function aiKey(){'),
+  },
+  {
+    name: 'the Android app shows an operator\'s card picture again',
+    expect: 'play build: the Android app shows the drawn card',
+    apply: h => h.replace('return PLAY_APP ? null : ((CARD_IMG', 'return ((CARD_IMG'),
+  },
+  {
+    name: 'the card credit reads the pictures around the Android gate',
+    expect: 'play build: the Android app shows the drawn card',
+    apply: h => h.replace('const ci=cardPicture(fareCard);', 'const ci=((CARD_IMG.cities||{})[CITY_ID]||{})[fareCard];'),
+  },
+  {
+    name: 'the Android shell\'s referrer is no longer recognised',
+    expect: 'play build: a page opened by the Android shell is recognised',
+    apply: h => h.replace('/^android-app:\\/\\//i.test(document.referrer || \'\') || ', ''),
+  },
+  {
+    name: 'the ?src=play marker is no longer recognised',
+    expect: 'play build: a page opened by the Android shell is recognised',
+    apply: h => h.replace('/[?&]src=play(?:&|$)/', '/[?&]src=never(?:&|$)/'),
+  },
+  {
+    name: 'a page opened by the Android shell is not tagged play-app',
+    expect: 'play build: a page opened by the Android shell is recognised',
+    apply: h => h.replace('document.documentElement.classList.add(\'play-app\')', 'document.documentElement.classList.add(\'play-appx\')'),
+  },
+  {
+    name: 'the window forgets it was opened from the Android app',
+    expect: 'play build: the window remembers it',
+    apply: h => h.replace('else on = sessionStorage.getItem(\'irn_play\') === \'1\';', ''),
+  },
+  {
+    name: 'the key box shows in the Android app',
+    expect: 'play build: the Android app has no box for the key',
+    apply: h => h.replace('.play-app #aiKeyRow{display:none !important;}', '.play-app #aiKeyRowX{display:none !important;}'),
+  },
+  {
+    name: 'session storage is used for something the storage page does not name',
+    expect: 'everything the app stores is under the irn_ prefix',
+    apply: h => h.replace('sessionStorage.getItem(\'irn_play\')', 'sessionStorage.getItem(\'irn_other\')'),
+  },
 ];
 
 const original = fs.readFileSync(SRC, 'utf8');
