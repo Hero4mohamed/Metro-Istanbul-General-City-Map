@@ -36,18 +36,6 @@
     "messageLang": "en"
   },
   {
-    "id": "tf2-al-m-yor",
-    "ref": "TF2",
-    "source": "metro.istanbul",
-    "scope": "line",
-    "severity": "major",
-    "title": "Service suspended",
-    "messageTr": "Planlı bakım çalışmaları nedeniyle hattımız; 2 Kasım Pazartesi saat 08.00’den 10 Kasım Salı saat 08.00’e kadar işletmeye kapalı olacaktır.",
-    "message": "Planlı bakım çalışmaları nedeniyle hattımız; 2 Kasım Pazartesi saat 08.00’den 10 Kasım Salı saat 08.00’e kadar işletmeye kapalı olacaktır.",
-    "messageLang": "tr",
-    "translatedBy": "none"
-  },
-  {
     "id": "ferry-3788",
     "mode": "ferry",
     "ref": null,
