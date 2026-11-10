@@ -1898,6 +1898,22 @@ const MUTATIONS = [
     expect: 'play build: the Android app has no box for the key',
     apply: h => h.replace('.play-app #aiKeyRow{display:none !important;}', '.play-app #aiKeyRowX{display:none !important;}'),
   },
+  /* ---- ferries stay on water and share their lanes (ferry-water.cjs, V4.4.1) ---- */
+  {
+    name: 'a ferry line cuts across Moda',
+    expect: 'ferries: no ferry line crosses land',
+    apply: h => h.replace(/("ref":"Kadıköy–Karaköy","kind":"ferry","color":"[^"]*","paths":\[\[\[[\d.]+,[\d.]+\],)/, '$1[40.9870,29.0300],[40.9800,29.0350],'),
+  },
+  {
+    name: 'one ferry line has its own position for a shared pier',
+    expect: 'ferries: every line calls at each of its piers',
+    apply: h => h.replace(/("ref":"Kadıköy–Karaköy","kind":"ferry"[^]*?"stations":\[\{"name":"Kadıköy","lat":)[\d.]+/, '$140.9945'),
+  },
+  {
+    name: 'two ferry lines between the same piers take different paths',
+    expect: 'ferries: two lines between the same two piers use exactly the same path',
+    apply: h => h.replace(/("ref":"Adalar \(Bostancı\)","kind":"ferry"[^]*?"paths":\[\[(?:\[[\d.]+,[\d.]+\],){40})/, '$1[40.8900,29.0500],'),
+  },
   {
     name: 'session storage is used for something the storage page does not name',
     expect: 'everything the app stores is under the irn_ prefix',

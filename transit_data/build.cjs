@@ -99,6 +99,17 @@ cities.izmir.lines    = liveOnly(izmir).concat(plannedFor('izmir'));
 cities.bursa.lines    = liveOnly(bursa).concat(plannedFor('bursa'));
 cities.antalya.lines  = liveOnly(antalya).concat(plannedFor('antalya'));
 cities.kocaeli.lines  = liveOnly(kocaeli).concat(plannedFor('kocaeli'));
+/* V4.4.1: every ferry line is re-routed over the water the base map draws (water-mask.json), one position per pier, and lines that
+   share a stretch of sea share one path. See ferry-water.cjs; test/ferry.test.cjs measures the result. */
+{
+  const FW = require('./ferry-water.cjs'), mask = FW.loadMask();
+  for (const id of Object.keys(mask)) {
+    if (!cities[id]) continue;
+    const rep = FW.routeFerries(cities[id].lines, mask[id]);
+    if (rep.failed) { console.error('ferry routing: ' + rep.failed + ' hop(s) in ' + id + ' found no way over water'); process.exit(1); }
+    console.log('FERRIES ' + id + ':', rep.lines, 'lines,', rep.piers, 'piers,', rep.lanes, 'shared stretches');
+  }
+}
 const data = JSON.stringify(cities);
 
 // lift the TR→EN translator out of the scraper so the CLIENT can re-translate any
