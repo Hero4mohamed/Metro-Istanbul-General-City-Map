@@ -1898,6 +1898,52 @@ const MUTATIONS = [
     expect: 'play build: the Android app has no box for the key',
     apply: h => h.replace('.play-app #aiKeyRow{display:none !important;}', '.play-app #aiKeyRowX{display:none !important;}'),
   },
+  /* ---- offline maps (src/22a-offline.js, V4.4.1); the worker's own mistakes are put back by test/offline-maps.test.cjs itself ---- */
+  {
+    name: 'only İstanbul is kept without being asked',
+    expect: 'offline maps: İstanbul, İzmir and Ankara are kept without being asked',
+    apply: h => h.replace("const OFFLINE_DEFAULT = ['istanbul', 'izmir', 'ankara'];", "const OFFLINE_DEFAULT = ['istanbul'];"),
+  },
+  {
+    name: 'a city the person removed comes back by itself',
+    expect: 'offline maps: İstanbul, İzmir and Ankara are kept without being asked',
+    apply: h => h.replace('const p = pick ? pick[city] : undefined;', 'const p = undefined;'),
+  },
+  {
+    name: 'mobile data is taken for Wi-Fi',
+    expect: 'offline maps: what the connection is',
+    apply: h => h.replace("if (c.type === 'cellular') return true;", "if (c.type === 'cellular') return false;"),
+  },
+  {
+    name: 'a phone that cannot say what it is on downloads without asking',
+    expect: 'offline maps: what the connection is',
+    apply: h => h.replace('if (conn === null) return !phone;', 'if (conn === null) return true;'),
+  },
+  {
+    name: 'the person on mobile data is never asked',
+    expect: 'offline maps: a phone on mobile data',
+    apply: h => h.replace("if (lsStr('irn_offline_asked') !== '1') offAsk(todo);", ''),
+  },
+  {
+    name: 'packs download whatever the connection',
+    expect: 'offline maps: a phone on mobile data',
+    apply: h => h.replace('if (offMayAuto(offPref(), offConn(navigator), IS_MOBILE)) { for (const c of todo) await offDownload(c); return; }', 'if (true) { for (const c of todo) await offDownload(c); return; }'),
+  },
+  {
+    name: 'an error page is stored as a map pack',
+    expect: 'offline maps: Download keeps a city whatever the connection',
+    apply: h => h.replace("!== 'RNP1') throw new Error('not a map pack');", "=== 'NEVER') throw new Error('not a map pack');"),
+  },
+  {
+    name: 'the worker is not told that a pack arrived',
+    expect: 'offline maps: on Wi-Fi (or a computer) the three default cities come down by themselves',
+    apply: h => h.replace("offHave[city] = info.v; offWrite('irn_offline_have', offHave);\n    offTellWorker();", "offHave[city] = info.v; offWrite('irn_offline_have', offHave);").replace("offHave[city] = info.v; offWrite('irn_offline_have', offHave);\r\n    offTellWorker();", "offHave[city] = info.v; offWrite('irn_offline_have', offHave);"),
+  },
+  {
+    name: 'a city\'s data files are not kept with its map',
+    expect: 'offline maps: on Wi-Fi (or a computer) the three default cities come down by themselves',
+    apply: h => h.replace('(x.ok ? stat.put(new URL(f, location.href).href, x) : null)', 'null'),
+  },
   /* ---- the planner on a phone keeps the map in view (18-mobile-shell.js, V4.4.1) ---- */
   {
     name: 'the map is dimmed behind the planner again',
