@@ -25,6 +25,20 @@
     "messageLang": "en"
   },
   {
+    "id": "t1-kabata",
+    "ref": "T1",
+    "source": "metro.istanbul",
+    "scope": "segment",
+    "from": "Kabataş",
+    "to": "Karaköy",
+    "severity": "partial",
+    "title": "Section affected",
+    "messageTr": "Kara yolu araç arızası sonucu yolumuzun kapanması nedeniyle seferler Eminönü-Bağcılar istasyonları arasında yapılmaktadır.",
+    "message": "Kara yolu araç arızası sonucu yolumuzun kapanması nedeniyle seferler Eminönü-Bağcılar istasyonları arasında yapılmaktadır.",
+    "messageLang": "tr",
+    "translatedBy": "none"
+  },
+  {
     "id": "t3-al-m-yor",
     "ref": "T3",
     "source": "metro.istanbul",
