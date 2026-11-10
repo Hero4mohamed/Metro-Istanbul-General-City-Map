@@ -1,0 +1,42 @@
+{
+ "packs": {
+  "antalya": {
+   "file": "offline/antalya.pack",
+   "bytes": 6550411,
+   "tiles": 176,
+   "built": "2026-11-10"
+  },
+  "istanbul": {
+   "file": "offline/istanbul.pack",
+   "bytes": 42484656,
+   "tiles": 938,
+   "built": "2026-11-10"
+  },
+  "ankara": {
+   "file": "offline/ankara.pack",
+   "bytes": 15053111,
+   "tiles": 422,
+   "built": "2026-11-10"
+  },
+  "bursa": {
+   "file": "offline/bursa.pack",
+   "bytes": 7783084,
+   "tiles": 282,
+   "built": "2026-11-10"
+  },
+  "izmir": {
+   "file": "offline/izmir.pack",
+   "bytes": 16960097,
+   "tiles": 804,
+   "built": "2026-11-10"
+  },
+  "kocaeli": {
+   "file": "offline/kocaeli.pack",
+   "bytes": 12865576,
+   "tiles": 465,
+   "built": "2026-11-10"
+  }
+ },
+ "source": "https://tiles.openfreemap.org/planet/20261101_080013_pt",
+ "_about": "The offline base-map packs (build-offline-packs.cjs). bytes and tiles are checked against the files by test/offline-packs.test.cjs."
+}
