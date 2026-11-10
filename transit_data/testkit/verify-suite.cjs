@@ -505,12 +505,12 @@ const MUTATIONS = [
   {
     name: 'let the suburb names crowd the map again',
     expect: 'the map is not crowded with names',
-    apply: h => h.replace("'place-suburb': [[11.5, 20], [12, 23], [13, 17], [14, 18], [15, 12], [16, 8]],", "'place-suburb': 2,"),
+    apply: h => h.replace("'place-suburb': [[11.5, 62], [12, 60], [13, 50], [14, 60], [15, 36], [16, 18]],", "'place-suburb': 2,"),
   },
   {
     name: 'repeat every street name every few hundred metres',
     expect: 'the map is not crowded with names',
-    apply: h => h.replace("g[0] === 'road-label-major' ? 320 : 460", '320'),
+    apply: h => h.replace("const VEC_ROAD_SPACING = { 'road-label-major': 650, 'road-label-secondary': 900, 'road-label-minor': 900 };", "const VEC_ROAD_SPACING = { 'road-label-major': 320, 'road-label-secondary': 320, 'road-label-minor': 320 };"),
   },
   {
     name: 'let places of interest overlap each other',
@@ -1897,6 +1897,37 @@ const MUTATIONS = [
     name: 'the key box shows in the Android app',
     expect: 'play build: the Android app has no box for the key',
     apply: h => h.replace('.play-app #aiKeyRow{display:none !important;}', '.play-app #aiKeyRowX{display:none !important;}'),
+  },
+  /* ---- half as many names, and names keep clear of the station names (V4.4.1) ---- */
+  {
+    name: 'the room kept for station names is drawn as visible text',
+    expect: 'the map keeps room for the station names',
+    apply: h => h.replace("paint: { 'text-opacity': 0 } });", "paint: { 'text-opacity': 0.9 } });"),
+  },
+  {
+    name: 'another name layer is placed after the station-name room',
+    expect: 'the map keeps room for the station names',
+    apply: h => h.replace("[['stop-room', ['!', ['get', 'hub']], 14], ['stop-room-hub', ['get', 'hub'], 0]].forEach", "[['stop-room-hub', ['get', 'hub'], 0], ['stop-room', ['!', ['get', 'hub']], 14]].forEach"),
+  },
+  {
+    name: 'district names go back to their old room',
+    expect: 'names are sparse',
+    apply: h => h.replace("'place-suburb': [[11.5, 62], [12, 60], [13, 50], [14, 60], [15, 36], [16, 18]]", "'place-suburb': [[11.5, 20], [12, 23], [13, 17], [14, 18], [15, 12], [16, 8]]"),
+  },
+  {
+    name: 'hill names come back at zoom 12',
+    expect: 'names are sparse',
+    apply: h => h.replace("'source-layer': 'mountain_peak', minzoom: vecZ(14),", "'source-layer': 'mountain_peak', minzoom: vecZ(12),"),
+  },
+  {
+    name: 'the base map is never told where the station names are',
+    expect: 'the base map is told where the station names are',
+    apply: h => h.replace("if(typeof vecPushStops === 'function') vecPushStops(room);", ''),
+  },
+  {
+    name: 'the station list is handed to the base map on every frame',
+    expect: 'the base map is told where the station names are',
+    apply: h => h.replace('if(room !== _lblRoom){ _lblRoom = room;', 'if(true){ _lblRoom = room;'),
   },
   /* ---- ferries stay on water and share their lanes (ferry-water.cjs, V4.4.1) ---- */
   {

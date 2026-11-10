@@ -21,7 +21,7 @@ function vec() {
   const html = H.html();
   const pick = (a, b) => { const i = html.indexOf(a), j = html.indexOf(b); assert.ok(i > 0 && j > i, a + ' not in the built page'); return html.slice(i, j); };
   const code = pick('/* ==BASEMAP-PURE-START== */', '/* ==BASEMAP-PURE-END== */') + '\n' + pick('/* ==VECTOR-BASEMAP-PURE-START== */', '/* ==VECTOR-BASEMAP-PURE-END== */') +
-    '\nmodule.exports={ATLAS_PAL,contrastRgb,vecStyle,vecName,vecColours,vecPlacesData,VEC_TIER,VEC_NOTABLE,VEC_TIERS,vecZ,vecTierOf};';
+    '\nmodule.exports={ATLAS_PAL,contrastRgb,vecStyle,vecName,vecColours,vecPlacesData,VEC_TIER,VEC_NOTABLE,VEC_TIERS,vecZ,vecTierOf,VEC_PAD,vecStopsData};';
   const mod = { exports: {} };
   new Function('module', 'exports', code)(mod, mod.exports);
   return mod.exports;
@@ -71,7 +71,7 @@ test('the vector map is drawn in the app\'s own palette, not a new one', () => {
 test('every name has a halo and enough contrast to read, by night and by day', () => {
   for (const [tone, st] of [['night', night], ['day', day]]) {
     const ground = tone === 'night' ? V.ATLAS_PAL.night.ground : V.ATLAS_PAL.day.ground;
-    const syms = st.layers.filter(l => l.type === 'symbol');
+    const syms = st.layers.filter(l => l.type === 'symbol' && !/^stop-room/.test(l.id));     // the stop-room layers are invisible on purpose (tested below)
     assert.ok(syms.length >= 14, tone + ': too few name layers (' + syms.length + ')');
     for (const l of syms) {
       assert.ok(l.paint['text-halo-width'] > 0, tone + '/' + l.id + ' has no halo: it would vanish on a road');
@@ -188,7 +188,7 @@ test('the style splits into land and names: nothing is lost, nothing is drawn tw
   assert.deepStrictEqual(ids(base).concat(ids(labels)).sort(), ids(full).sort(), 'the two parts are not the whole style');
   assert.ok(base.layers.some(l => l.type === 'background') && !labels.layers.some(l => l.type === 'background'), 'only the lower map has a background; the upper one must stay see-through');
   assert.deepStrictEqual(Object.keys(base.sources), ['openmaptiles'], 'the land map has no use for the places file');
-  assert.deepStrictEqual(Object.keys(labels.sources).sort(), ['openmaptiles', 'places']);
+  assert.deepStrictEqual(Object.keys(labels.sources).sort(), ['openmaptiles', 'places', 'stops']);
   // every layer of either part still reads a source that part has
   for (const st of [base, labels]) for (const l of st.layers) if (l.source) assert.ok(st.sources[l.source], l.id + ' reads a source its map does not have');
   assert.ok(byId(labels, 'poi-label-16') && byId(labels, 'place-city') && byId(labels, 'road-label-minor') && byId(labels, 'housenumber'));
@@ -386,4 +386,45 @@ test('the map is not crowded with names: every kind keeps room around it, the le
     // a street name is not repeated every few hundred metres of the same street
     assert.ok(byId(st, 'road-label-secondary').layout['symbol-spacing'] >= 440 && byId(st, 'road-label-minor').layout['symbol-spacing'] >= 440, 'street names repeat too often');
   }
+});
+
+/* ---- V4.4.1: half as many names, and names keep clear of the station names the app draws itself ---- */
+test('the map keeps room for the station names: invisible, placed before every other name, in the place and size the app draws them', () => {
+  const labels = V.vecStyle('night', 'en', undefined, 'labels'), base = V.vecStyle('night', 'en', undefined, 'base');
+  const ids = labels.layers.map(l => l.id);
+  assert.deepStrictEqual(ids.slice(-2), ['stop-room', 'stop-room-hub'], 'the stop-room layers are not the LAST two: MapLibre places later layers first, so another name would take the space');
+  assert.ok(!base.layers.some(l => /^stop-room/.test(l.id)) && !base.sources.stops, 'the land map has no use for the station names');
+  for (const id of ['stop-room', 'stop-room-hub']) {
+    const l = byId(labels, id);
+    assert.strictEqual(l.source, 'stops'); assert.strictEqual(l.paint['text-opacity'], 0, id + ' is visible: the station name would be printed twice');
+    assert.deepStrictEqual(l.layout['text-field'], ['get', 'n']);
+    assert.strictEqual(l.layout['text-size'], 11, 'the app draws station names at 11 px'); assert.strictEqual(l.layout['text-anchor'], 'left');
+    assert.ok(Math.abs(l.layout['text-offset'][0] * 11 - 8) < 1, 'the app draws a station name 8 px to the right of its dot');
+    assert.ok(!l.layout['text-allow-overlap'] && !l.layout['text-ignore-placement'], id + ' no longer takes part in the collision: it keeps no room');
+    assert.ok(l.layout['text-max-width'] >= 30, 'a long station name would wrap here and not on the canvas the app draws it on');
+  }
+  // plain stops from zoom 14 (as the app shows them), interchanges at every zoom
+  assert.strictEqual(byId(labels, 'stop-room').minzoom, V.vecZ(14)); assert.strictEqual(byId(labels, 'stop-room-hub').minzoom, 0);
+  assert.deepStrictEqual(byId(labels, 'stop-room').filter, ['!', ['get', 'hub']]); assert.deepStrictEqual(byId(labels, 'stop-room-hub').filter, ['get', 'hub']);
+});
+
+test('the station list becomes the points the map keeps clear, and an interchange is told apart from a plain stop', () => {
+  const fc = V.vecStopsData([{ name: 'Yenikapı', lat: 41.005, lng: 28.95, lines: new Set(['M1A', 'M2', 'Marmaray']) }, { name: 'Emniyet', lat: 41.01, lng: 28.93, lines: new Set(['M1A']) }, { name: 'Planned', lat: 41, lng: 29 }]);
+  assert.strictEqual(fc.type, 'FeatureCollection'); assert.strictEqual(fc.features.length, 3);
+  assert.deepStrictEqual(fc.features[0], { type: 'Feature', geometry: { type: 'Point', coordinates: [28.95, 41.005] }, properties: { n: 'Yenikapı', hub: true, w: 3 } });
+  assert.strictEqual(fc.features[1].properties.hub, false); assert.strictEqual(fc.features[2].properties.w, 1);
+  assert.deepStrictEqual(V.vecStopsData(null).features, [], 'no station names on screen must clear the room, not throw');
+});
+
+test('names are sparse: every kind keeps at least the room measured to halve them, hills wait for zoom 14, streets repeat less', () => {
+  const at = (id, z) => { const p = V.VEC_PAD[id]; if (!Array.isArray(p)) return p; let v = p[0][1]; for (let i = 0; i < p.length; i++) { if (z >= p[i][0]) v = p[i][1]; if (i + 1 < p.length && z > p[i][0] && z < p[i + 1][0]) v = p[i][1] + (p[i + 1][1] - p[i][1]) * (z - p[i][0]) / (p[i + 1][0] - p[i][0]); } return v; };
+  /* the floors are a little under the shipped values (which measured 1,035 -> 452 names): loosening past them brings the crowd back */
+  for (const [id, z, min] of [['place-suburb', 12, 54], ['place-suburb', 14, 54], ['place-town', 11, 52], ['place-village', 12, 56], ['place-quarter', 14, 48], ['poi', 15, 56], ['poi', 17, 68],
+                              ['road-label-major', 14, 26], ['road-label-secondary', 15, 32], ['road-label-minor', 16, 38], ['aerodrome-label', 11, 30], ['water-label', 11, 26]])
+    assert.ok(at(id, z) >= min, id + ' keeps only ' + at(id, z) + ' px clear at zoom ' + z + ' (at least ' + min + ' halves the names)');
+  const labels = V.vecStyle('night', 'en', undefined, 'labels');
+  for (const id of ['place-town', 'place-suburb', 'road-label-major', 'aerodrome-label', 'water-label', 'peak-label', 'poi-label-15'])
+    assert.ok(byId(labels, id).layout['text-padding'] !== 2 && byId(labels, id).layout['text-padding'] !== undefined, id + ' is back on the default 2 px of room');
+  assert.strictEqual(byId(labels, 'peak-label').minzoom, V.vecZ(14), 'hill names were a third of all names at zoom 12');
+  assert.ok(byId(labels, 'road-label-major').layout['symbol-spacing'] >= 600 && byId(labels, 'road-label-minor').layout['symbol-spacing'] >= 850, 'street names repeat along a street as often as before');
 });

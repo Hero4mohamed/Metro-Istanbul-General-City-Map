@@ -56,10 +56,28 @@ function labelWorld(stations, zoom) {
     measureText: n => ({ width: n.length * 6 }), set font(v) {}, set textBaseline(v) {}, set textAlign(v) {}, set lineJoin(v) {}, set lineWidth(v) {}, set strokeStyle(v) {}, set fillStyle(v) {}, set globalAlpha(v) {} };
   const map = { getZoom: () => zoom, getSize: () => ({ x: 400, y: 800 }), latLngToContainerPoint: ll => ({ x: ll[1], y: ll[0] }) };
   const ctx = vm.createContext({ labelAlpha: 1, currentTab: 'active', stationList: stations, plannedStationList: [], map, tctx, LABEL_FONT: 'x', MAP_T: () => ({ halo: '#000', label: '#fff', labelMulti: '#fff' }), Map });
-  vm.runInContext('let _lblSrc = null, _lblOrder = []; const _lblWidth = new Map();\n' + fnSource(s, 'drawLabels') + '\ndrawLabels()', ctx);
+  vm.runInContext('let _lblRoom; let _lblSrc = null, _lblOrder = []; const _lblWidth = new Map();\n' + fnSource(s, 'drawLabels') + '\ndrawLabels()', ctx);
   return [...new Set(drawn.filter(d => d[3] === 'fill').map(d => d[0]))];
 }
 const st = (name, lat, lng, lines) => ({ name, lat, lng, lines: new Set(lines) });
+/* V4.4.1: the base map is told which station names are on screen (so its own names keep clear), once per change, and told "none"
+   when the names fade out or the tab has no stations */
+test('the base map is told where the station names are: once per list, the planned stops on the Vision tab, and nothing when names are hidden', () => {
+  const s = script(), told = [];
+  const tctx = { save() {}, restore() {}, strokeText() {}, fillText() {}, measureText: n => ({ width: n.length * 6 }), set font(v) {}, set textBaseline(v) {}, set textAlign(v) {}, set lineJoin(v) {}, set lineWidth(v) {}, set strokeStyle(v) {}, set fillStyle(v) {}, set globalAlpha(v) {} };
+  const map = { getZoom: () => 15, getSize: () => ({ x: 400, y: 800 }), latLngToContainerPoint: ll => ({ x: ll[1], y: ll[0] }) };
+  const live = [st('A', 10, 10, ['M1'])], planned = [st('P', 20, 20, ['M20'])];
+  const ctx = vm.createContext({ labelAlpha: 1, currentTab: 'active', stationList: live, plannedStationList: planned, map, tctx, LABEL_FONT: 'x', MAP_T: () => ({ halo: '#000', label: '#fff', labelMulti: '#fff' }), Map,
+    vecPushStops: l => told.push(l === live ? 'live' : l === planned ? 'planned' : l === null ? 'none' : 'other:' + (l && l.length)) });
+  vm.runInContext('let _lblRoom; let _lblSrc = null, _lblOrder = []; const _lblWidth = new Map();\n' + fnSource(s, 'drawLabels'), ctx);
+  const frame = (set) => { vm.runInContext((set || '') + ';drawLabels()', ctx); };
+  frame(); frame(); frame();
+  assert.deepStrictEqual(told, ['live'], 'the station list is handed over on every frame (349 points rebuilt 60 times a second), or never');
+  frame('currentTab = "vision"'); assert.deepStrictEqual(told, ['live', 'planned']);
+  frame('labelAlpha = 0.01'); frame();
+  assert.deepStrictEqual(told, ['live', 'planned', 'none'], 'with the station names faded out the map still keeps room for them');
+  frame('labelAlpha = 1; currentTab = "buses"'); assert.strictEqual(told[told.length - 1], 'other:0', 'a tab with no station names still reserves room for some');
+});
 test('station names never print over each other: interchanges are placed first, a name that would overlap is left out, names with room are all drawn', () => {
   // Plain stop at (100,100) and an interchange 5 px from it: they overlap, so only the interchange (placed first) is drawn
   const near = labelWorld([st('Plain stop', 100, 100, ['M1']), st('Interchange', 100, 105, ['M1', 'M2'])], 15);
