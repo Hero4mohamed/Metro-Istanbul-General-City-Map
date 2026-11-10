@@ -1898,6 +1898,47 @@ const MUTATIONS = [
     expect: 'play build: the Android app has no box for the key',
     apply: h => h.replace('.play-app #aiKeyRow{display:none !important;}', '.play-app #aiKeyRowX{display:none !important;}'),
   },
+  /* ---- the planner on a phone keeps the map in view (18-mobile-shell.js, V4.4.1) ---- */
+  {
+    name: 'the map is dimmed behind the planner again',
+    expect: 'plan sheet: opening the planner leaves the map in view',
+    apply: h => h.replace("classList.toggle('on', !!name && name!=='planner');", "classList.toggle('on', !!name);"),
+  },
+  {
+    name: 'the planner opens at full height',
+    expect: 'plan sheet: opening the planner leaves the map in view',
+    apply: h => h.replace("if(name==='planner') setPlanDetent(planRouteShown() ? 'half' : 'compact');", "if(name==='planner') setPlanDetent('full');"),
+  },
+  {
+    name: 'a found route keeps the long form at half height',
+    expect: 'plan sheet: a found route is shown at half height in the short form',
+    apply: h => h.replace("s.classList.toggle('short', d==='compact' || (d==='half' && planRouteShown()));", "s.classList.toggle('short', d==='compact');"),
+  },
+  {
+    name: 'a small downward nudge closes the planner',
+    expect: 'plan sheet: a drag settles on the nearest height',
+    apply: h => h.replace('if(h < H.compact - 70 || (from===\'compact\' && v < -0.5)) return null;', 'if(h < H.compact - 10 || (from===\'compact\' && v < -0.5)) return null;'),
+  },
+  {
+    name: 'the Adventure planner opens as an empty compact sheet',
+    expect: 'plan sheet: the Adventure planner',
+    apply: h => h.replace("if(d==='compact') d = planFloor();", ''),
+  },
+  {
+    name: 'the same pair of places is searched again and again',
+    expect: 'plan sheet: choosing the second end finds the route once',
+    apply: h => h.replace("if(key === planAutoKey || (originPt.lat === destPt.lat && originPt.lng === destPt.lng)) return;", ''),
+  },
+  {
+    name: 'a found route is fitted under the planner sheet',
+    expect: 'plan sheet: a route is fitted into the part of the map',
+    apply: h => h.replace("const bottom = s && s.classList.contains('open') ? planHeights(s).half + 10 : 100;", 'const bottom = 100;'),
+  },
+  {
+    name: 'the short planner hides nothing',
+    expect: 'plan sheet: the styles that make it work are there',
+    apply: h => h.replace('.msheet.plan.short #plannerAdv{display:none !important;}', '.msheet.plan.short #plannerAdv{display:block;}'),
+  },
   /* ---- half as many names, and names keep clear of the station names (V4.4.1) ---- */
   {
     name: 'the room kept for station names is drawn as visible text',
