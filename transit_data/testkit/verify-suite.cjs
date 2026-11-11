@@ -1937,7 +1937,7 @@ const MUTATIONS = [
   {
     name: 'the worker is not told that a pack arrived',
     expect: 'offline maps: on Wi-Fi (or a computer) the three default cities come down by themselves',
-    apply: h => h.replace("offHave[city] = info.v; offWrite('irn_offline_have', offHave);\n    offTellWorker();", "offHave[city] = info.v; offWrite('irn_offline_have', offHave);").replace("offHave[city] = info.v; offWrite('irn_offline_have', offHave);\r\n    offTellWorker();", "offHave[city] = info.v; offWrite('irn_offline_have', offHave);"),
+    apply: h => h.replace(/offTellWorker\(\);(\r?\n\s*)offSet\(city, 'ready'\);/, "$1offSet(city, 'ready');"),   // one statement on its own line: other lines may be added around it
   },
   {
     name: 'a city\'s data files are not kept with its map',
