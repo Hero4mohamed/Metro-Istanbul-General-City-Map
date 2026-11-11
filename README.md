@@ -1,11 +1,11 @@
 <p align="center">
-  <img src="assets/icon-192.png" width="110" alt="İstanbul Ray-Net icon — a green M with a map pin over the İstanbul skyline and metro lines">
+  <img src="assets/icon-192.png" width="110" alt="TurkMaps icon — a green M with a map pin over the İstanbul skyline and metro lines">
 </p>
 
-<h1 align="center">İstanbul Ray-Net — Transit Network Map</h1>
+<h1 align="center">TurkMaps — Transit Network Map</h1>
 
 <p align="center">
-  <img src="assets/og-card.png" width="640" alt="İSTANBUL · RAY-NET — transit network map of İstanbul">
+  <img src="assets/og-card.png" width="640" alt="İSTANBUL · TURKMAPS — transit network map of İstanbul">
 </p>
 
 An interactive map of Istanbul's transit network (metro, Marmaray, trams, funiculars,
@@ -32,6 +32,8 @@ on-demand bus-route lines). What it contacts, and what is sent, is listed in
 ## Features
 - Real OpenStreetMap-derived geometry for every operational line.
 - Animated carriages with station dwell + modelled arrivals (a simulation from published frequencies; the app labels it MODELLED).
+- **Real bus positions in İzmir** (V4.5): open a bus line and the buses İzmir's open-data service reports on it are drawn and refreshed every 20 seconds. İstanbul's service refuses requests from a web page, so it needs a small relay server first; no other city publishes positions, and rail and ferries stay simulated.
+- **Boats view** (V4.5): every ferry line in its own colour and its own lane. On a phone, a second press on Map chooses Metro & rail, Buses or Boats.
 - Trip planner (Dijkstra over the whole network) with refresh-safe history & favourites.
 - **A search for everywhere you might want to go**, on the device: type a place, street, district, neighbourhood, landmark, shop, café, pharmacy, hospital, school or mosque (or just "eczane", "coffee shop", "kadikoy eczane") for any of the six cities. It reads a file of every named street, area and place from OpenStreetMap (about 1.4 MB for İstanbul), so it answers from the first letters, works offline and in Turkish, English, Arabic and French, finds names typed without accents or without spaces, forgives a typo, and ranks the well-known and the near first. The same search backs the map's search box and the trip planner's From/To fields. A public geocoder (Photon) is only a top-up for house numbers and places the file cannot hold, and can be switched off in Settings.
 - **Tabs:** Active Network · Vision & Expansion (official + İBB projects, dashed) · Bus Directory (855 İETT lines, click to draw the real route).

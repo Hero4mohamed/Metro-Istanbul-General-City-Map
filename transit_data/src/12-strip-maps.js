@@ -207,6 +207,7 @@ function openLine(line){
       : '<div class="none">No active expansion projects on record.</div>';
   }
   document.getElementById('linp').classList.add('show');
+  if(typeof setLineGlow === 'function') setLineGlow(line);      // the line this panel is about glows on the map (12a-line-glow.js)
 }
 function closeAllPanels(){
   selected=null;

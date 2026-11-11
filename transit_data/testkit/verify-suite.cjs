@@ -230,7 +230,7 @@ const MUTATIONS = [
   {
     name: 'call the page live again in the title the app sets at run time',
     expect: 'the title the app sets at run time does not claim live or real-time vehicles either',
-    apply: h => h.replace("' · RAY-NET — Transit Network Map';", "' · RAY-NET — Live Transit Network Map';"),
+    apply: h => h.replace("' · TURKMAPS — Transit Network Map';", "' · TURKMAPS — Live Transit Network Map';"),
   },
   {
     name: 'turn online look-ups back on by default',
@@ -1215,13 +1215,13 @@ const MUTATIONS = [
   {
     name: 'make the ground differ from the land colour (every tile seam shows)',
     expect: 'the ground is the land colour, so a tile seam is invisible',
-    apply: h => h.replace('ground: [243, 240, 233],                  // the colour the map shows through a tile seam',
-                          'ground: [243, 240, 226],                  // the colour the map shows through a tile seam'),
+    apply: h => h.replace('ground: [234, 227, 213],                  // the colour the map shows through a tile seam',
+                          'ground: [234, 227, 200],                  // the colour the map shows through a tile seam'),
   },
   {
     name: 'merge the park class into land (green stops being green)',
     expect: 'park and land stay distinct classes — green stays green',
-    apply: h => h.replace('park:  { c: [205, 229, 192], ref: .82, k: .18 },', 'park:  { c: [243, 240, 233], ref: .82, k: .18 },'),
+    apply: h => h.replace('park:  { c: [199, 218, 181], ref: .82, k: .18 },', 'park:  { c: [234, 227, 213], ref: .82, k: .18 },'),
   },
   {
     name: 'keep the park colour at country scale',
@@ -1239,9 +1239,9 @@ const MUTATIONS = [
     apply: h => h.replace('--obsidian:#1B1F2A; --panel:rgba(24,28,38,.90);', '--obsidian:#1B1F2B; --panel:rgba(24,28,38,.90);'),
   },
   {
-    name: 'ship a day --dim that fails AA on the ivory ground',
+    name: 'ship a day --dim that fails AA on the parchment ground',
     expect: 'Atlas meets AA on its own surface, in both themes',
-    apply: h => h.replace('--muted:#4F5B70; --dim:#5D697D;', '--muted:#4F5B70; --dim:#9AA5B8;'),
+    apply: h => h.replace('--muted:#4F5B70; --dim:#556174;', '--muted:#4F5B70; --dim:#9AA5B8;'),
   },
   {
     name: 'ship a button gradient the ink cannot be read on',
@@ -1576,11 +1576,6 @@ const MUTATIONS = [
     apply: h => h.replace('try{ setTab(e.from); }finally', 'try{ void 0; }finally'),
   },
   {
-    name: 'make a scope change from the map a step in the history',
-    expect: 'a scope change made from the map (no sheet open on a phone) is not a step, and closing the sheet drops its scope steps without undoing them',
-    apply: h => h.replace("if(IS_MOBILE && !navHas('sheet_layers','open')) return;", ''),
-  },
-  {
     name: 'react to any popstate, so a link to #something closes the panel that is open',
     expect: 'a \\#link (a popstate that carries no state of ours) leaves everything open',
     apply: h => h.replace('if(!st || !st.irnNav) return;', ''),
@@ -1898,6 +1893,168 @@ const MUTATIONS = [
     expect: 'play build: the Android app has no box for the key',
     apply: h => h.replace('.play-app #aiKeyRow{display:none !important;}', '.play-app #aiKeyRowX{display:none !important;}'),
   },
+  /* ---- V4.5: Boats tab, Map button, line glow, search list, day map, name, back to the default map ---- */
+  {
+    name: 'two boat lines are drawn on top of each other',
+    expect: 'boats: two lines on the same stretch of water run side by side',
+    apply: h => h.replace('const rank = users.indexOf(li), d = (rank - (users.length - 1) / 2) * gap;', 'const rank = 0, d = 0;'),
+  },
+  {
+    name: 'a boat lane changes side with the direction of sailing',
+    expect: 'boats: two lines on the same stretch of water run side by side',
+    apply: h => h.replace('if (!fwd) { dx = -dx; dy = -dy; }', ''),
+  },
+  {
+    name: 'a boat line docks beside its pier',
+    expect: 'boats: three lines take three lanes in a fixed order',
+    apply: h => h.replace('out.push({ x: pts[i].x + (p[0] + q[0]) / 2 * k, y: pts[i].y + (p[1] + q[1]) / 2 * k });', 'out.push({ x: pts[i].x + (p[0] + q[0]) / 2, y: pts[i].y + (p[1] + q[1]) / 2 });'),
+  },
+  {
+    name: 'the Boats view draws no boats',
+    expect: 'boats: the colours can be told apart, the tab exists on every screen',
+    apply: h => h.replace('boatLayer.addTo(map); renderBoats(); renderBoatList();', 'renderBoatList();'),
+  },
+  {
+    name: 'the Map button opens the kinds of transport from anywhere',
+    expect: 'map button: anywhere else it brings back the default map',
+    apply: h => h.replace("if(mapIsDefault()){ openSheet('modes'); return; }", "if(true){ openSheet('modes'); return; }"),
+  },
+  {
+    name: 'an open station counts as the default map',
+    expect: 'map button: anywhere else it brings back the default map',
+    apply: h => h.replace(" && !shown('stn') && !shown('linp');", ';'),
+  },
+  {
+    name: 'the Map button leaves the Vision view as it is',
+    expect: 'map button: anywhere else it brings back the default map',
+    apply: h => h.replace("  if(typeof closeAllPanels==='function') closeAllPanels();\n  if(currentTab!=='active') setTab('active');", "  if(typeof closeAllPanels==='function') closeAllPanels();").replace("  if(typeof closeAllPanels==='function') closeAllPanels();\r\n  if(currentTab!=='active') setTab('active');", "  if(typeof closeAllPanels==='function') closeAllPanels();"),
+  },
+  {
+    name: 'an opened line leaves the other lines at full strength',
+    expect: 'line glow: opening a line gives it a halo',
+    apply: h => h.replace('const LINE_GLOW_DIM = 0.3;', 'const LINE_GLOW_DIM = 1;'),
+  },
+  {
+    name: 'the halo is drawn over the line and its stations',
+    expect: 'line glow: opening a line gives it a halo',
+    apply: h => h.replace('if(pl.bringToBack) pl.bringToBack();', ''),
+  },
+  {
+    name: 'closing a line panel leaves the map dimmed',
+    expect: 'line glow: opening a line gives it a halo',
+    apply: h => h.replace('linePolys.forEach(o => { if(!o.glow) o.pl.setStyle({ opacity: o.baseOp }); });', ''),
+  },
+  {
+    name: 'opening a line does not light it',
+    expect: 'line glow: opening a line gives it a halo',
+    apply: h => h.replace("if(typeof setLineGlow === 'function') setLineGlow(line);", ''),
+  },
+  {
+    name: 'the suggestion list is a fixed dark box again',
+    expect: 'search list: its ground follows the theme',
+    apply: h => h.replace('z-index:30;background-color:var(--obsidian);color:var(--text);', 'z-index:30;background:rgba(10,14,22,.97);'),
+  },
+  {
+    name: 'the day map is near-white again',
+    expect: 'day map: a warm parchment',
+    apply: h => h.replace('ground: [234, 227, 213],', 'ground: [243, 240, 233],').replace('land:  { c: [234, 227, 213]', 'land:  { c: [243, 240, 233]'),
+  },
+  {
+    name: 'day streets are pure white again',
+    expect: 'day map: a warm parchment',
+    apply: h => h.replace('road: day ? [248, 244, 235] : P.roadGrey', 'road: day ? [255, 255, 255] : P.roadGrey'),
+  },
+  {
+    name: 'the old name is back in the page title',
+    expect: 'name: the app is TurkMaps',
+    apply: h => h.replace('<title>TurkMaps', '<title>RAY-NET'),
+  },
+  {
+    name: 'back walks through every view visited instead of going to the default map',
+    expect: 'going back to the default view by hand is the undo itself',
+    apply: h => h.replace("else if(i < 0) NAV.stack.push({ id:'scope', from:'active' });", "else NAV.stack.push({ id:'scope', from:prev });"),
+  },
+  {
+    name: 'a view chosen with no sheet open is not a step (back leaves the app)',
+    expect: 'on a phone, back from any view other than the default map goes to the default map',
+    apply: h => h.replace("const alive = e.id === 'scope' ? (!!NAV.tab && NAV.tab !== 'active') : now.has(e.id);", "const alive = e.id === 'scope' ? false : now.has(e.id);"),
+  },
+  /* ---- V4.5: live buses (the real positions İzmir publishes) ---- */
+  {
+    name: 'a lost bus (0,0) or a position outside the city is drawn',
+    expect: 'live buses: only real positions inside the city are kept',
+    apply: h => h.replace('if(!(lat >= box[0] && lat <= box[2] && lng >= box[1] && lng <= box[3])) continue;', ''),
+  },
+  {
+    name: 'the latitude and the longitude of a live bus are swapped',
+    expect: 'live buses: only real positions inside the city are kept',
+    apply: h => h.replace('const lat = liveBusNum(r.KoorX), lng = liveBusNum(r.KoorY);', 'const lat = liveBusNum(r.KoorY), lng = liveBusNum(r.KoorX);'),
+  },
+  {
+    name: 'a refusal from the live service is read as "no buses on the line"',
+    expect: 'live buses: only real positions inside the city are kept',
+    apply: h => h.replace('if(!json || json.HataVarMi || !Array.isArray(json.HatOtobusKonumlari)) return null;', 'if(!json || !Array.isArray(json.HatOtobusKonumlari)) return [];'),
+  },
+  {
+    name: 'a bus listed at several places is drawn at one of them unseen',
+    expect: 'live buses: a bus listed at several places is drawn only where it is seen to move',
+    apply: h => h.replace('if(places.size === 1){', 'if(places.size >= 1){'),
+  },
+  {
+    name: 'a bus stays drawn at a record that is no longer the one that moves',
+    expect: 'live buses: a bus listed at several places is drawn only where it is seen to move',
+    apply: h => h.replace('else if(!fresh.length && prev.cur && keys.has(prev.cur.k)) cur = prev.cur;', 'else if(prev.cur) cur = prev.cur;'),
+  },
+  {
+    name: 'a frozen record looks as live as a moving bus',
+    expect: 'live buses: a bus that has not changed place for two minutes is marked as standing',
+    apply: h => h.replace('return now - (b.moved == null ? b.first : b.moved) >= LIVE_BUS_STILL; }', 'return false; }'),
+  },
+  {
+    name: 'an unchanged position counts as a move',
+    expect: 'live buses: a bus that has not changed place for two minutes is marked as standing',
+    apply: h => h.replace('const moved = !prev ? null : !prev.keys.has(k) ? now : (prev.cur && prev.cur.k === k ? prev.cur.moved : null);', 'const moved = !prev ? null : now;'),
+  },
+  {
+    name: 'a city with no live source is asked at İzmir\'s address',
+    expect: 'live buses: only a city that publishes positions is asked',
+    apply: h => h.replace("return s && /^\\d{1,5}$/.test(String(ref)) ? s.base + ref : null;", 'return LIVE_BUS_SOURCES.izmir.base + ref;'),
+  },
+  {
+    name: 'the live service is asked while the page is hidden',
+    expect: 'live buses: nothing is asked while the page is hidden or offline',
+    apply: h => h.replace('if(document.hidden){ liveBusAgain(LIVE_BUS_EVERY); return; }', ''),
+  },
+  {
+    name: 'the live service is asked with no connection',
+    expect: 'live buses: nothing is asked while the page is hidden or offline',
+    apply: h => h.replace("if(navigator.onLine === false){ me.status = 'offline'; liveBusShow(); liveBusAgain(LIVE_BUS_EVERY); return; }", ''),
+  },
+  {
+    name: 'the live service is still asked after the bus view is left',
+    expect: 'live buses: nothing is asked while the page is hidden or offline',
+    apply: h => h.replace("if(currentTab !== 'bus'){ liveBusStop(); return; }", ''),
+  },
+  {
+    name: 'refusals do not slow the asking of the live service',
+    expect: 'live buses: refusals slow the asking down',
+    apply: h => h.replace('return Math.min(LIVE_BUS_SLOWEST, LIVE_BUS_EVERY * Math.pow(2, Math.max(0, fails))); }', 'return LIVE_BUS_EVERY; }'),
+  },
+  {
+    name: 'buses from an answer minutes old stay on the map as "now"',
+    expect: 'live buses: refusals slow the asking down',
+    apply: h => h.replace('if(me.fails >= 3){ me.buses = []; me.unplaced = 0; me.state = new Map(); }', ''),
+  },
+  {
+    name: 'the security policy blocks the live bus service',
+    expect: 'live buses: the page is allowed to reach the service',
+    apply: h => h.replace(' https://openapi.izmir.bel.tr', ''),
+  },
+  {
+    name: 'leaving the bus view does not stop the live buses',
+    expect: 'live buses: the page is allowed to reach the service',
+    apply: h => h.replace("if(typeof liveBusStop === 'function') liveBusStop();        // live buses belong to the open bus line only", ''),
+  },
   /* ---- offline maps (src/22a-offline.js, V4.4.1); the worker's own mistakes are put back by test/offline-maps.test.cjs itself ---- */
   {
     name: 'only İstanbul is kept without being asked',
@@ -1948,7 +2105,7 @@ const MUTATIONS = [
   {
     name: 'the map is dimmed behind the planner again',
     expect: 'plan sheet: opening the planner leaves the map in view',
-    apply: h => h.replace("classList.toggle('on', !!name && name!=='planner');", "classList.toggle('on', !!name);"),
+    apply: h => h.replace("classList.toggle('on', !!name && name!=='planner' && name!=='modes');", "classList.toggle('on', !!name && name!=='modes');"),
   },
   {
     name: 'the planner opens at full height',
@@ -1978,7 +2135,7 @@ const MUTATIONS = [
   {
     name: 'a found route is fitted under the planner sheet',
     expect: 'plan sheet: a route is fitted into the part of the map',
-    apply: h => h.replace("const bottom = s && s.classList.contains('open') ? planHeights(s).half + 10 : 100;", 'const bottom = 100;'),
+    apply: h => h.replace("const bottom = s && s.classList.contains('open') ? planHeights(s).half + 10 : (other ? other.offsetHeight + 10 : 100);", 'const bottom = 100;'),
   },
   {
     name: 'the short planner hides nothing',

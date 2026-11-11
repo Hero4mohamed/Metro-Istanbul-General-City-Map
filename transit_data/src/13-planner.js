@@ -877,7 +877,7 @@ async function shareTrip(){
   const it=(currentOpts[currentOptIdx]||{}).it;
   const text=`${originPt.name} → ${destPt.name}`+(it?` · ${Math.round(it.total)} ${t('minUnit')} · ${optLines(it)}`:'');
   const url=tripDeepLink();
-  try{ if(navigator.share){ await navigator.share({title:'İSTANBUL · RAY-NET', text, url}); return; } }catch(e){ if(e && e.name==='AbortError') return; }
+  try{ if(navigator.share){ await navigator.share({title:'İSTANBUL · TURKMAPS', text, url}); return; } }catch(e){ if(e && e.name==='AbortError') return; }
   try{ await navigator.clipboard.writeText(text+'\n'+url); showToast(t('linkCopied')); }catch(e){ showToast(url); }
 }
 function applyTripHash(){

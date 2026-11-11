@@ -344,6 +344,7 @@ async function selectBus(id, row){
   document.querySelectorAll('#busList .bus-row').forEach(r=>r.classList.remove('sel'));
   if(row) row.classList.add('sel');
   busLayer.clearLayers(); BUS_VIEW.v = 'both';
+  if(typeof liveBusStop === 'function') liveBusStop();             // the buses of the line that was open (16c-live-buses.js)
   const countEl=document.getElementById('busCount'), detail=document.getElementById('busDetail');
   const ref = row ? row.dataset.ref : null;
   const tok = ++busSelToken;
@@ -360,8 +361,9 @@ async function selectBus(id, row){
     const chains = (BUS_GEOM && BUS_GEOM[ref]) ? BUS_GEOM[ref] : null;
     let all = drawBusDirs(dirs, chains);
     drawBusNotices(ref, dirs, chains);
-    detail.innerHTML = busDirToggleHTML(dirs) + busNoticesHTML(ref) + busFareHTML(ref) + busScheduleHTML(ref) + busStopsHTML(dirs);
+    detail.innerHTML = liveBusHTML(ref) + busDirToggleHTML(dirs) + busNoticesHTML(ref) + busFareHTML(ref) + busScheduleHTML(ref) + busStopsHTML(dirs);
     wireBusDirToggle(detail);
+    liveBusStart(ref);                           // where this line's buses really are, in the cities that publish it (V4.5)
     countEl.textContent = ref+' · '+dl;
     if(all.length) map.fitBounds(L.latLngBounds(all).pad(0.2));
     if(!chains){                                 // no baked shape (2 of 855) → try Overpass once

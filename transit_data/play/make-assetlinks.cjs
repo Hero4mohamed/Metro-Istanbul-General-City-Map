@@ -6,7 +6,7 @@
  *   Play Console > (the app) > App integrity > App signing  ("App signing key certificate", SHA-256)
  * and, for builds you install yourself, from your own upload key (`keytool -list -v -keystore <file>`).
  *
- *   node transit_data/play/make-assetlinks.cjs io.github.hero4mohamed.raynet AB:CD:... [more fingerprints] [--out path]
+ *   node transit_data/play/make-assetlinks.cjs io.github.hero4mohamed.turkmaps AB:CD:... [more fingerprints] [--out path]
  *
  * Without --out the JSON is printed. The result belongs in the repository named exactly Hero4mohamed.github.io, as
  * .well-known/assetlinks.json (see that repository's README). Everything here is checked: a SHA-1 pasted by mistake, a
@@ -27,7 +27,7 @@ function normaliseFingerprint(text) {
 }
 
 function build(pkg, fingerprints) {
-  if (!PACKAGE.test(String(pkg))) throw new Error('not an Android package name (like io.github.hero4mohamed.raynet): ' + pkg);
+  if (!PACKAGE.test(String(pkg))) throw new Error('not an Android package name (like io.github.hero4mohamed.turkmaps): ' + pkg);
   if (!fingerprints || !fingerprints.length) throw new Error('give at least one SHA-256 fingerprint');
   const list = [...new Set(fingerprints.map(normaliseFingerprint))];
   return [{

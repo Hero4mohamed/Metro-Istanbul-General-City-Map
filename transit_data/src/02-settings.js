@@ -16,7 +16,7 @@ function resolveTheme(pref){ if(pref==='auto'){ const h=new Date().getHours(); r
 function syncThemeColor(actual){
   const atlas = (typeof uiStyle !== 'undefined' && uiStyle === 'atlas');
   const tc = document.querySelector('meta[name="theme-color"]');
-  if(tc) tc.setAttribute('content', atlas ? (actual==='light' ? '#F3F0E9' : '#1B1F2A') : (actual==='light' ? '#E9EEF5' : '#070A12'));
+  if(tc) tc.setAttribute('content', atlas ? (actual==='light' ? '#EAE3D5' : '#1B1F2A') : (actual==='light' ? '#E9EEF5' : '#070A12'));
 }
 /* Run `fn` once the browser has painted what the person just did. A press on a setting should light the button at once; the heavy
    part (a different base map, every panel redrawn in another language) can follow a frame later. The timer is the way out if

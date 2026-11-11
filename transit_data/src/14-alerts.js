@@ -146,7 +146,7 @@ function buildPrintSheet(mode){
 
   el.innerHTML =
     '<div class="ps-card">'+citySilhouette()+
-      '<div class="ps-hero"><div class="ps-brand">'+svgEsc(CITY.name)+' · RAY-NET</div>'+
+      '<div class="ps-hero"><div class="ps-brand">'+svgEsc(CITY.name)+' · TURKMAPS</div>'+
         '<div class="ps-h1">'+title+'</div>'+
         '<div class="ps-sub">'+sub+' · '+when+'</div>'+
         '<div class="ps-ribbon">'+_psRibbon(itins)+'</div></div>'+
@@ -361,7 +361,7 @@ async function shareAdventure(){
   if(!lastAdv){ showToast(t('advEmpty'),'err'); return; }
   const text=advSig(lastAdv.pts)+` · ${Math.round(lastAdv.totMin)} ${t('minUnit')} · ${advFareTotal().tl} ₺`;
   const url=advDeepLink();
-  try{ if(navigator.share){ await navigator.share({title:CITY.name+' · RAY-NET', text, url}); return; } }catch(e){ if(e&&e.name==='AbortError') return; }
+  try{ if(navigator.share){ await navigator.share({title:CITY.name+' · TURKMAPS', text, url}); return; } }catch(e){ if(e&&e.name==='AbortError') return; }
   try{ await navigator.clipboard.writeText(text+'\n'+url); showToast(t('linkCopied')); }catch(e){ showToast(url); }
 }
 function applyAdvHash(){

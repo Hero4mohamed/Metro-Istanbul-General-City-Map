@@ -90,7 +90,7 @@ test('the preview card shown when the link is shared is 1200 x 630, matches the 
   const sea = at(385, 360); assert.ok(sea[2] > sea[0] + 40, 'the icon is not on the card (no blue where the sea should be): ' + sea);
   const corner = at(72, 127), outside = at(40, 100);
   assert.ok(Math.abs(corner[0] - outside[0]) < 40 && Math.abs(corner[2] - outside[2]) < 40, 'the empty corner of the icon shows a box against the glow: ' + corner + ' vs ' + outside);
-  const word = at(560, 224); assert.ok(word[0] > 200 && word[1] > 200, 'the wordmark is missing or has moved: ' + word);
+  const word = at(540, 224); assert.ok(word[0] > 200 && word[1] > 200, 'the wordmark is missing or has moved: ' + word);
 });
 
 test('the icon files are not so heavy that they slow a first visit', () => {

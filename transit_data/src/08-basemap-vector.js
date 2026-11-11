@@ -54,15 +54,15 @@ function vecColours(tone) {
   return {
     day: day,
     ground: P.ground, water: B.water.c, urban: B.urban.c, forest: U.forest, park: U.park, campus: U.campus, airport: U.airport,
-    road: day ? [255, 255, 255] : P.roadGrey, roadCasing: day ? [222, 215, 202] : P.roadHalo,
-    roadMajor: day ? [251, 228, 184] : P.roadGrey, roadMajorCasing: day ? [226, 196, 140] : P.roadHalo,
-    path: day ? [214, 207, 193] : [58, 64, 80],
-    building: day ? [231, 225, 213] : [36, 40, 54], buildingEdge: day ? [214, 207, 193] : [24, 28, 38],
-    runway: day ? [204, 209, 222] : [84, 94, 122],
-    boundary: day ? [196, 190, 178] : [62, 68, 86],
+    road: day ? [248, 244, 235] : P.roadGrey, roadCasing: day ? [212, 203, 186] : P.roadHalo,
+    roadMajor: day ? [245, 221, 176] : P.roadGrey, roadMajorCasing: day ? [217, 187, 133] : P.roadHalo,
+    path: day ? [205, 196, 180] : [58, 64, 80],
+    building: day ? [222, 214, 199] : [36, 40, 54], buildingEdge: day ? [204, 195, 178] : [24, 28, 38],
+    runway: day ? [198, 200, 208] : [84, 94, 122],
+    boundary: day ? [186, 178, 163] : [62, 68, 86],
     ink: day ? [27, 36, 51] : [232, 236, 244], ink2: day ? [78, 88, 104] : [174, 182, 199],
     inkWater: day ? [40, 92, 150] : [128, 158, 206], inkPark: day ? [46, 108, 70] : [134, 192, 158],
-    halo: day ? [255, 255, 255] : [12, 15, 23], haloA: day ? .92 : .9
+    halo: day ? [250, 246, 238] : [12, 15, 23], haloA: day ? .92 : .9
   };
 }
 /* the zoom (in the app's numbering) at which each kind of place first gets a name on the map. Landmarks and airports are

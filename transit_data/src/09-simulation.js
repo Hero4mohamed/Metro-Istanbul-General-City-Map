@@ -174,7 +174,7 @@ let _lblRoom;                                // the station list last handed to 
 let _lblSrc = null, _lblOrder = [];          // the station list the order was made for, and its interchanges-first order
 const _lblWidth = new Map();                  // a name's width in px at the label font, measured once
 function drawLabels(){
-  const list = currentTab==='active' ? stationList : (currentTab==='vision' ? plannedStationList : []);
+  const list = currentTab==='active' ? stationList : (currentTab==='vision' ? plannedStationList : (currentTab==='boat' ? boatStations : []));
   /* tell the base map which station names are on screen, so its own names keep clear of them (V4.4.1, the stop-room layers) */
   const room = labelAlpha < 0.03 ? null : list;
   if(room !== _lblRoom){ _lblRoom = room; if(typeof vecPushStops === 'function') vecPushStops(room); }

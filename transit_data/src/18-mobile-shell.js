@@ -37,8 +37,8 @@ function mkSheet(id){
 function openSheet(name){
   for(const k in mSheets) mSheets[k].classList.toggle('open', k===name);
   /* the planner keeps the map in view and usable, so nothing is dimmed behind it (V4.4.1); the other sheets still dim the map */
-  document.getElementById('mbackdrop').classList.toggle('on', !!name && name!=='planner');
-  document.body.classList.toggle('plan-open', name==='planner');
+  document.getElementById('mbackdrop').classList.toggle('on', !!name && name!=='planner' && name!=='modes');   // nor behind the kinds-of-transport sheet (V4.5): choosing Boats is about seeing the map
+  document.body.classList.toggle('plan-open', name==='planner'); if(name!=='planner') document.body.classList.remove('plan-full');
   if(name==='planner') setPlanDetent(planRouteShown() ? 'half' : 'compact');
   for(const k in mNavBtns) mNavBtns[k].classList.toggle('on', (name===null? k==='map' : k===name));
   if(navigator.vibrate) try{ navigator.vibrate(8); }catch(e){}
@@ -77,6 +77,7 @@ function setPlanDetent(d){
   const h = planHeights(s)[d];
   s.style.height = h + 'px';
   document.documentElement.style.setProperty('--plan-h', h + 'px');     // the locate and assistant buttons ride above the sheet
+  document.body.classList.toggle('plan-full', d==='full');             // at full height there is no map left for the floating buttons to sit on
   if(d!=='full') s.scrollTop = 0;
   const g = s.querySelector('.mgrab-btn'); if(g) g.setAttribute('aria-expanded', d==='compact' ? 'false' : 'true');
 }
@@ -159,8 +160,25 @@ function mapFitPad(){
   if(!IS_MOBILE) return null;
   const s=mSheets.planner, tb=document.querySelector('.topbar');
   const top = tb ? Math.max(0, Math.round(tb.getBoundingClientRect().bottom)) + 10 : 10;
-  const bottom = s && s.classList.contains('open') ? planHeights(s).half + 10 : 100;
+  /* the planner at the height it shows a route at; or whatever other sheet is open over an undimmed map (the kinds of transport) */
+  const other = document.querySelector('.msheet.modes.open');
+  const bottom = s && s.classList.contains('open') ? planHeights(s).half + 10 : (other ? other.offsetHeight + 10 : 100);
   return { paddingTopLeft:[28, top], paddingBottomRight:[28, bottom] };
+}
+/* The Map button (V4.5). Anywhere else, it brings back the default map: sheets and panels closed, the full network on show.
+   Pressed again, already there, it opens the kinds of transport (Metro & rail / Buses / Boats). */
+function mapIsDefault(){
+  const shown = id => { const e=document.getElementById(id); return !!(e && e.classList.contains('show')); };
+  return currentTab==='active' && !document.querySelector('.msheet.open') && !shown('stn') && !shown('linp');
+}
+function mapButton(){
+  if(mapIsDefault()){ openSheet('modes'); return; }
+  openSheet(null);
+  if(typeof closeAllPanels==='function') closeAllPanels();
+  if(currentTab!=='active') setTab('active');
+}
+function syncModeSeg(tab){
+  document.querySelectorAll('#modeSeg button').forEach(b => { const on = b.dataset.mode===tab || (b.dataset.mode==='active' && tab!=='bus' && tab!=='boat'); b.classList.toggle('on', on); b.setAttribute('aria-selected', on ? 'true' : 'false'); });
 }
 function setupMobile(){
   if(!IS_MOBILE) return;
@@ -171,12 +189,25 @@ function setupMobile(){
   // sheets
   /* Four sheets, four buttons. Weather is one of the scopes in the Layers sheet (Active / Vision / Buses / Intercity / Weather), so it
      has no sheet or button of its own. */
-  mSheets={ planner:mkSheet('planner'), layers:mkSheet('layers'), alerts:mkSheet('alerts') };
+  mSheets={ planner:mkSheet('planner'), layers:mkSheet('layers'), alerts:mkSheet('alerts'), modes:mkSheet('modes') };
+  /* V4.5: the kinds of transport live behind the Map button. Its first press is the default map; pressed again there, it opens this
+     sheet: Metro & rail (the full map), Buses, Boats. Buses used to be one of the views in the Layers sheet. */
+  mSheets.modes.classList.add('modes');
+  { const seg=document.createElement('div'); seg.className='mode-seg'; seg.id='modeSeg'; seg.setAttribute('role','tablist'); seg.setAttribute('aria-label', t('modesTitle')); seg.setAttribute('data-i18n-aria','modesTitle');
+    const kinds=[ ['active','🚇','modeRail', true], ['bus','🚌','modeBus', !!HAS.bus], ['boat','⛴','modeBoat', boatLines.length>0] ];
+    kinds.forEach(([tab,icon,key,has])=>{ if(!has) return;
+      const b=document.createElement('button'); b.type='button'; b.dataset.mode=tab; b.setAttribute('role','tab');
+      b.innerHTML=`<span class="mode-i" aria-hidden="true">${icon}</span><span data-i18n="${key}">${t(key)}</span>`;
+      b.addEventListener('click',()=>{ if(currentTab!==tab) setTab(tab); if(tab==='active') openSheet(null); });
+      seg.appendChild(b); });
+    const hint=document.createElement('div'); hint.className='mode-hint'; hint.setAttribute('data-i18n','modeHint'); hint.textContent=t('modeHint');
+    mSheets.modes.appendChild(seg); mSheets.modes.appendChild(hint); }
   // installing is offered in Settings → App, for phones and desktop alike
   // reparent the desktop cards into their sheets (order preserved)
   const controls=document.querySelector('.controls');
   [...controls.children].forEach(el=>{
     if(el.id==='cardPlanner') mSheets.planner.appendChild(el);
+    else if(el.id==='cardBus' || el.id==='cardBoats') mSheets.modes.appendChild(el);
     else mSheets.layers.appendChild(el);
     el.style.display='';   // sheets control visibility now; setTab still toggles the weather / bus / intercity cards
   });
@@ -190,9 +221,9 @@ function setupMobile(){
     const b=document.createElement('button');
     b.innerHTML=`<span class="mi">${icon}</span><span class="ml" data-i18n="${key}">${t(key)}</span>`;
     b.addEventListener('click',()=>{
-      if(k==='map'){ openSheet(null); return; }
+      if(k==='map'){ mapButton(); return; }
       // the planner only works on the İstanbul network — leave any non-metro scope first
-      if(k==='planner' && (currentTab==='weather'||currentTab==='bus'||currentTab==='intercity')) setTab('active');
+      if(k==='planner' && (currentTab==='weather'||currentTab==='bus'||currentTab==='boat'||currentTab==='intercity')) setTab('active');
       openSheet(k);
     });
     mNavBtns[k]=b; nav.appendChild(b);
@@ -351,7 +382,7 @@ if(HAS.disruptions) setInterval(() => { if(!document.hidden) loadLiveDisruptions
         nameEl=document.getElementById('cityName');
   if(!btn||!menu) return;
   nameEl.textContent = CITY.name;
-  document.title = CITY.name + ' · RAY-NET — Transit Network Map';
+  document.title = CITY.name + ' · TURKMAPS — Transit Network Map';
   const lineCount = id => (CITIES[id].lines||[]).filter(l=>!l.partOf && l.scope!=='planned').length;
   // biggest network first, so the list reads İstanbul → Ankara → İzmir → Bursa → Antalya
   // which modes a city runs — same glyphs the trip planner uses, deduped in TRIP_MODES order

@@ -32,8 +32,11 @@
    source lightness it replaces (`ref`, measured: land 0.85, water 0.86, park 0.82, built-up
    0.82, arterial 0.76) and how much of the source's own texture survives (`k`, 0 = flat). */
 const ATLAS_PAL = {
+  /* V4.5: the day map was too bright (ivory at about 87% of white, with pure white streets): tiring to look at, and glaring on a phone
+     outdoors or at night. It is now a warm parchment at about 77%, with cream streets instead of white, softer water and greens.
+     Everything keeps its place in the order (water < parks < land < streets), so nothing reads differently, only calmer. */
   day: {
-    ground: [243, 240, 233],                  // the colour the map shows through a tile seam
+    ground: [234, 227, 213],                  // the colour the map shows through a tile seam
     /* `k` is how much of the source's texture survives. It started at 0.26-0.38 and the dense
        districts came out as a hatch: Esri paints building footprints as eight tones of beige, and
        at a quarter strength that is still a screenful of stripes. Land and built-up are now
@@ -41,11 +44,11 @@ const ATLAS_PAL = {
        the lines drawn over it. Water and parks keep more, because ship tracks and path networks
        are real information. */
     bands: {
-      water: { c: [170, 211, 236], ref: .86, k: .30 },
-      park:  { c: [205, 229, 192], ref: .82, k: .18 },
-      land:  { c: [243, 240, 233], ref: .85, k: .10 },
-      urban: { c: [238, 233, 224], ref: .82, k: .10 },
-      road:  { c: [251, 228, 184], ref: .76, k: .38 },
+      water: { c: [163, 199, 214], ref: .86, k: .30 },
+      park:  { c: [199, 218, 181], ref: .82, k: .18 },
+      land:  { c: [234, 227, 213], ref: .85, k: .10 },
+      urban: { c: [228, 220, 205], ref: .82, k: .10 },
+      road:  { c: [245, 222, 180], ref: .76, k: .38 },
     },
     /* The grey casing around every street is NEUTRAL — saturation near zero — so the hue classes
        never see it, and it survived the first version untouched as a hatch of grey hairlines. A
@@ -58,7 +61,7 @@ const ATLAS_PAL = {
     /* What the ground under a forest, a park, a campus and an airport becomes (see decodeLanduse). Painted
        as a SHIFT from the land colour, only on pixels as bright as the ground: by day streets are WHITE, a
        hair brighter than the ground (`bright` 14 = just under the gap to pure white), and text is far darker. */
-    landuse: { forest: [176, 207, 158], park: [201, 227, 183], campus: [233, 227, 221], airport: [224, 228, 236], bright: 14, dark: 200 },
+    landuse: { forest: [172, 198, 152], park: [196, 217, 176], campus: [225, 217, 205], airport: [216, 217, 221], bright: 14, dark: 186 },
   },
   /* Night is GRAPHITE: neutral charcoal ground, near-black water, a whisper of green for parks, and
      main roads in a quiet slate grey. The first night palette was a slate blue with teal and brown

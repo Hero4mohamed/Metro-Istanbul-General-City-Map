@@ -1,4 +1,4 @@
-/* İSTANBUL RAY-NET service worker — emitted by build.cjs with a fresh version per build,
+/* TURKMAPS service worker — emitted by build.cjs with a fresh version per build,
    so every deploy activates immediately and the installed app self-updates.
    Strategy: NETWORK-FIRST for the page (updates always win; cached copy only when offline),
    stale-while-revalidate for static assets/CDNs, and NO caching for live data APIs. */
@@ -108,7 +108,7 @@ async function packTile(z, x, y) {
   const e = (await packTiles).get(z + '/' + x + '/' + y);
   if (!e || typeof DecompressionStream === 'undefined') return null;
   return new Response(e[0].slice(e[1], e[1] + e[2]).stream().pipeThrough(new DecompressionStream('gzip')),
-                      { status: 200, headers: { 'Content-Type': 'application/x-protobuf', 'X-Raynet-Pack': '1' } });
+                      { status: 200, headers: { 'Content-Type': 'application/x-protobuf', 'X-TurkMaps-Pack': '1' } });
 }
 /* the tile list, when it was never fetched and cannot be now: enough for the map to start and ask for tiles (which the packs answer) */
 function packIndex() {
@@ -139,9 +139,9 @@ function offlinePage() {
     '@media (prefers-color-scheme:dark){body{background:#0d1117;color:#e6edf3}a{color:#6cb6ff}}';
   const body = '<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">' +
     '<meta http-equiv="Content-Security-Policy" content="default-src \'none\'; style-src \'unsafe-inline\'"><meta name="color-scheme" content="light dark">' +
-    '<title>İstanbul Ray-Net</title><style>' + css + '</style></head><body><main>' +
-    '<h1>This page is not available right now</h1><p>You may be offline, or this page may no longer exist.</p><p><a href="' + APP_PATH + '">Open İstanbul Ray-Net</a></p>' +
-    '<h1 lang="tr">Bu sayfa şu anda açılamıyor</h1><p lang="tr">Çevrimdışı olabilirsiniz ya da bu sayfa artık mevcut olmayabilir.</p><p lang="tr"><a href="' + APP_PATH + '">İstanbul Ray-Net\'i aç</a></p>' +
+    '<title>TurkMaps</title><style>' + css + '</style></head><body><main>' +
+    '<h1>This page is not available right now</h1><p>You may be offline, or this page may no longer exist.</p><p><a href="' + APP_PATH + '">Open TurkMaps</a></p>' +
+    '<h1 lang="tr">Bu sayfa şu anda açılamıyor</h1><p lang="tr">Çevrimdışı olabilirsiniz ya da bu sayfa artık mevcut olmayabilir.</p><p lang="tr"><a href="' + APP_PATH + '">TurkMaps\'i aç</a></p>' +
     '</main></body></html>';
   return new Response(body, { status: 200, headers: { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store' } });
 }

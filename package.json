@@ -1,7 +1,7 @@
 {
   "name": "raynet-transit-map",
   "private": true,
-  "description": "Build pipeline and test suite for the RAY-NET transit map. The app itself ships as a single static index.html with no runtime dependencies.",
+  "description": "Build pipeline and test suite for the TURKMAPS transit map. The app itself ships as a single static index.html with no runtime dependencies.",
   "scripts": {
     "build": "node transit_data/build.cjs",
     "test": "node transit_data/testkit/run.cjs",

@@ -59,7 +59,7 @@ function navReconcile(){
   let goneSheet = null;
   for(let i = NAV.stack.length - 1; i >= 0; i--){
     const e = NAV.stack[i];
-    const alive = e.id === 'scope' ? (!IS_MOBILE || layersSheet) : now.has(e.id);
+    const alive = e.id === 'scope' ? (!!NAV.tab && NAV.tab !== 'active') : now.has(e.id);
     if(!alive){ if(e.id === 'sheet') goneSheet = e.sheet; NAV.stack.splice(i, 1); }
   }
   const have = new Set(NAV.stack.map(e => e.id));
@@ -70,11 +70,15 @@ function navReconcile(){
 }
 /* setTab() tells us when the scope changed (15-ui-wiring.js) */
 function navScope(prev, now){
+  if(NAV) NAV.tab = now;                                        // remembered here, so this file needs nothing from the rest of the app to know the view
   if(!NAV || !NAV.ready || NAV.undoing || prev === now) return;
-  if(IS_MOBILE && !navHas('sheet_layers','open')) return;      // a scope change made from the map (a notice opening a bus line) is not a step in the sheet
-  const top = NAV.stack[NAV.stack.length - 1];
-  if(top && top.id === 'scope' && top.from === now) NAV.stack.pop();    // going back to where it came from by hand IS the undo
-  else NAV.stack.push({ id:'scope', from:prev });
+  /* V4.5: back always leads to the default map. Any view other than the default one (Vision, Buses, Boats, Intercity, Weather, however
+     it was reached: the map's own tabs, the Layers sheet, a notice that opened a bus line) is ONE step, and undoing it goes straight
+     to the default map, not back through the views visited on the way. It used to count only when the change was made in the Layers
+     sheet, so from Vision the back button left the app. */
+  const i = NAV.stack.findIndex(e => e.id === 'scope');
+  if(now === 'active'){ if(i >= 0) NAV.stack.splice(i, 1); }
+  else if(i < 0) NAV.stack.push({ id:'scope', from:'active' });
   navAlign();
 }
 window.addEventListener('popstate', e => {
