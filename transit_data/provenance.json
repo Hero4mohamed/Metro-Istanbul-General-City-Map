@@ -376,6 +376,24 @@
       "covers_tr": "Kocaeli için arama: sokaklar, semtler, simge yapılar, mağazalar, yeme-içme, sağlık, okullar ve ibadet yerleri",
       "covers_ar": "الشوارع والأحياء والمعالم والمتاجر والمطاعم والصحة والمدارس ودور العبادة في قوجه إيلي للبحث",
       "covers_fr": "Rues, quartiers, lieux remarquables, commerces, restauration, santé, écoles et lieux de culte de Kocaeli, pour la recherche"
+    },
+    "water-mask.json": {
+      "kind": "community",
+      "source": "OpenFreeMap vector tiles (OpenMapTiles schema), water polygons; data from OpenStreetMap",
+      "licence": "ODbL 1.0 (data), CC BY 4.0 (OpenMapTiles)",
+      "covers": "Where the sea is around İstanbul, the Gulf of İzmit and İzmir bay, used to keep ferry lines on water",
+      "covers_tr": "İstanbul çevresi, İzmit Körfezi ve İzmir Körfezi'nde denizin nerede olduğu; vapur hatlarını suda tutmak için",
+      "covers_ar": "مواضع البحر حول إسطنبول وخليج إزميت وخليج إزمير، لإبقاء خطوط العبّارات فوق الماء",
+      "covers_fr": "Où se trouve la mer autour d'İstanbul, du golfe d'İzmit et de la baie d'İzmir, pour garder les lignes de ferry sur l'eau"
+    },
+    "packs.json": {
+      "kind": "community",
+      "source": "OpenFreeMap vector tiles (OpenMapTiles schema); data from OpenStreetMap",
+      "licence": "ODbL 1.0 (data), CC BY 4.0 (OpenMapTiles)",
+      "covers": "The offline base map of each city (streets, water, green areas and names), kept on the device",
+      "covers_tr": "Her şehrin cihazda tutulan çevrimdışı altlık haritası (sokaklar, su, yeşil alanlar ve adlar)",
+      "covers_ar": "خريطة الأساس دون اتصال لكل مدينة (الشوارع والمياه والمساحات الخضراء والأسماء)، محفوظة على الجهاز",
+      "covers_fr": "Le fond de carte hors ligne de chaque ville (rues, eau, espaces verts et noms), gardé sur l'appareil"
     }
   }
 }

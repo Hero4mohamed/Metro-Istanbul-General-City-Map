@@ -505,12 +505,12 @@ const MUTATIONS = [
   {
     name: 'let the suburb names crowd the map again',
     expect: 'the map is not crowded with names',
-    apply: h => h.replace("'place-suburb': [[11.5, 20], [12, 23], [13, 17], [14, 18], [15, 12], [16, 8]],", "'place-suburb': 2,"),
+    apply: h => h.replace("'place-suburb': [[11.5, 62], [12, 60], [13, 50], [14, 60], [15, 36], [16, 18]],", "'place-suburb': 2,"),
   },
   {
     name: 'repeat every street name every few hundred metres',
     expect: 'the map is not crowded with names',
-    apply: h => h.replace("g[0] === 'road-label-major' ? 320 : 460", '320'),
+    apply: h => h.replace("const VEC_ROAD_SPACING = { 'road-label-major': 650, 'road-label-secondary': 900, 'road-label-minor': 900 };", "const VEC_ROAD_SPACING = { 'road-label-major': 320, 'road-label-secondary': 320, 'road-label-minor': 320 };"),
   },
   {
     name: 'let places of interest overlap each other',
@@ -1897,6 +1897,140 @@ const MUTATIONS = [
     name: 'the key box shows in the Android app',
     expect: 'play build: the Android app has no box for the key',
     apply: h => h.replace('.play-app #aiKeyRow{display:none !important;}', '.play-app #aiKeyRowX{display:none !important;}'),
+  },
+  /* ---- offline maps (src/22a-offline.js, V4.4.1); the worker's own mistakes are put back by test/offline-maps.test.cjs itself ---- */
+  {
+    name: 'only İstanbul is kept without being asked',
+    expect: 'offline maps: İstanbul, İzmir and Ankara are kept without being asked',
+    apply: h => h.replace("const OFFLINE_DEFAULT = ['istanbul', 'izmir', 'ankara'];", "const OFFLINE_DEFAULT = ['istanbul'];"),
+  },
+  {
+    name: 'a city the person removed comes back by itself',
+    expect: 'offline maps: İstanbul, İzmir and Ankara are kept without being asked',
+    apply: h => h.replace('const p = pick ? pick[city] : undefined;', 'const p = undefined;'),
+  },
+  {
+    name: 'mobile data is taken for Wi-Fi',
+    expect: 'offline maps: what the connection is',
+    apply: h => h.replace("if (c.type === 'cellular') return true;", "if (c.type === 'cellular') return false;"),
+  },
+  {
+    name: 'a phone that cannot say what it is on downloads without asking',
+    expect: 'offline maps: what the connection is',
+    apply: h => h.replace('if (conn === null) return !phone;', 'if (conn === null) return true;'),
+  },
+  {
+    name: 'the person on mobile data is never asked',
+    expect: 'offline maps: a phone on mobile data',
+    apply: h => h.replace("if (lsStr('irn_offline_asked') !== '1') offAsk(todo);", ''),
+  },
+  {
+    name: 'packs download whatever the connection',
+    expect: 'offline maps: a phone on mobile data',
+    apply: h => h.replace('if (offMayAuto(offPref(), offConn(navigator), IS_MOBILE)) { for (const c of todo) await offDownload(c); return; }', 'if (true) { for (const c of todo) await offDownload(c); return; }'),
+  },
+  {
+    name: 'an error page is stored as a map pack',
+    expect: 'offline maps: Download keeps a city whatever the connection',
+    apply: h => h.replace("!== 'RNP1') throw new Error('not a map pack');", "=== 'NEVER') throw new Error('not a map pack');"),
+  },
+  {
+    name: 'the worker is not told that a pack arrived',
+    expect: 'offline maps: on Wi-Fi (or a computer) the three default cities come down by themselves',
+    apply: h => h.replace(/offTellWorker\(\);(\r?\n\s*)offSet\(city, 'ready'\);/, "$1offSet(city, 'ready');"),   // one statement on its own line: other lines may be added around it
+  },
+  {
+    name: 'a city\'s data files are not kept with its map',
+    expect: 'offline maps: on Wi-Fi (or a computer) the three default cities come down by themselves',
+    apply: h => h.replace('(x.ok ? stat.put(new URL(f, location.href).href, x) : null)', 'null'),
+  },
+  /* ---- the planner on a phone keeps the map in view (18-mobile-shell.js, V4.4.1) ---- */
+  {
+    name: 'the map is dimmed behind the planner again',
+    expect: 'plan sheet: opening the planner leaves the map in view',
+    apply: h => h.replace("classList.toggle('on', !!name && name!=='planner');", "classList.toggle('on', !!name);"),
+  },
+  {
+    name: 'the planner opens at full height',
+    expect: 'plan sheet: opening the planner leaves the map in view',
+    apply: h => h.replace("if(name==='planner') setPlanDetent(planRouteShown() ? 'half' : 'compact');", "if(name==='planner') setPlanDetent('full');"),
+  },
+  {
+    name: 'a found route keeps the long form at half height',
+    expect: 'plan sheet: a found route is shown at half height in the short form',
+    apply: h => h.replace("s.classList.toggle('short', d==='compact' || (d==='half' && planRouteShown()));", "s.classList.toggle('short', d==='compact');"),
+  },
+  {
+    name: 'a small downward nudge closes the planner',
+    expect: 'plan sheet: a drag settles on the nearest height',
+    apply: h => h.replace('if(h < H.compact - 70 || (from===\'compact\' && v < -0.5)) return null;', 'if(h < H.compact - 10 || (from===\'compact\' && v < -0.5)) return null;'),
+  },
+  {
+    name: 'the Adventure planner opens as an empty compact sheet',
+    expect: 'plan sheet: the Adventure planner',
+    apply: h => h.replace("if(d==='compact') d = planFloor();", ''),
+  },
+  {
+    name: 'the same pair of places is searched again and again',
+    expect: 'plan sheet: choosing the second end finds the route once',
+    apply: h => h.replace("if(key === planAutoKey || (originPt.lat === destPt.lat && originPt.lng === destPt.lng)) return;", ''),
+  },
+  {
+    name: 'a found route is fitted under the planner sheet',
+    expect: 'plan sheet: a route is fitted into the part of the map',
+    apply: h => h.replace("const bottom = s && s.classList.contains('open') ? planHeights(s).half + 10 : 100;", 'const bottom = 100;'),
+  },
+  {
+    name: 'the short planner hides nothing',
+    expect: 'plan sheet: the styles that make it work are there',
+    apply: h => h.replace('.msheet.plan.short #plannerAdv{display:none !important;}', '.msheet.plan.short #plannerAdv{display:block;}'),
+  },
+  /* ---- half as many names, and names keep clear of the station names (V4.4.1) ---- */
+  {
+    name: 'the room kept for station names is drawn as visible text',
+    expect: 'the map keeps room for the station names',
+    apply: h => h.replace("paint: { 'text-opacity': 0 } });", "paint: { 'text-opacity': 0.9 } });"),
+  },
+  {
+    name: 'another name layer is placed after the station-name room',
+    expect: 'the map keeps room for the station names',
+    apply: h => h.replace("[['stop-room', ['!', ['get', 'hub']], 14], ['stop-room-hub', ['get', 'hub'], 0]].forEach", "[['stop-room-hub', ['get', 'hub'], 0], ['stop-room', ['!', ['get', 'hub']], 14]].forEach"),
+  },
+  {
+    name: 'district names go back to their old room',
+    expect: 'names are sparse',
+    apply: h => h.replace("'place-suburb': [[11.5, 62], [12, 60], [13, 50], [14, 60], [15, 36], [16, 18]]", "'place-suburb': [[11.5, 20], [12, 23], [13, 17], [14, 18], [15, 12], [16, 8]]"),
+  },
+  {
+    name: 'hill names come back at zoom 12',
+    expect: 'names are sparse',
+    apply: h => h.replace("'source-layer': 'mountain_peak', minzoom: vecZ(14),", "'source-layer': 'mountain_peak', minzoom: vecZ(12),"),
+  },
+  {
+    name: 'the base map is never told where the station names are',
+    expect: 'the base map is told where the station names are',
+    apply: h => h.replace("if(typeof vecPushStops === 'function') vecPushStops(room);", ''),
+  },
+  {
+    name: 'the station list is handed to the base map on every frame',
+    expect: 'the base map is told where the station names are',
+    apply: h => h.replace('if(room !== _lblRoom){ _lblRoom = room;', 'if(true){ _lblRoom = room;'),
+  },
+  /* ---- ferries stay on water and share their lanes (ferry-water.cjs, V4.4.1) ---- */
+  {
+    name: 'a ferry line cuts across Moda',
+    expect: 'ferries: no ferry line crosses land',
+    apply: h => h.replace(/("ref":"Kadıköy–Karaköy","kind":"ferry","color":"[^"]*","paths":\[\[\[[\d.]+,[\d.]+\],)/, '$1[40.9870,29.0300],[40.9800,29.0350],'),
+  },
+  {
+    name: 'one ferry line has its own position for a shared pier',
+    expect: 'ferries: every line calls at each of its piers',
+    apply: h => h.replace(/("ref":"Kadıköy–Karaköy","kind":"ferry"[^]*?"stations":\[\{"name":"Kadıköy","lat":)[\d.]+/, '$140.9945'),
+  },
+  {
+    name: 'two ferry lines between the same piers take different paths',
+    expect: 'ferries: two lines between the same two piers use exactly the same path',
+    apply: h => h.replace(/("ref":"Adalar \(Bostancı\)","kind":"ferry"[^]*?"paths":\[\[(?:\[[\d.]+,[\d.]+\],){40})/, '$1[40.8900,29.0500],'),
   },
   {
     name: 'session storage is used for something the storage page does not name',

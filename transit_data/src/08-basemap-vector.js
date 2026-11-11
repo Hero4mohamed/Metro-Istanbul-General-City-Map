@@ -89,16 +89,25 @@ const VEC_TIERS = [13, 14, 15, 16, 17];
    city (placed names counted after collision): 744 before, 431 after, 40-46% fewer at every zoom. Small and wide at low zoom, where
    there are most names to thin, and tighter as the names grow. `[zoom, px]` pairs, app zoom numbering. */
 const VEC_PAD = {
-  'place-city': 6,
-  'place-town': [[8, 14], [11, 22], [13, 14], [15, 8]],
-  'place-village': [[11, 26], [14, 20], [16, 12]],
-  'place-suburb': [[11.5, 20], [12, 23], [13, 17], [14, 18], [15, 12], [16, 8]],
-  'place-quarter': [[13.5, 16], [16, 12]],
-  'poi': [[13, 18], [17, 24]],
-  'road-label-major': 8,
-  'road-label-secondary': [[13, 8], [17, 18]],
-  'road-label-minor': [[15, 8], [17, 22]]
+  'place-city': 10,
+  'place-town': [[8, 34], [11, 58], [13, 36], [15, 22]],
+  'place-village': [[11, 70], [14, 54], [16, 28]],
+  'place-suburb': [[11.5, 62], [12, 60], [13, 50], [14, 60], [15, 36], [16, 18]],
+  'place-quarter': [[13.5, 56], [16, 32]],
+  'poi': [[13, 54], [17, 76]],
+  'road-label-major': [[11, 22], [14, 30], [17, 34]],
+  'road-label-secondary': [[13, 26], [17, 48]],
+  'road-label-minor': [[15, 30], [17, 58]],
+  'aerodrome-label': 34,
+  'water-label': 30,
+  'peak-label': 40
 };
+/* V4.4.1: half as many names again. Asked for as "50% less at any given time". Counted the same way (names really placed, seven zooms
+   x three places, 1024 x 768): 1,035 before, 452 after; by zoom 11..17: 133>67, 235>72, 208>85, 122>60, 125>60, 122>60, 90>48.
+   Also: hill names ("peaks") were 81 of the 235 names at zoom 12 and now wait until zoom 14; street names repeat less often along a
+   street (VEC_ROAD_SPACING); and names keep clear of the station names the app draws itself (the stop-room layers below). */
+const VEC_ROAD_SPACING = { 'road-label-major': 650, 'road-label-secondary': 900, 'road-label-minor': 900 };
+const VEC_STOPS = 'stops';
 const vecPad = function (id) { const p = VEC_PAD[id]; return Array.isArray(p) ? vecRamp(p) : (p == null ? 3 : p); };
 /* the zoom a given place appears at, or 0 = not drawn on the map at all */
 function vecTierOf(key, rank) {
@@ -214,13 +223,13 @@ function vecStyle(tone, lang, glyphs, part) {
              paint: paintText(p[6], 2) });
   });
   L.push({ id: 'aerodrome-label', type: 'symbol', source: VEC_SOURCE, 'source-layer': 'aerodrome_label', minzoom: vecZ(9),
-           layout: text(vecRamp([[9, 11], [13, 13], [16, 16]]), null, VEC_BOLD, { 'text-max-width': 7 }), paint: paintText(V.ink, 2) });
+           layout: text(vecRamp([[9, 11], [13, 13], [16, 16]]), null, VEC_BOLD, { 'text-max-width': 7, 'text-padding': vecPad('aerodrome-label') }), paint: paintText(V.ink, 2) });
   L.push({ id: 'water-label', type: 'symbol', source: VEC_SOURCE, 'source-layer': 'water_name', minzoom: vecZ(7),
-           layout: text(vecRamp([[7, 11], [12, 13], [16, 16]]), null, VEC_ITALIC, { 'text-max-width': 7, 'text-letter-spacing': .08 }), paint: paintText(V.inkWater, 1.6) });
+           layout: text(vecRamp([[7, 11], [12, 13], [16, 16]]), null, VEC_ITALIC, { 'text-max-width': 7, 'text-letter-spacing': .08, 'text-padding': vecPad('water-label') }), paint: paintText(V.inkWater, 1.6) });
   L.push({ id: 'waterway-label', type: 'symbol', source: VEC_SOURCE, 'source-layer': 'waterway', minzoom: vecZ(13), filter: ['has', 'name'],
            layout: text(vecRamp([[13, 10.5], [17, 14]]), null, VEC_ITALIC, { 'symbol-placement': 'line', 'text-letter-spacing': .06 }), paint: paintText(V.inkWater, 1.4) });
-  L.push({ id: 'peak-label', type: 'symbol', source: VEC_SOURCE, 'source-layer': 'mountain_peak', minzoom: vecZ(12),
-           layout: text(vecRamp([[12, 10.5], [16, 13]]), null, VEC_FONT, { 'text-anchor': 'top', 'text-offset': [0, .3] }), paint: paintText(V.inkPark, 1.6) });
+  L.push({ id: 'peak-label', type: 'symbol', source: VEC_SOURCE, 'source-layer': 'mountain_peak', minzoom: vecZ(14),
+           layout: text(vecRamp([[14, 10.5], [16, 13]]), null, VEC_FONT, { 'text-anchor': 'top', 'text-offset': [0, .3], 'text-padding': vecPad('peak-label') }), paint: paintText(V.inkPark, 1.6) });
 
   // street names run ALONG the street, and are small from afar and grow as you come in
   [['road-label-major', ['motorway', 'trunk', 'primary'], 11, [[11, 10.5], [14, 12.5], [17, 15.5], [19, 19]]],
@@ -229,7 +238,7 @@ function vecStyle(tone, lang, glyphs, part) {
   ].forEach(function (g) {
     L.push({ id: g[0], type: 'symbol', source: VEC_SOURCE, 'source-layer': 'transportation_name', minzoom: vecZ(g[2]),
              filter: ['in', ['get', 'class'], ['literal', g[1]]],
-             layout: text(vecRamp(g[3], 1.2), null, VEC_FONT, { 'symbol-placement': 'line', 'symbol-spacing': g[0] === 'road-label-major' ? 320 : 460, 'text-rotation-alignment': 'map', 'text-pitch-alignment': 'viewport',
+             layout: text(vecRamp(g[3], 1.2), null, VEC_FONT, { 'symbol-placement': 'line', 'symbol-spacing': VEC_ROAD_SPACING[g[0]], 'text-rotation-alignment': 'map', 'text-pitch-alignment': 'viewport',
                                                                'text-max-angle': 40, 'text-padding': vecPad(g[0]), 'text-letter-spacing': .02 }),
              paint: paintText(V.ink2, 1.9) });
   });
@@ -253,10 +262,23 @@ function vecStyle(tone, lang, glyphs, part) {
            layout: text(vecRamp([[15, 10.5], [18, 13]]), null, VEC_FONT, { 'text-anchor': 'top', 'text-offset': [0, .4], 'text-padding': vecPad('poi'), 'text-optional': true }),
            paint: paintText(V.ink, 1.6) });
 
+  /* ---- room for the station names (V4.4.1). The app draws those itself, on its own canvas above everything (09-simulation.js), so
+     this map never knew they were there and printed a district or a street name straight across them ("Kadıköy" over "Kadıköy").
+     These two layers are the station names again, in the same place and size, but INVISIBLE: they are placed first (a later layer
+     wins a collision), so every other name keeps out of the space a station name takes. Interchanges at every zoom, plain stops
+     from zoom 14, as the canvas shows them. Empty until the app hands the stations over (vecPushStops). ---- */
+  [['stop-room', ['!', ['get', 'hub']], 14], ['stop-room-hub', ['get', 'hub'], 0]].forEach(function (r) {
+    L.push({ id: r[0], type: 'symbol', source: VEC_STOPS, minzoom: r[2] ? vecZ(r[2]) : 0, filter: r[1],
+             layout: { 'text-field': ['get', 'n'], 'text-font': VEC_BOLD, 'text-size': 11, 'text-anchor': 'left', 'text-offset': [.75, 0], 'text-max-width': 40,
+                       'text-padding': 4, 'symbol-sort-key': ['-', 0, ['get', 'w']] },
+             paint: { 'text-opacity': 0 } });
+  });
+
   const wanted = part === 'base' ? function (l) { return l.type !== 'symbol'; } : part === 'labels' ? function (l) { return l.type === 'symbol'; } : null;
   const sources = {};
   sources[VEC_SOURCE] = { type: 'vector', url: VEC_TILEJSON };
   if (part !== 'base') sources[VEC_PLACES] = { type: 'geojson', data: { type: 'FeatureCollection', features: [] } };   // only names read the app's own places
+  if (part !== 'base') sources[VEC_STOPS] = { type: 'geojson', data: { type: 'FeatureCollection', features: [] } };    // where the station names are (kept clear, not drawn)
   return {
     version: 8, name: 'raynet-' + tone + (part ? '-' + part : ''),
     glyphs: glyphs || VEC_GLYPHS,
@@ -279,6 +301,14 @@ function vecPlacesData(G, meta) {
   }
   return { type: 'FeatureCollection', features: feats };
 }
+/* The station names the app is drawing (or null when it draws none): told to every vector map, so its own names keep clear of them.
+   `list` is the app's station list ({name, lat, lng, lines:Set}); a station on more than one line is a hub, shown at every zoom. */
+function vecStopsData(list) {
+  return { type: 'FeatureCollection', features: (list || []).map(function (r) {
+    const w = r.lines ? r.lines.size : 1;
+    return { type: 'Feature', geometry: { type: 'Point', coordinates: [r.lng, r.lat] }, properties: { n: r.name, hub: w > 1, w: w } };
+  }) };
+}
 /* ==VECTOR-BASEMAP-PURE-END== */
 
 /* ---- everything below talks to the page: WebGL, Leaflet, the places file, the language ------------------------- */
@@ -292,7 +322,7 @@ function vecSupported() {
   } catch (e) { return false; }
 }
 const VEC_LAYERS_BY_NAME = /^(place-|aerodrome-label|water-label|waterway-label|peak-label|road-label-|poi-tiles)/;
-const VEC = { layers: [], places: null };
+const VEC = { layers: [], places: null, stops: null };
 const VEC_LABEL_PANE = 'vecLabelPane';       // created in 08-map.js, above the lines (overlay pane) and below the markers
 const VEC_GLYPHS_ABS = new URL('vendor/glyphs/', document.baseURI).href + '{fontstack}/{range}.pbf';
 
@@ -300,7 +330,7 @@ const VEC_GLYPHS_ABS = new URL('vendor/glyphs/', document.baseURI).href + '{font
    needs no special case, and a stand-in for the few tile-layer methods the app calls on whatever the base is. */
 const VectorBase = (typeof L !== 'undefined' && L.MaplibreGL) ? L.MaplibreGL.extend({
   initialize: function (key, tone) {
-    this._key = key; this._tone = tone; this._places = null;
+    this._key = key; this._tone = tone; this._places = null; this._stops = VEC.stops;
     const px = Math.min(window.devicePixelRatio || 1, 2.5);
     L.MaplibreGL.prototype.initialize.call(this, { style: vecStyle(tone, lang, VEC_GLYPHS_ABS, 'base'), attribution: VEC_ATTRIBUTION, pixelRatio: px,
                                                   fadeDuration: 180, maxZoom: 19 });
@@ -317,7 +347,7 @@ const VectorBase = (typeof L !== 'undefined' && L.MaplibreGL) ? L.MaplibreGL.ext
     g.on('error', function () { errors++; });
     g.once('load', function () { ready = true; });
     this._labels.addTo(map);
-    if (this._labels._glMap) this._labels._glMap.once('load', function () { self._applyPlaces(); });
+    if (this._labels._glMap) this._labels._glMap.once('load', function () { self._applyPlaces(); self._applyStops(); });
     // a style that never arrives (the tile service is unreachable, the worker was blocked): fall back to the raster map
     setTimeout(function () { if (!ready && errors > 0 && self._map && typeof vecFallback === 'function') vecFallback(self._key); }, 15000);
   },
@@ -332,6 +362,12 @@ const VectorBase = (typeof L !== 'undefined' && L.MaplibreGL) ? L.MaplibreGL.ext
     const g = this._labels && this._labels._glMap; if (!g || !this._places || !g.isStyleLoaded || !g.getSource(VEC_PLACES)) return;
     g.getSource(VEC_PLACES).setData(this._places);
     if (g.getLayer('poi-tiles')) g.setLayoutProperty('poi-tiles', 'visibility', 'none');   // the app's file names more, and better
+  },
+  /* where the app's own station names are, so the other names keep clear of them (the stop-room layers); kept for a re-added layer */
+  setStops: function (fc) { this._stops = fc; this._applyStops(); },
+  _applyStops: function () {
+    const g = this._labels && this._labels._glMap; if (!g || !this._stops || !g.isStyleLoaded || !g.getSource(VEC_STOPS)) return;
+    g.getSource(VEC_STOPS).setData(this._stops);
   },
   /* the language of every name changed: say so to the layers that carry one, in place (no new map, no flicker) */
   applyLang: function (lg) {
@@ -361,6 +397,10 @@ function vecPushPlaces() {
   if (!GAZ.G || !VEC.layers.length) return;
   if (!VEC.places) VEC.places = vecPlacesData(GAZ.G, GAZ_TYPE_META);
   VEC.layers.forEach(function (b) { b.setPlaces(VEC.places); });
+}
+function vecPushStops(list) {
+  VEC.stops = vecStopsData(list);
+  VEC.layers.forEach(function (b) { b.setStops(VEC.stops); });
 }
 /* the interface language changed */
 function vecApplyLang() { VEC.layers.forEach(function (b) { if (b._map) b.applyLang(lang); }); }

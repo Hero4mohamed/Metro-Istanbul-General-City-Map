@@ -1294,6 +1294,39 @@
     transform:translateY(105%);transition:transform .32s var(--ease);}
   body.mobile .msheet.open{transform:none;}
   .msheet .mgrab{width:42px;height:4.5px;background:rgba(255,255,255,.22);border-radius:var(--r-pill);margin:4px auto 12px;}
+  /* ---- the planner sheet: three heights, the map stays in view (V4.4.1; the logic is in 18-mobile-shell.js) ---- */
+  body.mobile .msheet.plan{max-height:none;height:var(--plan-h,auto);padding-top:0;overscroll-behavior:contain;
+    transition:transform .32s var(--ease),height .3s var(--ease);will-change:height,transform;
+    box-shadow:0 -14px 40px -18px rgba(0,0,0,.55);}
+  body.mobile .msheet.plan.dragging,body.mobile .msheet.plan.measuring{transition:none;}
+  body.mobile .msheet.plan:not(.d-full){overflow-y:hidden;}
+  /* the handle is a real button with a finger-sized target; it sticks to the top while the content scrolls */
+  .msheet .mgrab-btn{display:block;position:sticky;top:0;z-index:3;width:100%;height:26px;margin:0 0 4px;padding:0;border:0;background:none;cursor:grab;touch-action:none;}
+  .msheet .mgrab-btn .mgrab{margin:10px auto 0;transition:width .2s var(--ease),background-color .2s;}
+  .msheet.plan.dragging .mgrab-btn .mgrab{width:58px;background:rgba(var(--ok-rgb),.75);}
+  .msheet .mgrab-btn:focus-visible{outline:2px solid var(--accent);outline-offset:-4px;border-radius:12px;}
+  /* the short form: From, To and the button. At compact always; at half when a route is shown, so the room goes to the route. */
+  .msheet.plan.short #plannerHead,.msheet.plan.short #plannerTabs,.msheet.plan.short #nearBtn,.msheet.plan.short .field>label,
+  .msheet.plan.short #placeChips,.msheet.plan.short #airportChips,.msheet.plan.short #modeChips,.msheet.plan.short #avoidRow,
+  .msheet.plan.short .when-row,.msheet.plan.short #clear,.msheet.plan.short #favSec,.msheet.plan.short #histSec,
+  .msheet.plan.short #plannerAdv{display:none !important;}
+  .msheet.plan.short .card{padding-bottom:0;}
+  .msheet.plan.short .field{margin:0 44px 8px 0;}
+  .msheet.plan.short #plannerTrip{position:relative;}
+  .msheet.plan.short .swapb{position:absolute;right:0;top:29px;margin:0;width:36px;}
+  .msheet.plan.short #route{margin-top:2px;}
+  .msheet.plan.short #rout.show{margin-top:8px;}
+  /* compact with a route: just its three numbers; half with a route: the route itself, and the button steps aside (it is back at full height) */
+  .msheet.plan.d-compact #rout>:not(.rsum){display:none !important;}
+  .msheet.plan.d-compact .rsum{margin:0;}
+  .msheet.plan.d-half.short #route{display:none !important;}
+  .msheet.plan.d-half.short #rout.show{margin-top:2px;}
+  /* nothing else may sit under the sheet: the locate and assistant buttons ride just above it, and the top search gives the map its room */
+  body.mobile.plan-open .locate-fab{bottom:calc(var(--plan-h,240px) + 12px);transition:bottom .3s var(--ease);}
+  body.mobile.plan-open .ai-orb{bottom:calc(var(--plan-h,240px) + 68px);transition:bottom .3s var(--ease);}
+  body.mobile.plan-open .omni{display:none;}
+  /* a phone zooms with two fingers; the +/- buttons sat hidden under the top bar and showed through it once the search was folded away */
+  body.mobile .leaflet-control-zoom{display:none;}
   .msheet .card{padding:0 0 14px;border:none;background:none;box-shadow:none;backdrop-filter:none;animation:none;border-radius:0;}
   .msheet .announce{position:static;width:auto;border:none;background:none;box-shadow:none;backdrop-filter:none;animation:none;overflow:visible;}
   .msheet .ann-body{max-height:none;padding:0;}
@@ -1599,6 +1632,17 @@
     background:var(--grad-accent);color:var(--btn-ink);font-family:var(--font);font-size:var(--fs-8);font-weight:800;}
   .off-btn.ghost{flex:0 0 auto;background:var(--track);color:var(--text);font-weight:700;}
   .off-btn:disabled{opacity:.55;cursor:default;}
+  /* offline maps (V4.4.1): one row per city, with its size, its state and one button */
+  .offp-list{display:flex;flex-direction:column;gap:6px;margin-top:8px;}
+  .offp-row{display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:12px;background:var(--track);border:1px solid var(--stroke-2);}
+  .offp-row .offp-t{flex:1;min-width:0;font-size:13px;color:var(--text);}
+  .offp-row .offp-t small{display:block;font-size:11.5px;color:var(--muted);margin-top:1px;}
+  .offp-row[data-state="ready"] .offp-t small{color:var(--ok-ink);}
+  .offp-row[data-state="error"] .offp-t small{color:var(--warn-ink,var(--muted));}
+  .offp-row .off-btn{flex:0 0 auto;}
+  .offp-tag{font-size:var(--fs-7);font-weight:700;letter-spacing:.3px;text-transform:uppercase;color:var(--muted);border:1px solid var(--stroke-2);border-radius:999px;padding:1px 6px;margin-inline-start:4px;}
+  .offp-bar{display:block;height:4px;border-radius:999px;background:var(--stroke-2);margin-top:6px;overflow:hidden;}
+  .offp-bar i{display:block;height:100%;background:var(--accent);border-radius:999px;transition:width .25s linear;}
   .card-credit:empty{display:none;}
   @media (max-width:420px){ .card-art{width:88px;height:88px;} .card-art svg{height:88px;} }
   .fare-cmp{margin-top:7px;border:1px solid var(--stroke);border-radius:11px;background:var(--surface);overflow:hidden;}
@@ -1957,6 +2001,15 @@
         </div>
         <div class="sp-note" id="offNote"></div>
       </div>
+      <div class="sp-item sp-row sp-col" id="offPacksRow"><span data-i18n="offPacksTitle">Offline maps</span>
+        <div class="sp-note" data-i18n="offPacksIntro">A city kept here opens and works with no connection: its map, lines, stations, trip planner and place search. İstanbul, İzmir and Ankara are kept automatically; the others when you press Download. Service notices, weather, official timetables and the satellite layer still need a connection.</div>
+        <div class="offp-list" id="offPackList"></div>
+      </div>
+      <div class="sp-item">
+        <div class="sp-row"><span data-i18n="offDataLbl">Download maps on mobile data too</span>
+          <button class="sw" id="swOffData" role="switch" aria-checked="false" aria-label="Download maps on mobile data too"><span class="sw-k"></span></button></div>
+        <div class="sp-hint" data-i18n="offDataHint">Off: offline maps come down on Wi-Fi only. A phone that does not say what it is connected to (every iPhone) waits for you to press Download.</div>
+      </div>
     </div>
   </details>
 
@@ -2191,13 +2244,13 @@
     <div id="plannerTrip">
     <button class="near-btn" id="nearBtn" data-i18n="nearMe">Stops near me</button>
     <div class="field"><label data-i18n="from">From</label>
-      <div class="ac"><input id="selO" class="ac-input" type="text" data-i18n-ph="searchStop" placeholder="Search any stop or place…" autocomplete="off">
+      <div class="ac"><input id="selO" class="ac-input" type="text" data-i18n-ph="fromPh" placeholder="From: a stop, place or address…" autocomplete="off">
         <button class="ac-geo" data-for="O" data-i18n-title="useMyLocation" title="Use my location"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="12" cy="12" r="3.2"/><circle cx="12" cy="12" r="8"/><line x1="12" y1="2" x2="12" y2="4.2"/><line x1="12" y1="19.8" x2="12" y2="22"/><line x1="2" y1="12" x2="4.2" y2="12"/><line x1="19.8" y1="12" x2="22" y2="12"/></svg></button>
         <button class="ac-pin" data-for="O" data-i18n-title="pickPoint" title="Pick point on map">📍</button>
         <div class="ac-list" id="acO"></div></div></div>
     <div class="swapb"><button id="swap" data-i18n-title="swap" title="Swap">⇅</button></div>
     <div class="field"><label data-i18n="to">To</label>
-      <div class="ac"><input id="selD" class="ac-input" type="text" data-i18n-ph="searchStop" placeholder="Search any stop or place…" autocomplete="off">
+      <div class="ac"><input id="selD" class="ac-input" type="text" data-i18n-ph="toPh" placeholder="To: a stop, place or address…" autocomplete="off">
         <button class="ac-geo" data-for="D" data-i18n-title="useMyLocation" title="Use my location"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="12" cy="12" r="3.2"/><circle cx="12" cy="12" r="8"/><line x1="12" y1="2" x2="12" y2="4.2"/><line x1="12" y1="19.8" x2="12" y2="22"/><line x1="2" y1="12" x2="4.2" y2="12"/><line x1="19.8" y1="12" x2="22" y2="12"/></svg></button>
         <button class="ac-pin" data-for="D" data-i18n-title="pickPoint" title="Pick point on map">📍</button>
         <div class="ac-list" id="acD"></div></div></div>

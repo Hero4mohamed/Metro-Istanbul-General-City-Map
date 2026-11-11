@@ -2,7 +2,7 @@
    so every deploy activates immediately and the installed app self-updates.
    Strategy: NETWORK-FIRST for the page (updates always win; cached copy only when offline),
    stale-while-revalidate for static assets/CDNs, and NO caching for live data APIs. */
-const VERSION = '20261108180950';
+const VERSION = '20261110175919';
 const SHELL  = 'raynet-shell-' + VERSION;
 const STATIC = 'raynet-static-v1';
 const STATIC_HOSTS = [];     // the page loads no CDN files any more (V4.3): Leaflet and the fonts are shipped with it
@@ -13,6 +13,16 @@ const STATIC_HOSTS = [];     // the page loads no CDN files any more (V4.3): Lea
    OFFLINE_PAGES is written by build.cjs from the legal folder (paths under the scope). */
 const PAGES = 'raynet-pages-' + VERSION;
 const OFFLINE_PAGES = ["legal/index.html","legal/index.tr.html","legal/privacy.html","legal/privacy.tr.html","legal/terms.html","legal/terms.tr.html","legal/storage.html","legal/storage.tr.html","legal/credits.html","legal/credits.tr.html","legal/accessibility.html","legal/accessibility.tr.html"];
+/* V4.4.1: the app must OPEN AND WORK with no connection after its first visit. Two things were missing.
+   (1) The app's own files (the map engines, the typefaces, the map's letter shapes, the icons) were meant to be kept "as they are
+       loaded", but the copy was taken after the response had been handed to the page, when its body was already used, so the copy
+       failed silently every time and NOTHING was kept: offline, the page opened and could not start. APP_FILES is every such file,
+       written by build.cjs, and all of them are now fetched at install; the keep-as-loaded path is fixed as well.
+   (2) The base map came only from tiles fetched as you looked at them. A city's whole base map now comes as one file (a pack,
+       offline/<city>.pack, see build-offline-packs.cjs) that the page stores in the PACKS cache; a tile that cannot be fetched is
+       read out of it. */
+const APP_FILES = ["assets/apple-touch-icon.png","assets/favicon-16.png","assets/favicon-32.png","assets/icon-192.png","assets/icon-512.png","assets/icon-maskable-512.png","assets/logo-96.png","assets/og-card.png","assets/splash-bg.jpg","assets/splash-icon.jpg","manifest.webmanifest","vendor/fonts/Inter-latin-ext.woff2","vendor/fonts/Inter-latin.woff2","vendor/fonts/JetBrainsMono-latin-ext.woff2","vendor/fonts/JetBrainsMono-latin.woff2","vendor/fonts/SpaceGrotesk-latin-ext.woff2","vendor/fonts/SpaceGrotesk-latin.woff2","vendor/glyphs/NotoSans-Bold/0-255.pbf","vendor/glyphs/NotoSans-Bold/1024-1279.pbf","vendor/glyphs/NotoSans-Bold/1536-1791.pbf","vendor/glyphs/NotoSans-Bold/256-511.pbf","vendor/glyphs/NotoSans-Bold/768-1023.pbf","vendor/glyphs/NotoSans-Bold/8192-8447.pbf","vendor/glyphs/NotoSans-Italic/0-255.pbf","vendor/glyphs/NotoSans-Italic/1024-1279.pbf","vendor/glyphs/NotoSans-Italic/1536-1791.pbf","vendor/glyphs/NotoSans-Italic/256-511.pbf","vendor/glyphs/NotoSans-Italic/768-1023.pbf","vendor/glyphs/NotoSans-Italic/8192-8447.pbf","vendor/glyphs/NotoSans-Regular/0-255.pbf","vendor/glyphs/NotoSans-Regular/1024-1279.pbf","vendor/glyphs/NotoSans-Regular/1536-1791.pbf","vendor/glyphs/NotoSans-Regular/256-511.pbf","vendor/glyphs/NotoSans-Regular/768-1023.pbf","vendor/glyphs/NotoSans-Regular/8192-8447.pbf","vendor/leaflet/images/layers-2x.png","vendor/leaflet/images/layers.png","vendor/leaflet/images/marker-icon-2x.png","vendor/leaflet/images/marker-icon.png","vendor/leaflet/images/marker-shadow.png","vendor/leaflet/leaflet.css","vendor/leaflet/leaflet.js","vendor/maplibre/leaflet-maplibre-gl.js","vendor/maplibre/maplibre-gl-csp-worker.js","vendor/maplibre/maplibre-gl-csp.js","vendor/maplibre/maplibre-gl.css"];
+const PACKS = 'raynet-packs-v1';
 const APP_PATH = (self.registration && self.registration.scope) ? new URL(self.registration.scope).pathname : '/';   // the app's own address, e.g. /Metro-Istanbul-General-City-Map/
 /* v2, and the activate handler below drops v1. Tiles are cached by URL, so the CARTO entries
    would never be read again after the switch to Esri — but a phone that browsed the map during
@@ -26,6 +36,7 @@ const TILE_CAP  = 3000;          // ~90 MB of 256px tiles; trimmed oldest-first
    ones. A vector tile is small and its address carries the data's version, so a cached one is always right; the index is
    fetched fresh when there is a network and read from the cache when there is not. */
 const VEC_HOST  = 'tiles.openfreemap.org';
+const VEC_INDEX = 'https://tiles.openfreemap.org/planet';        // the tile list (TileJSON): names the current tile addresses
 const VEC_TILES = 'raynet-vtiles-v1';
 const VEC_CAP   = 3000;          // the tile service's own ceiling for what an app keeps offline
 let vecPuts = 0;
@@ -59,11 +70,51 @@ const quiet = p => p.catch(() => {});                  // one page that cannot b
 const isHtml = r => { try { return /text\/html/i.test(r.headers.get('content-type') || ''); } catch (_) { return false; } };
 async function precache() {
   const base = self.registration.scope;
-  const shell = await caches.open(SHELL), pages = await caches.open(PAGES);
+  const shell = await caches.open(SHELL), pages = await caches.open(PAGES), stat = await caches.open(STATIC), vec = await caches.open(VEC_TILES);
   await Promise.all([
     quiet(fetch(base).then(r => (r.ok ? shell.put('shell', r) : null))),
     ...OFFLINE_PAGES.map(p => { const u = new URL(p, base).href; return quiet(fetch(u).then(r => (r.ok && isHtml(r) ? pages.put(u, r) : null))); }),
+    /* the app's own files: 'no-cache' asks the server whether the browser's copy is still good, so a new version is never skipped */
+    ...APP_FILES.map(p => { const u = new URL(p, base).href; return quiet(fetch(u, { cache: 'no-cache' }).then(r => (r.ok ? stat.put(u, r) : null))); }),
+    /* the list that says where the map tiles are now: the map cannot start without it */
+    quiet(fetch(VEC_INDEX).then(r => (r.ok ? vec.put(VEC_INDEX, r) : null))),
   ]);
+}
+
+/* ---- offline map packs ----
+   A pack is 'RNP1', a 4-byte length, an index as JSON ({ tiles: { "z/x/y": [offset, length] } }) and then the tiles, each gzipped.
+   The page downloads a city's pack and stores the file itself in the PACKS cache; a tile is read straight out of that stored file
+   (a slice of it, unzipped as it is handed over), so nothing is unpacked or stored twice. The index of every stored pack is read
+   once and kept while this worker lives; the page says 'packsChanged' when it adds or removes one. */
+let packTiles = null;                                  // Map "z/x/y" -> [Blob, offset, length], or null = not read yet
+async function readPacks() {
+  const map = new Map();
+  try {
+    const cache = await caches.open(PACKS);
+    for (const req of await cache.keys()) {
+      try {
+        const blob = await (await cache.match(req)).blob();
+        const head = new DataView(await blob.slice(0, 8).arrayBuffer());
+        if (head.getUint32(0) !== 0x524E5031) continue;                                  // 'RNP1'
+        const n = head.getUint32(4, true), meta = JSON.parse(await blob.slice(8, 8 + n).text());
+        for (const k in meta.tiles) if (!map.has(k)) map.set(k, [blob, 8 + n + meta.tiles[k][0], meta.tiles[k][1]]);
+      } catch (_) { /* a damaged pack is skipped, never fatal */ }
+    }
+  } catch (_) { /* no cache storage */ }
+  return map;
+}
+async function packTile(z, x, y) {
+  if (!packTiles) packTiles = readPacks();
+  const e = (await packTiles).get(z + '/' + x + '/' + y);
+  if (!e || typeof DecompressionStream === 'undefined') return null;
+  return new Response(e[0].slice(e[1], e[1] + e[2]).stream().pipeThrough(new DecompressionStream('gzip')),
+                      { status: 200, headers: { 'Content-Type': 'application/x-protobuf', 'X-Raynet-Pack': '1' } });
+}
+/* the tile list, when it was never fetched and cannot be now: enough for the map to start and ask for tiles (which the packs answer) */
+function packIndex() {
+  return new Response(JSON.stringify({ tilejson: '3.0.0', tiles: [VEC_INDEX + '/offline/{z}/{x}/{y}.pbf'], minzoom: 0, maxzoom: 14,
+                                       attribution: '', vector_layers: [] }),
+                      { status: 200, headers: { 'Content-Type': 'application/json' } });
 }
 self.addEventListener('install', e => {
   self.skipWaiting();
@@ -121,6 +172,7 @@ self.addEventListener('message', e => {
       .then(([a, b]) => reply({ type:"tileStats", count:a.length + b.length, cap:TILE_CAP + VEC_CAP }))
       .catch(() => reply({ type:"tileStats", count:0, cap:TILE_CAP }));
   }
+  if (e.data === 'packsChanged') packTiles = null;          // the page stored or removed an offline pack: read the indexes again
   if (e.data === 'clearTiles') {
     Promise.all([caches.delete(TILES), caches.delete(VEC_TILES)])
       .then(() => reply({ type:"tileStats", count:0, cap:TILE_CAP }));
@@ -176,12 +228,18 @@ self.addEventListener('fetch', e => {
     e.respondWith((async () => {
       const cache = await caches.open(VEC_TILES);
       const hit = await cache.match(e.request, { ignoreVary: true });
-      if (hit && /\.pbf$/.test(url.pathname)) return hit;
+      const tile = /\/(\d+)\/(\d+)\/(\d+)\.pbf$/.exec(url.pathname);
+      if (hit && tile) return hit;
+      /* what to answer when the network cannot: the kept copy, else the tile out of an offline pack, else (for the tile list)
+         a stand-in that lets the map start. An error only when there is truly nothing. */
+      const offline = async () => hit || (tile ? await packTile(tile[1], tile[2], tile[3]) : (/\/planet\/?$/.test(url.pathname) ? packIndex() : null));
       try {
         const r = await fetch(e.request);
-        if (r && r.ok) { cache.put(e.request, r.clone()); if (++vecPuts % 100 === 0) trimVec(); }
-        return r;
-      } catch (_) { return hit || Response.error(); }
+        if (r && r.ok) { cache.put(e.request, r.clone()); if (++vecPuts % 100 === 0) trimVec(); return r; }
+        /* the service answered, but not with a tile (it is down, the tile addresses moved on, or the map started from the stand-in
+           list): the pack is better than a hole. Where the pack has nothing either (open sea), the answer is passed on as it is. */
+        return (await offline()) || r;
+      } catch (_) { return (await offline()) || Response.error(); }
     })());
     return;
   }
@@ -199,7 +257,7 @@ self.addEventListener('fetch', e => {
     e.respondWith((async () => {
       const cached = await caches.match(e.request);
       const fresh = fetch(e.request).then(r => {
-        if (r && r.ok) caches.open(STATIC).then(c => c.put(e.request, r.clone()));
+        if (r && r.ok) { const copy = r.clone(); caches.open(STATIC).then(c => c.put(e.request, copy)).catch(() => {}); }   // the copy is taken NOW: once the page reads the answer it cannot be copied
         return r;
       }).catch(() => null);
       return cached || (await fresh) || Response.error();
@@ -207,6 +265,8 @@ self.addEventListener('fetch', e => {
     return;
   }
   if (url.pathname.includes('/transit_data/')) return;   // live disruptions JSON stays no-store
+  /* an offline map pack is tens of megabytes and the PAGE stores it (in the PACKS cache, with a progress bar): never keep a second copy */
+  if (url.origin === location.origin && url.pathname.includes('/offline/')) return;
 
   // (the app page and the other pages are handled above, in openPage)
 
@@ -215,7 +275,7 @@ self.addEventListener('fetch', e => {
     e.respondWith((async () => {
       const cached = await caches.match(e.request);
       const fresh = fetch(e.request).then(r => {
-        if (r && r.ok) caches.open(STATIC).then(c => c.put(e.request, r.clone()));
+        if (r && r.ok) { const copy = r.clone(); caches.open(STATIC).then(c => c.put(e.request, copy)).catch(() => {}); }   // the copy is taken NOW: once the page reads the answer it cannot be copied
         return r;
       }).catch(() => null);
       return cached || (await fresh) || Response.error();

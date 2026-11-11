@@ -99,6 +99,17 @@ cities.izmir.lines    = liveOnly(izmir).concat(plannedFor('izmir'));
 cities.bursa.lines    = liveOnly(bursa).concat(plannedFor('bursa'));
 cities.antalya.lines  = liveOnly(antalya).concat(plannedFor('antalya'));
 cities.kocaeli.lines  = liveOnly(kocaeli).concat(plannedFor('kocaeli'));
+/* V4.4.1: every ferry line is re-routed over the water the base map draws (water-mask.json), one position per pier, and lines that
+   share a stretch of sea share one path. See ferry-water.cjs; test/ferry.test.cjs measures the result. */
+{
+  const FW = require('./ferry-water.cjs'), mask = FW.loadMask();
+  for (const id of Object.keys(mask)) {
+    if (!cities[id]) continue;
+    const rep = FW.routeFerries(cities[id].lines, mask[id]);
+    if (rep.failed) { console.error('ferry routing: ' + rep.failed + ' hop(s) in ' + id + ' found no way over water'); process.exit(1); }
+    console.log('FERRIES ' + id + ':', rep.lines, 'lines,', rep.piers, 'piers,', rep.lanes, 'shared stretches');
+  }
+}
 const data = JSON.stringify(cities);
 
 // lift the TR→EN translator out of the scraper so the CLIENT can re-translate any
@@ -162,9 +173,22 @@ const staleDays = Object.values(provenance.datasets)
   .map(m => (Date.now() - Date.parse(m.updated)) / 86400000);
 const buildStamp = new Date().toISOString().replace(/[-:TZ.]/g, '').slice(0, 14);
 // the script goes in FIRST: every other token below lives inside the application source
+/* What a city needs to work with no connection (V4.4.1): its base-map pack (offline/<city>.pack, made by build-offline-packs.cjs
+   and listed with its size in offline/packs.json) and the data files the app otherwise fetches when first needed. */
+const packsFile = path.join(ROOT, 'offline', 'packs.json');
+const packs = fs.existsSync(packsFile) ? JSON.parse(fs.readFileSync(packsFile, 'utf8')).packs : {};
+const offlineInfo = {};
+for (const id of Object.keys(cities)) {
+  const data = ['bus-data-', 'bus-geom-', 'places-', 'landuse-'].map(pre => 'transit_data/' + pre + id + '.json').filter(f => fs.existsSync(path.join(ROOT, f)));
+  /* counted with line endings normalised: a Windows checkout adds a carriage return to each data file, and the page built there
+     must be byte for byte the page built by CI */
+  const dataBytes = data.reduce((a, f) => a + fs.readFileSync(path.join(ROOT, f)).toString('latin1').replace(/\r\n/g, '\n').length, 0);
+  const pk = packs[id] && fs.existsSync(path.join(ROOT, packs[id].file)) ? packs[id] : null;
+  offlineInfo[id] = { pack: pk ? pk.file : null, packBytes: pk ? pk.bytes : 0, bytes: (pk ? pk.bytes : 0) + dataBytes, v: pk ? pk.built : '', data };
+}
 let html = template.replace('__APP_JS__', () => appJs);
 
-for (const t of ['__CITIES_JSON__','__INTERCITY_JSON__','__BUS_JSON__','__DISRUPTIONS_JSON__','__OPENINGS_JSON__','__MISTATIONS_JSON__','__ACCESS_JSON__','__ATTRACTIONS_JSON__','__CARDIMG_JSON__','__TRANSLATOR_JS__','__BUILD__','__PROVENANCE_JSON__'])
+for (const t of ['__CITIES_JSON__','__INTERCITY_JSON__','__BUS_JSON__','__DISRUPTIONS_JSON__','__OPENINGS_JSON__','__MISTATIONS_JSON__','__ACCESS_JSON__','__ATTRACTIONS_JSON__','__CARDIMG_JSON__','__TRANSLATOR_JS__','__BUILD__','__PROVENANCE_JSON__','__OFFLINE_JSON__'])
   if (!html.includes(t)) { console.error('token missing:', t); process.exit(1); }
 
 html = html.replace('__BUILD__', () => buildStamp)
@@ -178,7 +202,8 @@ html = html.replace('__BUILD__', () => buildStamp)
                      .replace('__ATTRACTIONS_JSON__', () => JSON.stringify(attract))
                      .replace('__CARDIMG_JSON__', () => JSON.stringify(cardImg))
                      .replace('__TRANSLATOR_JS__', () => translatorJS)
-                     .replace('__PROVENANCE_JSON__', () => JSON.stringify(provenance));
+                     .replace('__PROVENANCE_JSON__', () => JSON.stringify(provenance))
+                     .replace('__OFFLINE_JSON__', () => JSON.stringify(offlineInfo));
 /* Who runs the app and how to reach them (V4.3). One file feeds the app (Settings > About & legal, the privacy notice) and the
    legal pages (legal/*.html, built below), so the two cannot say different things. */
 const LEGAL = JSON.parse(fs.readFileSync(path.join(DIR, 'legal-config.json'), 'utf8'));
@@ -275,5 +300,10 @@ for (const [city, s] of Object.entries(busSets)) {
 const swTpl = fs.readFileSync(path.join(DIR, 'sw.template.js'), 'utf8');
 const swVersion = buildStamp;   // one stamp for the worker and the diagnostics report
 /* the pages the worker fetches at install so they open offline (V4.3): the legal pages, as paths under the app's address */
-fs.writeFileSync(path.join(ROOT, 'sw.js'), swTpl.replace('__SW_VERSION__', () => swVersion).replace('__OFFLINE_PAGES__', () => JSON.stringify(LEGAL_FILES)));
+/* every file of the app itself (V4.4.1): the map engines, typefaces, letter shapes and icons. The worker fetches them all at install,
+   so the app starts with no connection after its first visit. Licence and readme files are not needed to run. */
+const walk = dir => fs.readdirSync(path.join(ROOT, dir), { withFileTypes: true }).flatMap(e => e.isDirectory() ? walk(dir + '/' + e.name) : [dir + '/' + e.name]);
+const APP_FILES = ['manifest.webmanifest'].concat(walk('vendor'), walk('assets')).filter(f => !/(^|\/)(README\.md|LICEN[SC]E[^/]*)$/i.test(f)).sort();
+fs.writeFileSync(path.join(ROOT, 'sw.js'), swTpl.replace('__SW_VERSION__', () => swVersion).replace('__OFFLINE_PAGES__', () => JSON.stringify(LEGAL_FILES)).replace('__APP_FILES__', () => JSON.stringify(APP_FILES)));
+console.log('APP FILES kept for offline:', APP_FILES.length);
 console.log('WROTE sw.js  version', swVersion);

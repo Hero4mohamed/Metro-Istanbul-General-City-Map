@@ -170,11 +170,15 @@ function clearUnderBubbles(){
     tctx.clearRect(r.left - o.left - 4, r.top - o.top - 4, r.width + 8, r.height + 8);
   }
 }
+let _lblRoom;                                // the station list last handed to the base map (undefined = never)
 let _lblSrc = null, _lblOrder = [];          // the station list the order was made for, and its interchanges-first order
 const _lblWidth = new Map();                  // a name's width in px at the label font, measured once
 function drawLabels(){
-  if(labelAlpha < 0.03) return;
   const list = currentTab==='active' ? stationList : (currentTab==='vision' ? plannedStationList : []);
+  /* tell the base map which station names are on screen, so its own names keep clear of them (V4.4.1, the stop-room layers) */
+  const room = labelAlpha < 0.03 ? null : list;
+  if(room !== _lblRoom){ _lblRoom = room; if(typeof vecPushStops === 'function') vecPushStops(room); }
+  if(labelAlpha < 0.03) return;
   const z = map.getZoom(), s = map.getSize();
   tctx.save();
   tctx.globalAlpha = labelAlpha;

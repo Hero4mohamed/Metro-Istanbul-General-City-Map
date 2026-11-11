@@ -24,6 +24,7 @@ function mkSheet(id){
   const s=document.createElement('div'); s.className='msheet glass'; s.id='sheet_'+id;
   s.innerHTML='<div class="mgrab"></div>';
   document.body.appendChild(s);
+  if(id==='planner') return s;                 // the planner sheet has three heights and its own dragging (setupPlanSheet)
   // swipe-down to close
   let y0=null, dy=0;
   s.addEventListener('touchstart',e=>{ if(s.scrollTop<=0){ y0=e.touches[0].clientY; dy=0; } },{passive:true});
@@ -35,9 +36,131 @@ function mkSheet(id){
 }
 function openSheet(name){
   for(const k in mSheets) mSheets[k].classList.toggle('open', k===name);
-  document.getElementById('mbackdrop').classList.toggle('on', !!name);
+  /* the planner keeps the map in view and usable, so nothing is dimmed behind it (V4.4.1); the other sheets still dim the map */
+  document.getElementById('mbackdrop').classList.toggle('on', !!name && name!=='planner');
+  document.body.classList.toggle('plan-open', name==='planner');
+  if(name==='planner') setPlanDetent(planRouteShown() ? 'half' : 'compact');
   for(const k in mNavBtns) mNavBtns[k].classList.toggle('on', (name===null? k==='map' : k===name));
   if(navigator.vibrate) try{ navigator.vibrate(8); }catch(e){}
+}
+/* ---------------------------------------------------------------------------
+   THE PLANNER SHEET HAS THREE HEIGHTS (V4.4.1)
+   It used to open at 80% of the screen with the map dimmed behind it, so planning a trip meant not seeing the map. Now:
+     compact  From, To and the button, nothing else: about a third of the screen, the map above it and still usable
+              (pan it, tap a station, use "pick a point on the map");
+     half     when a route is found: the times and the first steps, with the route fitted into the map above;
+     full     everything (modes, time, favourites, recent plans), and while typing, so the suggestions clear the keyboard.
+   Drag the handle (or the sheet) up and down to move between them, tap the handle to step, drag down from compact to close.
+   --------------------------------------------------------------------------- */
+const PLAN_DETENTS = ['compact', 'half', 'full'];
+let planDetent = 'compact', planTyping = false;
+function planRouteShown(){ const r=document.getElementById('rout'); return !!(r && r.classList.contains('show')); }
+/* the three heights in px, for this screen and this content. Compact is what the shortened content needs (measured, not guessed). */
+function planHeights(s){
+  const vh = window.innerHeight, cls = s.className, was = s.style.height;
+  s.classList.remove('d-half','d-full'); s.classList.add('d-compact','short','measuring');
+  s.style.height = 'auto';
+  const compact = Math.min(s.offsetHeight, Math.round(vh * 0.5));
+  s.className = cls; s.style.height = was;
+  /* half is a little taller when it has a route to show: the times, the fare and the first steps */
+  return { compact: compact, half: Math.max(compact + 60, Math.round(vh * (planRouteShown() ? 0.58 : 0.5))), full: Math.round(vh * 0.88) };
+}
+/* the lowest height that shows something useful: the Adventure planner has no short form */
+function planFloor(){ const adv=document.getElementById('plannerAdv'); return adv && adv.style.display!=='none' ? 'half' : 'compact'; }
+function setPlanDetent(d){
+  const s = mSheets.planner; if(!s) return;
+  if(d==='compact') d = planFloor();
+  planDetent = d;
+  PLAN_DETENTS.forEach(k => s.classList.toggle('d-'+k, k===d));
+  /* the short form (From, To, no options): at compact always, and at half when there is a route to give the room to */
+  s.classList.toggle('short', d==='compact' || (d==='half' && planRouteShown()));
+  const h = planHeights(s)[d];
+  s.style.height = h + 'px';
+  document.documentElement.style.setProperty('--plan-h', h + 'px');     // the locate and assistant buttons ride above the sheet
+  if(d!=='full') s.scrollTop = 0;
+  const g = s.querySelector('.mgrab-btn'); if(g) g.setAttribute('aria-expanded', d==='compact' ? 'false' : 'true');
+}
+/* which height a drag that ended at `h` px (moving at `v` px/ms, + = growing) settles on; null = close the sheet */
+function planSettle(h, v, from, H){
+  if(h < H.compact - 70 || (from==='compact' && v < -0.5)) return null;
+  if(Math.abs(v) > 0.45){ const i = PLAN_DETENTS.indexOf(from); return PLAN_DETENTS[Math.max(0, Math.min(2, i + (v>0 ? 1 : -1)))]; }
+  return PLAN_DETENTS.reduce((a, b) => Math.abs(H[b]-h) < Math.abs(H[a]-h) ? b : a);
+}
+function setupPlanSheet(s){
+  s.classList.add('plan');
+  const grab = s.querySelector('.mgrab');
+  const btn = document.createElement('button'); btn.type='button'; btn.className='mgrab-btn';
+  btn.setAttribute('data-i18n-aria','sheetResize'); btn.setAttribute('aria-label', t('sheetResize')); btn.setAttribute('aria-controls','cardPlanner');
+  s.replaceChild(btn, grab); btn.appendChild(grab);
+  btn.addEventListener('click', () => { planTyping=false; const i=PLAN_DETENTS.indexOf(planDetent); setPlanDetent(PLAN_DETENTS[(i+1) % 3]); });
+  /* dragging: the sheet follows the finger, then settles on the nearest height (or the next one, for a flick) */
+  let y0=null, h0=0, moved=false, t0=0, H=null;
+  s.addEventListener('touchstart', e => {
+    y0=null;
+    if(e.touches.length!==1 || e.target.closest('input,select,.ac-list,.jmap')) return;
+    if(!e.target.closest('.mgrab-btn') && s.scrollTop>0) return;          // scrolled content scrolls; only the top of it drags
+    y0=e.touches[0].clientY; h0=s.offsetHeight; moved=false; t0=performance.now(); H=planHeights(s);
+  }, {passive:true});
+  s.addEventListener('touchmove', e => {
+    if(y0===null) return;
+    const dy=e.touches[0].clientY-y0;
+    if(planDetent==='full' && dy<0 && !moved){ y0=null; return; }          // at full height an upward finger scrolls the content
+    if(!moved && Math.abs(dy)<6) return;
+    moved=true; s.classList.add('dragging');
+    s.style.height = Math.max(H.compact-150, Math.min(H.full, h0-dy)) + 'px';
+  }, {passive:true});
+  const end = () => {
+    if(y0===null) return;
+    y0=null; s.classList.remove('dragging');
+    if(!moved) return;
+    const h=s.offsetHeight, v=(h-h0)/Math.max(1, performance.now()-t0);
+    const to=planSettle(h, v, planDetent, H);
+    planTyping=false;
+    if(to===null){ s.style.height=''; openSheet(null); } else setPlanDetent(to);
+  };
+  s.addEventListener('touchend', end, {passive:true});
+  s.addEventListener('touchcancel', end, {passive:true});
+  /* typing: full height, so the suggestions are above the keyboard; back down when the typing is over */
+  s.addEventListener('focusin', e => { if(e.target.matches && e.target.matches('.ac-input')){ planTyping=true; setPlanDetent('full'); } });
+  s.addEventListener('focusout', e => {
+    if(!(e.target.matches && e.target.matches('.ac-input'))) return;
+    setTimeout(() => {
+      const a=document.activeElement;
+      if(!planTyping || (a && a.matches && a.matches('.ac-input'))) return;
+      planTyping=false; if(s.classList.contains('open')) setPlanDetent(planRouteShown() ? 'half' : 'compact');
+    }, 220);
+  });
+  /* a route appeared or was cleared: show it at half height with the map above, or go back to the short form */
+  const rout=document.getElementById('rout');
+  if(rout && typeof MutationObserver!=='undefined') new MutationObserver(() => {
+    if(!s.classList.contains('open')) return;
+    const a=document.activeElement; if(planRouteShown() && a && a.matches && a.matches('.ac-input')) a.blur();
+    planTyping=false; setPlanDetent(planRouteShown() ? 'half' : 'compact');
+  }).observe(rout, { attributes:true, attributeFilter:['class'] });
+  window.addEventListener('resize', () => { if(s.classList.contains('open') && !planTyping) setPlanDetent(planDetent); });
+}
+/* On a phone, with the planner sheet open, choosing the second end of a trip finds the route: one tap fewer, and the map above shows
+   it at once. Asked by setPoint() each time an end is set; coalesced (a swap sets both ends in turn) and never repeated for the same
+   pair (finding a route can itself set an end, from typed text). The button stays for changes of time, modes or card. */
+let planAutoT = null, planAutoKey = '';
+function planAutoRun(){
+  if(!IS_MOBILE || !mSheets.planner || !mSheets.planner.classList.contains('open')) return;
+  clearTimeout(planAutoT);
+  planAutoT = setTimeout(() => {
+    if(!originPt || !destPt || !mSheets.planner.classList.contains('open')) return;
+    const key = [originPt.lat, originPt.lng, destPt.lat, destPt.lng].join(',');
+    if(key === planAutoKey || (originPt.lat === destPt.lat && originPt.lng === destPt.lng)) return;
+    planAutoKey = key; runRoute();
+  }, 140);
+}
+/* What covers the map when a route is fitted into it: on a phone, the top bar and the planner sheet at the height it shows a route
+   at. Leaflet's fitBounds takes these as padding, so the whole route lands in the part of the map that can be seen. */
+function mapFitPad(){
+  if(!IS_MOBILE) return null;
+  const s=mSheets.planner, tb=document.querySelector('.topbar');
+  const top = tb ? Math.max(0, Math.round(tb.getBoundingClientRect().bottom)) + 10 : 10;
+  const bottom = s && s.classList.contains('open') ? planHeights(s).half + 10 : 100;
+  return { paddingTopLeft:[28, top], paddingBottomRight:[28, bottom] };
 }
 function setupMobile(){
   if(!IS_MOBILE) return;
@@ -58,6 +181,7 @@ function setupMobile(){
     el.style.display='';   // sheets control visibility now; setTab still toggles the weather / bus / intercity cards
   });
   document.getElementById('cardPlanner').style.display='';
+  setupPlanSheet(mSheets.planner);
   const ann=document.getElementById('announce'); mSheets.alerts.appendChild(ann); ann.classList.remove('collapsed');
   // bottom navigation
   const nav=document.createElement('div'); nav.className='mnav glass';

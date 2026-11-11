@@ -28,6 +28,7 @@ function setPoint(which, pt){
   if(which==='O') originPt=pt; else destPt=pt;
   document.getElementById(which==='O'?'selO':'selD').value = pt ? pt.name : '';
   renderEndpoints(); updateFavBtn();
+  if(pt && originPt && destPt && typeof planAutoRun==='function') planAutoRun();   // phone, planner sheet open: both ends chosen = find the route
 }
 /* ===========================================================================
    GPS — locate the user and route from their real position. Live pulsing dot +
@@ -696,7 +697,9 @@ function showItinerary(res, it){
     renderRouteWarnings(it); }
   const allPts=[], legs=[];
   drawItin(res, it, allPts, legs);
-  if(allPts.length) map.fitBounds(L.latLngBounds(allPts).pad(0.25));
+  /* on a phone the route is fitted into the part of the map the top bar and the planner sheet leave in view (V4.4.1) */
+  const fitPad = typeof mapFitPad==='function' ? mapFitPad() : null;
+  if(allPts.length) map.fitBounds(L.latLngBounds(allPts).pad(fitPad ? 0.04 : 0.25), fitPad || {});
   const jm=document.getElementById('rJourney'); if(jm) jm.innerHTML = journeyHTML(it, res);
   stepsEl.innerHTML = timetableHTML(it) + stepsHTML(it);
   if(legs.length){
