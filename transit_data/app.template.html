@@ -7,7 +7,7 @@
      cannot set headers, so this ships as meta; frame-ancestors and report-uri are
      unavailable that way. -->
 <meta http-equiv="Content-Security-Policy" content="__CSP__">
-<title>İSTANBUL RAY-NET · Rail Network Map &amp; Simulation</title>
+<title>TurkMaps · Transit Network Map</title>
 <!-- Leaflet 1.9.4, shipped with the app rather than fetched from a CDN (V4.3): see vendor/README.md -->
 <link rel="stylesheet" href="vendor/leaflet/leaflet.css">
 <!-- the vector base map (MapLibre GL), shipped with the app rather than fetched from a CDN: see vendor/README.md -->
@@ -27,17 +27,17 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="RAY-NET">
+<meta name="apple-mobile-web-app-title" content="TurkMaps">
 <meta property="og:type" content="website">
-<meta property="og:site_name" content="İSTANBUL · RAY-NET">
-<meta property="og:title" content="İSTANBUL · RAY-NET — Transit Network Map">
+<meta property="og:site_name" content="TurkMaps">
+<meta property="og:title" content="TurkMaps — Transit Network Map">
 <meta property="og:description" content="Metro, tram, ferry &amp; bus on one map: simulated carriages, official timetables, multi-stop trip planner, service notices and district weather.">
 <meta property="og:url" content="https://hero4mohamed.github.io/Metro-Istanbul-General-City-Map/">
 <meta property="og:image" content="https://hero4mohamed.github.io/Metro-Istanbul-General-City-Map/assets/og-card.png">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
 <meta name="twitter:card" content="summary_large_image">
-<meta name="twitter:title" content="İSTANBUL · RAY-NET — Transit Network Map">
+<meta name="twitter:title" content="İSTANBUL · TURKMAPS — Transit Network Map">
 <meta name="twitter:description" content="Metro, tram, ferry &amp; bus on one map: simulated carriages, official timetables, trip planner, service notices and weather.">
 <meta name="twitter:image" content="https://hero4mohamed.github.io/Metro-Istanbul-General-City-Map/assets/og-card.png">
 <style>
@@ -226,7 +226,7 @@
   .city-btn:hover{color:var(--accent-ink);}
   .city-caret{font-size:var(--fs-5);color:var(--muted);transition:transform .2s var(--ease);}
   .city-btn[aria-expanded="true"] .city-caret{transform:rotate(180deg);color:var(--accent-ink);}
-  .brand-tail{letter-spacing:inherit;}
+  .brand-tail{letter-spacing:.06em;white-space:nowrap;}   /* "· TURKMAPS" is a letter longer than the old name: closer set and never broken, so it stays on the city's line */
   .city-menu{position:absolute;top:calc(100% + 8px);left:0;min-width:232px;z-index:1500;display:none;
     padding:5px;border-radius:14px;flex-direction:column;gap:2px;}
   .city-menu.show{display:flex;animation:dd .16s var(--ease);}
@@ -422,7 +422,7 @@
      into exactly these colours, so the surfaces below are not "close to" the map, they ARE the
      map's ground:
 
-         day   ground #F3F0E9   water #AAD3EC   park #CDE5C0   arterial #FADEAA
+         day   ground #EAE3D5   water #A3C7D6   park #C7DAB5   arterial #F5DDB0
          night ground #1B1F2A   water #0B1121   park #1E2C28   arterial #5C6270
 
      Lines are drawn with an outline instead of a bloom (applyLineStyle), because a glow is
@@ -445,12 +445,12 @@
     --svg-hole:#18191C;
   }
   body.atlas.light{
-    --obsidian:#F3F0E9; --panel:rgba(255,255,255,.95); --stroke:rgba(27,36,51,.10);
-    --stroke-2:rgba(27,36,51,.17); --text:#1B2433; --muted:#4F5B70; --dim:#5D697D;
+    --obsidian:#EAE3D5; --panel:rgba(253,250,244,.95); --stroke:rgba(27,36,51,.10);
+    --stroke-2:rgba(27,36,51,.17); --text:#1B2433; --muted:#4F5B70; --dim:#556174;
     /* Every tier clears AA on the ivory ground (the test measures against --obsidian). The two
        the default light theme gets wrong are fixed here rather than inherited: --gold-ink is
        4.31 there, and its --ok-ink is a hair above the line. */
-    --accent:#08796A; --accent-2:#0A6B83; --gold:#8A5A0F; --btn-ink:#FFFFFF;
+    --accent:#066A5D; --accent-2:#0A6B83; --gold:#8A5A0F; --btn-ink:#FFFFFF;
     --grad-accent:linear-gradient(135deg,#087A69,#0A6B83);
     --surface:rgba(27,36,51,.04); --surface-2:rgba(27,36,51,.07);
     --track:rgba(27,36,51,.06); --ring:rgba(8,121,106,.28);
@@ -684,6 +684,23 @@
   .bus-search:focus{border-color:#FBBF24;box-shadow:0 0 0 3px rgba(var(--gold-rgb),.18);}
   .bus-search::placeholder{color:var(--dim);}
   .bus-count{font-size:var(--fs-6);color:var(--dim);margin-bottom:6px;letter-spacing:.4px;}
+  /* the Boats tab (V4.5): one row per ferry line, with the colour it is drawn in */
+  .boat-list{display:flex;flex-direction:column;gap:4px;margin-top:8px;}
+  .boat-row{display:flex;align-items:center;gap:10px;width:100%;padding:8px 10px;border-radius:10px;border:1px solid var(--stroke);background:var(--surface);color:var(--text);font:inherit;text-align:start;cursor:pointer;transition:background .15s var(--ease),border-color .15s;}
+  .boat-row:hover,.boat-row:focus-visible{background:var(--surface-2);border-color:var(--stroke-2);}
+  .boat-row .boat-sw{flex:none;width:22px;height:6px;border-radius:999px;box-shadow:0 0 0 1px rgba(0,0,0,.35);}
+  .boat-row .boat-t{min-width:0;display:flex;flex-direction:column;gap:1px;}
+  .boat-row .boat-t b{font-size:12.5px;font-weight:700;}
+  .boat-row .boat-t small{font-size:11px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  /* the phone's switch between kinds of transport (the Map button pressed a second time): Rail / Buses / Boats */
+  .mode-seg{display:flex;gap:6px;padding:2px 0 10px;}
+  .mode-seg button{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;padding:9px 6px;border-radius:14px;border:1px solid var(--stroke-2);background:var(--surface);color:var(--muted);font:700 11.5px var(--font);cursor:pointer;transition:all .15s var(--ease);}
+  .mode-seg button .mode-i{font-size:19px;line-height:1;}
+  .mode-seg button.on{color:var(--ok-ink);background:rgba(var(--ok-rgb),.14);border-color:rgba(var(--ok-rgb),.45);}
+  .mode-seg button:active{transform:scale(.96);}
+  .mode-hint{font-size:11.5px;color:var(--muted);padding:0 2px 8px;}
+  body.mobile #tabs button[data-tab="bus"],body.mobile #tabs button[data-tab="boat"]{display:none;}      /* on a phone these two live behind the Map button */
+  body.mobile .msheet.modes{max-height:46vh;box-shadow:0 -14px 40px -18px rgba(0,0,0,.55);}
   .bus-list{display:flex;flex-direction:column;gap:3px;max-height:48vh;overflow:auto;}
   .bus-row{display:flex;align-items:center;gap:9px;padding:7px 9px;border-radius:10px;border:1px solid transparent;cursor:pointer;transition:all .15s var(--ease);}
   .bus-row:hover{background:var(--surface);border-color:var(--stroke);}
@@ -784,12 +801,12 @@
   .ac-geo{position:absolute;right:33px;top:5px;width:27px;height:27px;border:none;background:transparent;cursor:pointer;border-radius:9px;opacity:.7;color:var(--text);display:flex;align-items:center;justify-content:center;transition:all .15s var(--ease);}
   .ac-geo:hover{opacity:1;background:var(--surface-2);color:var(--accent-ink);}
   .ac-geo.busy{color:var(--accent-ink);animation:spin 1s linear infinite;}
-  .ac-list{position:absolute;left:0;right:0;top:40px;z-index:30;background:rgba(10,14,22,.97);backdrop-filter:blur(16px);
+  .ac-list{position:absolute;left:0;right:0;top:40px;z-index:30;background-color:var(--obsidian);color:var(--text);
     border:1px solid var(--stroke-2);border-radius:12px;max-height:230px;overflow-y:auto;display:none;
-    box-shadow:0 20px 48px -12px rgba(0,0,0,.85);}
+    box-shadow:0 20px 48px -12px rgba(0,0,0,.55);}
   .ac-list.show{display:block;animation:dd .16s var(--ease);}
   @keyframes dd{from{opacity:0;transform:translateY(-5px);}to{opacity:1;transform:translateY(0);}}
-  .ac-item{padding:8px 11px;font-size:11.5px;cursor:pointer;border-bottom:1px solid rgba(255,255,255,.04);display:flex;align-items:center;gap:8px;transition:background .12s;}
+  .ac-item{padding:8px 11px;font-size:11.5px;cursor:pointer;border-bottom:1px solid var(--stroke);display:flex;align-items:center;gap:8px;transition:background .12s;}
   .ac-item:hover,.ac-item.sel{background:rgba(var(--ok-rgb),.11);}
   .ac-item .ac-dot{width:7px;height:7px;border-radius:var(--r-round);flex:none;box-shadow:0 0 5px currentColor;}
   .ac-item .ac-ic{width:14px;flex:none;text-align:center;font-size:11px;line-height:1;}
@@ -797,7 +814,7 @@
   .ac-item small{color:var(--dim);margin-left:auto;padding-left:8px;font-size:var(--fs-4);text-transform:uppercase;letter-spacing:.6px;font-weight:600;flex:none;}
   /* geocoder section divider + status rows */
   .ac-sec{padding:5px 11px 3px;font-size:var(--fs-3);font-weight:800;letter-spacing:1px;text-transform:uppercase;
-    color:var(--dim);background:rgba(255,255,255,.03);border-bottom:1px solid rgba(255,255,255,.04);}
+    color:var(--dim);background:var(--surface);border-bottom:1px solid var(--stroke);}
   .ac-hint{padding:9px 11px;font-size:var(--fs-8);color:var(--dim);display:flex;align-items:center;gap:7px;}
   .ac-hint.ac-loading::before{content:"";width:11px;height:11px;border-radius:var(--r-round);border:2px solid var(--stroke-2);
     border-top-color:var(--accent);animation:spin .7s linear infinite;flex:none;}
@@ -985,7 +1002,7 @@
   /* --- right to left ------------------------------------------------------------------
      Arabic sets dir=rtl on the document, which is what its prose needs. The side effect is
      that the bidi algorithm reorders a run of Latin text around any neutral character in
-     it, so the masthead "İSTANBUL · RAY-NET" came out as "RAY-NET · İSTANBUL" and the bus
+     it, so the masthead "İSTANBUL · TURKMAPS" came out as "TURKMAPS · İSTANBUL" and the bus
      operator tag " · İETT" jumped its separator. These are names, not sentences: they are
      isolated so they keep their own direction whatever surrounds them. Physical left:/right:
      rules are not affected by dir at all, so the map furniture needs no counterpart here. */
@@ -1324,6 +1341,7 @@
   /* nothing else may sit under the sheet: the locate and assistant buttons ride just above it, and the top search gives the map its room */
   body.mobile.plan-open .locate-fab{bottom:calc(var(--plan-h,240px) + 12px);transition:bottom .3s var(--ease);}
   body.mobile.plan-open .ai-orb{bottom:calc(var(--plan-h,240px) + 68px);transition:bottom .3s var(--ease);}
+  body.mobile.plan-open.plan-full .locate-fab,body.mobile.plan-open.plan-full .ai-orb{opacity:0;pointer-events:none;}
   body.mobile.plan-open .omni{display:none;}
   /* a phone zooms with two fingers; the +/- buttons sat hidden under the top bar and showed through it once the search was folded away */
   body.mobile .leaflet-control-zoom{display:none;}
@@ -1348,7 +1366,7 @@
   .settings-btn:hover{opacity:1;color:var(--accent-ink);border-color:var(--ring);transform:rotate(40deg);}
   .settings-btn:active{transform:scale(.9) rotate(40deg);}
   /* clear BOTH action buttons (settings at right:13 + help at right:49, 32px each) — with only
-     30px the gear sat on top of "RAY-NET" once the help button was added */
+     30px the gear sat on top of "TURKMAPS" once the help button was added */
   .topbar h1{padding-right:72px;}
   body.mobile .topbar h1{padding-right:4px;}
   body.mobile .settings-btn{position:static;flex:0 0 auto;}
@@ -1626,7 +1644,7 @@
   body.focus-route .leaflet-container::after{content:attr(data-focus-note);position:absolute;left:50%;
     transform:translateX(-50%);bottom:14px;z-index:900;pointer-events:none;
     padding:6px 12px;border-radius:999px;font-family:var(--font);font-size:var(--fs-7);font-weight:700;
-    letter-spacing:.3px;color:var(--accent-ink);background:rgba(7,10,18,.82);border:1px solid var(--stroke-2);}
+    letter-spacing:.3px;color:var(--accent-ink);background-color:var(--obsidian);border:1px solid var(--stroke-2);}
   .off-wrap{display:flex;gap:7px;}
   .off-btn{flex:1;padding:8px 10px;border-radius:10px;border:1px solid var(--stroke-2);cursor:pointer;
     background:var(--grad-accent);color:var(--btn-ink);font-family:var(--font);font-size:var(--fs-8);font-weight:800;}
@@ -1714,6 +1732,13 @@
   .bd-r{display:flex;justify-content:space-between;gap:10px;padding:2px 0;}
   .bd-r>span{color:var(--muted);font-size:11px;} .bd-r>b{color:var(--text);font-family:var(--mono);font-weight:600;font-size:var(--fs-8);}
   .bd-src{font-size:var(--fs-6);color:var(--dim);margin-top:6px;}
+  /* live buses (V4.5): one line saying what is on the map and who says so */
+  .lb-strip{display:flex;flex-wrap:wrap;align-items:center;gap:4px 8px;margin:0 0 8px;padding:7px 10px;border:1px solid var(--stroke);border-radius:10px;background:var(--surface);font-size:var(--fs-5);color:var(--text);}
+  .lb-dot{width:8px;height:8px;border-radius:var(--r-round);background:var(--dim);flex:0 0 auto;}
+  .lb-strip.on .lb-dot{background:#12B886;box-shadow:0 0 0 4px rgba(18,184,134,.22);}
+  .lb-strip.off .lb-dot{background:#D9822B;}
+  .lb-t{flex:1 1 0;min-width:0;}
+  .lb-src{flex:1 0 100%;font-size:var(--fs-6);color:var(--dim);}
   /* live "Go" journey mode */
   .go-start{margin:4px 0 2px;background:var(--grad-accent);}
   .go-overlay{position:fixed;inset:0;pointer-events:none;background:linear-gradient(to top,rgba(3,6,10,.35),transparent 32%);opacity:0;transition:opacity .25s;z-index:1660;}
@@ -1838,7 +1863,7 @@
 </div>
 
 <div class="topbar glass">
-  <h1><img class="logo" src="assets/logo-96.png" width="30" height="30" alt="" aria-hidden="true" decoding="async"><button id="cityBtn" class="city-btn" aria-haspopup="listbox" aria-expanded="false"><span id="cityName">İSTANBUL</span><span class="city-caret" aria-hidden="true">▾</span></button><span class="brand-tail">· RAY-NET</span>
+  <h1><img class="logo" src="assets/logo-96.png" width="30" height="30" alt="" aria-hidden="true" decoding="async"><button id="cityBtn" class="city-btn" aria-haspopup="listbox" aria-expanded="false"><span id="cityName">İSTANBUL</span><span class="city-caret" aria-hidden="true">▾</span></button><span class="brand-tail">· TURKMAPS</span>
     <div class="city-menu glass" id="cityMenu" role="listbox" aria-label="City" data-i18n-aria="ariaCity"></div></h1>
   <div class="sub"><span data-i18n="liveNet">Rail Network</span> · <a href="https://github.com/Hero4mohamed/Metro-Istanbul-General-City-Map" target="_blank" rel="noopener" style="color:var(--accent-ink);text-decoration:none;font-weight:700;" data-i18n="source">source ↗</a></div>
   <div class="stats">
@@ -2084,7 +2109,7 @@
   <details class="sp-sec" data-sec="about">
     <summary><span class="sp-ico" aria-hidden="true">ℹ️</span><span data-i18n="secAbout">About &amp; legal</span></summary>
     <div class="sp-body">
-      <div class="sp-item"><div class="sp-note" data-i18n="aboutProject">İstanbul Ray-Net is a free, non-commercial, open-source project by its author. It is not an official service of any transit operator.</div></div>
+      <div class="sp-item"><div class="sp-note" data-i18n="aboutProject">TurkMaps is a free, non-commercial, open-source project by its author. It is not an official service of any transit operator.</div></div>
       <div class="sp-item sp-links">
         <a class="sp-link" data-legal="privacy" href="legal/privacy.html" target="_blank" rel="noopener" data-i18n="legalPrivacy">Privacy notice</a>
         <a class="sp-link" data-legal="terms" href="legal/terms.html" target="_blank" rel="noopener" data-i18n="legalTerms">Terms of use</a>
@@ -2135,6 +2160,7 @@
       <button data-tab="active" class="active" role="tab" aria-selected="true" data-i18n="tabActive">● Active</button>
       <button data-tab="vision" role="tab" aria-selected="false" data-i18n="tabVision">◇ Vision</button>
       <button data-tab="bus" role="tab" aria-selected="false" data-i18n="tabBus">▤ Buses</button>
+      <button data-tab="boat" role="tab" aria-selected="false" data-i18n="tabBoat">⛴ Boats</button>
       <button data-tab="intercity" role="tab" aria-selected="false" data-i18n="tabIntercity">🚄 Intercity</button>
       <button data-tab="weather" role="tab" aria-selected="false" data-i18n="tabWeather">☀ Weather</button>
     </div>
@@ -2217,6 +2243,13 @@
     <div class="bus-count" id="busCount"></div>
     <div class="bus-detail" id="busDetail"></div>
     <div class="bus-list" id="busList"></div>
+  </div>
+
+  <div class="card glass" id="cardBoats" style="display:none;">
+    <div class="sec"><span data-i18n="boatsTitle">Boat lines</span></div>
+    <div class="bus-count" id="boatCount"></div>
+    <div class="sp-note" data-i18n="boatsIntro">Each line has its own colour and its own lane: where lines share the water they run side by side. Tap a line to see its piers.</div>
+    <div class="boat-list" id="boatList"></div>
   </div>
 
   <div class="card glass" id="cardIntercity" style="display:none;">

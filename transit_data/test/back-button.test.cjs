@@ -121,27 +121,30 @@ test('switching scope inside the Layers sheet is a step: back returns to the sco
   assert.ok(!w.sheets[1].cls.has('open')); assert.deepStrictEqual(w.info().stack, []);
 });
 
-test('choosing the scope you came from by hand is the undo itself, and a long walk through scopes unwinds in order', async () => {
+/* V4.5: back always leads to the default map. A view other than the default one is ONE step however many views were visited on the way. */
+test('going back to the default view by hand is the undo itself, and a walk through several views is one step back to the default map', async () => {
   const w = world(); await w.settle();
   w.openSheet('layers'); await w.settle();
   w.setTab('vision'); await w.settle(); w.setTab('active'); await w.settle();
   assert.deepStrictEqual(w.info().stack, ['sheet'], 'going back to Active by hand left a step behind');
-  w.setTab('vision'); await w.settle(); w.setTab('bus'); await w.settle();
-  assert.deepStrictEqual(w.info().stack, ['sheet', 'scope<active', 'scope<vision']);
-  await w.back(); assert.strictEqual(w.state.tab, 'vision');
-  await w.back(); assert.strictEqual(w.state.tab, 'active');
+  w.setTab('vision'); await w.settle(); w.setTab('bus'); await w.settle(); w.setTab('boat'); await w.settle();
+  assert.deepStrictEqual(w.info().stack, ['sheet', 'scope<active'], 'each view visited became a step of its own: back would walk through them instead of going to the default map');
+  await w.back(); assert.strictEqual(w.state.tab, 'active', 'back did not go straight to the default map');
   await w.back(); assert.ok(!w.sheets[1].cls.has('open'));
 });
 
-test('a scope change made from the map (no sheet open on a phone) is not a step, and closing the sheet drops its scope steps without undoing them', async () => {
+test('on a phone, back from any view other than the default map goes to the default map, however the view was reached and with no sheet open', async () => {
   const w = world(); await w.settle();
-  w.setTab('bus'); await w.settle();
-  assert.deepStrictEqual(w.info().stack, [], 'a scope change from the map became a history entry');
-  w.setTab('active'); w.openSheet('layers'); await w.settle(); w.setTab('vision'); await w.settle();
-  assert.deepStrictEqual(w.info().stack, ['sheet', 'scope<active']);
-  w.openSheet(null); await w.settle();                   // tapped the dimmed map behind the sheet
-  assert.deepStrictEqual([w.info().stack, w.info().depth, w.info().idx], [[], 0, 0], 'closing the sheet left history entries behind');
-  assert.strictEqual(w.state.tab, 'vision', 'closing the sheet undid the person\'s choice of scope');
+  w.setTab('vision'); await w.settle();                   // reached from the map itself: it used not to count, and back left the app
+  assert.deepStrictEqual(w.info().stack, ['scope<active'], 'a view chosen with no sheet open is not a step: back would leave the app');
+  await w.back(); assert.strictEqual(w.state.tab, 'active'); assert.deepStrictEqual([w.info().stack, w.info().depth], [[], 0]);
+  // chosen in a sheet, then the sheet closed by a tap on the map: the view stays, and so does its way back
+  w.openSheet('layers'); await w.settle(); w.setTab('weather'); await w.settle();
+  w.openSheet(null); await w.settle();
+  assert.strictEqual(w.state.tab, 'weather', 'closing the sheet undid the choice of view');
+  assert.deepStrictEqual(w.info().stack, ['scope<active'], 'closing the sheet dropped the way back to the default map');
+  await w.back(); assert.strictEqual(w.state.tab, 'active', 'back from Weather (sheet closed) did not go to the default map');
+  assert.deepStrictEqual([w.info().stack, w.info().depth, w.info().idx], [[], 0, 0]);
 });
 
 test('on a computer the scope steps do not need a sheet: back steps through them', async () => {

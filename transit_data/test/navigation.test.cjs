@@ -14,7 +14,9 @@ test('the phone has four bottom buttons - Map, Planner, Layers, Alerts - and no 
   assert.ok(items, 'the list of bottom buttons is gone');
   const keys = [...items[1].matchAll(/\['(\w+)','[^']*','(\w+)'\]/g)].map(m => m[1]);
   assert.deepStrictEqual(keys, ['map', 'planner', 'layers', 'alerts'], 'the bottom bar is not Map / Planner / Layers / Alerts');
-  assert.ok(/mSheets=\{ planner:mkSheet\('planner'\), layers:mkSheet\('layers'\), alerts:mkSheet\('alerts'\) \};/.test(s), 'the phone has a sheet that no button opens, or a button without a sheet');
+  /* V4.5: a fourth sheet, the kinds of transport (Metro & rail / Buses / Boats), which the MAP button opens when pressed on the default map */
+  assert.ok(/mSheets=\{ planner:mkSheet\('planner'\), layers:mkSheet\('layers'\), alerts:mkSheet\('alerts'\), modes:mkSheet\('modes'\) \};/.test(s), 'the phone has a sheet that no button opens, or a button without a sheet');
+  assert.ok(/if\(k==='map'\)\{ mapButton\(\); return; \}/.test(s) && /if\(mapIsDefault\(\)\)\{ openSheet\('modes'\); return; \}/.test(s), 'nothing opens the kinds-of-transport sheet');
   assert.ok(!/mkSheet\('weather'\)/.test(s) && !/mSheets\.weather/.test(s), 'the weather has its own sheet again');
   assert.ok(!/mWeather/.test(s), 'the dead "Weather" bottom-bar label is still in the language tables');
 });
@@ -22,7 +24,7 @@ test('the phone has four bottom buttons - Map, Planner, Layers, Alerts - and no 
 test('the weather card goes in the Layers sheet with the tab strip that selects it, and the layers card steps aside on every screen', () => {
   const s = H.appScript(), html = H.html();
   // the sheet-filling loop sends planner and alerts where they belong and everything else (tabs, layers, buses, intercity, weather) to Layers
-  assert.ok(/if\(el\.id==='cardPlanner'\) mSheets\.planner\.appendChild\(el\);\s*else mSheets\.layers\.appendChild\(el\);/.test(s), 'a card is sent to a sheet that no longer exists');
+  assert.ok(/if\(el\.id==='cardPlanner'\) mSheets\.planner\.appendChild\(el\);\s*else if\(el\.id==='cardBus' \|\| el\.id==='cardBoats'\) mSheets\.modes\.appendChild\(el\);\s*else mSheets\.layers\.appendChild\(el\);/.test(s), 'a card is sent to a sheet that no longer exists');
   assert.ok(/<button data-tab="weather" role="tab"/.test(html), 'the Weather scope is gone from the tab strip');
   assert.ok(/\n  document\.getElementById\('cardLayers'\)\.style\.display = \(t==='weather'\) \? 'none' : '';/.test(s), 'on a phone the layers card sits above the weather again');
 });

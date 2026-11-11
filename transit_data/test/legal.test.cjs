@@ -32,7 +32,7 @@ test('every page is a real document: language, title, one h1, a main landmark, a
   for (const name of PAGES) for (const L of LANGS) {
     const h = page(name, L), f = legal.file(name, L);
     assert.match(h, new RegExp('<html lang="' + L + '">'), f + ': wrong or missing lang');
-    assert.match(h, /<title>[^<]+ · İstanbul Ray-Net<\/title>/, f + ': no title');
+    assert.match(h, /<title>[^<]+ · TurkMaps<\/title>/, f + ': no title');
     assert.strictEqual((h.match(/<h1>/g) || []).length, 1, f + ': needs exactly one h1');
     assert.ok(/<main id="main">/.test(h) && /<a class="skip" href="#main">/.test(h), f + ': no main landmark or skip link');
     assert.ok(h.includes('href="' + legal.file(name, L === 'en' ? 'tr' : 'en') + '"'), f + ': does not link to its other-language twin');

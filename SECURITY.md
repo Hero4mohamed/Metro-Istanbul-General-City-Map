@@ -1,6 +1,6 @@
 # Security policy
 
-İstanbul Ray-Net is a free, non-commercial, open-source project by one person. It has no server, no accounts and no database of
+TurkMaps is a free, non-commercial, open-source project by one person. It has no server, no accounts and no database of
 users: it is a set of static files on GitHub Pages, and what people save stays in their own browser. That keeps the attack surface
 small, but not zero, and a report is welcome.
 

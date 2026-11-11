@@ -24,9 +24,10 @@ function setTab(t){
   closeAllPanels();
   NETWORK.forEach(l => map.removeLayer(lineLayers[l.ref].group));
   map.removeLayer(ghostGroup); map.removeLayer(stationGroup); map.removeLayer(plannedStationGroup);
-  busLayer.clearLayers(); map.removeLayer(weatherLayer);
+  busLayer.clearLayers(); map.removeLayer(weatherLayer); map.removeLayer(boatLayer);
+  if(typeof liveBusStop === 'function') liveBusStop();        // live buses belong to the open bus line only
   map.removeLayer(disruptionLayer);                          // hazard overlays belong to Active only
-  const hideCore = (t==='bus' || t==='weather' || t==='intercity');
+  const hideCore = (t==='bus' || t==='boat' || t==='weather' || t==='intercity');
   document.getElementById('cardLines').style.display   = hideCore ? 'none' : '';
   document.getElementById('cardPlanner').style.display = hideCore ? 'none' : '';
   /* The weather card is tall (a scene, a day, a week, every district) and the right column is one scroll. Showing the
@@ -34,6 +35,8 @@ function setTab(t){
      weather lives in the Layers sheet (V4.2), under the same tabs, so the same rule applies there. */
   document.getElementById('cardLayers').style.display = (t==='weather') ? 'none' : '';
   document.getElementById('cardBus').style.display     = (t==='bus') ? '' : 'none';
+  document.getElementById('cardBoats').style.display   = (t==='boat') ? '' : 'none';
+  if(typeof syncModeSeg === 'function') syncModeSeg(t);       // the phone's Rail / Buses / Boats switch (18-mobile-shell.js)
   document.getElementById('cardWeather').style.display = (t==='weather') ? '' : 'none';
   document.getElementById('cardIntercity').style.display = (t==='intercity') ? '' : 'none';
   if(t!=='intercity'){                                       // leaving: drop the highlight, restore İstanbul view
@@ -64,6 +67,11 @@ function setTab(t){
     ghostGroup.addTo(map);                                   // faint network for orientation
     weatherLayer.addTo(map);
     ensureWeather();                                         // fetch (or refresh stale) data
+  } else if(t==='boat'){
+    /* only the boats, each line on its own lane in its own colour (14b-boats.js); the railways stay as a faint ghost for orientation */
+    ghostGroup.addTo(map);
+    boatLayer.addTo(map); renderBoats(); renderBoatList();
+    if(prevTab !== 'boat') fitBoats();
   } else { // bus directory
     ghostGroup.addTo(map);                                   // rail/ferry context behind buses
     if(!busListBuilt){ renderBusList(''); busListBuilt = true; }

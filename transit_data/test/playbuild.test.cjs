@@ -44,7 +44,7 @@ function load({ referrer = '', search = '', session = new Map(), sessionThrows =
 }
 
 test('play build: a page opened by the Android shell is recognised, by the referrer or by the marker on the address', () => {
-  for (const referrer of ['android-app://io.github.hero4mohamed.raynet', 'android-app://io.github.hero4mohamed.raynet/', 'ANDROID-APP://x.y']) {
+  for (const referrer of ['android-app://io.github.hero4mohamed.turkmaps', 'android-app://io.github.hero4mohamed.turkmaps/', 'ANDROID-APP://x.y']) {
     const r = load({ referrer });
     assert.strictEqual(r.on, true, 'the shell\'s referrer was not recognised: ' + referrer);
     assert.ok(r.classes.has('play-app'), 'the page was not tagged play-app');
@@ -63,7 +63,7 @@ test('play build: an ordinary visit is not mistaken for the Android app', () => 
 
 test('play build: the window remembers it, so a trip to a legal page and back does not switch the website behaviour on', () => {
   const session = new Map();
-  assert.strictEqual(load({ referrer: 'android-app://io.github.hero4mohamed.raynet', session }).on, true);
+  assert.strictEqual(load({ referrer: 'android-app://io.github.hero4mohamed.turkmaps', session }).on, true);
   assert.strictEqual(session.get('irn_play'), '1', 'the window did not remember it was opened from the Android app');
   // the legal page's "back to the app" link is a new navigation whose referrer is the legal page
   const back = load({ referrer: 'https://hero4mohamed.github.io/Metro-Istanbul-General-City-Map/legal/privacy.html', session });

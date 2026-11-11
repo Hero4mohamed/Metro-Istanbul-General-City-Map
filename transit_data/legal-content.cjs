@@ -37,6 +37,11 @@ const HOSTS = [
           sees: 'For a timetable, the identifier of the station you opened (so, which station you looked at), plus your IP address and browser details. The bus-notices request carries nothing about you.' },
     tr: { when: 'Bir Metro İstanbul istasyonunu açtığınızda (resmî sefer saatleri istenir) ve Duyurular paneli İETT otobüs duyurularını yüklediğinde.',
           sees: 'Sefer saatleri için açtığınız istasyonun kimliğini (yani hangi istasyona baktığınızı), IP adresinizi ve tarayıcı bilgilerinizi. Otobüs duyuruları isteği sizinle ilgili hiçbir şey taşımaz.' } },
+  { hosts: ['openapi.izmir.bel.tr'], name: 'İzmir Metropolitan Municipality Open Data', url: 'https://acikveri.bizizmir.com/tr/Document/Gizlilik_Politikasi.pdf',
+    en: { when: 'In İzmir, while a bus line is open on the Buses view: about every 20 seconds the line is asked where its buses are. It stops when you close the line, leave the view or put the app in the background.',
+          sees: 'The number of the bus line you opened, plus your IP address and browser details. Not your position.' },
+    tr: { when: 'İzmir\'de, Otobüsler görünümünde bir otobüs hattı açıkken: yaklaşık 20 saniyede bir o hattın otobüslerinin nerede olduğu sorulur. Hattı kapattığınızda, görünümden çıktığınızda veya uygulamayı arka plana aldığınızda durur.',
+          sees: 'Açtığınız otobüs hattının numarasını, IP adresinizi ve tarayıcı bilgilerinizi. Konumunuzu değil.' } },
   { hosts: ['api.open-meteo.com', 'air-quality-api.open-meteo.com'], name: 'Open-Meteo', url: 'https://open-meteo.com/en/terms',
     en: { when: 'When you open the Weather tab, and each time it refreshes.',
           sees: 'The coordinates of the city centre and of its districts (not your own position), plus your IP address and browser details.' },
@@ -121,8 +126,8 @@ const PAGES = {};
 
 /* =============================================================== index */
 PAGES.index = {
-  en: c => ({ title: 'Legal and privacy', desc: 'Privacy, terms, cookies and credits for İstanbul Ray-Net.', h1: 'Legal and privacy', updated: true, body:
-    p('İstanbul Ray-Net is a free, non-commercial, open-source map of public transport in Turkish cities. These pages say what it does with information, what you can expect from it, and where its data and software come from.') +
+  en: c => ({ title: 'Legal and privacy', desc: 'Privacy, terms, cookies and credits for TurkMaps.', h1: 'Legal and privacy', updated: true, body:
+    p('TurkMaps is a free, non-commercial, open-source map of public transport in Turkish cities. These pages say what it does with information, what you can expect from it, and where its data and software come from.') +
     ul([a('privacy.html', '<strong>Privacy notice</strong>') + ': what the app keeps, who it talks to, and your choices.',
         a('terms.html', '<strong>Terms of use</strong>') + ': what the app is, what it is not, that it is free (no fees, no refunds needed), and its limits.',
         a('storage.html', '<strong>Cookies and stored data</strong>') + ': exactly what is saved on your device, and how to delete it.',
@@ -133,8 +138,8 @@ PAGES.index = {
         '<strong>Contact:</strong> ' + a('mailto:' + c.contactEmail, esc(c.contactEmail)) + '. Questions about privacy, a correction or a complaint all go here.',
         '<strong>Source code:</strong> ' + a(c.repoUrl, esc(c.repoUrl)) + ' (MIT licence).',
         '<strong>Not affiliated:</strong> with Metro İstanbul, İETT, İBB, Şehir Hatları, TCDD or any other operator or authority. Their names identify where information comes from.']) }),
-  tr: c => ({ title: 'Yasal bilgiler ve gizlilik', desc: 'İstanbul Ray-Net için gizlilik, koşullar, çerezler ve katkılar.', h1: 'Yasal bilgiler ve gizlilik', updated: true, body:
-    p('İstanbul Ray-Net, Türkiye\'deki şehirlerin toplu taşımasını gösteren ücretsiz, ticari olmayan, açık kaynaklı bir haritadır. Bu sayfalar uygulamanın bilgilerle ne yaptığını, ondan neler bekleyebileceğinizi ve verilerinin ile yazılımının nereden geldiğini anlatır.') +
+  tr: c => ({ title: 'Yasal bilgiler ve gizlilik', desc: 'TurkMaps için gizlilik, koşullar, çerezler ve katkılar.', h1: 'Yasal bilgiler ve gizlilik', updated: true, body:
+    p('TurkMaps, Türkiye\'deki şehirlerin toplu taşımasını gösteren ücretsiz, ticari olmayan, açık kaynaklı bir haritadır. Bu sayfalar uygulamanın bilgilerle ne yaptığını, ondan neler bekleyebileceğinizi ve verilerinin ile yazılımının nereden geldiğini anlatır.') +
     ul([a('privacy.tr.html', '<strong>Gizlilik bildirimi</strong>') + ': uygulamanın neyi sakladığı, kimlerle konuştuğu ve seçimleriniz.',
         a('terms.tr.html', '<strong>Kullanım koşulları</strong>') + ': uygulamanın ne olduğu, ne olmadığı, ücretsiz olduğu (ücret yok, iade gerekmez) ve sınırları.',
         a('storage.tr.html', '<strong>Çerezler ve saklanan veriler</strong>') + ': cihazınızda tam olarak neyin saklandığı ve nasıl silineceği.',
@@ -153,7 +158,7 @@ const hostRows = (L, optional) => HOSTS.filter(h => !!h.optional === optional).m
   esc(h[L].when), esc(h[L].sees)]);
 
 PAGES.privacy = {
-  en: c => ({ title: 'Privacy notice', desc: 'What İstanbul Ray-Net keeps on your device, which services it contacts, and your choices.', h1: 'Privacy notice', updated: true, body:
+  en: c => ({ title: 'Privacy notice', desc: 'What TurkMaps keeps on your device, which services it contacts, and your choices.', h1: 'Privacy notice', updated: true, body:
     '<h2 id="short">The short version</h2>' + ul([
       'No accounts, no sign-up, no ads, no analytics, no tracking pixels and no cookies.',
       'There is no server of ours. The app is a set of files served by GitHub Pages. What you save (settings, saved places, journeys) stays on your device and is never sent to the author, who could not read it if they wanted to.',
@@ -177,7 +182,7 @@ PAGES.privacy = {
     '<h2 id="children">8. Children</h2>' + p('The app collects no personal data from anyone, of any age, and has no accounts, so it needs no age check or parental consent. If a child uses it, a parent or guardian may prefer to leave online look-ups off, which is the default.') +
     '<h2 id="rights">9. Your rights</h2>' + p('We hold no personal data about you, so there is nothing for us to look up, correct or delete: the data on your device is yours and the delete button removes it. For what the services in section 4 log (such as IP addresses) contact them through the links above. Data-protection laws such as Turkey\'s KVKK and the EU and UK GDPR give you rights over personal data and the right to complain to the supervisory authority; if you have any question or concern, write to us first at ' + a('mailto:' + c.contactEmail, esc(c.contactEmail)) + ' and we will answer.') +
     '<h2 id="changes">10. Changes to this notice</h2>' + p('If this notice changes in a way that matters, the date and version above change and the app asks its question again. Older versions are kept in the project\'s public source history.') }),
-  tr: c => ({ title: 'Gizlilik bildirimi', desc: 'İstanbul Ray-Net\'in cihazınızda ne sakladığı, hangi servislere eriştiği ve seçimleriniz.', h1: 'Gizlilik bildirimi', updated: true, body:
+  tr: c => ({ title: 'Gizlilik bildirimi', desc: 'TurkMaps\'in cihazınızda ne sakladığı, hangi servislere eriştiği ve seçimleriniz.', h1: 'Gizlilik bildirimi', updated: true, body:
     '<h2 id="short">Kısaca</h2>' + ul([
       'Hesap, kayıt, reklam, analiz, izleme pikseli ve çerez yoktur.',
       'Bizim bir sunucumuz yoktur. Uygulama, GitHub Pages\'in sunduğu bir dosya kümesidir. Kaydettikleriniz (ayarlar, kayıtlı yerler, yolculuklar) cihazınızda kalır ve yazara asla gönderilmez; yazar istese de okuyamaz.',
@@ -205,8 +210,8 @@ PAGES.privacy = {
 
 /* =============================================================== terms */
 PAGES.terms = {
-  en: c => ({ title: 'Terms of use', desc: 'What İstanbul Ray-Net is, what it is not, and its limits. It is free: no fees, no purchases, no refunds needed.', h1: 'Terms of use', updated: true, body:
-    '<h2 id="what">1. What this is</h2>' + p('İstanbul Ray-Net is a free map and journey planner for public transport in Turkish cities (metro, tram, ferry, bus and more). It is made by ' + c.operatorEn + ' as a non-commercial, open-source project. It is <strong>not</strong> an official service of Metro İstanbul, İETT, İBB, Şehir Hatları, TCDD or any other operator or authority, and is not affiliated with or endorsed by them.') +
+  en: c => ({ title: 'Terms of use', desc: 'What TurkMaps is, what it is not, and its limits. It is free: no fees, no purchases, no refunds needed.', h1: 'Terms of use', updated: true, body:
+    '<h2 id="what">1. What this is</h2>' + p('TurkMaps is a free map and journey planner for public transport in Turkish cities (metro, tram, ferry, bus and more). It is made by ' + c.operatorEn + ' as a non-commercial, open-source project. It is <strong>not</strong> an official service of Metro İstanbul, İETT, İBB, Şehir Hatları, TCDD or any other operator or authority, and is not affiliated with or endorsed by them.') +
     '<h2 id="accuracy">2. Check before you travel</h2>' + ul([
       'Timetables, fares, step-free information and notices come from official and open sources and may be out of date, incomplete or wrong. Fares and walking times are estimates.',
       'The carriages you see moving on the map are a <strong>simulation</strong> worked out from published timetables and frequencies. They are not vehicle positions, and the "next departures" board says MODELLED when it is derived that way.',
@@ -221,8 +226,8 @@ PAGES.terms = {
     '<h2 id="liability">9. No warranty, and limits on liability</h2>' + p('The app is provided "as is", without promises that it is accurate, complete, always available or fit for a particular purpose. To the fullest extent the law allows, the author is not liable for missed connections, delays, costs or other loss from relying on it. Nothing here limits liability that cannot be limited by law (for example for death or personal injury caused by negligence, or for fraud) or any consumer right you have that cannot be waived.') +
     '<h2 id="changes">10. Changes</h2>' + p('The app and these terms may change. The date and version above show the current text, and older versions are kept in the project\'s public source history. If you do not agree with the terms, please do not use the app.') +
     '<h2 id="contact">11. Contact</h2>' + p(a('mailto:' + c.contactEmail, esc(c.contactEmail)) + '.') }),
-  tr: c => ({ title: 'Kullanım koşulları', desc: 'İstanbul Ray-Net\'in ne olduğu, ne olmadığı ve sınırları. Ücretsizdir: ücret yok, satın alma yok, iade gerekmez.', h1: 'Kullanım koşulları', updated: true, body:
-    '<h2 id="what">1. Bu nedir</h2>' + p('İstanbul Ray-Net, Türkiye\'deki şehirlerde toplu taşıma (metro, tramvay, vapur, otobüs ve daha fazlası) için ücretsiz bir harita ve yolculuk planlayıcıdır. ' + c.operatorTr + ' tarafından ticari olmayan, açık kaynaklı bir proje olarak yapılmıştır. Metro İstanbul, İETT, İBB, Şehir Hatları, TCDD veya başka bir işletmecinin ya da kurumun resmî hizmeti <strong>değildir</strong>; onlarla bağlantılı değildir ve onlar tarafından onaylanmamıştır.') +
+  tr: c => ({ title: 'Kullanım koşulları', desc: 'TurkMaps\'in ne olduğu, ne olmadığı ve sınırları. Ücretsizdir: ücret yok, satın alma yok, iade gerekmez.', h1: 'Kullanım koşulları', updated: true, body:
+    '<h2 id="what">1. Bu nedir</h2>' + p('TurkMaps, Türkiye\'deki şehirlerde toplu taşıma (metro, tramvay, vapur, otobüs ve daha fazlası) için ücretsiz bir harita ve yolculuk planlayıcıdır. ' + c.operatorTr + ' tarafından ticari olmayan, açık kaynaklı bir proje olarak yapılmıştır. Metro İstanbul, İETT, İBB, Şehir Hatları, TCDD veya başka bir işletmecinin ya da kurumun resmî hizmeti <strong>değildir</strong>; onlarla bağlantılı değildir ve onlar tarafından onaylanmamıştır.') +
     '<h2 id="accuracy">2. Yolculuktan önce doğrulayın</h2>' + ul([
       'Sefer saatleri, ücretler, merdivensiz erişim bilgisi ve duyurular resmî ve açık kaynaklardan gelir; güncel olmayabilir, eksik veya yanlış olabilir. Ücretler ve yürüme süreleri tahmindir.',
       'Haritada hareket eden vagonlar, yayımlanmış sefer saatleri ve sıklıklarından hesaplanan bir <strong>simülasyondur</strong>. Araç konumu değildir; "sonraki kalkışlar" panosu bu şekilde türetildiğinde MODEL yazar.',
@@ -242,7 +247,7 @@ PAGES.terms = {
 /* =============================================================== storage */
 const storageRows = L => STORAGE.map(s => ['<code>' + esc(s.key) + '</code>', esc(s[L]), esc(L === 'tr' ? s.whenTr : s.when)]);
 PAGES.storage = {
-  en: c => ({ title: 'Cookies and stored data', desc: 'Exactly what İstanbul Ray-Net saves on your device, and how to delete it.', h1: 'Cookies and stored data', updated: true, body:
+  en: c => ({ title: 'Cookies and stored data', desc: 'Exactly what TurkMaps saves on your device, and how to delete it.', h1: 'Cookies and stored data', updated: true, body:
     '<h2 id="cookies">Cookies</h2>' + p('The app sets <strong>no cookies</strong>, and uses no cookie-like tracking (no tracking IDs, no fingerprinting, no advertising or analytics scripts). It also does not use IndexedDB. The only use of <em>session storage</em> is one marker, <code>irn_play</code>, set when the page is opened from the Android app and gone when that window closes (see the table).') +
     '<h2 id="local">What it stores instead</h2>' + p('The app saves a small amount of data in your browser\'s own <em>local storage</em>, on your device only. It is never sent to the author or anyone else. Each item is created only when the thing it remembers happens.') +
     table(['Key', 'What it holds', 'Written when'], storageRows('en')) +
@@ -253,7 +258,7 @@ PAGES.storage = {
       '<strong>Just trips and favourites:</strong> <em>Clear saved trips and favourites</em>, in the same place.',
       '<strong>Your browser:</strong> clearing this site\'s data in your browser\'s settings removes everything too.']) +
     p('Other projects published under the same github.io address keep their own data; the button removes only what this app wrote (keys starting <code>irn_</code> and caches starting <code>raynet-</code>).') }),
-  tr: c => ({ title: 'Çerezler ve saklanan veriler', desc: 'İstanbul Ray-Net\'in cihazınızda tam olarak neyi kaydettiği ve nasıl silineceği.', h1: 'Çerezler ve saklanan veriler', updated: true, body:
+  tr: c => ({ title: 'Çerezler ve saklanan veriler', desc: 'TurkMaps\'in cihazınızda tam olarak neyi kaydettiği ve nasıl silineceği.', h1: 'Çerezler ve saklanan veriler', updated: true, body:
     '<h2 id="cookies">Çerezler</h2>' + p('Uygulama <strong>hiç çerez koymaz</strong> ve çereze benzer izleme kullanmaz (izleme kimliği, parmak izi, reklam veya analiz betiği yok). IndexedDB de kullanmaz. <em>Oturum depolamasının</em> tek kullanımı, sayfa Android uygulamasından açıldığında konan ve o pencere kapanınca silinen tek bir işarettir (<code>irn_play</code>; tabloya bakın).') +
     '<h2 id="local">Onun yerine ne saklar</h2>' + p('Uygulama, tarayıcınızın kendi <em>yerel depolamasında</em>, yalnızca cihazınızda küçük miktarda veri kaydeder. Yazara ya da başkasına asla gönderilmez. Her kayıt, ancak hatırladığı şey gerçekleştiğinde oluşturulur.') +
     table(['Anahtar', 'Ne tutar', 'Ne zaman yazılır'], storageRows('tr')) +
@@ -269,18 +274,19 @@ PAGES.storage = {
 /* =============================================================== credits */
 const OFL = (en) => en ? 'SIL Open Font License 1.1' : 'SIL Açık Yazı Tipi Lisansı 1.1';
 PAGES.credits = {
-  en: c => ({ title: 'Credits and licences', desc: 'Whose data, software, typefaces and images İstanbul Ray-Net uses.', h1: 'Credits and licences', updated: true, body:
+  en: c => ({ title: 'Credits and licences', desc: 'Whose data, software, typefaces and images TurkMaps uses.', h1: 'Credits and licences', updated: true, body:
     '<h2 id="data">Map data and services</h2>' + ul([
       '<strong>OpenStreetMap contributors</strong>: the rail, tram, ferry and bus geometry, stations, and every named street and place the search runs on. © OpenStreetMap contributors, ' + a('https://www.openstreetmap.org/copyright', 'ODbL 1.0') + '. Because the app ships derived data, that data is offered under the same licence.',
       '<strong>OpenFreeMap</strong> and the <strong>OpenMapTiles</strong> schema: the street map drawn on your device. The offline maps the app keeps (one file per city, served from this app\'s own address) are a copy of the same tiles. ' + a('https://openfreemap.org/', 'openfreemap.org') + '.',
       '<strong>Esri</strong> (World Imagery and the backup World Street Map): © Esri, Maxar, Earthstar Geographics, HERE, Garmin, USGS and contributors.',
       '<strong>İBB Open Data, İETT and Metro İstanbul</strong>: station registry, timetables, bus lines and notices, under the ' + a('https://data.ibb.gov.tr/license', 'İBB Open Data Licence') + ', which allows reuse with attribution. As the licence asks: <em>Contains public sector information licensed under Attribution 4.0 International (CC BY 4.0)</em> (Turkish: <em>Atıf 4.0 Uluslararası (CC BY 4.0) kapsamında lisanslanan kamu sektörü bilgilerini içerir.</em>). <strong>Şehir Hatları</strong>, <strong>TCDD Taşımacılık</strong>, <strong>EGO</strong> and the other city operators: published timetables and notices, shown with their source.',
+      '<strong>İzmir Metropolitan Municipality Open Data</strong>: İzmir\'s bus lines, stops and routes, and the live positions of a line\'s buses, under the ' + a('https://acikveri.bizizmir.com/tr/license', 'İzmir Metropolitan Municipality Open Data Licence') + ' (CC BY 4.0). <em>Contains public sector information licensed under Attribution 4.0 International (CC BY 4.0).</em>',
       '<strong>Open-Meteo</strong>: weather and air quality, ' + a('https://creativecommons.org/licenses/by/4.0/', 'CC BY 4.0') + '. Official warnings come from the State Meteorological Service (MGM).',
       'The full list, with each source\'s terms, is in ' + a(c.repoUrl + '/blob/main/DATA-SOURCES.md', 'DATA-SOURCES.md') + '.']) +
     '<h2 id="software">Software</h2>' + ul([
       '<strong>Leaflet</strong> 1.9.4, BSD-2-Clause, © Volodymyr Agafonkin and Leaflet contributors.',
       '<strong>MapLibre GL JS</strong> 4.7.1, BSD-3-Clause, and <strong>maplibre-gl-leaflet</strong> 0.0.22, BSD-2-Clause.',
-      'İstanbul Ray-Net itself: MIT licence, ' + a(c.repoUrl, 'source code') + '.',
+      'TurkMaps itself: MIT licence, ' + a(c.repoUrl, 'source code') + '.',
       'Each library is shipped unchanged inside the app, with its licence file and a recorded hash, in the <code>vendor</code> folder.']) +
     '<h2 id="fonts">Typefaces</h2>' + ul([
       '<strong>Inter</strong>, © 2016 The Inter Project Authors. <strong>Space Grotesk</strong>, © 2020 The Space Grotesk Project Authors. <strong>JetBrains Mono</strong>, © 2020 The JetBrains Mono Project Authors. All under the ' + OFL(true) + '.',
@@ -294,18 +300,19 @@ PAGES.credits = {
       'Emoji are drawn by your device\'s own emoji font.']) +
     '<h2 id="marks">Names and trademarks</h2>' + p('Metro İstanbul, İETT, İBB, Şehir Hatları, TCDD, İstanbulkart, Esri, OpenStreetMap and other names belong to their owners and are used only to say where information comes from.') +
     '<h2 id="report">Something missing or wrong?</h2>' + p('Tell us at ' + a('mailto:' + c.contactEmail, esc(c.contactEmail)) + ' and we will correct or remove it.') }),
-  tr: c => ({ title: 'Katkılar ve lisanslar', desc: 'İstanbul Ray-Net\'in kimin verilerini, yazılımını, yazı tiplerini ve görsellerini kullandığı.', h1: 'Katkılar ve lisanslar', updated: true, body:
+  tr: c => ({ title: 'Katkılar ve lisanslar', desc: 'TurkMaps\'in kimin verilerini, yazılımını, yazı tiplerini ve görsellerini kullandığı.', h1: 'Katkılar ve lisanslar', updated: true, body:
     '<h2 id="data">Harita verisi ve servisler</h2>' + ul([
       '<strong>OpenStreetMap katkıcıları</strong>: raylı sistem, tramvay, vapur ve otobüs geometrisi, istasyonlar ve aramanın çalıştığı her adlı sokak ile yer. © OpenStreetMap katkıcıları, ' + a('https://www.openstreetmap.org/copyright', 'ODbL 1.0') + '. Uygulama türetilmiş veri sunduğu için o veri aynı lisansla sunulur.',
       '<strong>OpenFreeMap</strong> ve <strong>OpenMapTiles</strong> şeması: cihazınızda çizilen sokak haritası. Uygulamanın tuttuğu çevrimdışı haritalar (şehir başına bir dosya, bu uygulamanın kendi adresinden sunulur) aynı karoların bir kopyasıdır. ' + a('https://openfreemap.org/', 'openfreemap.org') + '.',
       '<strong>Esri</strong> (World Imagery ve yedek World Street Map): © Esri, Maxar, Earthstar Geographics, HERE, Garmin, USGS ve katkıcılar.',
       '<strong>İBB Açık Veri, İETT ve Metro İstanbul</strong>: istasyon kayıtları, sefer saatleri, otobüs hatları ve duyurular; kaynak göstererek yeniden kullanıma izin veren ' + a('https://data.ibb.gov.tr/license', 'İBB Açık Veri Lisansı') + ' altında. Lisansın istediği şekilde: <em>Atıf 4.0 Uluslararası (CC BY 4.0) kapsamında lisanslanan kamu sektörü bilgilerini içerir.</em> <strong>Şehir Hatları</strong>, <strong>TCDD Taşımacılık</strong>, <strong>EGO</strong> ve diğer şehir işletmecileri: yayımlanmış sefer saatleri ve duyurular, kaynaklarıyla gösterilir.',
+      '<strong>İzmir Büyükşehir Belediyesi Açık Veri</strong>: İzmir\'in otobüs hatları, durakları ve güzergâhları ile bir hattın otobüslerinin anlık konumları; ' + a('https://acikveri.bizizmir.com/tr/license', 'İzmir Büyükşehir Belediyesi Açık Veri Lisansı') + ' (CC BY 4.0) kapsamında. <em>Atıf 4.0 Uluslararası (CC BY 4.0) kapsamında lisanslanan kamu sektörü bilgilerini içerir.</em>',
       '<strong>Open-Meteo</strong>: hava durumu ve hava kalitesi, ' + a('https://creativecommons.org/licenses/by/4.0/', 'CC BY 4.0') + '. Resmî uyarılar Meteoroloji Genel Müdürlüğü\'nden (MGM) gelir.',
       'Her kaynağın koşullarıyla birlikte tam liste ' + a(c.repoUrl + '/blob/main/DATA-SOURCES.md', 'DATA-SOURCES.md') + ' dosyasındadır.']) +
     '<h2 id="software">Yazılım</h2>' + ul([
       '<strong>Leaflet</strong> 1.9.4, BSD-2-Clause, © Volodymyr Agafonkin ve Leaflet katkıcıları.',
       '<strong>MapLibre GL JS</strong> 4.7.1, BSD-3-Clause ve <strong>maplibre-gl-leaflet</strong> 0.0.22, BSD-2-Clause.',
-      'İstanbul Ray-Net\'in kendisi: MIT lisansı, ' + a(c.repoUrl, 'kaynak kod') + '.',
+      'TurkMaps\'in kendisi: MIT lisansı, ' + a(c.repoUrl, 'kaynak kod') + '.',
       'Her kitaplık, uygulamanın içinde, <code>vendor</code> klasöründe, lisans dosyası ve kayıtlı bir özetiyle değiştirilmeden gönderilir.']) +
     '<h2 id="fonts">Yazı tipleri</h2>' + ul([
       '<strong>Inter</strong>, © 2016 The Inter Project Authors. <strong>Space Grotesk</strong>, © 2020 The Space Grotesk Project Authors. <strong>JetBrains Mono</strong>, © 2020 The JetBrains Mono Project Authors. Hepsi ' + OFL(false) + ' altında.',
@@ -323,7 +330,7 @@ PAGES.credits = {
 
 /* =============================================================== accessibility */
 PAGES.accessibility = {
-  en: c => ({ title: 'Accessibility statement', desc: 'How accessible İstanbul Ray-Net is, what is not yet, and how to tell us about a barrier.', h1: 'Accessibility statement', updated: true, body:
+  en: c => ({ title: 'Accessibility statement', desc: 'How accessible TurkMaps is, what is not yet, and how to tell us about a barrier.', h1: 'Accessibility statement', updated: true, body:
     p('We want everyone to be able to use the app. It aims at the <em>Web Content Accessibility Guidelines</em> (WCAG) 2.2, level AA. It has been checked by automated tests and by hand in a browser, <strong>not yet with a real screen reader on a phone</strong>, so we say it <strong>partly</strong> meets that standard and list below what is missing.') +
     '<h2 id="works">What works</h2>' + ul([
       '<strong>Keyboard.</strong> Everything in the app can be reached and operated without a mouse or touch: buttons, the legend of lines, notices, Settings and panels. Panels take focus when they open, keep Tab inside while they are open, and give focus back when they close. Escape closes the newest panel.',
@@ -341,7 +348,7 @@ PAGES.accessibility = {
       '<strong>Colours of lines on the map</strong> against the map have not been measured against the 3:1 guideline for graphics.']) +
     '<h2 id="feedback">Tell us about a barrier</h2>' + p('If something does not work for you, write to ' + a('mailto:' + c.contactEmail, esc(c.contactEmail)) + ' and say what you were trying to do, what device and assistive technology you use, and what happened. We read every message and fix what we can; this is a personal project, so we cannot promise a date.') +
     '<h2 id="date">This statement</h2>' + p('Written on 4 November 2026 from what was tested then. It will be updated when the app changes.') }),
-  tr: c => ({ title: 'Erişilebilirlik bildirimi', desc: 'İstanbul Ray-Net\'in ne kadar erişilebilir olduğu, neyin henüz olmadığı ve bir engeli bize nasıl bildireceğiniz.', h1: 'Erişilebilirlik bildirimi', updated: true, body:
+  tr: c => ({ title: 'Erişilebilirlik bildirimi', desc: 'TurkMaps\'in ne kadar erişilebilir olduğu, neyin henüz olmadığı ve bir engeli bize nasıl bildireceğiniz.', h1: 'Erişilebilirlik bildirimi', updated: true, body:
     p('Uygulamayı herkesin kullanabilmesini istiyoruz. <em>Web İçeriği Erişilebilirlik Yönergeleri</em> (WCAG) 2.2, AA düzeyini hedefler. Otomatik testlerle ve bir tarayıcıda elle denetlendi, <strong>henüz bir telefonda gerçek bir ekran okuyucuyla denenmedi</strong>; bu yüzden bu standardı <strong>kısmen</strong> karşıladığını söylüyoruz ve eksikleri aşağıda sıralıyoruz.') +
     '<h2 id="works">Çalışanlar</h2>' + ul([
       '<strong>Klavye.</strong> Uygulamadaki her şeye fare veya dokunma olmadan ulaşılır ve kullanılır: düğmeler, hat göstergesi, duyurular, Ayarlar ve paneller. Paneller açılınca odağı alır, açıkken Tab\'ı kendi içinde tutar, kapanınca odağı geri verir. Esc en yeni paneli kapatır.',

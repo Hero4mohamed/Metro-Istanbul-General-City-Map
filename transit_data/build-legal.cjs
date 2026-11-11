@@ -18,10 +18,10 @@ const NAV = {
   tr: { index: 'Yasal bilgiler', privacy: 'Gizlilik bildirimi', terms: 'Kullanım koşulları', storage: 'Çerezler ve saklanan veriler', credits: 'Katkılar ve lisanslar', accessibility: 'Erişilebilirlik' },
 };
 const UI = {
-  en: { skip: 'Skip to the content', home: '← Back to İstanbul Ray-Net', other: 'Türkçe', otherLang: 'tr', otherName: 'Türkçe', pages: 'Legal pages', lang: 'Language',
-        updated: (d, v) => 'Last updated ' + d + ' · version ' + v, project: 'İstanbul Ray-Net · a free, non-commercial, open-source project' },
-  tr: { skip: 'İçeriğe geç', home: '← İstanbul Ray-Net\'e dön', other: 'English', otherLang: 'en', otherName: 'English', pages: 'Yasal sayfalar', lang: 'Dil',
-        updated: (d, v) => 'Son güncelleme ' + d + ' · sürüm ' + v, project: 'İstanbul Ray-Net · ücretsiz, ticari olmayan, açık kaynaklı bir proje' },
+  en: { skip: 'Skip to the content', home: '← Back to TurkMaps', other: 'Türkçe', otherLang: 'tr', otherName: 'Türkçe', pages: 'Legal pages', lang: 'Language',
+        updated: (d, v) => 'Last updated ' + d + ' · version ' + v, project: 'TurkMaps · a free, non-commercial, open-source project' },
+  tr: { skip: 'İçeriğe geç', home: '← TurkMaps\'e dön', other: 'English', otherLang: 'en', otherName: 'English', pages: 'Yasal sayfalar', lang: 'Dil',
+        updated: (d, v) => 'Son güncelleme ' + d + ' · sürüm ' + v, project: 'TurkMaps · ücretsiz, ticari olmayan, açık kaynaklı bir proje' },
 };
 const MONTHS = {
   en: ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'],
@@ -84,7 +84,7 @@ function render(page, L, cfg) {
     '<meta http-equiv="Content-Security-Policy" content="default-src \'none\'; style-src \'unsafe-inline\'; img-src \'self\'; base-uri \'none\'; form-action \'none\'">',
     '<meta name="referrer" content="no-referrer">',
     '<meta name="color-scheme" content="light dark">',
-    '<title>' + doc.title + ' · İstanbul Ray-Net</title>',
+    '<title>' + doc.title + ' · TurkMaps</title>',
     '<meta name="description" content="' + doc.desc.replace(/"/g, '&quot;') + '">',
     '<link rel="icon" type="image/png" sizes="32x32" href="../assets/favicon-32.png">',
     '<link rel="alternate" hreflang="en" href="' + file(page, 'en') + '">',
