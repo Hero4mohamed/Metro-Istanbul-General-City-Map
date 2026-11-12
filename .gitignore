@@ -66,3 +66,9 @@ transit_data/test/_stats.html
 # regenerated report of unmatched / stale / disagreeing Vision entries (stamped every run; the weekly job prints it instead)
 transit_data/planned-report.json
 transit_data/places-osm-*.json
+
+# the relay Worker: its tooling and local state are not part of the repository
+relay/node_modules/
+relay/.wrangler/
+relay/.dev.vars
+relay/feeder.env

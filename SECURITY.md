@@ -1,8 +1,10 @@
 # Security policy
 
-TurkMaps is a free, non-commercial, open-source project by one person. It has no server, no accounts and no database of
-users: it is a set of static files on GitHub Pages, and what people save stays in their own browser. That keeps the attack surface
-small, but not zero, and a report is welcome.
+TurkMaps is a free, non-commercial, open-source project by one person. It has no accounts and no database of users: it is a
+set of static files on GitHub Pages, and what people save stays in their own browser. Since V4.5.1 there is one small server: a
+relay (the `relay` folder, a Cloudflare Worker fed by a script in Türkiye) that passes on İstanbul's live bus positions. It is
+told only a bus line number, keeps line numbers and times for ten minutes, and holds one secret (the feeder's token, never in
+this repository). That keeps the attack surface small, but not zero, and a report is welcome.
 
 ## Reporting a vulnerability
 

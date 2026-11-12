@@ -44,6 +44,19 @@ const opt = f => (f && fs.existsSync(path.join(DIR, f))) ? rd(f) : {};
 const busSets = {};
 for (const [city, f] of Object.entries(BUS_CITIES))
   busSets[city] = { dir: rd(f.dir), graph: rd(f.graph), sched: rd(f.sched), geom: opt(f.geom) };
+/* İETT's timetable feed writes the Ş of ten line codes as "Ş" followed by a stray, invisible control character (U+009E): the code
+   reads "29Ş" on screen and is really four characters. Nothing else spells it that way (İETT's own line list, its notices, its
+   live-position service), so those ten lines never matched: found when the live-bus relay refused them (V4.5.1). Cleaned here, in
+   memory, in every place a line code is a key; the files stay as their scrapers wrote them. */
+const cleanRef = r => String(r).replace(/[\u0080-\u009f]/g, '');
+for (const s of Object.values(busSets)) {
+  for (const row of s.dir) row.ref = cleanRef(row.ref);
+  for (const row of s.graph) row.ref = cleanRef(row.ref);
+  for (const part of [s.sched, s.geom]) {
+    if (!part || Array.isArray(part)) continue;
+    for (const k of Object.keys(part)) { const c = cleanRef(k); if (c !== k) { if (!(c in part)) part[c] = part[k]; delete part[k]; } }
+  }
+}
 /* The directory and the graph come from DIFFERENT sources — the directory from İETT's published
    line list (process-bus.cjs), the graph and timetables from the GTFS feed — and they disagree.
    40 İstanbul refs (14E, 19FB, 29Ş, 34A …) exist in the graph with full stops and schedules but
@@ -249,7 +262,7 @@ const CSP = [
   // every host the app fetches from, including tiles (the offline save uses fetch, not <img>)
   ["connect-src 'self'",
    'https://server.arcgisonline.com', 'https://tiles.openfreemap.org',
-   'https://photon.komoot.io', 'https://overpass-api.de', 'https://api.ibb.gov.tr', 'https://openapi.izmir.bel.tr',
+   'https://photon.komoot.io', 'https://overpass-api.de', 'https://api.ibb.gov.tr', 'https://openapi.izmir.bel.tr', 'https://turkmaps-relay.turkmaps-relay.workers.dev',
    'https://api.open-meteo.com', 'https://air-quality-api.open-meteo.com', 'https://routing.openstreetmap.de',
    'https://api.anthropic.com'].join(' '),
   "worker-src 'self'",

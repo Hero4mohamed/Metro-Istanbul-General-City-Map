@@ -2018,7 +2018,7 @@ const MUTATIONS = [
   {
     name: 'a city with no live source is asked at İzmir\'s address',
     expect: 'live buses: only a city that publishes positions is asked',
-    apply: h => h.replace("return s && /^\\d{1,5}$/.test(String(ref)) ? s.base + ref : null;", 'return LIVE_BUS_SOURCES.izmir.base + ref;'),
+    apply: h => h.replace('return s && s.ref.test(String(ref)) ? s.base + encodeURIComponent(String(ref)) : null;', 'return LIVE_BUS_SOURCES.izmir.base + ref;'),
   },
   {
     name: 'the live service is asked while the page is hidden',
@@ -2043,7 +2043,7 @@ const MUTATIONS = [
   {
     name: 'buses from an answer minutes old stay on the map as "now"',
     expect: 'live buses: refusals slow the asking down',
-    apply: h => h.replace('if(me.fails >= 3){ me.buses = []; me.unplaced = 0; me.state = new Map(); }', ''),
+    apply: h => h.replace('if(off || me.fails >= 3){ me.buses = []; me.unplaced = 0; me.state = new Map(); }', ''),
   },
   {
     name: 'the security policy blocks the live bus service',
@@ -2054,6 +2054,57 @@ const MUTATIONS = [
     name: 'leaving the bus view does not stop the live buses',
     expect: 'live buses: the page is allowed to reach the service',
     apply: h => h.replace("if(typeof liveBusStop === 'function') liveBusStop();        // live buses belong to the open bus line only", ''),
+  },
+  /* ---- V4.5.1: İstanbul's live buses through the relay, and the ten line codes with a stray character ---- */
+  {
+    name: 'an İstanbul bus is aged by the clock of the phone, not of the relay',
+    expect: 'live buses (İstanbul): a bus is drawn where İETT last heard from it',
+    apply: h => h.replace("const lag = typeof json.now === 'number' ? now - json.now : 0;", 'const lag = 0;'),
+  },
+  {
+    name: 'the latitude and longitude of an İstanbul bus are swapped',
+    expect: 'live buses (İstanbul): a bus is drawn where İETT last heard from it',
+    apply: h => h.replace('const lat = +b.lat, lng = +b.lng;', 'const lat = +b.lng, lng = +b.lat;'),
+  },
+  {
+    name: 'where an İstanbul bus is heading is dropped',
+    expect: 'live buses (İstanbul): a bus is drawn where İETT last heard from it',
+    apply: h => h.replace("moved:heard, first:heard, to:b.to ? String(b.to) : '' });", "moved:heard, first:heard, to:'' });"),
+  },
+  {
+    name: 'a relay with no feed looks like a passing error, and the last buses stay on the map',
+    expect: 'live buses (İstanbul): "no feed" is said plainly',
+    apply: h => h.replace("off = resp.status === 503 && !!json && json.error === 'no-feed';", 'off = false;'),
+  },
+  {
+    name: 'a relay that keeps saying "warming" is asked every few seconds for ever',
+    expect: 'live buses (İstanbul): "no feed" is said plainly',
+    apply: h => h.replace('if(got && got.warming && me.warm < LIVE_BUS_WARM_MAX){', 'if(got && got.warming){'),
+  },
+  {
+    name: 'the first answer of an İstanbul line is waited for the full 20 seconds',
+    expect: 'live buses (İstanbul): "no feed" is said plainly',
+    apply: h => h.replace("me.status = 'loading'; wait = LIVE_BUS_WARM; }", "me.status = 'loading'; wait = LIVE_BUS_EVERY; }"),
+  },
+  {
+    name: 'the security policy blocks the relay',
+    expect: 'live buses: the page is allowed to reach the service',
+    apply: h => h.replace(' https://turkmaps-relay.turkmaps-relay.workers.dev', ''),
+  },
+  {
+    name: 'a Turkish letter of a line code is put into the relay address raw',
+    expect: 'live buses: only a city that publishes positions is asked',
+    apply: h => h.replace('s.base + encodeURIComponent(String(ref)) : null;', 's.base + String(ref) : null;'),
+  },
+  {
+    name: 'any text at all is accepted as an İstanbul line code',
+    expect: 'live buses: only a city that publishes positions is asked',
+    apply: h => h.replace("ref:/^[-0-9A-ZÇĞİÖŞÜ]{1,8}$/, credit:'İETT", "ref:/./, credit:'İETT"),
+  },
+  {
+    name: 'a line code in the directory keeps its invisible stray character',
+    expect: 'every bus route the planner can use is in the directory the app ships',
+    apply: h => h.replace('"ref":"29Ş"', '"ref":"29Ş\u009e"'),
   },
   /* ---- offline maps (src/22a-offline.js, V4.4.1); the worker's own mistakes are put back by test/offline-maps.test.cjs itself ---- */
   {
