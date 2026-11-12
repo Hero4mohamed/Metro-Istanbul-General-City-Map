@@ -18,7 +18,7 @@ function fnSource(src, name) {
 }
 const PURE = APP.slice(APP.indexOf('/* ==LIVEBUS-PURE-START== */'), APP.indexOf('/* ==LIVEBUS-PURE-END== */'));
 assert.ok(PURE.length > 500, 'the live-bus rules are not in the built page');
-const P = (() => { const m = { exports: {} }; new Function('module', PURE + '\nmodule.exports = { LIVE_BUS_SOURCES, LIVE_BUS_EVERY, LIVE_BUS_SLOWEST, LIVE_BUS_STILL, liveBusURL, liveBusParse, liveBusStep, liveBusStanding, liveBusWait };')(m); return m.exports; })();
+const P = (() => { const m = { exports: {} }; new Function('module', PURE + '\nmodule.exports = { LIVE_RELAY, LIVE_BUS_SOURCES, LIVE_BUS_EVERY, LIVE_BUS_SLOWEST, LIVE_BUS_STILL, LIVE_BUS_WARM, LIVE_BUS_WARM_MAX, liveBusURL, liveBusParse, liveBusStep, liveBusFromRelay, liveBusTake, liveBusStanding, liveBusWait };')(m); return m.exports; })();
 const BOX = P.LIVE_BUS_SOURCES.izmir.box;
 const rec = (id, lat, lng) => ({ OtobusId: id, Yon: 1, KoorX: String(lat).replace('.', ','), KoorY: String(lng).replace('.', ',') });
 const answer = list => ({ HataMesaj: '', HatOtobusKonumlari: list, HataVarMi: false });
@@ -71,9 +71,15 @@ test('live buses: a bus that has not changed place for two minutes is marked as 
 
 test('live buses: only a city that publishes positions is asked, and only for a line number', () => {
   assert.strictEqual(P.liveBusURL('izmir', '302'), 'https://openapi.izmir.bel.tr/api/iztek/hatotobuskonumlari/302');
-  for (const city of ['istanbul', 'ankara', 'bursa', 'antalya', 'kocaeli']) assert.strictEqual(P.liveBusURL(city, '302'), null, city + ' has no live source a web page can read; nothing may be asked (or drawn) there');
+  for (const city of ['ankara', 'bursa', 'antalya', 'kocaeli']) assert.strictEqual(P.liveBusURL(city, '302'), null, city + ' has no live source; nothing may be asked (or drawn) there');
   for (const ref of ['', '34AS', '../x', '5?x=1', '123456']) assert.strictEqual(P.liveBusURL('izmir', ref), null, 'something that is not a line number was put in the address: ' + ref);
-  assert.deepStrictEqual(Object.keys(P.LIVE_BUS_SOURCES), ['izmir']);
+  // İstanbul goes through the app's own relay, and its line codes have letters, Turkish letters and a dash
+  assert.strictEqual(P.liveBusURL('istanbul', '34G'), P.LIVE_RELAY + '/iett/buses?line=34G');
+  assert.strictEqual(P.liveBusURL('istanbul', 'E-10'), P.LIVE_RELAY + '/iett/buses?line=E-10');
+  assert.strictEqual(P.liveBusURL('istanbul', '15ÇK'), P.LIVE_RELAY + '/iett/buses?line=15%C3%87K', 'a Turkish letter was put into the address raw');
+  for (const ref of ['', '34 G', '../x', '34G&x=1', '34g', '123456789']) assert.strictEqual(P.liveBusURL('istanbul', ref), null, 'something that is not an İstanbul line code was put in the address: ' + ref);
+  assert.ok(/^https:\/\/[a-z0-9.-]+$/.test(P.LIVE_RELAY), 'the relay address is not a plain https origin');
+  assert.deepStrictEqual(Object.keys(P.LIVE_BUS_SOURCES), ['izmir', 'istanbul']);
 });
 
 /* ---- the asking itself, with the page, the clock and the service played by the test ---- */
@@ -156,9 +162,53 @@ test('live buses: refusals slow the asking down, and a minute of silence clears 
 
 test('live buses: the page is allowed to reach the service, and the bus view starts and stops it', () => {
   assert.ok(/connect-src[^";]*https:\/\/openapi\.izmir\.bel\.tr/.test(H.html()), 'the security policy does not let the page talk to openapi.izmir.bel.tr: every request would be blocked silently');
+  assert.ok(H.html().split('connect-src')[1].split(';')[0].includes(P.LIVE_RELAY), 'the security policy does not let the page talk to its own relay: live buses in İstanbul would be blocked silently');
   const sel = fnSource(APP, 'selectBus'), tab = fnSource(APP, 'setTab');
   assert.ok(sel.indexOf('liveBusStop()') > 0 && sel.indexOf('liveBusStop()') < sel.indexOf('liveBusStart(ref)'), 'opening a line does not stop the line before it and start this one');
   assert.ok(/detail\.innerHTML = liveBusHTML\(ref\)/.test(sel), 'the line panel has no live strip');
   assert.ok(tab.includes('liveBusStop()'), 'leaving the bus view does not stop the asking');
   assert.ok(/cache:'no-store'/.test(fnSource(APP, 'liveBusPoll')), 'an old answer could be served from a cache as "now"');
+});
+
+/* ---- İstanbul, through the relay (V4.5.1): every position carries the time İETT heard from the bus ---- */
+const IST = P.LIVE_BUS_SOURCES.istanbul;
+const relayAnswer = (now, list, extra) => Object.assign({ line: '34G', at: now - 4000, now, buses: list }, extra || {});
+
+test('live buses (İstanbul): a bus is drawn where İETT last heard from it, aged by the clock of the relay and not of the phone', () => {
+  const relayNow = 1794442635000, phoneNow = relayNow + 3 * 3600000 + 1234;            // this phone's clock is three hours fast
+  const r = P.liveBusTake(IST, new Map(), relayAnswer(relayNow, [
+    { id: 'M4882', lat: 41.009539, lng: 28.65715, t: relayNow - 20000, to: 'SÖĞÜTLÜÇEŞME', stop: '900402' },
+    { id: 'M4893', lat: 41.013472, lng: 29.058778, t: relayNow - 200000, to: 'B.SONDURAK', stop: '900041' },      // not heard from for over three minutes
+    { id: 'FAR', lat: 38.4, lng: 27.1, t: relayNow - 1000, to: '' }, { lat: 41, lng: 29, t: relayNow }, null]), phoneNow);
+  assert.deepStrictEqual(r.buses.map(b => b.id), ['M4882', 'M4893'], 'a position outside İstanbul, or a record with no vehicle number, was drawn');
+  assert.strictEqual(r.buses[0].to, 'SÖĞÜTLÜÇEŞME', 'where the bus is heading was dropped');
+  assert.strictEqual(P.liveBusStanding(r.buses[0], phoneNow), false, 'a bus heard from 20 seconds ago is drawn as stale: the clock of the phone was used instead of the relay');
+  assert.strictEqual(P.liveBusStanding(r.buses[1], phoneNow), true, 'a bus not heard from for three minutes is drawn as live as the rest');
+  assert.strictEqual(r.unplaced, 0); assert.strictEqual(r.warming, false);
+  assert.strictEqual(P.liveBusTake(IST, new Map(), { error: 'no-feed' }, phoneNow), null, 'a refusal was read as "no buses on the line"');
+  assert.strictEqual(P.liveBusTake(IST, new Map(), relayAnswer(relayNow, [], { warming: true }), phoneNow).warming, true);
+  // İzmir still goes the other way: worked out from movement
+  assert.deepStrictEqual(P.liveBusTake(P.LIVE_BUS_SOURCES.izmir, new Map(), answer([rec(1701, 38.42465667, 27.13232833)]), 5).buses.map(b => b.id), ['1701']);
+});
+
+test('live buses (İstanbul): "no feed" is said plainly and clears the map; "warming" looks again in seconds, but not for ever', async () => {
+  const w = world({ CITY_ID: 'istanbul' });
+  w.ctx.liveBusStart('34G'); await w.settle();
+  assert.strictEqual(w.asked.length, 1); assert.strictEqual(w.asked[0].url, P.LIVE_RELAY + '/iett/buses?line=34G');
+  w.asked[0].answer(relayAnswer(Date.now(), [], { warming: true })); await w.settle();
+  assert.strictEqual(w.timers[w.timers.length - 1].ms, P.LIVE_BUS_WARM, 'the relay said the answer is seconds away and the app waits the full 20 seconds');
+  assert.strictEqual(w.strip.text.textContent, 'liveBusLoading', 'while the first answer is on its way the strip should still say it is asking');
+  w.timers[w.timers.length - 1].fn(); await w.settle();
+  w.asked[1].answer(relayAnswer(Date.now(), [{ id: 'M4882', lat: 41.009539, lng: 28.65715, t: Date.now() - 9000, to: 'SÖĞÜTLÜÇEŞME' }])); await w.settle();
+  assert.deepStrictEqual(w.drawn.map(d => Array.from(d.ll)), [[41.009539, 28.65715]]);
+  assert.strictEqual(w.strip.text.textContent, 'liveBusOne'); assert.strictEqual(w.timers[w.timers.length - 1].ms, P.LIVE_BUS_EVERY);
+  w.timers[w.timers.length - 1].fn(); await w.settle();
+  w.asked[2].answer({ error: 'no-feed' }, 503); await w.settle();
+  assert.strictEqual(w.strip.text.textContent, 'liveBusOff', 'with nobody feeding the relay the strip does not say that live buses are not running');
+  assert.strictEqual(w.drawn.length, 0, 'the feed stopped and the last buses are still drawn as "now"');
+  // a relay that keeps saying "warming" is not asked every 6 seconds for ever
+  const v = world({ CITY_ID: 'istanbul' });
+  v.ctx.liveBusStart('40'); await v.settle();
+  for (let i = 0; i < P.LIVE_BUS_WARM_MAX + 2; i++) { v.asked[i].answer(relayAnswer(Date.now(), [], { warming: true })); await v.settle(); v.timers[v.timers.length - 1].fn(); await v.settle(); }
+  assert.ok(v.timers.slice(-2).every(t => t.ms >= P.LIVE_BUS_EVERY), 'after ' + P.LIVE_BUS_WARM_MAX + ' "warming" answers the app is still asking every few seconds');
 });

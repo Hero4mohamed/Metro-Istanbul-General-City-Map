@@ -6,9 +6,11 @@
    line N now". So when a bus line is opened in İzmir, its real buses are drawn on it and refreshed every 20 seconds, for as long as
    the line is open, the page is on screen and there is a connection. Nothing is drawn that the service did not send.
 
-   İstanbul's service (İETT, api.ibb.gov.tr) has the same information but refuses requests made by a web page (no CORS header), so
-   it needs a small relay server; until there is one, İstanbul shows no live buses rather than invented ones. The other cities
-   publish nothing.
+   İstanbul (V4.5.1): İETT (api.ibb.gov.tr) has the same information, with a time on every position, but its server answers neither
+   a web page (no CORS header) nor Cloudflare (it ignores requests from outside Türkiye). So İstanbul comes through the app's own
+   relay (the `relay` folder): a Cloudflare Worker the page may ask, fed by a small script on a computer in Türkiye that asks İETT
+   about the lines people have open. When that computer is off the relay says "no feed" and the app shows no buses and says why,
+   rather than inventing them. The other cities publish nothing.
 
    The service has two habits that would put buses where they are not, and the rules below are for them:
      * a bus can be listed several times, at an old position and a new one, with no time on either. Which one is the bus? The one
@@ -18,16 +20,20 @@
        hollow and says so, instead of looking as live as the rest.
    ========================================================================== */
 /* ==LIVEBUS-PURE-START== */
+const LIVE_RELAY = 'https://turkmaps-relay.turkmaps-relay.workers.dev';
 const LIVE_BUS_SOURCES = {
-  izmir: { base:'https://openapi.izmir.bel.tr/api/iztek/hatotobuskonumlari/', credit:'İzmir Büyükşehir Belediyesi · CC BY 4.0', box:[37.5, 26.0, 39.6, 28.6] },
+  izmir:    { kind:'izmir', base:'https://openapi.izmir.bel.tr/api/iztek/hatotobuskonumlari/', ref:/^\d{1,5}$/, credit:'İzmir Büyükşehir Belediyesi · CC BY 4.0', box:[37.5, 26.0, 39.6, 28.6] },
+  istanbul: { kind:'relay', base:LIVE_RELAY + '/iett/buses?line=', ref:/^[-0-9A-ZÇĞİÖŞÜ]{1,8}$/, credit:'İETT · İBB Açık Veri · CC BY 4.0', box:[40.5, 27.8, 41.7, 30.1] },
 };
 const LIVE_BUS_EVERY = 20000;        // how often a line is asked about
 const LIVE_BUS_SLOWEST = 120000;     // after refusals ("rate limit") the wait doubles, up to this
 const LIVE_BUS_STILL = 120000;       // no change for this long: drawn as standing
+const LIVE_BUS_WARM = 6000;          // the relay has just been asked for a line: its first answer is seconds away, so look again soon
+const LIVE_BUS_WARM_MAX = 5;         // ... but not for ever
 /* the address to ask for one line, or null where there is no live source (the line number is all that is sent) */
 function liveBusURL(city, ref){
   const s = LIVE_BUS_SOURCES[city];
-  return s && /^\d{1,5}$/.test(String(ref)) ? s.base + ref : null;
+  return s && s.ref.test(String(ref)) ? s.base + encodeURIComponent(String(ref)) : null;
 }
 function liveBusNum(v){ const n = typeof v === 'number' ? v : parseFloat(String(v).replace(',', '.')); return isFinite(n) ? n : NaN; }
 /* The answer as plain records. null when it is not an answer at all (an error, or "rate limit exceeded"); records that are not a
@@ -75,6 +81,29 @@ function liveBusStep(state, recs, now){
   });
   return { state:next, buses, unplaced };
 }
+/* The relay's answer for an İstanbul line. Every position carries the time İETT heard from the bus, so nothing has to be worked
+   out from movement: a bus is drawn where it was last heard, and one not heard from for LIVE_BUS_STILL is drawn hollow. Ages are
+   measured against the RELAY's clock (`now` in its answer), moved onto this device's clock, so a phone whose clock is wrong does
+   not see every bus as stale. `warming`: the relay has only just been asked for this line and has no answer yet. */
+function liveBusFromRelay(json, box, now){
+  if(!json || !Array.isArray(json.buses)) return null;
+  const lag = typeof json.now === 'number' ? now - json.now : 0;
+  const buses = [];
+  for(const b of json.buses){
+    if(!b || b.id == null) continue;
+    const lat = +b.lat, lng = +b.lng;
+    if(!(lat >= box[0] && lat <= box[2] && lng >= box[1] && lng <= box[3])) continue;
+    const heard = (typeof b.t === 'number' ? b.t : (typeof json.now === 'number' ? json.now : now - lag)) + lag;
+    buses.push({ id:String(b.id), lat, lng, moved:heard, first:heard, to:b.to ? String(b.to) : '' });
+  }
+  return { state:new Map(), buses, unplaced:0, warming:!!json.warming };
+}
+/* one answer taken in, whichever kind of source it came from; null when it is not an answer */
+function liveBusTake(src, state, json, now){
+  if(src.kind === 'relay') return liveBusFromRelay(json, src.box, now);
+  const recs = liveBusParse(json, src.box);
+  return recs ? liveBusStep(state, recs, now) : null;
+}
 /* a bus that has not been seen to change place for LIVE_BUS_STILL: parked, or a record nobody is updating */
 function liveBusStanding(b, now){ return now - (b.moved == null ? b.first : b.moved) >= LIVE_BUS_STILL; }
 /* how long to wait before asking again: the usual gap, doubled for each refusal in a row */
@@ -82,7 +111,7 @@ function liveBusWait(fails){ return Math.min(LIVE_BUS_SLOWEST, LIVE_BUS_EVERY * 
 /* ==LIVEBUS-PURE-END== */
 
 /* `var`: setTab() and selectBus() can ask for a stop before this file has been read (see the note in 16b-bus-routes.js) */
-var liveBus = null;                    // { ref, url, src, state, buses, unplaced, fails, last, status, timer, ctrl }
+var liveBus = null;                    // { ref, url, src, state, buses, unplaced, fails, warm, last, status, timer, ctrl }
 var liveBusGroup = null;
 
 function liveBusHTML(ref){
@@ -106,7 +135,7 @@ function liveBusStart(ref){
     liveBusGroup = L.layerGroup();
   }
   liveBusGroup.addTo(map);
-  liveBus = { ref, url, src:LIVE_BUS_SOURCES[CITY_ID], state:new Map(), buses:[], unplaced:0, fails:0, last:0, status:'loading', timer:0, ctrl:null };
+  liveBus = { ref, url, src:LIVE_BUS_SOURCES[CITY_ID], state:new Map(), buses:[], unplaced:0, fails:0, warm:0, last:0, status:'loading', timer:0, ctrl:null };
   liveBusPoll();
 }
 function liveBusAgain(ms){ if(liveBus){ clearTimeout(liveBus.timer); liveBus.timer = setTimeout(liveBusPoll, ms); } }
@@ -115,7 +144,7 @@ async function liveBusPoll(){
   if(currentTab !== 'bus'){ liveBusStop(); return; }
   if(document.hidden){ liveBusAgain(LIVE_BUS_EVERY); return; }               // nobody is looking: ask nothing
   if(navigator.onLine === false){ me.status = 'offline'; liveBusShow(); liveBusAgain(LIVE_BUS_EVERY); return; }
-  let recs = null, limited = false;
+  let got = null, limited = false, off = false;
   try{
     me.ctrl = new AbortController();
     const stop = setTimeout(() => { try{ me.ctrl.abort(); }catch(e){} }, 12000);
@@ -123,20 +152,24 @@ async function liveBusPoll(){
     const json = await resp.json().catch(() => null);
     clearTimeout(stop);
     limited = resp.status === 429 || !!(json && json.message && /limit/i.test(json.message));
-    recs = resp.ok ? liveBusParse(json, me.src.box) : null;
-  }catch(e){ recs = null; }
+    off = resp.status === 503 && !!json && json.error === 'no-feed';          // the relay has nobody feeding it: say so, do not guess
+    got = resp.ok ? liveBusTake(me.src, me.state, json, Date.now()) : null;
+  }catch(e){ got = null; }
   if(liveBus !== me) return;                                                 // another line was opened, or the view was left, meanwhile
-  if(recs){
-    const now = Date.now(), r = liveBusStep(me.state, recs, now);
-    me.state = r.state; me.buses = r.buses; me.unplaced = r.unplaced; me.fails = 0; me.last = now;
-    me.status = r.buses.length || r.unplaced ? 'ok' : 'empty';
+  let wait;
+  if(got && got.warming && me.warm < LIVE_BUS_WARM_MAX){ me.warm++; me.fails = 0; me.status = 'loading'; wait = LIVE_BUS_WARM; }
+  else if(got && !got.warming){
+    me.state = got.state; me.buses = got.buses; me.unplaced = got.unplaced; me.fails = 0; me.warm = 0; me.last = Date.now();
+    me.status = got.buses.length || got.unplaced ? 'ok' : 'empty';
+    wait = liveBusWait(0);
   } else {
     me.fails++;
-    me.status = limited ? 'busy' : 'error';
-    if(me.fails >= 3){ me.buses = []; me.unplaced = 0; me.state = new Map(); }  // a minute without an answer: what is drawn is no longer "now"
+    me.status = off ? 'off' : limited ? 'busy' : 'error';
+    if(off || me.fails >= 3){ me.buses = []; me.unplaced = 0; me.state = new Map(); }  // no feed, or a minute without an answer: what is drawn is no longer "now"
+    wait = liveBusWait(me.fails);
   }
   liveBusShow();
-  liveBusAgain(liveBusWait(me.fails));
+  liveBusAgain(wait);
 }
 function liveBusShow(){
   const me = liveBus; if(!me || !liveBusGroup) return;
@@ -147,17 +180,18 @@ function liveBusShow(){
     const still = liveBusStanding(b, now); if(still) standing++;
     L.circleMarker([b.lat, b.lng], { pane:'liveBusPane', radius:11, stroke:false, fillColor:'#12B886', fillOpacity:still ? 0 : 0.22, interactive:false }).addTo(liveBusGroup);
     L.circleMarker([b.lat, b.lng], { pane:'liveBusPane', radius:6.2, color:still ? '#12B886' : '#FFFFFF', weight:2.2, fillColor:still ? tone.hole : '#12B886', fillOpacity:1, bubblingMouseEvents:false })
-      .bindTooltip(svgEsc(t('liveBusTip').replace('{id}', b.id) + (still ? ' · ' + t('liveBusStill') : '')), { className:'lt', direction:'top' }).addTo(liveBusGroup);
+      .bindTooltip(svgEsc(t('liveBusTip').replace('{id}', b.id) + (b.to ? ' → ' + b.to : '') + (still ? ' · ' + t(me.src.kind === 'relay' ? 'liveBusQuiet' : 'liveBusStill') : '')), { className:'lt', direction:'top' }).addTo(liveBusGroup);
   });
   const strip = document.getElementById('liveBusStrip'); if(!strip) return;
   const n = me.buses.length;
   let text;
   if(me.status === 'loading') text = t('liveBusLoading');
   else if(me.status === 'offline') text = t('liveBusOffline');
+  else if(me.status === 'off') text = t('liveBusOff');
   else if(me.status === 'busy' || me.status === 'error') text = t(me.status === 'busy' ? 'liveBusBusy' : 'liveBusError') + (n ? ' · ' + t('liveBusKept').replace('{n}', n) : '');
   else if(me.status === 'empty') text = t('liveBusNone');
   else text = (n === 1 ? t('liveBusOne') : t('liveBusMany').replace('{n}', n))
-            + (standing ? ' · ' + t('liveBusStanding').replace('{n}', standing) : '')
+            + (standing ? ' · ' + t(me.src.kind === 'relay' ? 'liveBusQuietN' : 'liveBusStanding').replace('{n}', standing) : '')
             + (me.unplaced ? ' · ' + t('liveBusUnplaced').replace('{n}', me.unplaced) : '');
   strip.className = 'lb-strip ' + (me.status === 'ok' ? 'on' : me.status === 'loading' ? '' : 'off');
   strip.querySelector('.lb-t').textContent = text;

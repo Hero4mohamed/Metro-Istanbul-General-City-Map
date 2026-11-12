@@ -206,7 +206,10 @@ test('every bus route the planner can use is in the directory the app ships', ()
     if (!H.exists('transit_data/' + graphFile) || !shipped[city]) continue;
     const refs = new Set(shipped[city].map(d => String(d.ref)));
     for (const g of H.json(graphFile)) {
-      if (!refs.has(String(g.ref))) orphans.push(city + '/' + g.ref);
+      // the raw İstanbul file writes ten codes as "Ş" + an invisible U+009E; the build removes it everywhere (V4.5.1), so the
+      // code the app holds is the clean one
+      const ref = String(g.ref).replace(/[\u0080-\u009f]/g, '');
+      if (!refs.has(ref)) orphans.push(city + '/' + ref);
     }
   }
   assert.deepStrictEqual([...new Set(orphans)].slice(0, 10), [],

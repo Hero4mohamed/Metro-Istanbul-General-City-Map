@@ -1,0 +1,14 @@
+{
+  "name": "turkmaps-relay",
+  "private": true,
+  "version": "1.0.0",
+  "description": "A small Cloudflare Worker that passes İETT's open bus positions on to the TurkMaps page.",
+  "license": "MIT",
+  "scripts": {
+    "deploy": "wrangler deploy",
+    "dev": "wrangler dev"
+  },
+  "devDependencies": {
+    "wrangler": "^4"
+  }
+}

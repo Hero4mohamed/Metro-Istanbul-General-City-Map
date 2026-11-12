@@ -1,0 +1,16 @@
+# TurkMaps relay (Cloudflare Worker). Deploy: `npx wrangler deploy` in this folder, after `npx wrangler login`.
+# One secret, set once and never written here:  npx wrangler secret put FEED_TOKEN   (the feeder holds the same value)
+name = "turkmaps-relay"
+main = "src/worker.mjs"
+compatibility_date = "2026-11-01"
+workers_dev = true
+preview_urls = false
+
+# the relay's memory: which lines are open, and the feeder's last answer for each (schema.sql)
+[[d1_databases]]
+binding = "turkmaps_relay"
+database_name = "turkmaps-relay"
+database_id = "4bdb9ddf-a444-4eda-aada-bcf9e890804a"
+
+[observability]
+enabled = false
