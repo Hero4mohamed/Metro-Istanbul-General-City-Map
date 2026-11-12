@@ -273,11 +273,37 @@ function ageWords(mins){
 }
 function annAgeText(age){ return '🕒 ' + t('annAge').replace('{age}', ageWords(age.mins)); }
 // once a minute: keep the "checked … ago" line true, and redraw the panel only when it crosses into (or out of) "stale"
+/* Rail and ferry notices are read from different pages and, since V4.5.2, not always at the same time: GitHub's job can read
+   the ferry page (through the relay) but not the rail page, so with the laptop off the ferry notices stay fresh while the rail
+   ones age. Each kind has its own age; a status file that carries one time means both were read then. */
+function annAges(nowMs){
+  return { rail: noticeAge(DISR_CHECKED, nowMs), ferry: noticeAge(DISR_FERRY_CHECKED != null ? DISR_FERRY_CHECKED : DISR_CHECKED, nowMs) };
+}
+/* What the panel says about them. A kind is warned about only when it is stale AND has a notice on show; the bar names the kind
+   that is stale and not the other; `apart` says the two ages differ enough (one stale and one not, or half an hour) that one
+   "checked … ago" line cannot speak for both. */
+function annStaleness(ages, railRows, ferryRows){
+  const rail = !!(ages.rail && ages.rail.stale && railRows), ferry = !!(ages.ferry && ages.ferry.stale && ferryRows);
+  const apart = !!(ages.rail && ages.ferry && (ages.rail.stale !== ages.ferry.stale || Math.abs(ages.rail.mins - ages.ferry.mins) > 30));
+  return { rail: rail, ferry: ferry, bar: rail && ferry ? 'annStale' : rail ? 'annStaleRail' : ferry ? 'annStaleFerry' : '', apart: apart };
+}
+const annAgeLine = (age, key) => '🕒 ' + t(key).replace('{age}', ageWords(age.mins));
+function annAgeHTML(ages, st){
+  const cls = age => 'ann-age' + (age.stale ? ' stale' : '');
+  if(st.apart) return (ages.rail ? `<div class="${cls(ages.rail)}" id="annAge">${annAgeLine(ages.rail, 'annAgeRail')}</div>` : '')
+                    + (ages.ferry ? `<div class="${cls(ages.ferry)}" id="annAgeFerry">${annAgeLine(ages.ferry, 'annAgeFerry')}</div>` : '');
+  const one = ages.rail || ages.ferry;
+  return one ? `<div class="${cls(one)}" id="annAge">${annAgeLine(one, 'annAge')}</div>` : '';
+}
+const annStaleSig = ages => [ages.rail, ages.ferry].map(a => a ? (a.stale ? 's' : 'f') : '-').join('') + (annStaleness(ages, 1, 1).apart ? 'a' : '');
+let _annStaleSig = '';
 function refreshAnnAge(){
-  const age = noticeAge(DISR_CHECKED, Date.now()), el = document.getElementById('annAge');
-  if(!age) return;
-  if(!el || el.classList.contains('stale') !== age.stale){ renderAnnouncements(); return; }
-  el.textContent = annAgeText(age);
+  const ages = annAges(Date.now());
+  if(!ages.rail && !ages.ferry) return;
+  if(annStaleSig(ages) !== _annStaleSig || !document.getElementById('annAge')){ renderAnnouncements(); return; }
+  const set = (id, age, key) => { const el = document.getElementById(id); if(el && age) el.textContent = annAgeLine(age, key); };
+  if(document.getElementById('annAgeFerry')){ set('annAge', ages.rail, 'annAgeRail'); set('annAgeFerry', ages.ferry, 'annAgeFerry'); }
+  else set('annAge', ages.rail || ages.ferry, 'annAge');
 }
 let _annBusOpen = false, _annBusAll = false;
 const ANN_BUS_SHOWN = 6;       // bus groups shown before "show more": a bad day has fifty
@@ -304,16 +330,18 @@ function renderAnnouncements(){
   }).join('');
   const nothing = !rail.length && !ferry.length && !groups.length;
   const body = document.getElementById('annBody');
-  const age = noticeAge(DISR_CHECKED, Date.now()), staleNow = !!(age && age.stale && (rail.length || ferry.length));
-  body.classList.toggle('ann-stale', staleNow);
-  body.innerHTML = (staleNow ? `<div class="ann-stalebar" role="status">⚠ ${t('annStale')}</div>` : '')
+  const ages = annAges(Date.now()), stale = annStaleness(ages, rail.length, ferry.length);
+  _annStaleSig = annStaleSig(ages);
+  body.classList.toggle('ann-stale', stale.rail);        // greys the rail rows; each ferry row says for itself whether it is old
+  const ferryRow = d => annRowHTML(d).replace('class="ann-item"', 'class="ann-item ' + (stale.ferry ? 'ann-old' : 'ann-fresh') + '"');
+  body.innerHTML = (stale.bar ? `<div class="ann-stalebar" role="status">⚠ ${t(stale.bar)}</div>` : '')
     + (nothing ? `<div class="ann-none">${t('annNone')}</div>` : rail.map(annRowHTML).join(''))
-    + (ferry.length ? `<div class="ann-sub">⛴ ${t('annFerrySub')} · ${ferry.length}</div>${ferry.map(annRowHTML).join('')}` : '')
+    + (ferry.length ? `<div class="ann-sub">⛴ ${t('annFerrySub')} · ${ferry.length}</div>${ferry.map(ferryRow).join('')}` : '')
     + (groups.length ? `<button class="ann-sec" id="annBusSec" aria-expanded="${_annBusOpen}">🚌 ${t('annBusSub')} · ${groups.length}<span class="ann-caret"></span></button>
          <div class="ann-busbox" id="annBusBox"${_annBusOpen?'':' hidden'}>${(_annBusAll ? groups : groups.slice(0, ANN_BUS_SHOWN)).map(annBusGroupHTML).join('')}
            ${groups.length > ANN_BUS_SHOWN ? `<button class="ann-moreb" id="annBusMore">${_annBusAll ? t('annLess') : t('annMore').replace('{n}', groups.length - ANN_BUS_SHOWN)}</button>` : ''}</div>` : '')
     + (opRows ? `<div class="ann-sub">🚈 ${t('openHdr')}</div>${opRows}<div class="ann-note">${t('openFoot')}</div>` : '')
-    + `<div class="ann-foot">${age ? `<div class="ann-age${age.stale ? ' stale' : ''}" id="annAge">${annAgeText(age)}</div>` : ''}${t('annFoot')} <a href="https://www.metro.istanbul/SeferDurumlari/SeferDetaylari" target="_blank" rel="noopener">metro.istanbul ↗</a>
+    + `<div class="ann-foot">${annAgeHTML(ages, stale)}${t('annFoot')} <a href="https://www.metro.istanbul/SeferDurumlari/SeferDetaylari" target="_blank" rel="noopener">metro.istanbul ↗</a>
        · <a href="https://github.com/Hero4mohamed/Metro-Istanbul-General-City-Map/issues/new" target="_blank" rel="noopener">🐞 ${t('reportProblem')}</a>
        ${(ferry.length || groups.length || (CITY_ID === 'istanbul' && HAS.bus)) ? `<div>${t('annFootExtra')}</div>` : ''}</div>`;
   body.querySelectorAll('.ann-item[data-id]').forEach(el => el.addEventListener('click', ()=>{

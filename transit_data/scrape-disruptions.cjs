@@ -14,10 +14,24 @@ const SRC = 'https://www.metro.istanbul/SeferDurumlari/Ariza';
    costs a handful of tiny commits rather than one every half hour. The app turns it into "checked 12 min ago" and, after
    several hours of silence (a laptop asleep, a source that cannot be reached), says the notices may be out of date. */
 const HEARTBEAT_MS = 3 * 3600 * 1000;
-function nextStatus(prevStatus, noticesChanged, nowMs){
-  const prev = prevStatus ? Date.parse(prevStatus.checkedAt) : NaN;
-  if(!noticesChanged && isFinite(prev) && nowMs - prev >= 0 && nowMs - prev < HEARTBEAT_MS) return null;   // current enough: publish nothing
-  return { v: 1, checkedAt: new Date(nowMs).toISOString() };
+/* `read` says which pages were read successfully just now: { rail, ferry }. They are different sites and, since V4.5.2, a run can
+   read one without the other (GitHub's job reaches the ferry page through the relay but not the rail page), so each has its own
+   time: `checkedAt` for the rail page, `ferryCheckedAt` for the ferry page. A page that was not read keeps the time it had. */
+function nextStatus(prevStatus, noticesChanged, nowMs, read){
+  read = read || { rail: true };
+  const at = k => { const v = prevStatus ? Date.parse(prevStatus[k]) : NaN; return isFinite(v) && nowMs - v >= 0 ? v : NaN; };   // a time in the future is no time
+  const rail = at('checkedAt'), ferry = at('ferryCheckedAt');
+  const due = v => !isFinite(v) || nowMs - v >= HEARTBEAT_MS;
+  if(!noticesChanged && !(read.rail && due(rail)) && !(read.ferry && due(ferry))) return null;   // current enough: publish nothing
+  const iso = ms => new Date(ms).toISOString(), out = { v: 1 };
+  if(read.rail) out.checkedAt = iso(nowMs); else if(isFinite(rail)) out.checkedAt = iso(rail);
+  if(read.ferry) out.ferryCheckedAt = iso(nowMs); else if(isFinite(ferry)) out.ferryCheckedAt = iso(ferry);
+  return out;
+}
+/* the file to write when the rail page could not be read: every notice that is not a ferry notice exactly as the current file
+   has it (same objects, same order among themselves), with the ferry notices just read in place of the old ones */
+function railCarriedOver(current, ferry){
+  return current.filter(e => e && e.mode !== 'ferry').concat(ferry);
 }
 /* ==STATUS-END== */
 const UA  = 'Mozilla/5.0 (compatible; IstanbulTransitMap/1.0; +github.com/Hero4mohamed)';
@@ -751,11 +765,12 @@ async function main(){
   let metro=[], fetchOk=false;
   try{
     metro=parseMetro(await getWithRetry(SRC,{headers:{'User-Agent':UA}},3,6000)); fetchOk=true;
-  }catch(e){ console.error('metro.istanbul fetch failed:', e.message); process.exitCode=2; }
-  // a transient fetch failure must NOT erase the current file — bail out, leave it untouched
-  if(!fetchOk){ console.error('Source unreachable — leaving disruptions.json unchanged.'); return; }
-  await llmRefine(metro);   // optional high-quality translation for anything the phrase map missed
-  const x=await parseX();
+  }catch(e){ console.error('metro.istanbul fetch failed:', e.message); }
+  /* A rail page that cannot be read must NOT erase the rail notices, and (since V4.5.2) must not stop the ferry notices from
+     being refreshed either: the rail notices are carried over from the current file exactly as they are, further down. Only
+     when NEITHER page can be read is the file left untouched and the run marked as failed. */
+  if(fetchOk) await llmRefine(metro);   // optional high-quality translation for anything the phrase map missed
+  const x = fetchOk ? await parseX() : [];
   /* Şehir Hatları (the city ferries) publishes announcements of its own: timetable changes, extra and cancelled
      trips. They are read from the operator's site by scrape-ferry.cjs and travel the same road the rail faults do.
      That page is not an interface — its text is inside an ASP.NET view-state — so a failure here must never cost the
@@ -768,6 +783,7 @@ async function main(){
     const today=new Date().toLocaleDateString('en-CA',{ timeZone:'Europe/Istanbul' });
     ferry=await fetchFerryNotices(today, lines); ferryOk=true;
   }catch(e){ console.error('ferry notices failed:', e.message); }
+  if(!fetchOk && !ferryOk){ console.error('Neither source could be read — leaving disruptions.json unchanged.'); process.exitCode=2; return; }
   if(!ferryOk){
     try{ ferry=JSON.parse(fs.readFileSync(OUT,'utf8')).filter(e=>e.mode==='ferry'); }catch(e){ ferry=[]; }
     if(ferry.length) console.error('kept', ferry.length, 'ferry notice(s) from the current file');
@@ -785,10 +801,17 @@ async function main(){
   let manual=[]; try{ manual=JSON.parse(fs.readFileSync(path.join(__dirname,'disruptions-manual.json'),'utf8')); }catch(e){}
   const liveRefs=new Set(metro.map(e=>e.ref));
   const keptManual=manual.filter(m=> !liveRefs.has(m.ref));
-  const all=keptManual.concat(metro, x, ferry);
+  let all=keptManual.concat(metro, x, ferry);
+  if(!fetchOk){
+    // the rail page was not read: everything that is not a ferry notice stays exactly as the current file has it
+    let current=null; try{ current=JSON.parse(fs.readFileSync(OUT,'utf8')); }catch(e){}
+    if(!Array.isArray(current)){ console.error('Rail page unreachable and no current file to keep its notices from — leaving it.'); process.exitCode=2; return; }
+    all=railCarriedOver(current, ferry);
+    console.error('Rail page unreachable — its', all.length-ferry.length, 'notice(s) kept as they are; ferry notices refreshed.');
+  }
   // keep a stable, readable order
   all.sort((a,b)=> (a.ref||'zzz').localeCompare(b.ref||'zzz','tr') || a.id.localeCompare(b.id));
-  if(!metro.length && !process.env.ALLOW_EMPTY){
+  if(fetchOk && !metro.length && !process.env.ALLOW_EMPTY){
     console.error('No metro.istanbul disruptions parsed — keeping manual-only set (safety).');
   }
   const text = JSON.stringify(all, null, 2)+'\n';
@@ -797,7 +820,7 @@ async function main(){
   console.log('WROTE', OUT, '—', all.length, 'item(s):', all.map(e=>e.ref+'/'+e.id).join(', '));
   // the page was read successfully just now: say so (see ==STATUS-START==)
   let prevStatus = null; try{ prevStatus = JSON.parse(fs.readFileSync(STATUS, 'utf8')); }catch(e){}
-  const st = nextStatus(prevStatus, before !== text, Date.now());
-  if(st){ fs.writeFileSync(STATUS, JSON.stringify(st, null, 2)+'\n'); console.log('WROTE', STATUS, '—', st.checkedAt); }
+  const st = nextStatus(prevStatus, before !== text, Date.now(), { rail: fetchOk, ferry: ferryOk });
+  if(st){ fs.writeFileSync(STATUS, JSON.stringify(st, null, 2)+'\n'); console.log('WROTE', STATUS, '— rail', st.checkedAt || 'unknown', '· ferry', st.ferryCheckedAt || 'unknown'); }
 }
 main();

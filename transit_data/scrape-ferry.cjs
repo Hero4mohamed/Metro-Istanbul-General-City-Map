@@ -196,9 +196,23 @@ function ferryEntries(listHtml, pages, today, ferryLines) {
   return out;
 }
 
-async function get(url) {
-  const r = await fetch(url, { headers: { 'User-Agent': UA } });
-  if (!r.ok) throw new Error('HTTP ' + r.status + ' ' + url);
+/* GitHub's servers are turned away by this site (a bot check answers them with 403), so the half-hourly job there could not
+   read it, and with the laptop off the ferry notices went stale. The project's own relay (relay/src/worker.mjs, /fetch) is not
+   turned away, and reads these pages and nothing else. So: ask directly first, and only when that fails AND a relay is
+   configured (RELAY_URL + RELAY_FETCH_TOKEN: set on GitHub, not on the laptop, where the direct way works) ask through it.
+   The same pages, the same name in the User-Agent, one request each; nothing is cached or stored on the way (V4.5.2). */
+function relayFor(env) {
+  const url = String((env && env.RELAY_URL) || '').replace(/\/+$/, ''), token = (env && env.RELAY_FETCH_TOKEN) || '';
+  return /^https:\/\/[a-z0-9.-]+$/i.test(url) && token ? { url: url, token: token } : null;
+}
+async function get(url, opts) {
+  const o = opts || {}, ask = o.fetch || fetch, relay = relayFor(o.env || process.env);
+  let direct;
+  try { const r = await ask(url, { headers: { 'User-Agent': UA } }); if (r.ok) return r.text(); direct = 'HTTP ' + r.status; }
+  catch (e) { direct = e.message; }
+  if (!relay) throw new Error(direct + ' ' + url);
+  const r = await ask(relay.url + '/fetch?u=' + encodeURIComponent(url), { headers: { 'Authorization': 'Bearer ' + relay.token } });
+  if (!r.ok) throw new Error(direct + ' directly and HTTP ' + r.status + ' through the relay ' + url);
   return r.text();
 }
 /* the newest announcements only: the list is long and old, and only a recent one can still be relevant */
@@ -212,4 +226,4 @@ async function fetchFerryNotices(today, ferryLines, limit) {
   return ferryEntries(list, pages, today, ferryLines);
 }
 
-module.exports = { parseList, viewStateStrings, parseDetail, messageOf, datesIn, windowOf, kindOf, linesNamed, readNotice, ferryEntries, fetchFerryNotices, decodeEntities };
+module.exports = { get, relayFor, parseList, viewStateStrings, parseDetail, messageOf, datesIn, windowOf, kindOf, linesNamed, readNotice, ferryEntries, fetchFerryNotices, decodeEntities };

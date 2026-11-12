@@ -18,10 +18,14 @@
  *   GET  /health                public   is a feeder alive, and where does this Worker run
  *   GET  /feed/wanted           feeder   the lines to fetch now                      (Authorization: Bearer FEED_TOKEN)
  *   POST /feed/push             feeder   { lines: { "34G": [İETT's records] | null } }
+ *   GET  /fetch?u=<address>     the notices job on GitHub (Authorization: Bearer FETCH_TOKEN): the text of ONE kind of page, the
+ *                               Şehir Hatları announcements (list and single notices). GitHub's servers are turned away by that site;
+ *                               this Worker is not, so the half-hourly job can keep the ferry notices fresh when no laptop is on.
+ *                               It is not a general proxy: any other address is refused (FETCHABLE below).
  *
  * The functions above the handler are pure and are tested by transit_data/test/relay.test.cjs with real recorded answers.
  */
-export const VERSION = '3';
+export const VERSION = '4';
 /* the pages allowed to read the answers in a browser. Anything else still gets the answer if it asks directly (it is open data),
    but a browser will not hand it to another website's script. */
 export const ALLOWED_ORIGINS = ['https://hero4mohamed.github.io', 'http://localhost:8470', 'http://127.0.0.1:8470'];
@@ -32,7 +36,10 @@ export const TOO_OLD = 10 * 60000;                           // a position older
 export const WANTED_FOR = 90000;                             // a line stays on the feeder's list this long after it was last asked for
 export const SNAP_FRESH = 60000;                             // an answer older than this is not "now": it is not served
 export const FEEDER_ALIVE = 45000;                           // no word from the feeder for this long: there is no feed
-export const MAX_LINES = 40;                                 // lines per push, and lines on the wanted list
+export const MAX_LINES = 40;
+/* the only pages /fetch will read: the ferry operator's announcements list and its single-announcement pages */
+export const FETCHABLE = /^https:\/\/sehirhatlari\.istanbul\/tr\/duyurular(\/[A-Za-z0-9%_-]{1,200})?$/;
+export const FETCH_UA = 'Mozilla/5.0 (compatible; IstanbulTransitMap/1.0; +github.com/Hero4mohamed)';     // the same name the scraper gives when it asks directly                                 // lines per push, and lines on the wanted list
 
 export function corsHeaders(origin) {
   const h = { 'Vary': 'Origin', 'X-Content-Type-Options': 'nosniff' };
@@ -141,6 +148,20 @@ export default {
       }
       await db.batch(stmts);
       return json({ stored }, 200, null);
+    }
+
+    if (url.pathname === '/fetch') {
+      if (request.method !== 'GET') return json({ error: 'method' }, 405, null);
+      if (!env.FETCH_TOKEN) return json({ error: 'not configured' }, 503, null);
+      if (!sameToken((request.headers.get('Authorization') || '').replace(/^Bearer\s+/i, ''), env.FETCH_TOKEN)) return json({ error: 'forbidden' }, 403, null);
+      const target = url.searchParams.get('u') || '';
+      if (!FETCHABLE.test(target)) return json({ error: 'address' }, 400, null);
+      let r; try { r = await fetch(target, { headers: { 'User-Agent': FETCH_UA, 'Accept': 'text/html' }, redirect: 'manual', signal: AbortSignal.timeout(20000) }); }
+      catch (e) { return json({ error: 'unreachable' }, 502, null); }
+      const text = await r.text();
+      if (text.length > 3000000) return json({ error: 'too large' }, 502, null);
+      // the operator's own status is passed on as it is, so the job can tell "the page said no" from "the page was read"
+      return new Response(text, { status: r.status, headers: { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store', 'X-Content-Type-Options': 'nosniff' } });
     }
 
     if (url.pathname === '/') return json({ relay: 'turkmaps', version: VERSION, endpoints: ['/iett/buses?line=34G', '/health'] }, 200, origin);

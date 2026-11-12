@@ -22,9 +22,9 @@ function scraperHelper() {
   assert.ok(src.includes('==STATUS-START=='), 'the status block lost its marker');
   const a = src.indexOf('const HEARTBEAT_MS'), b = src.indexOf('/* ==STATUS-END== */');
   assert.ok(a > 0 && b > a, 'the status block is not in the scraper');
-  return new Function(src.slice(a, b) + '\nreturn { nextStatus, HEARTBEAT_MS };')();
+  return new Function(src.slice(a, b) + '\nreturn { nextStatus, HEARTBEAT_MS, railCarriedOver };')();
 }
-const { nextStatus, HEARTBEAT_MS } = scraperHelper();
+const { nextStatus, HEARTBEAT_MS, railCarriedOver } = scraperHelper();
 const T0 = Date.parse('2026-10-25T12:00:00Z');
 const stamp = ms => ({ v: 1, checkedAt: new Date(ms).toISOString() });
 
@@ -103,7 +103,7 @@ test('the page fetches the status with the notices, and keeps fetching while the
 
 test('a stale feed shows a warning and greys the rail and ferry rows, but not the bus group or the opening cards', () => {
   const html = H.html();
-  assert.ok(/staleNow = !!\(age && age\.stale && \(rail\.length \|\| ferry\.length\)\)/.test(html), 'the warning should need both a stale age and something to warn about');
+  assert.ok(/stale = annStaleness\(ages, rail\.length, ferry\.length\)/.test(html), 'the warning should need both a stale age and something to warn about');
   assert.ok(/class="ann-stalebar" role="status"/.test(html), 'the warning bar is gone');
   assert.ok(/\.ann-body\.ann-stale > \.ann-item\[data-id\]\{opacity:/.test(html), 'the stale rows are no longer greyed');
   // the bus groups carry data-key and sit inside .ann-busbox; the opening cards carry data-open: neither has data-id, so neither is greyed
@@ -118,4 +118,81 @@ test('the status file ships, is valid, and the GitHub job commits it with the no
   const wf = fs.readFileSync(path.join(DIR, '..', '.github', 'workflows', 'disruptions.yml'), 'utf8');
   assert.ok(/git add transit_data\/disruptions\.json transit_data\/disruptions-status\.json/.test(wf), 'the job would publish notices without their status');
   assert.ok(/git diff --quiet -- transit_data\/disruptions\.json transit_data\/disruptions-status\.json/.test(wf), 'the job would not notice a status-only change');
+});
+
+/* ---- V4.5.2: the ferry page can be read without the rail page (GitHub's job, through the relay), so each has its own age ---- */
+const ISO = ms => new Date(ms).toISOString();
+
+test('status: a run that read only the ferry page moves only the ferry time, and the rail time keeps what it had', () => {
+  const prev = { v: 1, checkedAt: ISO(T0 - 9 * 3600000), ferryCheckedAt: ISO(T0 - 4 * 3600000) };
+  assert.deepStrictEqual(nextStatus(prev, false, T0, { rail: false, ferry: true }), { v: 1, checkedAt: ISO(T0 - 9 * 3600000), ferryCheckedAt: ISO(T0) },
+    'reading the ferry page was recorded as reading the rail page too: nine-hour-old rail notices would look fresh');
+  assert.deepStrictEqual(nextStatus(prev, false, T0, { rail: true, ferry: false }), { v: 1, checkedAt: ISO(T0), ferryCheckedAt: ISO(T0 - 4 * 3600000) });
+  assert.deepStrictEqual(nextStatus(prev, false, T0, { rail: true, ferry: true }), { v: 1, checkedAt: ISO(T0), ferryCheckedAt: ISO(T0) });
+  // an older file has one time; the page that was not read does not get one invented for it
+  assert.deepStrictEqual(nextStatus({ v: 1, checkedAt: ISO(T0 - 9 * 3600000) }, false, T0, { rail: false, ferry: true }), { v: 1, checkedAt: ISO(T0 - 9 * 3600000), ferryCheckedAt: ISO(T0) });
+  assert.deepStrictEqual(nextStatus(null, false, T0, { rail: false, ferry: true }), { v: 1, ferryCheckedAt: ISO(T0) }, 'a rail time was made up for a page that was not read');
+  // quiet and recent: nothing is published, whichever page it was
+  assert.strictEqual(nextStatus({ v: 1, checkedAt: ISO(T0 - 9 * 3600000), ferryCheckedAt: ISO(T0 - 60000) }, false, T0, { rail: false, ferry: true }), null,
+    'a ferry-only run publishes a status every half hour: dozens of needless commits a day');
+  assert.ok(nextStatus({ v: 1, checkedAt: ISO(T0 - 60000), ferryCheckedAt: ISO(T0 - HEARTBEAT_MS) }, false, T0, { rail: true, ferry: true }), 'the ferry time is allowed to go unrefreshed past the heartbeat');
+});
+
+test('scraper: with the rail page unreadable the rail notices are kept exactly, and only the ferry ones are replaced', () => {
+  const current = [{ id: 'a', ref: 'M2', message: 'rail fault' }, { id: 'f-old', mode: 'ferry', ref: 'F1' }, { id: 'b', ref: 'T1' }, { id: 'man', ref: 'B2', manual: true }];
+  const out = railCarriedOver(current, [{ id: 'f-new', mode: 'ferry', ref: 'F2' }]);
+  assert.deepStrictEqual(out.map(e => e.id), ['a', 'b', 'man', 'f-new'], 'a rail notice was lost, an old ferry notice was kept, or the new one was not written');
+  assert.strictEqual(out[0], current[0], 'a carried-over notice must be the very same record, not a rebuilt one');
+  assert.deepStrictEqual(railCarriedOver(current, []).map(e => e.id), ['a', 'b', 'man']);
+  const src = read('scrape-disruptions.cjs');
+  assert.ok(/if\(!fetchOk && !ferryOk\)\{[^}]*process\.exitCode=2; return; \}/.test(src), 'with neither page read the file must be left alone and the run marked as failed');
+  assert.ok(/nextStatus\(prevStatus, before !== text, Date\.now\(\), \{ rail: fetchOk, ferry: ferryOk \}\)/.test(src), 'the status does not record which page was really read');
+  assert.ok(!/Source unreachable — leaving disruptions\.json unchanged/.test(src), 'a rail page that cannot be read still stops the ferry notices from being refreshed');
+});
+
+/* the panel's own rules, run from the built page */
+const AGE = (() => {
+  const html = H.appScript().replace(/\r\n/g, '\n');
+  const grab = name => { const m = new RegExp('function ' + name + '\\(').exec(html); let i = html.indexOf('{', m.index), d = 0; for (; i < html.length; i++) { if (html[i] === '{') d++; else if (html[i] === '}' && --d === 0) break; } return html.slice(m.index, i + 1); };
+  const ctx = { DISR_CHECKED: null, DISR_FERRY_CHECKED: null };
+  const f = new Function('ctx', 'const ANN_STALE_MIN = 8 * 60;\n' + grab('noticeAge') + '\n' + grab('annStaleness') +
+    '\nfunction annAges(nowMs){ const DISR_CHECKED = ctx.DISR_CHECKED, DISR_FERRY_CHECKED = ctx.DISR_FERRY_CHECKED; ' + grab('annAges').replace(/^function annAges\(nowMs\)\{/, '') + '\nreturn { annAges, annStaleness };');
+  return Object.assign(f(ctx), { ctx });
+})();
+const H1 = 3600000;
+
+test('panel: fresh ferry notices are not called stale because the rail page has not been read, nor the other way round', () => {
+  AGE.ctx.DISR_CHECKED = T0 - 9 * H1; AGE.ctx.DISR_FERRY_CHECKED = T0 - 20 * 60000;       // laptop off since last night, GitHub's job read the ferry page
+  let ages = AGE.annAges(T0), st = AGE.annStaleness(ages, 2, 3);
+  assert.deepStrictEqual([ages.rail.stale, ages.ferry.stale], [true, false]);
+  assert.deepStrictEqual([st.rail, st.ferry, st.bar, st.apart], [true, false, 'annStaleRail', true], 'the warning says "rail and ferry" when only the rail notices are old');
+  st = AGE.annStaleness(ages, 0, 3);
+  assert.deepStrictEqual([st.rail, st.bar], [false, ''], 'a warning about rail notices with no rail notice on show');
+  AGE.ctx.DISR_CHECKED = T0 - 20 * 60000; AGE.ctx.DISR_FERRY_CHECKED = T0 - 9 * H1;
+  st = AGE.annStaleness(AGE.annAges(T0), 2, 3);
+  assert.deepStrictEqual([st.rail, st.ferry, st.bar], [false, true, 'annStaleFerry']);
+  AGE.ctx.DISR_CHECKED = T0 - 9 * H1; AGE.ctx.DISR_FERRY_CHECKED = T0 - 10 * H1;
+  st = AGE.annStaleness(AGE.annAges(T0), 2, 3);
+  assert.deepStrictEqual([st.rail, st.ferry, st.bar], [true, true, 'annStale']);
+  // an older status file: one time speaks for both, and one line says so
+  AGE.ctx.DISR_CHECKED = T0 - 40 * 60000; AGE.ctx.DISR_FERRY_CHECKED = null;
+  ages = AGE.annAges(T0); st = AGE.annStaleness(ages, 2, 3);
+  assert.strictEqual(ages.ferry.mins, 40, 'with no ferry time the ferry notices have no age at all');
+  assert.deepStrictEqual([st.bar, st.apart], ['', false]);
+  AGE.ctx.DISR_FERRY_CHECKED = T0 - 5 * 60000;
+  assert.strictEqual(AGE.annStaleness(AGE.annAges(T0), 2, 3).apart, true, 'ages 35 minutes apart are shown as one');
+});
+
+test('panel: the ferry rows carry their own word, the page reads both times, and every language can say each line', () => {
+  const html = H.html();
+  assert.ok(/'class="ann-item ' \+ \(stale\.ferry \? 'ann-old' : 'ann-fresh'\) \+ '"'/.test(html), 'a ferry row is not marked old or fresh');
+  assert.ok(/body\.classList\.toggle\('ann-stale', stale\.rail\)/.test(html), 'the grey over the rail rows no longer follows the rail age');
+  assert.ok(/\.ann-body\.ann-stale > \.ann-item\.ann-fresh\[data-id\]\{opacity:1;filter:none;\}/.test(html), 'fresh ferry rows are greyed with the old rail rows');
+  assert.ok(/\.ann-body > \.ann-item\.ann-old\[data-id\]\{opacity:\.62;/.test(html), 'old ferry rows are not greyed when the rail rows are fresh');
+  assert.ok(/fm = Date\.parse\(st\.ferryCheckedAt\)/.test(html) && /DISR_FERRY_CHECKED = isFinite\(fm\) \? fm : null;/.test(html), 'the page does not read the ferry time');
+  for (const key of ['annStaleRail', 'annStaleFerry', 'annAgeRail', 'annAgeFerry']) {
+    const n = (H.appScript().match(new RegExp(key + ':"', 'g')) || []).length;
+    assert.strictEqual(n, 4, key + ' is missing in a language');
+  }
+  for (const key of ['annAgeRail', 'annAgeFerry']) assert.strictEqual((H.appScript().match(new RegExp(key + ':"[^"]*\\{age\\}', 'g')) || []).length, 4, key + ' has no place for the age in some language');
 });

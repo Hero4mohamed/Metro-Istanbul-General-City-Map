@@ -6,7 +6,7 @@
 <!-- Substituted by build.cjs, which hashes the inline script from the final bytes. Pages
      cannot set headers, so this ships as meta; frame-ancestors and report-uri are
      unavailable that way. -->
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-R1e11b8ekirT3LnYEsnlmehz2yY+UJL62E0dYrWQmXo='; style-src 'self' 'unsafe-inline'; font-src 'self' data:; img-src 'self' data: blob: https://server.arcgisonline.com; connect-src 'self' https://server.arcgisonline.com https://tiles.openfreemap.org https://photon.komoot.io https://overpass-api.de https://api.ibb.gov.tr https://openapi.izmir.bel.tr https://turkmaps-relay.turkmaps-relay.workers.dev https://api.open-meteo.com https://air-quality-api.open-meteo.com https://routing.openstreetmap.de https://api.anthropic.com; worker-src 'self'; frame-src 'none'; media-src 'none'; manifest-src 'self'; base-uri 'self'; form-action 'none'; object-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-1beV4cEr1jxFmop61JH6P3c3p1ty8n7VVx8ETB4nBuI='; style-src 'self' 'unsafe-inline'; font-src 'self' data:; img-src 'self' data: blob: https://server.arcgisonline.com; connect-src 'self' https://server.arcgisonline.com https://tiles.openfreemap.org https://photon.komoot.io https://overpass-api.de https://api.ibb.gov.tr https://openapi.izmir.bel.tr https://turkmaps-relay.turkmaps-relay.workers.dev https://api.open-meteo.com https://air-quality-api.open-meteo.com https://routing.openstreetmap.de https://api.anthropic.com; worker-src 'self'; frame-src 'none'; media-src 'none'; manifest-src 'self'; base-uri 'self'; form-action 'none'; object-src 'none'">
 <title>TurkMaps · Transit Network Map</title>
 <!-- Leaflet 1.9.4, shipped with the app rather than fetched from a CDN (V4.3): see vendor/README.md -->
 <link rel="stylesheet" href="vendor/leaflet/leaflet.css">
@@ -1019,6 +1019,9 @@
   .ann-stalebar{font-size:var(--fs-7);line-height:1.45;color:var(--warn-ink);background:var(--surface);border:1px solid var(--stroke);border-left:3px solid var(--warn-ink);border-radius:8px;padding:6px 9px;}
   /* stale rail and ferry notices (not the bus group, which this device reads live, nor the "opening soon" cards) */
   .ann-body.ann-stale > .ann-item[data-id]{opacity:.62;filter:saturate(.35);}
+  /* ferry notices can be fresh while the rail ones are old, and the other way round (V4.5.2): a ferry row carries its own word */
+  .ann-body.ann-stale > .ann-item.ann-fresh[data-id]{opacity:1;filter:none;}
+  .ann-body > .ann-item.ann-old[data-id]{opacity:.62;filter:saturate(.35);}
   .ann-item{cursor:pointer;}
   .ann-none{font-size:11px;color:var(--ok-ink);padding:8px 9px;}
   .ann-open{border-left-color:#2FBF71;}
@@ -1732,6 +1735,16 @@
   .bd-r{display:flex;justify-content:space-between;gap:10px;padding:2px 0;}
   .bd-r>span{color:var(--muted);font-size:11px;} .bd-r>b{color:var(--text);font-family:var(--mono);font-weight:600;font-size:var(--fs-8);}
   .bd-src{font-size:var(--fs-6);color:var(--dim);margin-top:6px;}
+  /* airports (V4.5.2): choose one, choose departures or arrivals, open the airport's own board */
+  .air-list{display:flex;flex-direction:column;gap:6px;margin-top:8px;}
+  .air-row{display:flex;align-items:center;gap:10px;width:100%;text-align:start;padding:9px 11px;border:1px solid var(--stroke);border-radius:10px;background:var(--surface);color:var(--text);font:inherit;cursor:pointer;}
+  .air-row.sel{border-color:var(--stroke-2);box-shadow:inset 0 0 0 2px var(--accent);}
+  .air-code{font-family:var(--mono);font-weight:700;letter-spacing:.6px;min-width:3.2em;}
+  .air-board{margin-top:10px;display:flex;flex-direction:column;gap:8px;}
+  .air-board[hidden]{display:none;}
+  .air-h{font-size:var(--fs-6);font-weight:700;color:var(--dim);letter-spacing:.4px;}
+  .air-open{display:block;padding:11px 12px;border-radius:10px;border:1px solid var(--stroke-2);background:var(--surface);color:var(--text);font-weight:700;text-decoration:none;text-align:center;}
+  .air-open:hover{background:var(--track);}
   /* live buses (V4.5): one line saying what is on the map and who says so */
   .lb-strip{display:flex;flex-wrap:wrap;align-items:center;gap:4px 8px;margin:0 0 8px;padding:7px 10px;border:1px solid var(--stroke);border-radius:10px;background:var(--surface);font-size:var(--fs-5);color:var(--text);}
   .lb-dot{width:8px;height:8px;border-radius:var(--r-round);background:var(--dim);flex:0 0 auto;}
@@ -2163,6 +2176,7 @@
       <button data-tab="boat" role="tab" aria-selected="false" data-i18n="tabBoat">⛴ Boats</button>
       <button data-tab="intercity" role="tab" aria-selected="false" data-i18n="tabIntercity">🚄 Intercity</button>
       <button data-tab="weather" role="tab" aria-selected="false" data-i18n="tabWeather">☀ Weather</button>
+      <button data-tab="airport" role="tab" aria-selected="false" data-i18n="tabAirport">✈ Airports</button>
     </div>
   </div>
   <div class="card glass" id="cardLayers">
@@ -2250,6 +2264,13 @@
     <div class="bus-count" id="boatCount"></div>
     <div class="sp-note" data-i18n="boatsIntro">Each line has its own colour and its own lane: where lines share the water they run side by side. Tap a line to see its piers.</div>
     <div class="boat-list" id="boatList"></div>
+  </div>
+
+  <div class="card glass" id="cardAirports" style="display:none;">
+    <div class="sec"><span data-i18n="airTitle">Airports</span></div>
+    <div class="sp-note" data-i18n="airIntro">Choose an airport, then departures or arrivals. The live table opens on the airport's own website.</div>
+    <div class="air-list" id="airList"></div>
+    <div class="air-board" id="airBoard" hidden></div>
   </div>
 
   <div class="card glass" id="cardIntercity" style="display:none;">
@@ -2433,7 +2454,7 @@
 
    The report carries the fault, the build, the city, the language and the browser. It never
    carries location, saved places, trip history or the API key. ===== */
-const BUILD = "20261112080318";
+const BUILD = "20261112133954";
 const DIAG_MAX = 20;
 let DIAG = [];
 try { DIAG = JSON.parse(localStorage.getItem("irn_diag") || "[]"); } catch (e) { DIAG = []; }
@@ -2612,7 +2633,7 @@ const I18N = {
     toYourDest:"to your destination", toStop:"to", fromStop:"from",
     annNone:"✓ No reported disruptions — network running normally.",
     annFoot:"Reported service faults &amp; closures. Live official status:",
-    annAge:"Rail and ferry notices checked {age} ago", annStale:"Rail and ferry notices have not been refreshed for a while and may be out of date.", disrPinHint:"Press anywhere to close", secSearch:"Search & privacy", secApp:"App & data", setSearchPh:"Search settings…", setNone:"No setting matches that.", rotateMapLbl:"Rotate the map", rotateMapHint:"Twist with two fingers to turn the map. On a computer: right-click and drag, or hold Shift and use the wheel. The compass button turns north back up.", compassReset:"Face north",
+    annStaleRail:"Rail notices have not been refreshed for a while and may be out of date.", annStaleFerry:"Ferry notices have not been refreshed for a while and may be out of date.", annAgeRail:"Rail notices checked {age} ago", annAgeFerry:"Ferry notices checked {age} ago", annAge:"Rail and ferry notices checked {age} ago", annStale:"Rail and ferry notices have not been refreshed for a while and may be out of date.", disrPinHint:"Press anywhere to close", secSearch:"Search & privacy", secApp:"App & data", setSearchPh:"Search settings…", setNone:"No setting matches that.", rotateMapLbl:"Rotate the map", rotateMapHint:"Twist with two fingers to turn the map. On a computer: right-click and drag, or hold Shift and use the wheel. The compass button turns north back up.", compassReset:"Face north",
     ageMin:"{n} min", ageHour:"{n} h", ageDay:"{n} d",
     gt_district:"District", gt_hood:"Neighbourhood", gt_place:"Town or village", gt_square:"Square", gt_street:"Street",
     gt_restaurant:"Restaurant", gt_cafe:"Café", gt_fast_food:"Fast food", gt_bar:"Bar", gt_hotel:"Hotel", gt_lodging:"Lodging",
@@ -2734,7 +2755,7 @@ const I18N = {
     secAbout:"About & legal", legalPrivacy:"Privacy notice", legalTerms:"Terms of use", legalStorage:"Cookies & stored data", legalCredits:"Credits & licences", legalAccess:"Accessibility",
     aboutProject:"TurkMaps is a free, non-commercial, open-source project by its author. It is not an official service of any transit operator.",
     aboutContact:"Contact", aboutVersion:"Version", aboutSource:"Source code",
-    liveBusOff:"Live buses are not running for this city right now", liveBusQuiet:"not heard from for 2 min or more", liveBusQuietN:"{n} not heard from lately", liveBusLoading:"Live buses: asking…", liveBusOffline:"Live buses need a connection", liveBusBusy:"The live service is busy, trying again", liveBusError:"The live service did not answer, trying again", liveBusKept:"{n} shown from the last answer", liveBusNone:"Live: no buses reported on this line right now", liveBusOne:"Live: 1 bus on this line", liveBusMany:"Live: {n} buses on this line", liveBusStanding:"{n} standing", liveBusUnplaced:"{n} more not placed yet", liveBusTip:"Bus {id} · live position", liveBusStill:"has not moved for 2 min or more", liveBusAt:"Last answer {t}", tabBoat:"⛴ Boats", boatsTitle:"Boat lines", boatsIntro:"Each line has its own colour and its own lane: where lines share the water they run side by side. Tap a line to see its piers.", boatPiers:"{n} piers", boatCount:"{n} lines", modesTitle:"What the map shows", modeRail:"Metro & rail", modeBus:"Buses", modeBoat:"Boats", modeHint:"Choose what the map shows. Metro & rail is the full map.", 
+    liveBusOff:"Live buses are not running for this city right now", liveBusQuiet:"not heard from for 2 min or more", liveBusQuietN:"{n} not heard from lately", tabAirport:"✈ Airports", airTitle:"Airports", airIntro:"Choose an airport, then departures or arrivals. The live table opens on the airport’s own website.", airNone:"No airport is listed for this city.", airKind:"Departures or arrivals", airDep:"Departures", airArr:"Arrivals", airOpen:"Open the live board on {site}", airIntl:"International", airDom:"Domestic", airShared:"That page shows departures and arrivals together.", airPick:"That page lists every airport: choose {name} there. It shows departures and arrivals together.", airWhy:"TurkMaps has no flight data of its own: airports do not offer their boards to other apps, so the table is shown on their site.", liveBusLoading:"Live buses: asking…", liveBusOffline:"Live buses need a connection", liveBusBusy:"The live service is busy, trying again", liveBusError:"The live service did not answer, trying again", liveBusKept:"{n} shown from the last answer", liveBusNone:"Live: no buses reported on this line right now", liveBusOne:"Live: 1 bus on this line", liveBusMany:"Live: {n} buses on this line", liveBusStanding:"{n} standing", liveBusUnplaced:"{n} more not placed yet", liveBusTip:"Bus {id} · live position", liveBusStill:"has not moved for 2 min or more", liveBusAt:"Last answer {t}", tabBoat:"⛴ Boats", boatsTitle:"Boat lines", boatsIntro:"Each line has its own colour and its own lane: where lines share the water they run side by side. Tap a line to see its piers.", boatPiers:"{n} piers", boatCount:"{n} lines", modesTitle:"What the map shows", modeRail:"Metro & rail", modeBus:"Buses", modeBoat:"Boats", modeHint:"Choose what the map shows. Metro & rail is the full map.", 
     offPacksTitle:"Offline maps", offPacksIntro:"A city kept here opens and works with no connection: its map, lines, stations, trip planner and place search. İstanbul, İzmir and Ankara are kept automatically; the others when you press Download. Service notices, weather, official timetables and the satellite layer still need a connection.", offGet:"Download", offRemove:"Remove", offRetry:"Try again", offNow:"Download now", offReady:"On this device", offLoading:"Downloading… {p}%", offWaiting:"Waiting for Wi-Fi", offFailed:"Could not download", offNone:"Not downloaded", offAutoTag:"automatic", offDataLbl:"Download maps on mobile data too", offDataHint:"Off: offline maps come down on Wi-Fi only. A phone that does not say what it is connected to (every iPhone) waits for you to press Download.", offAskTitle:"Keep the maps on this phone?", offAskBody:"So the app works with no connection, it keeps the maps of {cities} on this device (about {mb} MB). You are on mobile data.", offAskBodyUnknown:"So the app works with no connection, it keeps the maps of {cities} on this device (about {mb} MB). This phone does not say whether it is on Wi-Fi.", offAskNow:"Download now", offAskWifi:"Wait for Wi-Fi", offAskLater:"The maps will wait. Start them any time in Settings → Map → Offline maps.", offDone:"{city} is ready to use offline", 
     fromPh:"From: a stop, place or address…", toPh:"To: a stop, place or address…", sheetResize:"Resize the planner: short, half or full height", ariaMapView:"Map view", ariaCity:"City", ariaLoading:"Loading", ariaPrevStep:"Previous step", ariaNextStep:"Next step", ariaApiKey:"Anthropic API key",
     mapLabel:"Transit map. Arrow keys move the map, plus and minus zoom.", zoomIn:"Zoom in", zoomOut:"Zoom out",
@@ -2840,7 +2861,7 @@ const I18N = {
     toYourDest:"varış noktanıza", toStop:"→", fromStop:"şuradan:",
     annNone:"✓ Bildirilen aksama yok — ağ normal çalışıyor.",
     annFoot:"Bildirilen servis arızaları ve kapanışları. Canlı resmi durum:",
-    annAge:"Raylı sistem ve vapur duyuruları {age} önce kontrol edildi", annStale:"Raylı sistem ve vapur duyuruları bir süredir yenilenmedi; güncel olmayabilir.", disrPinHint:"Kapatmak için herhangi bir yere basın", secSearch:"Arama ve gizlilik", secApp:"Uygulama ve veriler", setSearchPh:"Ayarlarda ara…", setNone:"Eşleşen ayar yok.", rotateMapLbl:"Haritayı döndür", rotateMapHint:"Haritayı döndürmek için iki parmakla çevirin. Bilgisayarda: sağ tuşla sürükleyin ya da Shift basılıyken tekerleği kullanın. Pusula düğmesi kuzeyi yeniden yukarı getirir.", compassReset:"Kuzeye dön",
+    annStaleRail:"Raylı sistem duyuruları bir süredir yenilenmedi; güncel olmayabilir.", annStaleFerry:"Vapur duyuruları bir süredir yenilenmedi; güncel olmayabilir.", annAgeRail:"Raylı sistem duyuruları {age} önce kontrol edildi", annAgeFerry:"Vapur duyuruları {age} önce kontrol edildi", annAge:"Raylı sistem ve vapur duyuruları {age} önce kontrol edildi", annStale:"Raylı sistem ve vapur duyuruları bir süredir yenilenmedi; güncel olmayabilir.", disrPinHint:"Kapatmak için herhangi bir yere basın", secSearch:"Arama ve gizlilik", secApp:"Uygulama ve veriler", setSearchPh:"Ayarlarda ara…", setNone:"Eşleşen ayar yok.", rotateMapLbl:"Haritayı döndür", rotateMapHint:"Haritayı döndürmek için iki parmakla çevirin. Bilgisayarda: sağ tuşla sürükleyin ya da Shift basılıyken tekerleği kullanın. Pusula düğmesi kuzeyi yeniden yukarı getirir.", compassReset:"Kuzeye dön",
     ageMin:"{n} dk", ageHour:"{n} sa", ageDay:"{n} gün",
     gt_district:"İlçe", gt_hood:"Mahalle", gt_place:"Yerleşim", gt_square:"Meydan", gt_street:"Cadde / Sokak",
     gt_restaurant:"Restoran", gt_cafe:"Kafe", gt_fast_food:"Fast food", gt_bar:"Bar", gt_hotel:"Otel", gt_lodging:"Konaklama",
@@ -2962,7 +2983,7 @@ const I18N = {
     secAbout:"Hakkında ve yasal", legalPrivacy:"Gizlilik bildirimi", legalTerms:"Kullanım koşulları", legalStorage:"Çerezler ve saklanan veriler", legalCredits:"Katkılar ve lisanslar", legalAccess:"Erişilebilirlik",
     aboutProject:"TurkMaps, yazarının hazırladığı ücretsiz, ticari olmayan, açık kaynaklı bir projedir. Hiçbir ulaşım işletmecisinin resmî hizmeti değildir.",
     aboutContact:"İletişim", aboutVersion:"Sürüm", aboutSource:"Kaynak kod",
-    liveBusOff:"Bu şehir için canlı otobüsler şu anda çalışmıyor", liveBusQuiet:"2 dakikadır veya daha uzun süredir haber alınamadı", liveBusQuietN:"{n} araçtan bir süredir haber yok", liveBusLoading:"Canlı otobüsler: soruluyor…", liveBusOffline:"Canlı otobüsler için bağlantı gerekir", liveBusBusy:"Canlı servis yoğun, yeniden deneniyor", liveBusError:"Canlı servis yanıt vermedi, yeniden deneniyor", liveBusKept:"son yanıttan {n} araç gösteriliyor", liveBusNone:"Canlı: şu anda bu hatta bildirilen otobüs yok", liveBusOne:"Canlı: bu hatta 1 otobüs", liveBusMany:"Canlı: bu hatta {n} otobüs", liveBusStanding:"{n} bekliyor", liveBusUnplaced:"{n} araç henüz yerleştirilemedi", liveBusTip:"Otobüs {id} · canlı konum", liveBusStill:"2 dakikadır veya daha uzun süredir hareket etmedi", liveBusAt:"Son yanıt {t}", tabBoat:"⛴ Vapurlar", boatsTitle:"Vapur hatları", boatsIntro:"Her hattın kendi rengi ve kendi şeridi var: hatlar aynı suyu paylaştığında yan yana ilerler. İskelelerini görmek için bir hatta dokunun.", boatPiers:"{n} iskele", boatCount:"{n} hat", modesTitle:"Haritada ne gösterilsin", modeRail:"Metro ve raylı", modeBus:"Otobüsler", modeBoat:"Vapurlar", modeHint:"Haritanın ne göstereceğini seçin. Metro ve raylı, haritanın tamamıdır.", 
+    liveBusOff:"Bu şehir için canlı otobüsler şu anda çalışmıyor", liveBusQuiet:"2 dakikadır veya daha uzun süredir haber alınamadı", liveBusQuietN:"{n} araçtan bir süredir haber yok", tabAirport:"✈ Havalimanları", airTitle:"Havalimanları", airIntro:"Bir havalimanı, sonra kalkış ya da varış seçin. Canlı tablo havalimanının kendi sitesinde açılır.", airNone:"Bu şehir için listelenmiş havalimanı yok.", airKind:"Kalkış ya da varış", airDep:"Kalkışlar", airArr:"Varışlar", airOpen:"Canlı tabloyu {site} sitesinde aç", airIntl:"Dış hatlar", airDom:"İç hatlar", airShared:"O sayfa kalkışları ve varışları birlikte gösterir.", airPick:"O sayfada bütün havalimanları listelenir: orada {name} seçin. Kalkışları ve varışları birlikte gösterir.", airWhy:"TurkMaps’in kendi uçuş verisi yoktur: havalimanları tablolarını başka uygulamalara sunmaz; bu yüzden tablo onların sitesinde gösterilir.", liveBusLoading:"Canlı otobüsler: soruluyor…", liveBusOffline:"Canlı otobüsler için bağlantı gerekir", liveBusBusy:"Canlı servis yoğun, yeniden deneniyor", liveBusError:"Canlı servis yanıt vermedi, yeniden deneniyor", liveBusKept:"son yanıttan {n} araç gösteriliyor", liveBusNone:"Canlı: şu anda bu hatta bildirilen otobüs yok", liveBusOne:"Canlı: bu hatta 1 otobüs", liveBusMany:"Canlı: bu hatta {n} otobüs", liveBusStanding:"{n} bekliyor", liveBusUnplaced:"{n} araç henüz yerleştirilemedi", liveBusTip:"Otobüs {id} · canlı konum", liveBusStill:"2 dakikadır veya daha uzun süredir hareket etmedi", liveBusAt:"Son yanıt {t}", tabBoat:"⛴ Vapurlar", boatsTitle:"Vapur hatları", boatsIntro:"Her hattın kendi rengi ve kendi şeridi var: hatlar aynı suyu paylaştığında yan yana ilerler. İskelelerini görmek için bir hatta dokunun.", boatPiers:"{n} iskele", boatCount:"{n} hat", modesTitle:"Haritada ne gösterilsin", modeRail:"Metro ve raylı", modeBus:"Otobüsler", modeBoat:"Vapurlar", modeHint:"Haritanın ne göstereceğini seçin. Metro ve raylı, haritanın tamamıdır.", 
     offPacksTitle:"Çevrimdışı haritalar", offPacksIntro:"Burada tutulan bir şehir bağlantı olmadan açılır ve çalışır: haritası, hatları, istasyonları, yolculuk planlayıcısı ve yer araması. İstanbul, İzmir ve Ankara kendiliğinden tutulur; diğerleri İndir'e bastığınızda. Hizmet duyuruları, hava durumu, resmî sefer saatleri ve uydu katmanı için yine bağlantı gerekir.", offGet:"İndir", offRemove:"Kaldır", offRetry:"Yeniden dene", offNow:"Şimdi indir", offReady:"Bu cihazda", offLoading:"İndiriliyor… %{p}", offWaiting:"Wi-Fi bekleniyor", offFailed:"İndirilemedi", offNone:"İndirilmedi", offAutoTag:"otomatik", offDataLbl:"Haritaları mobil veriyle de indir", offDataHint:"Kapalı: çevrimdışı haritalar yalnızca Wi-Fi ile iner. Neye bağlı olduğunu bildirmeyen bir telefon (her iPhone) İndir'e basmanızı bekler.", offAskTitle:"Haritalar bu telefonda tutulsun mu?", offAskBody:"Uygulama bağlantı olmadan da çalışsın diye {cities} haritalarını bu cihazda tutar (yaklaşık {mb} MB). Şu an mobil verideyiniz.", offAskBodyUnknown:"Uygulama bağlantı olmadan da çalışsın diye {cities} haritalarını bu cihazda tutar (yaklaşık {mb} MB). Bu telefon Wi-Fi'da olup olmadığını bildirmiyor.", offAskNow:"Şimdi indir", offAskWifi:"Wi-Fi'ı bekle", offAskLater:"Haritalar bekleyecek. İstediğiniz zaman Ayarlar → Harita → Çevrimdışı haritalar'dan başlatabilirsiniz.", offDone:"{city} çevrimdışı kullanıma hazır", 
     fromPh:"Nereden: durak, yer veya adres…", toPh:"Nereye: durak, yer veya adres…", sheetResize:"Planlayıcıyı boyutlandır: kısa, yarım veya tam yükseklik", ariaMapView:"Harita görünümü", ariaCity:"Şehir", ariaLoading:"Yükleniyor", ariaPrevStep:"Önceki adım", ariaNextStep:"Sonraki adım", ariaApiKey:"Anthropic API anahtarı",
     mapLabel:"Ulaşım haritası. Ok tuşları haritayı kaydırır, artı ve eksi yakınlaştırır.", zoomIn:"Yakınlaştır", zoomOut:"Uzaklaştır",
@@ -3018,7 +3039,7 @@ const I18N = {
     toYourDest:"إلى وجهتك", toStop:"إلى", fromStop:"من",
     annNone:"✓ لا اضطرابات مبلّغة — الشبكة تعمل بشكل طبيعي.",
     annFoot:"الأعطال والإغلاقات المبلّغة. الحالة الرسمية:",
-    annAge:"آخر تحقّق من إشعارات المترو والعبّارات قبل {age}", annStale:"لم تُحدَّث إشعارات المترو والعبّارات منذ فترة وقد لا تكون محدّثة.", disrPinHint:"اضغط في أي مكان للإغلاق", secSearch:"البحث والخصوصية", secApp:"التطبيق والبيانات", setSearchPh:"ابحث في الإعدادات…", setNone:"لا يوجد إعداد مطابق.", rotateMapLbl:"تدوير الخريطة", rotateMapHint:"أدِر الخريطة بتحريك إصبعين. على الحاسوب: انقر بالزر الأيمن واسحب، أو اضغط Shift واستخدم العجلة. زر البوصلة يعيد الشمال إلى الأعلى.", compassReset:"اتجاه الشمال",
+    annStaleRail:"لم تُحدَّث إشعارات المترو منذ فترة وقد لا تكون محدّثة.", annStaleFerry:"لم تُحدَّث إشعارات العبّارات منذ فترة وقد لا تكون محدّثة.", annAgeRail:"آخر تحقّق من إشعارات المترو قبل {age}", annAgeFerry:"آخر تحقّق من إشعارات العبّارات قبل {age}", annAge:"آخر تحقّق من إشعارات المترو والعبّارات قبل {age}", annStale:"لم تُحدَّث إشعارات المترو والعبّارات منذ فترة وقد لا تكون محدّثة.", disrPinHint:"اضغط في أي مكان للإغلاق", secSearch:"البحث والخصوصية", secApp:"التطبيق والبيانات", setSearchPh:"ابحث في الإعدادات…", setNone:"لا يوجد إعداد مطابق.", rotateMapLbl:"تدوير الخريطة", rotateMapHint:"أدِر الخريطة بتحريك إصبعين. على الحاسوب: انقر بالزر الأيمن واسحب، أو اضغط Shift واستخدم العجلة. زر البوصلة يعيد الشمال إلى الأعلى.", compassReset:"اتجاه الشمال",
     ageMin:"{n} د", ageHour:"{n} س", ageDay:"{n} يوم",
     gt_district:"منطقة", gt_hood:"حي", gt_place:"بلدة أو قرية", gt_square:"ميدان", gt_street:"شارع",
     gt_restaurant:"مطعم", gt_cafe:"مقهى", gt_fast_food:"وجبات سريعة", gt_bar:"بار", gt_hotel:"فندق", gt_lodging:"إقامة",
@@ -3138,7 +3159,7 @@ const I18N = {
     secAbout:"حول التطبيق والمعلومات القانونية", legalPrivacy:"إشعار الخصوصية", legalTerms:"شروط الاستخدام", legalStorage:"ملفات تعريف الارتباط والبيانات المخزّنة", legalCredits:"الشكر والتراخيص", legalAccess:"إمكانية الوصول",
     aboutProject:"TurkMaps مشروع مجاني غير تجاري ومفتوح المصدر من إعداد صاحبه، وليس خدمة رسمية لأي مشغّل نقل.",
     aboutContact:"التواصل", aboutVersion:"الإصدار", aboutSource:"الشيفرة المصدرية",
-    liveBusOff:"الحافلات المباشرة لهذه المدينة لا تعمل الآن", liveBusQuiet:"لم يصل منها شيء منذ دقيقتين أو أكثر", liveBusQuietN:"{n} لم يصل منها شيء مؤخرًا", liveBusLoading:"الحافلات المباشرة: جارٍ الاستعلام…", liveBusOffline:"الحافلات المباشرة تحتاج إلى اتصال", liveBusBusy:"الخدمة المباشرة مشغولة، ستُعاد المحاولة", liveBusError:"لم تُجب الخدمة المباشرة، ستُعاد المحاولة", liveBusKept:"{n} معروضة من آخر إجابة", liveBusNone:"مباشر: لا حافلات مُبلَّغ عنها على هذا الخط الآن", liveBusOne:"مباشر: حافلة واحدة على هذا الخط", liveBusMany:"مباشر: {n} حافلات على هذا الخط", liveBusStanding:"{n} متوقفة", liveBusUnplaced:"{n} لم يُحدَّد موقعها بعد", liveBusTip:"الحافلة {id} · موقع مباشر", liveBusStill:"لم تتحرك منذ دقيقتين أو أكثر", liveBusAt:"آخر إجابة {t}", tabBoat:"⛴ العبّارات", boatsTitle:"خطوط العبّارات", boatsIntro:"لكل خط لونه ومساره الخاص: حيث تتشارك الخطوط المياه تسير جنبًا إلى جنب. اضغط على خط لعرض مراسيه.", boatPiers:"{n} مرسى", boatCount:"{n} خطًّا", modesTitle:"ما تعرضه الخريطة", modeRail:"المترو والسكك", modeBus:"الحافلات", modeBoat:"العبّارات", modeHint:"اختر ما تعرضه الخريطة. «المترو والسكك» هي الخريطة الكاملة.", 
+    liveBusOff:"الحافلات المباشرة لهذه المدينة لا تعمل الآن", liveBusQuiet:"لم يصل منها شيء منذ دقيقتين أو أكثر", liveBusQuietN:"{n} لم يصل منها شيء مؤخرًا", tabAirport:"✈ المطارات", airTitle:"المطارات", airIntro:"اختر مطارًا ثم المغادرة أو الوصول. يُفتح الجدول المباشر على موقع المطار نفسه.", airNone:"لا يوجد مطار مُدرج لهذه المدينة.", airKind:"المغادرة أو الوصول", airDep:"المغادرة", airArr:"الوصول", airOpen:"افتح اللوحة المباشرة على {site}", airIntl:"الرحلات الدولية", airDom:"الرحلات الداخلية", airShared:"تعرض تلك الصفحة المغادرة والوصول معًا.", airPick:"تلك الصفحة تسرد كل المطارات: اختر {name} هناك. وتعرض المغادرة والوصول معًا.", airWhy:"لا يملك TurkMaps بيانات رحلات خاصة به: المطارات لا تتيح لوحاتها لتطبيقات أخرى، لذلك يُعرض الجدول على موقعها.", liveBusLoading:"الحافلات المباشرة: جارٍ الاستعلام…", liveBusOffline:"الحافلات المباشرة تحتاج إلى اتصال", liveBusBusy:"الخدمة المباشرة مشغولة، ستُعاد المحاولة", liveBusError:"لم تُجب الخدمة المباشرة، ستُعاد المحاولة", liveBusKept:"{n} معروضة من آخر إجابة", liveBusNone:"مباشر: لا حافلات مُبلَّغ عنها على هذا الخط الآن", liveBusOne:"مباشر: حافلة واحدة على هذا الخط", liveBusMany:"مباشر: {n} حافلات على هذا الخط", liveBusStanding:"{n} متوقفة", liveBusUnplaced:"{n} لم يُحدَّد موقعها بعد", liveBusTip:"الحافلة {id} · موقع مباشر", liveBusStill:"لم تتحرك منذ دقيقتين أو أكثر", liveBusAt:"آخر إجابة {t}", tabBoat:"⛴ العبّارات", boatsTitle:"خطوط العبّارات", boatsIntro:"لكل خط لونه ومساره الخاص: حيث تتشارك الخطوط المياه تسير جنبًا إلى جنب. اضغط على خط لعرض مراسيه.", boatPiers:"{n} مرسى", boatCount:"{n} خطًّا", modesTitle:"ما تعرضه الخريطة", modeRail:"المترو والسكك", modeBus:"الحافلات", modeBoat:"العبّارات", modeHint:"اختر ما تعرضه الخريطة. «المترو والسكك» هي الخريطة الكاملة.", 
     offPacksTitle:"خرائط دون اتصال", offPacksIntro:"المدينة المحفوظة هنا تفتح وتعمل دون اتصال: خريطتها وخطوطها ومحطاتها ومخطِّط الرحلات والبحث عن الأماكن. تُحفظ إسطنبول وإزمير وأنقرة تلقائيًا، والبقية عند الضغط على «تنزيل». إشعارات الخدمة والطقس والجداول الرسمية وطبقة القمر الصناعي تحتاج إلى اتصال.", offGet:"تنزيل", offRemove:"إزالة", offRetry:"أعد المحاولة", offNow:"نزِّل الآن", offReady:"على هذا الجهاز", offLoading:"جارٍ التنزيل… {p}%", offWaiting:"بانتظار شبكة الواي فاي", offFailed:"تعذَّر التنزيل", offNone:"غير منزَّلة", offAutoTag:"تلقائي", offDataLbl:"نزِّل الخرائط عبر بيانات الجوال أيضًا", offDataHint:"متوقف: تُنزَّل الخرائط عبر الواي فاي فقط. الهاتف الذي لا يُفصح عن نوع اتصاله (كل هواتف آيفون) ينتظر ضغطك على «تنزيل».", offAskTitle:"هل نحفظ الخرائط على هذا الهاتف؟", offAskBody:"ليعمل التطبيق دون اتصال يحفظ خرائط {cities} على هذا الجهاز (نحو {mb} ميغابايت). أنت الآن على بيانات الجوال.", offAskBodyUnknown:"ليعمل التطبيق دون اتصال يحفظ خرائط {cities} على هذا الجهاز (نحو {mb} ميغابايت). هذا الهاتف لا يُفصح إن كان على الواي فاي.", offAskNow:"نزِّل الآن", offAskWifi:"انتظر الواي فاي", offAskLater:"ستنتظر الخرائط. ابدأها متى شئت من الإعدادات ← الخريطة ← خرائط دون اتصال.", offDone:"{city} جاهزة للاستخدام دون اتصال", 
     fromPh:"من: محطة أو مكان أو عنوان…", toPh:"إلى: محطة أو مكان أو عنوان…", sheetResize:"تغيير حجم المخطِّط: قصير أو نصف أو كامل الارتفاع", ariaMapView:"عرض الخريطة", ariaCity:"المدينة", ariaLoading:"جارٍ التحميل", ariaPrevStep:"الخطوة السابقة", ariaNextStep:"الخطوة التالية", ariaApiKey:"مفتاح Anthropic API",
     mapLabel:"خريطة النقل. مفاتيح الأسهم تحرّك الخريطة، وزائد وناقص للتكبير والتصغير.", zoomIn:"تكبير", zoomOut:"تصغير",
@@ -3258,7 +3279,7 @@ const I18N = {
     toYourDest:"jusqu'à votre destination", toStop:"vers", fromStop:"depuis",
     annNone:"✓ Aucune perturbation signalée — réseau normal.",
     annFoot:"Pannes et fermetures signalées. Statut officiel :",
-    annAge:"Avis métro et ferries vérifiés il y a {age}", annStale:"Les avis métro et ferries n'ont pas été actualisés depuis un moment et peuvent être obsolètes.", disrPinHint:"Appuyez n'importe où pour fermer", secSearch:"Recherche et confidentialité", secApp:"Application et données", setSearchPh:"Rechercher dans les réglages…", setNone:"Aucun réglage ne correspond.", rotateMapLbl:"Faire pivoter la carte", rotateMapHint:"Faites pivoter la carte avec deux doigts. Sur ordinateur : clic droit et glisser, ou Maj + molette. Le bouton boussole remet le nord en haut.", compassReset:"Orienter au nord",
+    annStaleRail:"Les avis métro n’ont pas été actualisés depuis un moment et peuvent être obsolètes.", annStaleFerry:"Les avis ferries n’ont pas été actualisés depuis un moment et peuvent être obsolètes.", annAgeRail:"Avis métro vérifiés il y a {age}", annAgeFerry:"Avis ferries vérifiés il y a {age}", annAge:"Avis métro et ferries vérifiés il y a {age}", annStale:"Les avis métro et ferries n'ont pas été actualisés depuis un moment et peuvent être obsolètes.", disrPinHint:"Appuyez n'importe où pour fermer", secSearch:"Recherche et confidentialité", secApp:"Application et données", setSearchPh:"Rechercher dans les réglages…", setNone:"Aucun réglage ne correspond.", rotateMapLbl:"Faire pivoter la carte", rotateMapHint:"Faites pivoter la carte avec deux doigts. Sur ordinateur : clic droit et glisser, ou Maj + molette. Le bouton boussole remet le nord en haut.", compassReset:"Orienter au nord",
     ageMin:"{n} min", ageHour:"{n} h", ageDay:"{n} j",
     gt_district:"District", gt_hood:"Quartier", gt_place:"Localité", gt_square:"Place", gt_street:"Rue",
     gt_restaurant:"Restaurant", gt_cafe:"Café", gt_fast_food:"Restauration rapide", gt_bar:"Bar", gt_hotel:"Hôtel", gt_lodging:"Hébergement",
@@ -3378,7 +3399,7 @@ const I18N = {
     secAbout:"À propos et mentions légales", legalPrivacy:"Avis de confidentialité", legalTerms:"Conditions d’utilisation", legalStorage:"Cookies et données stockées", legalCredits:"Crédits et licences", legalAccess:"Accessibilité",
     aboutProject:"TurkMaps est un projet gratuit, non commercial et open source, réalisé par son auteur. Ce n’est le service officiel d’aucun exploitant de transport.",
     aboutContact:"Contact", aboutVersion:"Version", aboutSource:"Code source",
-    liveBusOff:"Les bus en direct ne fonctionnent pas pour cette ville en ce moment", liveBusQuiet:"sans nouvelles depuis 2 min ou plus", liveBusQuietN:"{n} sans nouvelles récentes", liveBusLoading:"Bus en direct : interrogation…", liveBusOffline:"Les bus en direct nécessitent une connexion", liveBusBusy:"Le service en direct est occupé, nouvel essai", liveBusError:"Le service en direct n’a pas répondu, nouvel essai", liveBusKept:"{n} affichés d’après la dernière réponse", liveBusNone:"En direct : aucun bus signalé sur cette ligne pour l’instant", liveBusOne:"En direct : 1 bus sur cette ligne", liveBusMany:"En direct : {n} bus sur cette ligne", liveBusStanding:"{n} à l’arrêt", liveBusUnplaced:"{n} pas encore placés", liveBusTip:"Bus {id} · position en direct", liveBusStill:"n’a pas bougé depuis 2 min ou plus", liveBusAt:"Dernière réponse {t}", tabBoat:"⛴ Bateaux", boatsTitle:"Lignes de bateau", boatsIntro:"Chaque ligne a sa couleur et son couloir : là où des lignes partagent l'eau, elles avancent côte à côte. Touchez une ligne pour voir ses embarcadères.", boatPiers:"{n} embarcadères", boatCount:"{n} lignes", modesTitle:"Ce que la carte montre", modeRail:"Métro et rail", modeBus:"Bus", modeBoat:"Bateaux", modeHint:"Choisissez ce que la carte montre. Métro et rail est la carte complète.", 
+    liveBusOff:"Les bus en direct ne fonctionnent pas pour cette ville en ce moment", liveBusQuiet:"sans nouvelles depuis 2 min ou plus", liveBusQuietN:"{n} sans nouvelles récentes", tabAirport:"✈ Aéroports", airTitle:"Aéroports", airIntro:"Choisissez un aéroport, puis départs ou arrivées. Le tableau en direct s’ouvre sur le site de l’aéroport.", airNone:"Aucun aéroport n’est répertorié pour cette ville.", airKind:"Départs ou arrivées", airDep:"Départs", airArr:"Arrivées", airOpen:"Ouvrir le tableau en direct sur {site}", airIntl:"International", airDom:"National", airShared:"Cette page affiche les départs et les arrivées ensemble.", airPick:"Cette page répertorie tous les aéroports : choisissez-y {name}. Elle affiche les départs et les arrivées ensemble.", airWhy:"TurkMaps n’a pas de données de vol propres : les aéroports ne proposent pas leurs tableaux aux autres applications, le tableau est donc affiché sur leur site.", liveBusLoading:"Bus en direct : interrogation…", liveBusOffline:"Les bus en direct nécessitent une connexion", liveBusBusy:"Le service en direct est occupé, nouvel essai", liveBusError:"Le service en direct n’a pas répondu, nouvel essai", liveBusKept:"{n} affichés d’après la dernière réponse", liveBusNone:"En direct : aucun bus signalé sur cette ligne pour l’instant", liveBusOne:"En direct : 1 bus sur cette ligne", liveBusMany:"En direct : {n} bus sur cette ligne", liveBusStanding:"{n} à l’arrêt", liveBusUnplaced:"{n} pas encore placés", liveBusTip:"Bus {id} · position en direct", liveBusStill:"n’a pas bougé depuis 2 min ou plus", liveBusAt:"Dernière réponse {t}", tabBoat:"⛴ Bateaux", boatsTitle:"Lignes de bateau", boatsIntro:"Chaque ligne a sa couleur et son couloir : là où des lignes partagent l'eau, elles avancent côte à côte. Touchez une ligne pour voir ses embarcadères.", boatPiers:"{n} embarcadères", boatCount:"{n} lignes", modesTitle:"Ce que la carte montre", modeRail:"Métro et rail", modeBus:"Bus", modeBoat:"Bateaux", modeHint:"Choisissez ce que la carte montre. Métro et rail est la carte complète.", 
     offPacksTitle:"Cartes hors ligne", offPacksIntro:"Une ville gardée ici s'ouvre et fonctionne sans connexion : sa carte, ses lignes, ses stations, le planificateur et la recherche de lieux. İstanbul, İzmir et Ankara sont gardées automatiquement ; les autres quand vous appuyez sur Télécharger. Les avis de service, la météo, les horaires officiels et la couche satellite demandent toujours une connexion.", offGet:"Télécharger", offRemove:"Retirer", offRetry:"Réessayer", offNow:"Télécharger maintenant", offReady:"Sur cet appareil", offLoading:"Téléchargement… {p} %", offWaiting:"En attente du Wi-Fi", offFailed:"Échec du téléchargement", offNone:"Non téléchargée", offAutoTag:"automatique", offDataLbl:"Télécharger les cartes aussi en données mobiles", offDataHint:"Désactivé : les cartes hors ligne ne se téléchargent qu'en Wi-Fi. Un téléphone qui ne dit pas à quoi il est connecté (tout iPhone) attend que vous appuyiez sur Télécharger.", offAskTitle:"Garder les cartes sur ce téléphone ?", offAskBody:"Pour fonctionner sans connexion, l'application garde les cartes de {cities} sur cet appareil (environ {mb} Mo). Vous êtes en données mobiles.", offAskBodyUnknown:"Pour fonctionner sans connexion, l'application garde les cartes de {cities} sur cet appareil (environ {mb} Mo). Ce téléphone ne dit pas s'il est en Wi-Fi.", offAskNow:"Télécharger maintenant", offAskWifi:"Attendre le Wi-Fi", offAskLater:"Les cartes attendront. Lancez-les quand vous voulez dans Réglages → Carte → Cartes hors ligne.", offDone:"{city} est prête pour une utilisation hors ligne", 
     fromPh:"De : arrêt, lieu ou adresse…", toPh:"À : arrêt, lieu ou adresse…", sheetResize:"Redimensionner le planificateur : court, moitié ou pleine hauteur", ariaMapView:"Vue de la carte", ariaCity:"Ville", ariaLoading:"Chargement", ariaPrevStep:"Étape précédente", ariaNextStep:"Étape suivante", ariaApiKey:"Clé API Anthropic",
     mapLabel:"Carte des transports. Les flèches déplacent la carte, plus et moins zooment.", zoomIn:"Zoom avant", zoomOut:"Zoom arrière",
@@ -3516,6 +3537,7 @@ function relocalise(){
   try{ renderAnnouncements(); renderDisruptionMarkers(); }catch(e){}
   try{ renderPlanLists(); updateFavBtn(); }catch(e){}
   try{ if(currentTab==='bus' && document.getElementById('busSearch')) renderBusList(document.getElementById('busSearch').value); }catch(e){}
+  try{ if(currentTab==='airport') renderAirports(); }catch(e){}
   try{ if(currentOpts && currentOpts.length){ renderOptChips(); selectOption(currentOptIdx); } }catch(e){}
   try{ rebuildAdvRows(); }catch(e){}
   /* Both of these render translated text and neither was on this list, so the mode chips and
@@ -4960,6 +4982,7 @@ const BUS_OPERATOR = CITY.busOperator || '';      // İETT, UlaşımPark, …
 const BUS_DIR = HAS.bus ? (BUS_ALL[CITY_ID] || []) : [];
 /* --- Live disruptions: faults / closures / suspensions (editable transit_data/disruptions.json) --- */
 let DISRUPTIONS = HAS.disruptions ? [{"id":"b2-works-2026","ref":"B2","scope":"line","severity":"major","title":"Service suspended","message":"B2 Halkalı–Bahçeşehir is not operating due to engineering works.","messageTr":"B2 Halkalı–Bahçeşehir hattı altyapı çalışmaları nedeniyle çalışmamaktadır.","until":"2026-08-31","source":"manual"},{"id":"m7-mecidiyek-y","ref":"M7","source":"metro.istanbul","scope":"stations","stations":["Mecidiyeköy"],"severity":"partial","title":"Section affected","messageTr":"Teknik bir arıza nedeniyle seferler Nurtepe-Mahmutbey arasında normal işletme döngüsünde, Nurtepe-Kağıthane arasında ise mekik seferi olarak yapılmaktadır.","message":"Due to a technical fault, trains run normally between Nurtepe and Mahmutbey, and as a shuttle between Nurtepe and Kağıthane.","messageLang":"en"},{"id":"t3-al-m-yor","ref":"T3","source":"metro.istanbul","scope":"line","severity":"major","title":"Service suspended","messageTr":"Hat bakım ve ray yenileme çalışmaları nedeniyle hattımız işletmeye kapalıdır. Çalışma süresince İETT’ye ait elektrikli araçlar ile hizmet verilecektir.","message":"Due to maintenance and track renewal works, our line is closed to service. For the duration of the works, service will be provided by İETT electric vehicles.","messageLang":"en"},{"id":"ferry-3788","mode":"ferry","ref":null,"scope":"note","severity":"minor","title":"Seasonal timetable","message":"The summer timetable of Şehir Hatları AŞ, an affiliate of İstanbul Metropolitan Municipality, is ending. The newly arranged winter timetable will apply between 7 September 2026 and 27 June 2027. Şehir Hatları, Europe’s largest public sea transport provider, which has provided sea transport in İstanbul for 175 years, since the Şirket-i Hayriye, is switching to the winter timetable from Monday 7 September.","messageTr":"İstanbul Büyükşehir Belediyesi iştiraki Şehir Hatları AŞ’nin yaz tarifesi sona eriyor. Yeni düzenlenen kış tarifesi 7 Eylül 2026 ile 27 Haziran 2027 tarihleri arasında uygulanacak. Avrupa’nın en büyük toplu deniz ulaşım sağlayıcısı olan ve Şirket-i Hayriye’den bu yana 175 yıldır İstanbul’da deniz ulaşımı hizmeti veren Şehir Hatları, 7 Eylül Pazartesi gününden itibaren kış tarifesine geçiyor.","messageLang":"en","source":"sehirhatlari.istanbul","url":"https://sehirhatlari.istanbul/tr/duyurular/sehir-hatlari-kis-tarifesine-geciyor-3788","published":"2026-09-03","until":"2027-06-27"}] : [];   // baked-in fallback; overridden by the live fetch below
+let DISR_FERRY_CHECKED = null;  // ms: the same for the ferry page, which can be read without the rail page (V4.5.2); null = as DISR_CHECKED
 let DISR_CHECKED = null;        // ms: when the rail/ferry notices were last read from the status page (disruptions-status.json); null = unknown
 let SURFACE_NOTICES = [];       // live İETT bus notices (İstanbul only); empty until the feed and the bus data have both arrived
 /* --- Upcoming line openings: curated İBB projected launch dates (subject to change). Shown as
@@ -11691,15 +11714,16 @@ function setTab(t){
   busLayer.clearLayers(); map.removeLayer(weatherLayer); map.removeLayer(boatLayer);
   if(typeof liveBusStop === 'function') liveBusStop();        // live buses belong to the open bus line only
   map.removeLayer(disruptionLayer);                          // hazard overlays belong to Active only
-  const hideCore = (t==='bus' || t==='boat' || t==='weather' || t==='intercity');
+  const hideCore = (t==='bus' || t==='boat' || t==='weather' || t==='intercity' || t==='airport');
   document.getElementById('cardLines').style.display   = hideCore ? 'none' : '';
   document.getElementById('cardPlanner').style.display = hideCore ? 'none' : '';
   /* The weather card is tall (a scene, a day, a week, every district) and the right column is one scroll. Showing the
      map-layers card above it as well pushed the weather below the fold; the base-map choice is a tab away. On a phone the
      weather lives in the Layers sheet (V4.2), under the same tabs, so the same rule applies there. */
-  document.getElementById('cardLayers').style.display = (t==='weather') ? 'none' : '';
+  document.getElementById('cardLayers').style.display = (t==='weather' || t==='airport') ? 'none' : '';   // the airports list is short, and on a phone it would sit below the map-layers card
   document.getElementById('cardBus').style.display     = (t==='bus') ? '' : 'none';
   document.getElementById('cardBoats').style.display   = (t==='boat') ? '' : 'none';
+  document.getElementById('cardAirports').style.display = (t==='airport') ? '' : 'none';
   if(typeof syncModeSeg === 'function') syncModeSeg(t);       // the phone's Rail / Buses / Boats switch (18-mobile-shell.js)
   document.getElementById('cardWeather').style.display = (t==='weather') ? '' : 'none';
   document.getElementById('cardIntercity').style.display = (t==='intercity') ? '' : 'none';
@@ -11731,6 +11755,9 @@ function setTab(t){
     ghostGroup.addTo(map);                                   // faint network for orientation
     weatherLayer.addTo(map);
     ensureWeather();                                         // fetch (or refresh stale) data
+  } else if(t==='airport'){
+    ghostGroup.addTo(map);                                   // the network stays faintly in view; the airports are a list, not a layer
+    if(typeof renderAirports === 'function') renderAirports();
   } else if(t==='boat'){
     /* only the boats, each line on its own lane in its own colour (14b-boats.js); the railways stay as a faint ghost for orientation */
     ghostGroup.addTo(map);
@@ -13096,6 +13123,81 @@ function liveBusShow(){
 document.addEventListener('visibilitychange', () => { if(!document.hidden && liveBus) liveBusAgain(300); });
 window.addEventListener('online', () => { if(liveBus) liveBusAgain(300); });
 /* ===========================================================================
+   AIRPORTS (V4.5.2)
+   Asked for as: Layers, an Airport tab, choose the airport, choose departures or arrivals, see the live table.
+   The live table itself cannot be in the app yet: no airport gives its board to other apps, and no free service does either (the
+   record is in the project's notes). So this is the honest version of the same path: choose the airport, choose departures or
+   arrivals, and one button opens that board on the airport's OWN website, where it is always current. The app fetches nothing
+   and shows no flight it did not get from anyone.
+
+   Every address below was opened and answered on 12 Nov 2026. İstanbul Airport, İzmir and Antalya have a page per board (Antalya
+   one each for international and domestic); Sabiha Gökçen has one screen for both; Ankara Esenboğa, Bursa Yenişehir and Kocaeli
+   Cengiz Topel are on the State Airports Authority's page for all airports, where the airport is chosen from a list (Esenboğa's
+   own site was down on the day it was checked).
+   ========================================================================== */
+/* ==AIRPORTS-PURE-START== */
+const AIR_DHMI = 'https://www.dhmi.gov.tr/Sayfalar/TumUcuslar.aspx';
+const AIR_SAW = { code:'SAW', name:'Sabiha Gökçen Havalimanı', both:'https://www.sabihagokcen.aero/yolcu-ve-ziyaretciler/yolcu-rehberi/ucus-bilgi-ekrani' };
+const AIRPORT_BOARDS = {
+  istanbul: [
+    { code:'IST', name:'İstanbul Havalimanı', dep:[{ url:'https://www.istairport.com/en/flights/flight-info/departure-flights' }], arr:[{ url:'https://www.istairport.com/en/flights/flight-info/arriving-flights' }] },
+    AIR_SAW ],
+  ankara:  [ { code:'ESB', name:'Esenboğa Havalimanı', both:AIR_DHMI, pick:true } ],
+  izmir:   [ { code:'ADB', name:'Adnan Menderes Havalimanı', dep:[{ url:'https://izmirairport.com/en/departure-flights' }], arr:[{ url:'https://izmirairport.com/en/arrival-flights' }] } ],
+  antalya: [ { code:'AYT', name:'Antalya Havalimanı',
+               dep:[{ k:'intl', url:'https://www.antalya-airport.aero/yolcu-ve-ziyaretciler/ucus-bilgileri/dis-hat-gidis' }, { k:'dom', url:'https://www.antalya-airport.aero/yolcu-ve-ziyaretciler/ucus-bilgileri/yurtici-gidis' }],
+               arr:[{ k:'intl', url:'https://www.antalya-airport.aero/yolcu-ve-ziyaretciler/ucus-bilgileri/dis-hat-gelis' }, { k:'dom', url:'https://www.antalya-airport.aero/yolcu-ve-ziyaretciler/ucus-bilgileri/yurtici-gelis' }] } ],
+  bursa:   [ { code:'YEI', name:'Yenişehir Havalimanı', both:AIR_DHMI, pick:true } ],
+  kocaeli: [ { code:'KCO', name:'Cengiz Topel Havalimanı', both:AIR_DHMI, pick:true }, AIR_SAW ],
+};
+function airportBoards(city){ return AIRPORT_BOARDS[city] || []; }
+/* The buttons for one airport and one kind of board ('dep' or 'arr'): { links:[{ url, k }], shared, pick }.
+   k: '' | 'intl' | 'dom'. shared: the page shows departures and arrivals together. pick: the airport has to be chosen on it. */
+function airportLinks(a, kind){
+  if(a[kind]) return { links:a[kind].map(l => ({ url:l.url, k:l.k || '' })), shared:false, pick:false };
+  return { links:[{ url:a.both, k:'' }], shared:true, pick:!!a.pick };
+}
+/* the site a button opens, as a person would say it: "istairport.com" */
+function airportSite(url){ return String(url).replace(/^https:\/\/(www\.)?/, '').replace(/\/.*$/, ''); }
+/* ==AIRPORTS-PURE-END== */
+
+/* `var`: setTab() can run before this file has been read (see the note in 16b-bus-routes.js) */
+var airSel = null, airKind = 'dep';
+function renderAirports(){
+  const box = document.getElementById('airList'); if(!box) return;
+  const list = airportBoards(CITY_ID);
+  if(!list.some(a => a.code === airSel)) airSel = list.length === 1 ? list[0].code : null;     // one airport: no need to choose it
+  box.innerHTML = list.length
+    ? list.map(a => `<button class="air-row${a.code === airSel ? ' sel' : ''}" data-code="${attrEsc(a.code)}" aria-pressed="${a.code === airSel}"><span class="air-code">${svgEsc(a.code)}</span><span class="air-name">${svgEsc(a.name)}</span></button>`).join('')
+    : `<div class="none">${svgEsc(t('airNone'))}</div>`;
+  renderAirBoard();
+}
+function renderAirBoard(){
+  const el = document.getElementById('airBoard'); if(!el) return;
+  const a = airportBoards(CITY_ID).find(x => x.code === airSel);
+  if(!a){ el.hidden = true; el.innerHTML = ''; return; }
+  const got = airportLinks(a, airKind), kindWord = t(airKind === 'dep' ? 'airDep' : 'airArr');
+  const kindBtn = (k, icon, key) => `<button data-kind="${k}"${airKind === k ? ' class="active"' : ''} aria-pressed="${airKind === k}">${icon} ${svgEsc(t(key))}</button>`;
+  el.hidden = false;
+  el.innerHTML = `<div class="seg air-kind" role="group" aria-label="${attrEsc(t('airKind'))}">${kindBtn('dep', '🛫', 'airDep')}${kindBtn('arr', '🛬', 'airArr')}</div>`
+    + `<div class="air-h">${svgEsc(a.name)} · ${svgEsc(kindWord)}</div>`
+    + got.links.map(l => `<a class="air-open" href="${attrEsc(l.url)}" target="_blank" rel="noopener noreferrer">${svgEsc(t('airOpen').replace('{site}', airportSite(l.url)))}${l.k ? ' · ' + svgEsc(t(l.k === 'intl' ? 'airIntl' : 'airDom')) : ''} ↗</a>`).join('')
+    + (got.pick ? `<div class="sp-note">${svgEsc(t('airPick').replace('{name}', a.name))}</div>` : got.shared ? `<div class="sp-note">${svgEsc(t('airShared'))}</div>` : '')
+    + `<div class="sp-note">${svgEsc(t('airWhy'))}</div>`;
+}
+(function(){
+  const card = document.getElementById('cardAirports'); if(!card) return;
+  card.addEventListener('click', e => {
+    const row = e.target.closest('.air-row'), kind = e.target.closest('.air-kind button');
+    if(row){
+      airSel = row.dataset.code; renderAirports();
+      // show where it is, when this city's map knows (the airports the planner can route to)
+      const pos = (CITY.airports || []).find(x => x.code === airSel);
+      if(pos && typeof map !== 'undefined') map.setView([pos.lat, pos.lng], Math.max(map.getZoom(), 12));
+    } else if(kind){ airKind = kind.dataset.kind === 'arr' ? 'arr' : 'dep'; renderAirBoard(); }
+  });
+})();
+/* ===========================================================================
    9. BOOT + MAIN LOOP
    =========================================================================== */
 let last=performance.now(), boardAcc=0, animOn=true, animRaf=0;
@@ -13370,11 +13472,37 @@ function ageWords(mins){
 }
 function annAgeText(age){ return '🕒 ' + t('annAge').replace('{age}', ageWords(age.mins)); }
 // once a minute: keep the "checked … ago" line true, and redraw the panel only when it crosses into (or out of) "stale"
+/* Rail and ferry notices are read from different pages and, since V4.5.2, not always at the same time: GitHub's job can read
+   the ferry page (through the relay) but not the rail page, so with the laptop off the ferry notices stay fresh while the rail
+   ones age. Each kind has its own age; a status file that carries one time means both were read then. */
+function annAges(nowMs){
+  return { rail: noticeAge(DISR_CHECKED, nowMs), ferry: noticeAge(DISR_FERRY_CHECKED != null ? DISR_FERRY_CHECKED : DISR_CHECKED, nowMs) };
+}
+/* What the panel says about them. A kind is warned about only when it is stale AND has a notice on show; the bar names the kind
+   that is stale and not the other; `apart` says the two ages differ enough (one stale and one not, or half an hour) that one
+   "checked … ago" line cannot speak for both. */
+function annStaleness(ages, railRows, ferryRows){
+  const rail = !!(ages.rail && ages.rail.stale && railRows), ferry = !!(ages.ferry && ages.ferry.stale && ferryRows);
+  const apart = !!(ages.rail && ages.ferry && (ages.rail.stale !== ages.ferry.stale || Math.abs(ages.rail.mins - ages.ferry.mins) > 30));
+  return { rail: rail, ferry: ferry, bar: rail && ferry ? 'annStale' : rail ? 'annStaleRail' : ferry ? 'annStaleFerry' : '', apart: apart };
+}
+const annAgeLine = (age, key) => '🕒 ' + t(key).replace('{age}', ageWords(age.mins));
+function annAgeHTML(ages, st){
+  const cls = age => 'ann-age' + (age.stale ? ' stale' : '');
+  if(st.apart) return (ages.rail ? `<div class="${cls(ages.rail)}" id="annAge">${annAgeLine(ages.rail, 'annAgeRail')}</div>` : '')
+                    + (ages.ferry ? `<div class="${cls(ages.ferry)}" id="annAgeFerry">${annAgeLine(ages.ferry, 'annAgeFerry')}</div>` : '');
+  const one = ages.rail || ages.ferry;
+  return one ? `<div class="${cls(one)}" id="annAge">${annAgeLine(one, 'annAge')}</div>` : '';
+}
+const annStaleSig = ages => [ages.rail, ages.ferry].map(a => a ? (a.stale ? 's' : 'f') : '-').join('') + (annStaleness(ages, 1, 1).apart ? 'a' : '');
+let _annStaleSig = '';
 function refreshAnnAge(){
-  const age = noticeAge(DISR_CHECKED, Date.now()), el = document.getElementById('annAge');
-  if(!age) return;
-  if(!el || el.classList.contains('stale') !== age.stale){ renderAnnouncements(); return; }
-  el.textContent = annAgeText(age);
+  const ages = annAges(Date.now());
+  if(!ages.rail && !ages.ferry) return;
+  if(annStaleSig(ages) !== _annStaleSig || !document.getElementById('annAge')){ renderAnnouncements(); return; }
+  const set = (id, age, key) => { const el = document.getElementById(id); if(el && age) el.textContent = annAgeLine(age, key); };
+  if(document.getElementById('annAgeFerry')){ set('annAge', ages.rail, 'annAgeRail'); set('annAgeFerry', ages.ferry, 'annAgeFerry'); }
+  else set('annAge', ages.rail || ages.ferry, 'annAge');
 }
 let _annBusOpen = false, _annBusAll = false;
 const ANN_BUS_SHOWN = 6;       // bus groups shown before "show more": a bad day has fifty
@@ -13401,16 +13529,18 @@ function renderAnnouncements(){
   }).join('');
   const nothing = !rail.length && !ferry.length && !groups.length;
   const body = document.getElementById('annBody');
-  const age = noticeAge(DISR_CHECKED, Date.now()), staleNow = !!(age && age.stale && (rail.length || ferry.length));
-  body.classList.toggle('ann-stale', staleNow);
-  body.innerHTML = (staleNow ? `<div class="ann-stalebar" role="status">⚠ ${t('annStale')}</div>` : '')
+  const ages = annAges(Date.now()), stale = annStaleness(ages, rail.length, ferry.length);
+  _annStaleSig = annStaleSig(ages);
+  body.classList.toggle('ann-stale', stale.rail);        // greys the rail rows; each ferry row says for itself whether it is old
+  const ferryRow = d => annRowHTML(d).replace('class="ann-item"', 'class="ann-item ' + (stale.ferry ? 'ann-old' : 'ann-fresh') + '"');
+  body.innerHTML = (stale.bar ? `<div class="ann-stalebar" role="status">⚠ ${t(stale.bar)}</div>` : '')
     + (nothing ? `<div class="ann-none">${t('annNone')}</div>` : rail.map(annRowHTML).join(''))
-    + (ferry.length ? `<div class="ann-sub">⛴ ${t('annFerrySub')} · ${ferry.length}</div>${ferry.map(annRowHTML).join('')}` : '')
+    + (ferry.length ? `<div class="ann-sub">⛴ ${t('annFerrySub')} · ${ferry.length}</div>${ferry.map(ferryRow).join('')}` : '')
     + (groups.length ? `<button class="ann-sec" id="annBusSec" aria-expanded="${_annBusOpen}">🚌 ${t('annBusSub')} · ${groups.length}<span class="ann-caret"></span></button>
          <div class="ann-busbox" id="annBusBox"${_annBusOpen?'':' hidden'}>${(_annBusAll ? groups : groups.slice(0, ANN_BUS_SHOWN)).map(annBusGroupHTML).join('')}
            ${groups.length > ANN_BUS_SHOWN ? `<button class="ann-moreb" id="annBusMore">${_annBusAll ? t('annLess') : t('annMore').replace('{n}', groups.length - ANN_BUS_SHOWN)}</button>` : ''}</div>` : '')
     + (opRows ? `<div class="ann-sub">🚈 ${t('openHdr')}</div>${opRows}<div class="ann-note">${t('openFoot')}</div>` : '')
-    + `<div class="ann-foot">${age ? `<div class="ann-age${age.stale ? ' stale' : ''}" id="annAge">${annAgeText(age)}</div>` : ''}${t('annFoot')} <a href="https://www.metro.istanbul/SeferDurumlari/SeferDetaylari" target="_blank" rel="noopener">metro.istanbul ↗</a>
+    + `<div class="ann-foot">${annAgeHTML(ages, stale)}${t('annFoot')} <a href="https://www.metro.istanbul/SeferDurumlari/SeferDetaylari" target="_blank" rel="noopener">metro.istanbul ↗</a>
        · <a href="https://github.com/Hero4mohamed/Metro-Istanbul-General-City-Map/issues/new" target="_blank" rel="noopener">🐞 ${t('reportProblem')}</a>
        ${(ferry.length || groups.length || (CITY_ID === 'istanbul' && HAS.bus)) ? `<div>${t('annFootExtra')}</div>` : ''}</div>`;
   body.querySelectorAll('.ann-item[data-id]').forEach(el => el.addEventListener('click', ()=>{
@@ -13860,7 +13990,10 @@ async function loadLiveDisruptions(){
     ]);
     if(!r.ok) return;
     const data = await r.json();
-    if(sr && sr.ok){ try{ const ms = Date.parse((await sr.json()).checkedAt); if(isFinite(ms)) DISR_CHECKED = ms; }catch(e){} }
+    if(sr && sr.ok){ try{ const st = await sr.json(), ms = Date.parse(st.checkedAt), fm = Date.parse(st.ferryCheckedAt);
+      if(isFinite(ms)) DISR_CHECKED = ms;
+      DISR_FERRY_CHECKED = isFinite(fm) ? fm : null;       // an older status file has one time for both
+    }catch(e){} }
     if(Array.isArray(data)){ ensureEnglish(data); DISRUPTIONS = data; applyDisruptionFeed(); checkDisruptionAlerts(); }
   }catch(e){ /* offline / file:// → keep the baked-in DISRUPTIONS */ }
 }
@@ -15069,7 +15202,7 @@ renderProvenance();
 /* ---- diagnostics: show what was recorded, and let the user send it if they choose ---- */
 function diagReportText(){
   const env = [
-    "app: V4.5.1 build " + BUILD,
+    "app: V4.5.2 build " + BUILD,
     "city: " + CITY_ID,
     "lang: " + lang,
     "screen: " + innerWidth + "x" + innerHeight + " dpr" + (devicePixelRatio || 1),
@@ -15341,7 +15474,7 @@ function syncLegalLinks(){
 (function(){
   syncLegalLinks();
   const build = document.getElementById('aboutBuild');
-  if(build) build.textContent = 'V4.5.1' + ' · ' + BUILD;
+  if(build) build.textContent = 'V4.5.2' + ' · ' + BUILD;
 
   /* ---- the one-time question ---- */
   const box = document.getElementById('privNotice');

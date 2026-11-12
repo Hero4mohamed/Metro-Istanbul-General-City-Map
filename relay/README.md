@@ -1,6 +1,7 @@
 # TurkMaps relay
 
-The one server-side part of TurkMaps. It exists for a single job: **İstanbul's live bus positions**.
+The one server-side part of TurkMaps. It has two jobs: **İstanbul's live bus positions**, and (since V4.5.2) letting the
+notices job on GitHub read the **ferry operator's announcement pages**, which turn GitHub's servers away.
 
 ## Why it is needed, and why it has two halves
 
@@ -64,6 +65,19 @@ If the Worker's address changes (another account, or the account's `workers.dev`
 change with it: `LIVE_RELAY` in `transit_data/src/16c-live-buses.js`, the `connect-src` list in `transit_data/build.cjs`, and
 the host in `transit_data/legal-content.cjs`. Tests fail if they disagree.
 
+## The ferry notices (V4.5.2)
+
+`sehirhatlari.istanbul` answers GitHub's servers with a bot-check page, so the half-hourly job there could not read the ferry
+announcements and they went stale whenever the laptop was off. The Worker is not turned away (checked 12 Nov 2026: the real
+list, 25 notices). The scraper (`transit_data/scrape-ferry.cjs`) asks the site directly first and, only when that fails and
+`RELAY_URL` + `RELAY_FETCH_TOKEN` are set, asks through `/fetch`. The Worker reads only the announcements list and single
+notices, gives the same name in its User-Agent as the scraper does, follows no redirects, and stores nothing.
+
+The secret is separate from the feeder's, so that one leaking does not open the other door. Set (or replace) it in both
+places with one command: `powershell -ExecutionPolicy Bypass -File relay\set-fetch-token.ps1`.
+
+Metro İstanbul's site does not answer Cloudflare, so the RAIL notices still need a computer in Türkiye.
+
 ## Limits (Cloudflare free plan, as published in Nov 2026; check before relying on them)
 
 - 100,000 Worker requests a day. A phone with a line open asks every 20 s; the feeder asks every 5 s (about 17,000 a day).
@@ -79,5 +93,6 @@ the host in `transit_data/legal-content.cjs`. Tests fail if they disagree.
 | `GET /health` | public | whether a feeder is alive, and where the Worker ran |
 | `GET /feed/wanted` | feeder (Bearer token) | the lines to fetch |
 | `POST /feed/push` | feeder (Bearer token) | `{ lines: { "34G": [İETT's records] or null } }` |
+| `GET /fetch?u=<address>` | the notices job (its own Bearer token, `FETCH_TOKEN`) | the text of a Şehir Hatları announcements page (the list, or one notice). Any other address is refused: it is not a general proxy |
 
 Tests: `transit_data/test/relay.test.cjs` (run by `npm test` at the repository root).

@@ -27,15 +27,16 @@ function setTab(t){
   busLayer.clearLayers(); map.removeLayer(weatherLayer); map.removeLayer(boatLayer);
   if(typeof liveBusStop === 'function') liveBusStop();        // live buses belong to the open bus line only
   map.removeLayer(disruptionLayer);                          // hazard overlays belong to Active only
-  const hideCore = (t==='bus' || t==='boat' || t==='weather' || t==='intercity');
+  const hideCore = (t==='bus' || t==='boat' || t==='weather' || t==='intercity' || t==='airport');
   document.getElementById('cardLines').style.display   = hideCore ? 'none' : '';
   document.getElementById('cardPlanner').style.display = hideCore ? 'none' : '';
   /* The weather card is tall (a scene, a day, a week, every district) and the right column is one scroll. Showing the
      map-layers card above it as well pushed the weather below the fold; the base-map choice is a tab away. On a phone the
      weather lives in the Layers sheet (V4.2), under the same tabs, so the same rule applies there. */
-  document.getElementById('cardLayers').style.display = (t==='weather') ? 'none' : '';
+  document.getElementById('cardLayers').style.display = (t==='weather' || t==='airport') ? 'none' : '';   // the airports list is short, and on a phone it would sit below the map-layers card
   document.getElementById('cardBus').style.display     = (t==='bus') ? '' : 'none';
   document.getElementById('cardBoats').style.display   = (t==='boat') ? '' : 'none';
+  document.getElementById('cardAirports').style.display = (t==='airport') ? '' : 'none';
   if(typeof syncModeSeg === 'function') syncModeSeg(t);       // the phone's Rail / Buses / Boats switch (18-mobile-shell.js)
   document.getElementById('cardWeather').style.display = (t==='weather') ? '' : 'none';
   document.getElementById('cardIntercity').style.display = (t==='intercity') ? '' : 'none';
@@ -67,6 +68,9 @@ function setTab(t){
     ghostGroup.addTo(map);                                   // faint network for orientation
     weatherLayer.addTo(map);
     ensureWeather();                                         // fetch (or refresh stale) data
+  } else if(t==='airport'){
+    ghostGroup.addTo(map);                                   // the network stays faintly in view; the airports are a list, not a layer
+    if(typeof renderAirports === 'function') renderAirports();
   } else if(t==='boat'){
     /* only the boats, each line on its own lane in its own colour (14b-boats.js); the railways stay as a faint ghost for orientation */
     ghostGroup.addTo(map);

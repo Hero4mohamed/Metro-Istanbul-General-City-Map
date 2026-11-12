@@ -26,5 +26,5 @@ test('the weather card goes in the Layers sheet with the tab strip that selects 
   // the sheet-filling loop sends planner and alerts where they belong and everything else (tabs, layers, buses, intercity, weather) to Layers
   assert.ok(/if\(el\.id==='cardPlanner'\) mSheets\.planner\.appendChild\(el\);\s*else if\(el\.id==='cardBus' \|\| el\.id==='cardBoats'\) mSheets\.modes\.appendChild\(el\);\s*else mSheets\.layers\.appendChild\(el\);/.test(s), 'a card is sent to a sheet that no longer exists');
   assert.ok(/<button data-tab="weather" role="tab"/.test(html), 'the Weather scope is gone from the tab strip');
-  assert.ok(/\n  document\.getElementById\('cardLayers'\)\.style\.display = \(t==='weather'\) \? 'none' : '';/.test(s), 'on a phone the layers card sits above the weather again');
+  assert.ok(/\n  document\.getElementById\('cardLayers'\)\.style\.display = \(t==='weather' \|\| t==='airport'\) \? 'none' : '';/.test(s), 'on a phone the layers card sits above the weather again');
 });

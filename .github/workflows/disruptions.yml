@@ -42,6 +42,10 @@ jobs:
         env:
           X_BEARER_TOKEN:    ${{ secrets.X_BEARER_TOKEN }}     # optional; skipped when unset
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}  # optional; LLM translation fallback
+          # The ferry site turns GitHub's servers away; the project's own relay (relay/) can read its announcement pages.
+          # Optional: without the secret the ferry page is asked directly, as before, and the rail notices are unaffected.
+          RELAY_URL:         https://turkmaps-relay.turkmaps-relay.workers.dev
+          RELAY_FETCH_TOKEN: ${{ secrets.RELAY_FETCH_TOKEN }}
         run: node transit_data/scrape-disruptions.cjs
       # The scraper feeds the live panel directly. It has shipped a zero-length segment that
       # drew no caution band, and a half-translated Turkish/English sentence; the suite checks
