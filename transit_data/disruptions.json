@@ -36,6 +36,22 @@
     "messageLang": "en"
   },
   {
+    "id": "ferry-2231",
+    "mode": "ferry",
+    "ref": null,
+    "scope": "note",
+    "severity": "minor",
+    "title": "Ferry notice",
+    "message": "Elverişsiz hava koşulları sebebiyle Aşiyan-Üsküdar Hattı seferleri ikinci bir duyuruya kadar Bebek-Üsküdar olarak yapılacaktır. Sefer tarifesi aşağıda belirtilmiştir.",
+    "messageTr": "Elverişsiz hava koşulları sebebiyle Aşiyan-Üsküdar Hattı seferleri ikinci bir duyuruya kadar Bebek-Üsküdar olarak yapılacaktır. Sefer tarifesi aşağıda belirtilmiştir.",
+    "messageLang": "tr",
+    "translatedBy": "none",
+    "source": "sehirhatlari.istanbul",
+    "url": "https://sehirhatlari.istanbul/tr/duyurular/asiyan-seferleri-duyurusu-2231",
+    "published": "2026-11-12",
+    "until": "2026-11-19"
+  },
+  {
     "id": "ferry-3788",
     "mode": "ferry",
     "ref": null,
