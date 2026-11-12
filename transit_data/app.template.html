@@ -1019,6 +1019,9 @@
   .ann-stalebar{font-size:var(--fs-7);line-height:1.45;color:var(--warn-ink);background:var(--surface);border:1px solid var(--stroke);border-left:3px solid var(--warn-ink);border-radius:8px;padding:6px 9px;}
   /* stale rail and ferry notices (not the bus group, which this device reads live, nor the "opening soon" cards) */
   .ann-body.ann-stale > .ann-item[data-id]{opacity:.62;filter:saturate(.35);}
+  /* ferry notices can be fresh while the rail ones are old, and the other way round (V4.5.2): a ferry row carries its own word */
+  .ann-body.ann-stale > .ann-item.ann-fresh[data-id]{opacity:1;filter:none;}
+  .ann-body > .ann-item.ann-old[data-id]{opacity:.62;filter:saturate(.35);}
   .ann-item{cursor:pointer;}
   .ann-none{font-size:11px;color:var(--ok-ink);padding:8px 9px;}
   .ann-open{border-left-color:#2FBF71;}
@@ -1732,6 +1735,16 @@
   .bd-r{display:flex;justify-content:space-between;gap:10px;padding:2px 0;}
   .bd-r>span{color:var(--muted);font-size:11px;} .bd-r>b{color:var(--text);font-family:var(--mono);font-weight:600;font-size:var(--fs-8);}
   .bd-src{font-size:var(--fs-6);color:var(--dim);margin-top:6px;}
+  /* airports (V4.5.2): choose one, choose departures or arrivals, open the airport's own board */
+  .air-list{display:flex;flex-direction:column;gap:6px;margin-top:8px;}
+  .air-row{display:flex;align-items:center;gap:10px;width:100%;text-align:start;padding:9px 11px;border:1px solid var(--stroke);border-radius:10px;background:var(--surface);color:var(--text);font:inherit;cursor:pointer;}
+  .air-row.sel{border-color:var(--stroke-2);box-shadow:inset 0 0 0 2px var(--accent);}
+  .air-code{font-family:var(--mono);font-weight:700;letter-spacing:.6px;min-width:3.2em;}
+  .air-board{margin-top:10px;display:flex;flex-direction:column;gap:8px;}
+  .air-board[hidden]{display:none;}
+  .air-h{font-size:var(--fs-6);font-weight:700;color:var(--dim);letter-spacing:.4px;}
+  .air-open{display:block;padding:11px 12px;border-radius:10px;border:1px solid var(--stroke-2);background:var(--surface);color:var(--text);font-weight:700;text-decoration:none;text-align:center;}
+  .air-open:hover{background:var(--track);}
   /* live buses (V4.5): one line saying what is on the map and who says so */
   .lb-strip{display:flex;flex-wrap:wrap;align-items:center;gap:4px 8px;margin:0 0 8px;padding:7px 10px;border:1px solid var(--stroke);border-radius:10px;background:var(--surface);font-size:var(--fs-5);color:var(--text);}
   .lb-dot{width:8px;height:8px;border-radius:var(--r-round);background:var(--dim);flex:0 0 auto;}
@@ -2163,6 +2176,7 @@
       <button data-tab="boat" role="tab" aria-selected="false" data-i18n="tabBoat">⛴ Boats</button>
       <button data-tab="intercity" role="tab" aria-selected="false" data-i18n="tabIntercity">🚄 Intercity</button>
       <button data-tab="weather" role="tab" aria-selected="false" data-i18n="tabWeather">☀ Weather</button>
+      <button data-tab="airport" role="tab" aria-selected="false" data-i18n="tabAirport">✈ Airports</button>
     </div>
   </div>
   <div class="card glass" id="cardLayers">
@@ -2250,6 +2264,13 @@
     <div class="bus-count" id="boatCount"></div>
     <div class="sp-note" data-i18n="boatsIntro">Each line has its own colour and its own lane: where lines share the water they run side by side. Tap a line to see its piers.</div>
     <div class="boat-list" id="boatList"></div>
+  </div>
+
+  <div class="card glass" id="cardAirports" style="display:none;">
+    <div class="sec"><span data-i18n="airTitle">Airports</span></div>
+    <div class="sp-note" data-i18n="airIntro">Choose an airport, then departures or arrivals. The live table opens on the airport's own website.</div>
+    <div class="air-list" id="airList"></div>
+    <div class="air-board" id="airBoard" hidden></div>
   </div>
 
   <div class="card glass" id="cardIntercity" style="display:none;">

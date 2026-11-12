@@ -326,5 +326,5 @@ test('ferry: dates are read as ranges, and a notice with none lasts a week', () 
 test('ferry: the scraper carries the notices already published over a failed fetch', () => {
   const src = fs.readFileSync(path.join(__dirname, '..', 'scrape-disruptions.cjs'), 'utf8');
   assert.ok(/ferry=JSON\.parse\(fs\.readFileSync\(OUT,'utf8'\)\)\.filter\(e=>e\.mode==='ferry'\)/.test(src), 'a failed ferry fetch would erase the ferry notices');
-  assert.ok(/const all=keptManual\.concat\(metro, x, ferry\);/.test(src), 'ferry notices are not written to disruptions.json');
+  assert.ok(/let all=keptManual\.concat\(metro, x, ferry\);/.test(src), 'ferry notices are not written to disruptions.json');
 });

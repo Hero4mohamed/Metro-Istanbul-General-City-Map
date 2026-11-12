@@ -2106,6 +2106,77 @@ const MUTATIONS = [
     expect: 'every bus route the planner can use is in the directory the app ships',
     apply: h => h.replace('"ref":"29Ş"', '"ref":"29Ş\u009e"'),
   },
+  /* ---- V4.5.2: the Airports tab, and ferry notices that age separately from the rail ones ---- */
+  {
+    name: 'the Arrivals button of an airport opens its departures board',
+    expect: 'airports: departures and arrivals open different boards',
+    apply: h => h.replace("if(a[kind]) return { links:a[kind].map(l => ({ url:l.url, k:l.k || '' })), shared:false, pick:false };", "if(a[kind]) return { links:a.dep.map(l => ({ url:l.url, k:l.k || '' })), shared:false, pick:false };"),
+  },
+  {
+    name: 'Antalya\'s international button opens the domestic board',
+    expect: 'airports: departures and arrivals open different boards',
+    apply: h => h.replace("dep:[{ k:'intl', url:'https://www.antalya-airport.aero/yolcu-ve-ziyaretciler/ucus-bilgileri/dis-hat-gidis' }", "dep:[{ k:'intl', url:'https://www.antalya-airport.aero/yolcu-ve-ziyaretciler/ucus-bilgileri/yurtici-gidis' }"),
+  },
+  {
+    name: 'the page that lists every airport is opened without saying which one to choose',
+    expect: 'airports: departures and arrivals open different boards',
+    apply: h => h.replace("{ code:'ESB', name:'Esenboğa Havalimanı', both:AIR_DHMI, pick:true }", "{ code:'ESB', name:'Esenboğa Havalimanı', both:AIR_DHMI }"),
+  },
+  {
+    name: 'an airport button leads to a site that is not the airport\'s own',
+    expect: 'airports: every city has its airport, and every button leads to an official flight board',
+    apply: h => h.replace("arr:[{ url:'https://izmirairport.com/en/arrival-flights' }]", "arr:[{ url:'https://www.flightradar24.com/data/airports/adb/arrivals' }]"),
+  },
+  {
+    name: 'a city is left without its airport',
+    expect: 'airports: every city has its airport, and every button leads to an official flight board',
+    apply: h => h.replace("  bursa:   [ { code:'YEI', name:'Yenişehir Havalimanı', both:AIR_DHMI, pick:true } ],", ''),
+  },
+  {
+    name: 'an airport button opens in place of the app, with a handle on its page',
+    expect: 'airports: the tab and its card exist',
+    apply: h => h.replace('<a class="air-open" href="${attrEsc(l.url)}" target="_blank" rel="noopener noreferrer">', '<a class="air-open" href="${attrEsc(l.url)}">'),
+  },
+  {
+    name: 'choosing the Airports tab shows no card',
+    expect: 'airports: the tab and its card exist',
+    apply: h => h.replace("document.getElementById('cardAirports').style.display = (t==='airport') ? '' : 'none';", "document.getElementById('cardAirports').style.display = 'none';"),
+  },
+  {
+    name: 'the Airports tab is gone from the tab strip',
+    expect: 'airports: the tab and its card exist',
+    apply: h => h.replace('<button data-tab="airport" role="tab" aria-selected="false" data-i18n="tabAirport">', '<button data-tab="airport" role="tab" aria-selected="false" hidden data-i18n="tabAirport">'),
+  },
+  {
+    name: 'fresh ferry notices are called stale because the rail page has not been read',
+    expect: 'panel: fresh ferry notices are not called stale',
+    apply: h => h.replace('ferry = !!(ages.ferry && ages.ferry.stale && ferryRows);', 'ferry = !!(ages.rail && ages.rail.stale && ferryRows);'),
+  },
+  {
+    name: 'the ferry notices are aged by the rail time although the file has their own',
+    expect: 'panel: fresh ferry notices are not called stale',
+    apply: h => h.replace('ferry: noticeAge(DISR_FERRY_CHECKED != null ? DISR_FERRY_CHECKED : DISR_CHECKED, nowMs)', 'ferry: noticeAge(DISR_CHECKED, nowMs)'),
+  },
+  {
+    name: 'the warning names rail and ferry when only one of them is old',
+    expect: 'panel: fresh ferry notices are not called stale',
+    apply: h => h.replace("bar: rail && ferry ? 'annStale' : rail ? 'annStaleRail' : ferry ? 'annStaleFerry' : ''", "bar: rail || ferry ? 'annStale' : ''"),
+  },
+  {
+    name: 'a ferry row is not told apart from the rail rows when one kind is old',
+    expect: 'panel: the ferry rows carry their own word',
+    apply: h => h.replace("'class=\"ann-item ' + (stale.ferry ? 'ann-old' : 'ann-fresh') + '\"'", "'class=\"ann-item\"'"),
+  },
+  {
+    name: 'the page ignores the ferry time in the status file',
+    expect: 'panel: the ferry rows carry their own word',
+    apply: h => h.replace('DISR_FERRY_CHECKED = isFinite(fm) ? fm : null;', 'DISR_FERRY_CHECKED = null;').replace('fm = Date.parse(st.ferryCheckedAt)', 'fm = NaN'),
+  },
+  {
+    name: 'fresh ferry rows are greyed with the old rail rows',
+    expect: 'panel: the ferry rows carry their own word',
+    apply: h => h.replace('.ann-body.ann-stale > .ann-item.ann-fresh[data-id]{opacity:1;filter:none;}', ''),
+  },
   /* ---- offline maps (src/22a-offline.js, V4.4.1); the worker's own mistakes are put back by test/offline-maps.test.cjs itself ---- */
   {
     name: 'only İstanbul is kept without being asked',

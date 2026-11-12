@@ -368,7 +368,10 @@ async function loadLiveDisruptions(){
     ]);
     if(!r.ok) return;
     const data = await r.json();
-    if(sr && sr.ok){ try{ const ms = Date.parse((await sr.json()).checkedAt); if(isFinite(ms)) DISR_CHECKED = ms; }catch(e){} }
+    if(sr && sr.ok){ try{ const st = await sr.json(), ms = Date.parse(st.checkedAt), fm = Date.parse(st.ferryCheckedAt);
+      if(isFinite(ms)) DISR_CHECKED = ms;
+      DISR_FERRY_CHECKED = isFinite(fm) ? fm : null;       // an older status file has one time for both
+    }catch(e){} }
     if(Array.isArray(data)){ ensureEnglish(data); DISRUPTIONS = data; applyDisruptionFeed(); checkDisruptionAlerts(); }
   }catch(e){ /* offline / file:// → keep the baked-in DISRUPTIONS */ }
 }

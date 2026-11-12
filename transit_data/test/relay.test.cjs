@@ -161,3 +161,56 @@ test('relay: only the feeder may read the list or push, and a bad request never 
   const h = await (await w.ask('/health')).json();
   assert.deepStrictEqual(h.feeder, { alive: false, heardSecondsAgo: null });
 });
+
+/* ---- V4.5.2: the notices job on GitHub reads the ferry operator's announcement pages through the relay ---- */
+test('relay /fetch: reads the ferry announcement pages for the job that holds the token, and nothing else for anyone', async () => {
+  const W = await load();
+  for (const ok of ['https://sehirhatlari.istanbul/tr/duyurular', 'https://sehirhatlari.istanbul/tr/duyurular/asiyan-seferleri-duyurusu-2231', 'https://sehirhatlari.istanbul/tr/duyurular/01-kas%C4%B1m-3825']) assert.ok(W.FETCHABLE.test(ok), ok + ' is refused');
+  for (const bad of ['https://sehirhatlari.istanbul/', 'https://sehirhatlari.istanbul/tr/duyurular/..', 'https://sehirhatlari.istanbul/tr/duyurular/a/b', 'https://sehirhatlari.istanbul/tr/duyurular?x=1',
+    'http://sehirhatlari.istanbul/tr/duyurular', 'https://sehirhatlari.istanbul.evil.example/tr/duyurular', 'https://www.metro.istanbul/', 'https://api.ibb.gov.tr/', 'file:///etc/passwd', ''])
+    assert.ok(!W.FETCHABLE.test(bad), 'the relay would fetch ' + JSON.stringify(bad) + ': it must not be a general proxy');
+  const calls = [], real = globalThis.fetch;
+  globalThis.fetch = async (url, init) => { calls.push({ url: String(url), init }); return new Response('<html>duyurular</html>', { status: 200 }); };
+  try {
+    const env = { FETCH_TOKEN: 'fetch-token-0123456789', FEED_TOKEN: 'feed-token-0123456789' }, ctx = { waitUntil() {} };
+    const ask = (q, token, e, method) => W.default.fetch(new Request('https://relay.example/fetch' + q, { method: method || 'GET', headers: token ? { Authorization: 'Bearer ' + token } : {} }), e || env, ctx);
+    const good = '?u=' + encodeURIComponent('https://sehirhatlari.istanbul/tr/duyurular');
+    assert.strictEqual((await ask(good)).status, 403, 'the pages are handed to anyone who asks');
+    assert.strictEqual((await ask(good, 'feed-token-0123456789')).status, 403, 'the feeder\'s token opens the fetch endpoint: one leaked secret would open both doors');
+    assert.strictEqual((await ask(good, 'x', { FEED_TOKEN: 'feed-token-0123456789' })).status, 503, 'with no fetch token set the endpoint is open');
+    assert.strictEqual((await ask('?u=' + encodeURIComponent('https://www.metro.istanbul/'), env.FETCH_TOKEN)).status, 400);
+    assert.strictEqual((await ask(good, env.FETCH_TOKEN, env, 'POST')).status, 405);
+    assert.strictEqual(calls.length, 0, 'a refused request still reached the ferry site');
+    const r = await ask(good, env.FETCH_TOKEN);
+    assert.strictEqual(r.status, 200); assert.strictEqual(await r.text(), '<html>duyurular</html>');
+    assert.strictEqual(r.headers.get('Access-Control-Allow-Origin'), null, 'a web page may read the fetch endpoint');
+    assert.strictEqual(calls.length, 1); assert.strictEqual(calls[0].url, 'https://sehirhatlari.istanbul/tr/duyurular');
+    assert.ok(/IstanbulTransitMap/.test(calls[0].init.headers['User-Agent']), 'the relay does not say who is asking, as the scraper does when it asks directly');
+    assert.strictEqual(calls[0].init.redirect, 'manual', 'a redirect could lead the relay to an address that was never allowed');
+    globalThis.fetch = async () => new Response('Just a moment...', { status: 403 });
+    assert.strictEqual((await ask(good, env.FETCH_TOKEN)).status, 403, 'the operator\'s refusal was passed on as a page that was read');
+  } finally { globalThis.fetch = real; }
+});
+
+test('scraper: the ferry page is asked directly first, through the relay only when that fails, and never when no relay is set', async () => {
+  const F = require('../scrape-ferry.cjs');
+  assert.strictEqual(F.relayFor({}), null);
+  assert.strictEqual(F.relayFor({ RELAY_URL: 'https://turkmaps-relay.turkmaps-relay.workers.dev' }), null, 'a relay with no token is used');
+  assert.strictEqual(F.relayFor({ RELAY_URL: 'http://plain.example', RELAY_FETCH_TOKEN: 't' }), null, 'the token would be sent over plain http');
+  const env = { RELAY_URL: 'https://relay.example/', RELAY_FETCH_TOKEN: 'tok' }, page = 'https://sehirhatlari.istanbul/tr/duyurular';
+  const world = answers => { const calls = []; return { calls, fetch: async (url, init) => { calls.push({ url: String(url), init }); const a = answers[calls.length - 1]; if (a === 'throw') throw new Error('network'); return { ok: a.status === 200, status: a.status, text: async () => a.body || '' }; } }; };
+  let w = world([{ status: 200, body: 'direct' }]);
+  assert.strictEqual(await F.get(page, { env, fetch: w.fetch }), 'direct'); assert.strictEqual(w.calls.length, 1, 'the relay was used although the page answered directly');
+  w = world([{ status: 403 }, { status: 200, body: 'via relay' }]);
+  assert.strictEqual(await F.get(page, { env, fetch: w.fetch }), 'via relay');
+  assert.strictEqual(w.calls[1].url, 'https://relay.example/fetch?u=' + encodeURIComponent(page)); assert.strictEqual(w.calls[1].init.headers.Authorization, 'Bearer tok');
+  assert.ok(!w.calls[0].init.headers.Authorization, 'the relay\'s token was sent to the ferry site');
+  w = world(['throw', { status: 200, body: 'via relay' }]);
+  assert.strictEqual(await F.get(page, { env, fetch: w.fetch }), 'via relay');
+  w = world([{ status: 403 }]);
+  await assert.rejects(F.get(page, { env: {}, fetch: w.fetch }), /HTTP 403/); assert.strictEqual(w.calls.length, 1);
+  w = world([{ status: 403 }, { status: 502 }]);
+  await assert.rejects(F.get(page, { env, fetch: w.fetch }), /403 directly and HTTP 502 through the relay/, 'a page that neither way could read was taken as read');
+  const wf = fs.readFileSync(path.join(__dirname, '..', '..', '.github', 'workflows', 'disruptions.yml'), 'utf8');
+  assert.ok(/RELAY_URL:\s+https:\/\/turkmaps-relay\.turkmaps-relay\.workers\.dev/.test(wf) && /RELAY_FETCH_TOKEN: \$\{\{ secrets\.RELAY_FETCH_TOKEN \}\}/.test(wf), 'the job on GitHub is not given the relay');
+});
