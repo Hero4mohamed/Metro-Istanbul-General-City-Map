@@ -1,0 +1,90 @@
+rules_version = '2';
+// TurkMaps V4.6.3 — who may read and write what. Google's servers apply these to EVERY request, whatever app or tool sends it,
+// so they are the real protection; the app only follows them. Design: docs/superpowers/specs/2026-11-14-friends-location-design.md §6.
+// Paste this whole file into Firebase console › Firestore › Rules, then press Publish.
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // signed in, with an email address its owner has confirmed
+    function verified() { return request.auth != null && request.auth.token.email_verified == true; }
+    // one friendship document per pair: the two account ids sorted, joined by "_"
+    function pair(x, y) { return x < y ? x + '_' + y : y + '_' + x; }
+    function isFriend(other) { return exists(/databases/$(database)/documents/friendships/$(pair(request.auth.uid, other))); }
+    function inviteDoc(id) { return /databases/$(database)/documents/invites/$(id); }
+
+    // The name you choose (1-30 characters). Your email is never stored here.
+    match /profiles/{uid} {
+      allow read: if verified() && (request.auth.uid == uid || isFriend(uid));
+      allow write: if verified() && request.auth.uid == uid
+        && (request.method == 'delete'
+            || (request.resource.data.keys().hasOnly(['name'])
+                && request.resource.data.name is string
+                && request.resource.data.name.size() >= 1 && request.resource.data.name.size() <= 30));
+    }
+
+    // A friend link. Its id is 128 random bits, so it cannot be guessed; it lasts at most 48 hours and is claimed once.
+    match /invites/{id} {
+      allow get: if verified();
+      allow list: if verified() && resource.data.from == request.auth.uid;
+      allow create: if verified()
+        && id.matches('^[0-9a-f]{32}$')
+        && request.resource.data.keys().hasOnly(['from', 'fromName', 'created', 'expires', 'usedBy'])
+        && request.resource.data.from == request.auth.uid
+        && request.resource.data.fromName is string && request.resource.data.fromName.size() <= 30
+        && request.resource.data.usedBy == null
+        && request.resource.data.created == request.time
+        && request.resource.data.expires > request.time
+        && request.resource.data.expires <= request.time + duration.value(48, 'h');
+      // accepting: only "usedBy" changes, from nobody to you, before it expires, and never on your own invite
+      allow update: if verified()
+        && resource.data.usedBy == null
+        && resource.data.from != request.auth.uid
+        && resource.data.expires > request.time
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['usedBy'])
+        && request.resource.data.usedBy == request.auth.uid;
+      allow delete: if verified() && resource.data.from == request.auth.uid;
+    }
+
+    // A friendship. Made only by the person accepting, in the same write that claims the invite; never edited; either side removes it.
+    match /friendships/{fid} {
+      allow read: if verified() && (resource.data.a == request.auth.uid || resource.data.b == request.auth.uid);
+      allow create: if verified()
+        && request.auth.uid == request.resource.data.acceptor
+        && request.resource.data.keys().hasOnly(['a', 'b', 'inviter', 'acceptor', 'invite', 'created'])
+        && request.resource.data.a < request.resource.data.b
+        && fid == request.resource.data.a + '_' + request.resource.data.b
+        && ((request.resource.data.a == request.resource.data.inviter && request.resource.data.b == request.resource.data.acceptor)
+            || (request.resource.data.a == request.resource.data.acceptor && request.resource.data.b == request.resource.data.inviter))
+        && request.resource.data.created == request.time
+        && get(inviteDoc(request.resource.data.invite)).data.from == request.resource.data.inviter
+        && get(inviteDoc(request.resource.data.invite)).data.usedBy == null
+        && get(inviteDoc(request.resource.data.invite)).data.expires > request.time
+        && getAfter(inviteDoc(request.resource.data.invite)).data.usedBy == request.auth.uid;
+      allow update: if false;
+      allow delete: if verified() && (resource.data.a == request.auth.uid || resource.data.b == request.auth.uid);
+    }
+
+    // Your latest position only (no history). A friend sees it only while your chosen time runs AND your app sent it in the
+    // last 3 minutes: close the app and you disappear. Sharing lasts at most 8 hours. The time on it is the server's.
+    match /locations/{uid} {
+      allow read: if verified()
+        && (request.auth.uid == uid
+            || (isFriend(uid)
+                && resource.data.until > request.time
+                && resource.data.at > request.time - duration.value(3, 'm')));
+      allow write: if verified() && request.auth.uid == uid
+        && (request.method == 'delete'
+            || (request.resource.data.keys().hasOnly(['lat', 'lng', 'acc', 'approx', 'at', 'until'])
+                && request.resource.data.lat is number && request.resource.data.lat >= -90 && request.resource.data.lat <= 90
+                && request.resource.data.lng is number && request.resource.data.lng >= -180 && request.resource.data.lng <= 180
+                && request.resource.data.acc is number && request.resource.data.acc >= 0 && request.resource.data.acc <= 5000
+                && request.resource.data.approx is bool
+                && request.resource.data.at == request.time
+                && request.resource.data.until > request.time
+                && request.resource.data.until <= request.time + duration.value(8, 'h')));
+    }
+
+    // anything not named above: nobody
+    match /{document=**} { allow read, write: if false; }
+  }
+}
