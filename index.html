@@ -6,7 +6,7 @@
 <!-- Substituted by build.cjs, which hashes the inline script from the final bytes. Pages
      cannot set headers, so this ships as meta; frame-ancestors and report-uri are
      unavailable that way. -->
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-SnavLOlDOclF/cT0eaX7KTMJdtTIAUFuDxu2z6X43Jc='; style-src 'self' 'unsafe-inline'; font-src 'self' data:; img-src 'self' data: blob: https://server.arcgisonline.com; connect-src 'self' https://server.arcgisonline.com https://tiles.openfreemap.org https://photon.komoot.io https://overpass-api.de https://api.ibb.gov.tr https://openapi.izmir.bel.tr https://turkmaps-relay.turkmaps-relay.workers.dev https://api.open-meteo.com https://air-quality-api.open-meteo.com https://routing.openstreetmap.de https://api.anthropic.com; worker-src 'self'; frame-src 'none'; media-src 'none'; manifest-src 'self'; base-uri 'self'; form-action 'none'; object-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-m/+6XhFOUYVwr686h/nEGaAKQwxpQB2Ld0d7jzU5JeU='; style-src 'self' 'unsafe-inline'; font-src 'self' data:; img-src 'self' data: blob: https://server.arcgisonline.com; connect-src 'self' https://server.arcgisonline.com https://tiles.openfreemap.org https://photon.komoot.io https://overpass-api.de https://api.ibb.gov.tr https://openapi.izmir.bel.tr https://turkmaps-relay.turkmaps-relay.workers.dev https://api.open-meteo.com https://air-quality-api.open-meteo.com https://routing.openstreetmap.de https://api.anthropic.com https://identitytoolkit.googleapis.com https://securetoken.googleapis.com https://firestore.googleapis.com; worker-src 'self'; frame-src 'none'; media-src 'none'; manifest-src 'self'; base-uri 'self'; form-action 'none'; object-src 'none'">
 <title>TurkMaps · Transit Network Map</title>
 <!-- Leaflet 1.9.4, shipped with the app rather than fetched from a CDN (V4.3): see vendor/README.md -->
 <link rel="stylesheet" href="vendor/leaflet/leaflet.css">
@@ -1372,10 +1372,11 @@
      chosen, a count of live notices on Alerts. Respects reduced motion (the global rule switches the movement off). */
   body.mobile .mnav{position:fixed;left:14px;right:14px;bottom:calc(10px + env(safe-area-inset-bottom));
     z-index:1400;display:flex;padding:6px;border-radius:24px;box-shadow:0 14px 34px -14px rgba(0,0,0,.55),inset 0 0 0 1px var(--stroke);}
-  .mnav-ind{position:absolute;top:6px;bottom:6px;left:6px;width:calc((100% - 12px) / 3);border-radius:18px;
+  .mnav-ind{position:absolute;top:6px;bottom:6px;left:6px;width:calc((100% - 12px) / 4);border-radius:18px;
     background:rgba(var(--ok-rgb),.15);box-shadow:inset 0 0 0 1px rgba(var(--ok-rgb),.38);transition:transform .38s cubic-bezier(.34,1.45,.64,1);pointer-events:none;}
   .mnav[data-on="1"] .mnav-ind{transform:translateX(100%);}
   .mnav[data-on="2"] .mnav-ind{transform:translateX(200%);}
+  .mnav[data-on="3"] .mnav-ind{transform:translateX(300%);}
   .mnav button{position:relative;flex:1;min-width:0;background:none;border:none;color:var(--muted);cursor:pointer;border-radius:18px;
     display:flex;flex-direction:column;align-items:center;gap:3px;padding:8px 0 7px;transition:color .2s var(--ease),transform .15s var(--ease);
     -webkit-tap-highlight-color:transparent;}
@@ -1576,6 +1577,42 @@
   .settings-panel .spseg{width:100%;margin-top:3px;}
   .settings-panel .spseg button{flex:1;}
   .sp-hint{font-size:var(--fs-8);color:var(--dim);line-height:1.5;margin-top:8px;}
+  /* V4.6.3 account box (Settings > You, and the Friends sheet) */
+  .acc-form{display:flex;flex-direction:column;gap:8px;}
+  .acc-form p{margin:0;font-size:var(--fs-6);line-height:1.5;color:var(--text);}
+  .acc-in{width:100%;box-sizing:border-box;padding:10px 12px;border-radius:12px;border:1px solid var(--stroke);background:var(--surface-2);color:var(--text);font:inherit;font-size:var(--fs-5);}
+  .acc-in:focus-visible{outline:2px solid var(--accent-ink);outline-offset:1px;}
+  .acc-acts{display:flex;gap:8px;flex-wrap:wrap;} .acc-acts .btn{flex:1 1 130px;margin:0;}
+  .acc-links{display:flex;gap:14px;flex-wrap:wrap;}
+  .acc-link{background:none;border:none;padding:4px 0;color:var(--accent-ink);font:inherit;font-size:var(--fs-6);cursor:pointer;text-decoration:underline;}
+  .acc-msg{font-size:var(--fs-6);line-height:1.45;padding:8px 10px;border-radius:10px;background:var(--surface-2);}
+  .acc-msg.err{color:var(--danger,#E5484D);} .acc-msg.ok{color:var(--ok,#30A46C);}
+  .acc-who{display:flex;flex-direction:column;gap:2px;} .acc-who small{color:var(--dim);font-size:var(--fs-7);}
+  .acc-del{display:flex;flex-direction:column;gap:8px;padding:10px;border-radius:12px;border:1px solid var(--stroke);}
+  .btn.danger{background:var(--danger,#E5484D);color:#fff;}
+  .fr-head{font-weight:700;font-size:var(--fs-5);display:flex;gap:8px;align-items:center;margin-bottom:10px;}
+  #friendsBox{display:flex;flex-direction:column;gap:12px;}
+  .fr-list{display:flex;flex-direction:column;gap:6px;}
+  .fr-h{font-size:var(--fs-7);color:var(--dim);text-transform:uppercase;letter-spacing:.5px;}
+  .fr-row{display:flex;align-items:center;gap:10px;padding:6px 0;}
+  .fr-av{flex:none;width:30px;height:30px;border-radius:var(--r-round);display:grid;place-items:center;background:var(--surface-2);border:1px solid var(--stroke);font-weight:700;}
+  .fr-nm{flex:1;min-width:0;display:flex;flex-direction:column;overflow-wrap:anywhere;} .fr-nm small{color:var(--dim);font-size:var(--fs-7);}
+  .fr-nm small.fr-on{color:var(--ok,#30A46C);}
+  .fr-row .mini{flex:none;background:var(--surface-2);border:1px solid var(--stroke);color:var(--text);border-radius:10px;padding:6px 10px;font:inherit;font-size:var(--fs-7);cursor:pointer;}
+  .sh-box{display:flex;flex-direction:column;gap:8px;padding:10px;border-radius:14px;border:1px solid var(--stroke);}
+  .sh-box.sh-on{border-color:var(--ok,#30A46C);} .sh-box p{margin:0;font-size:var(--fs-6);line-height:1.5;}
+  .share-pill{position:fixed;left:50%;transform:translateX(-50%);top:14px;z-index:2700;display:flex;align-items:center;gap:10px;
+    padding:8px 8px 8px 14px;border-radius:var(--r-pill);background:var(--ok,#30A46C);color:#fff;font-weight:700;font-size:var(--fs-6);box-shadow:0 8px 24px -10px rgba(0,0,0,.6);max-width:calc(100vw - 32px);}
+  .share-pill[hidden]{display:none;}
+  .share-pill button{border:none;border-radius:var(--r-pill);padding:6px 12px;background:rgba(0,0,0,.25);color:#fff;font:inherit;cursor:pointer;}
+  .sh-dot{width:9px;height:9px;border-radius:var(--r-round);background:#fff;flex:none;animation:shPulse 1.6s ease-in-out infinite;}
+  @keyframes shPulse{50%{opacity:.35;}}
+  body.calm .sh-dot{animation:none;}
+  body.mobile .share-pill{top:var(--share-top,152px);}   /* under the top bar (22d-friends.js measures it), clear of the buttons of cards and sheets */
+  .friend-dot{display:grid;place-items:center;}
+  .friend-dot span{display:grid;place-items:center;width:30px;height:30px;border-radius:var(--r-round);background:var(--accent-ink);color:#fff;font-weight:800;font-size:14px;border:2.5px solid #fff;box-shadow:0 3px 10px rgba(0,0,0,.45);}
+  .friend-dot.approx span{border-style:dashed;}
+  .invite-dlg{max-width:380px;} .invite-dlg p{line-height:1.5;margin:6px 0 14px;}
   .settings-panel .btn{margin-top:2px;}
   /* on a phone a full-screen blur behind a moving sheet is the costliest thing on the page: a darker wash does the same job */
   body.mobile .settings-overlay{backdrop-filter:none;background:rgba(3,6,10,.64);}
@@ -2033,7 +2070,7 @@
 <!-- the one-time privacy choice (V4.3): a card above the bottom bar, never over the map; both answers look the same -->
 <div class="priv-notice glass" id="privNotice" role="region" aria-labelledby="privTitle">
   <h2 id="privTitle" data-i18n="privTitle">Your privacy, your choice</h2>
-  <p data-i18n="privBody">This app has no accounts, no ads and no tracking, and keeps your settings only on this device. Two optional extras ask other services for help: place look-ups (what you type) and walking routes (the start and end of a walk). They stay off unless you allow them.</p>
+  <p data-i18n="privBody">No ads and no tracking, and your settings stay on this device. An account is optional, only for Friends (sharing your location with friends you accept); it is stored with Google Firebase. Two optional extras ask other services for help: place look-ups (what you type) and walking routes (the start and end of a walk). They stay off unless you allow them.</p>
   <div class="priv-btns">
     <button class="priv-btn" id="privKeep" data-i18n="privKeep">Keep everything on my device</button>
     <button class="priv-btn" id="privAllow" data-i18n="privAllow">Allow online look-ups</button>
@@ -2179,6 +2216,10 @@
   <details class="sp-sec" data-sec="you">
     <summary><span class="sp-ico" aria-hidden="true">👤</span><span class="sp-st"><span data-i18n="funStats">You</span><small data-i18n="secYouSub">Saved places, travel passport</small></span></summary>
     <div class="sp-body">
+      <div class="sp-item" id="accRow">
+        <div class="sp-row"><span data-i18n="accTitle">Account</span></div>
+        <div class="acc-box"></div>
+      </div>
       <div class="sp-item" id="placesGroup">
         <div class="sp-label" data-i18n="places">Saved places</div>
         <div class="sp-place"><span class="sp-p-ico">🏠</span><span class="sp-p-nm" id="homeVal">—</span>
@@ -2300,6 +2341,14 @@
   <div id="remBody"></div>
 </div>
 
+<div class="share-pill" id="sharePill" role="status" hidden><span class="sh-dot" aria-hidden="true"></span><span id="sharePillTxt"></span><button type="button" id="sharePillStop" data-i18n="shareStop">Stop sharing</button></div>
+<div class="settings-overlay" id="inviteOverlay"></div>
+<div class="settings-panel glass invite-dlg" id="inviteDlg" role="dialog" aria-modal="true" aria-labelledby="inviteTitle">
+  <div class="sp-head"><span id="inviteTitle">👥 <span data-i18n="frInviteTitle">Friend request</span></span></div>
+  <p id="inviteQ"></p>
+  <div class="acc-acts"><button type="button" class="btn" id="inviteAccept" data-i18n="frAccept">Accept</button><button type="button" class="btn ghost" id="inviteDecline" data-i18n="frDecline">Not now</button></div>
+</div>
+
 <div class="controls" id="controls">
   <div class="card glass" id="cardTabs" style="padding:7px;">
     <div class="tabs" id="tabs" role="tablist" aria-label="Map view" data-i18n-aria="ariaMapView">
@@ -2311,6 +2360,10 @@
       <button data-tab="weather" role="tab" aria-selected="false" data-i18n="tabWeather">☀ Weather</button>
       <button data-tab="airport" role="tab" aria-selected="false" data-i18n="tabAirport">✈ Airports</button>
     </div>
+  </div>
+  <div class="card glass" id="cardFriends">
+    <div class="fr-head"><span aria-hidden="true">👥</span> <span data-i18n="frTitle">Friends</span></div>
+    <div id="friendsBox"><div class="acc-box"></div><div class="fr-box"></div></div>
   </div>
   <div class="card glass" id="cardLayers">
     <button class="lyr-head" id="layersHead" aria-expanded="true" aria-controls="layersBody">
@@ -2572,7 +2625,7 @@
 
    The report carries the fault, the build, the city, the language and the browser. It never
    carries location, saved places, trip history or the API key. ===== */
-const BUILD = "20261114092137";
+const BUILD = "20261114143045";
 const DIAG_MAX = 20;
 let DIAG = [];
 try { DIAG = JSON.parse(localStorage.getItem("irn_diag") || "[]"); } catch (e) { DIAG = []; }
@@ -2867,13 +2920,17 @@ const I18N = {
     deleteAll:"Delete all my data on this device", deleteAllSure:"Tap again to delete everything", deleteAllDone:"All data on this device deleted",
     deleteAllHint:"Removes everything this app saved here: settings, saved places, trips, favourites, history, the offline copies of the app and maps, and your choices. The app then starts like a first visit. Nothing is kept anywhere else, so there is nothing to delete elsewhere.",
     privTitle:"Your privacy, your choice", privAllow:"Allow online look-ups", privKeep:"Keep everything on my device", privRead:"Read the privacy notice",
-    privBody:"This app has no accounts, no ads and no tracking, and keeps your settings only on this device. Two optional extras ask other services for help: place look-ups (what you type) and walking routes (the start and end of a walk). They stay off unless you allow them.",
+    privBody:"No ads and no tracking, and your settings stay on this device. An account is optional, only for Friends (sharing your location with friends you accept); it is stored with Google Firebase. Two optional extras ask other services for help: place look-ups (what you type) and walking routes (the start and end of a walk). They stay off unless you allow them.",
     privAllowed:"Online look-ups are on. Change this any time in Settings → Search & privacy.", privKept:"Everything stays on this device. Change this any time in Settings → Search & privacy.",
     aiLookupOff:"That needs online look-ups, which are off. Turn them on in Settings → Search & privacy.",
     secAbout:"About & legal", legalPrivacy:"Privacy notice", legalTerms:"Terms of use", legalStorage:"Cookies & stored data", legalCredits:"Credits & licences", legalAccess:"Accessibility",
     aboutProject:"TurkMaps is a free, non-commercial, open-source project by its author. It is not an official service of any transit operator.",
     aboutContact:"Contact", aboutVersion:"Version", aboutSource:"Source code",
     liveBusOff:"Live buses are not running for this city right now", liveBusQuiet:"not heard from for 2 min or more", liveBusQuietN:"{n} not heard from lately", tabAirport:"✈ Airports", airTitle:"Airports", airIntro:"Choose an airport, then departures or arrivals. The live table opens on the airport’s own website.", airNone:"No airport is listed for this city.", airKind:"Departures or arrivals", airDep:"Departures", airArr:"Arrivals", airOpen:"Open the live board on {site}", airIntl:"International", airDom:"Domestic", airShared:"That page shows departures and arrivals together.", airPick:"That page lists every airport: choose {name} there. It shows departures and arrivals together.", airWhy:"TurkMaps has no flight data of its own: airports do not offer their boards to other apps, so the table is shown on their site.", lineNoticesAria:"Notices for this line", lineNotice1:"1 notice on this line", lineNoticeN:"{n} notices on this line", ferryAllNotices:"Notices for all ferries ({n})", omniLines:"Lines", omniBusLine:"Bus line", busInfo:"Info", busBack:"Back", busStopsTitle:"Stops", secAppearanceSub:"Theme, colours, text size, language", secMapSub:"What the map shows, simulation, offline maps", secJourneySub:"Routes, walking, units, fare card", secAccessSub:"Motion and contrast", secYouSub:"Saved places, travel passport", secPrivacySub:"Online look-ups, your data", secAppSub:"Install, data sources, diagnostics", secAboutSub:"Legal pages, contact, version", spMapUse:"Turning & offline", omniPlan:"Plan a trip", ariaMainNav:"Main", remBtn:"Remind me", remTitle:"Remind me", remDir:"Direction", remStop:"Stop", remTime:"Time at the stop (yours)", remHintBus:"From the first stop on weekdays: {when}. TurkMaps has no stop-by-stop times for buses: enter the time you know.", remHintRail:"Runs {hours}, about every {n} min. Enter the time you want to be reminded about.", remHintNone:"Enter the time you know the vehicle is at this stop.", remDays:"Days", remOnce:"Once", remDaily:"Every day", remWeekdays:"Weekdays", remWeekends:"Weekends", remBefore:"Remind me before", remMin:"{n} min", remSave:"Save reminder", remSaved:"Reminder saved for {time}", remIcs:"Add to my calendar", remNeedTime:"Choose a time first", remNeedBefore:"Choose at least one: 5, 10 or 20 min", remNote:"Reminders come from this app while it is open or recently used; a phone may stop it when it is closed. For an alert that always comes, add it to your calendar as well. The time is yours: the app does not know when a vehicle will really arrive.", remList:"Reminders", remListHint:"Set one from a line's panel with ⏰ Remind me.", remNone:"No reminders yet.", remOnLine:"Your reminders on this line", remDelete:"Delete reminder", remOff:"done", remNotifyTitle:"⏰ {line} → {head}", remNotifyBody:"{stop}: due at {time}, in {n} min", remNoStops:"This line has no stops to choose from", liveBusLoading:"Live buses: asking…", liveBusOffline:"Live buses need a connection", liveBusBusy:"The live service is busy, trying again", liveBusError:"The live service did not answer, trying again", liveBusKept:"{n} shown from the last answer", liveBusNone:"Live: no buses reported on this line right now", liveBusOne:"Live: 1 bus on this line", liveBusMany:"Live: {n} buses on this line", liveBusStanding:"{n} standing", liveBusUnplaced:"{n} more not placed yet", liveBusTip:"Bus {id} · live position", liveBusStill:"has not moved for 2 min or more", liveBusAt:"Last answer {t}", tabBoat:"⛴ Boats", boatsTitle:"Boat lines", boatsIntro:"Each line has its own colour and its own lane: where lines share the water they run side by side. Tap a line to see its piers.", boatPiers:"{n} piers", boatCount:"{n} lines", modesTitle:"What the map shows", modeRail:"Metro & rail", modeBus:"Buses", modeBoat:"Boats", modeHint:"Choose what the map shows. Metro & rail is the full map.", 
+    mFriends:"Friends",
+    shareTitle:"Share my location with my friends", share15:"15 min", share60:"1 hour", share480:"8 hours", shareExact:"Exact", shareApprox:"Approximate (about 1 km)", shareStart:"Start sharing", shareHint:"Off until you start it. Your friends see you only while this runs and the app is open; close it and you disappear within 3 minutes.", shareStop:"Stop sharing", shareOnExact:"You are sharing your exact location with your friends until {time}.", shareOnApprox:"You are sharing your approximate location (about 1 km) with your friends until {time}.", shareDenied:"Your location is not available, so sharing did not start. Allow location for this site and try again.", sharePill:"Sharing your location · {m} min left", sharePillApprox:"Sharing (approximate) · {m} min left", frAgo:"{m} min ago", frAgoNow:"just now", frApproxTag:"approximate",
+    frTitle:"Friends", frFriends:"Your friends", frNone:"No friends yet. Send a friend link to someone you trust.", frRemove:"Remove", frSharingNow:"sharing now", frOpenLink:"Friend link waiting", frExpires:"works for about {h} more hours", frInvite:"Invite a friend", frInviteHint:"A link works once, for up to 48 hours, and only if they press Accept.", frInviteGone:"This friend link has expired or was already used. Ask for a new one.", frInviteOwn:"This is your own friend link. Send it to a friend.", frAlready:"You are already friends.", frAcceptFailed:"Could not accept the link. Ask for a new one.", frNowFriends:"You are friends now.", frInviteQ:"{name} wants to be friends on TurkMaps. Friends can see your location only while you choose to share it.", frInviteTitle:"Friend request", frAccept:"Accept", frDecline:"Not now", frSignInFirst:"Sign in or create an account to accept this friend link.", frShareText:"{name} invites you to be friends on TurkMaps", frCopied:"Friend link copied. Send it to your friend.", frCopyThis:"Copy this friend link and send it:",
+    accTitle:"Account", accNotSetUp:"Friends is not set up yet.", accEmail:"Email", accPassword:"Password (at least 8 characters)", accName:"Your name (friends see this)", accSignUp:"Create account", accSignIn:"Sign in", accHaveAccount:"I already have an account", accNoAccount:"No account? Create one", accForgot:"Forgot password?", accPrivacy:"Optional, only for Friends. Friends see only your name, never your email. Stored with Google Firebase (privacy notice, section 6).", accCheckEmail:"Check your email: we sent a confirmation link to {email}. Open it, then come back here.", accConfirmed:"I've confirmed", accResend:"Send the link again", accSentConfirm:"Confirmation link sent. Check your inbox (and spam).", accNowConfirmed:"Confirmed. Friends is ready.", accNotYet:"Not confirmed yet. Open the link in the email first.", accNameNeeded:"Choose the name your friends will see.", accSaveName:"Save name", accSignedIn:"Signed in as {name}", accSignOut:"Sign out", accDelete:"Delete my account", accDeleteAsk:"Type your password to delete your account and everything stored about you: your position, friendships, friend links and name. This cannot be undone.", accDeleteGo:"Delete everything", accCancel:"Cancel", accRetry:"Try again", accDeletePending:"Deleting your account did not finish. Your data is already gone; type your password to finish.", accDeleted:"Your account was deleted, with your position, {f} friendships, {i} friend links and your name.", accResetSent:"If that email has an account, a link to reset the password is on its way.", accErrExists:"That email already has an account. Sign in instead.", accErrLogin:"The email or password is wrong.", accErrWeak:"The password needs at least 8 characters.", accErrMany:"Too many tries. Wait a few minutes and try again.", accErrName:"Choose a name (1 to 30 characters).", accErrEmail:"Enter a valid email address.", accErrNet:"Could not reach the account service. Check your connection.", accErrGeneric:"Something went wrong ({code}). Try again.",
     offPacksTitle:"Offline maps", offPacksIntro:"A city kept here opens and works with no connection: its map, lines, stations, trip planner and place search. İstanbul, İzmir and Ankara are kept automatically; the others when you press Download. Service notices, weather, official timetables and the satellite layer still need a connection.", offGet:"Download", offRemove:"Remove", offRetry:"Try again", offNow:"Download now", offReady:"On this device", offLoading:"Downloading… {p}%", offWaiting:"Waiting for Wi-Fi", offFailed:"Could not download", offNone:"Not downloaded", offAutoTag:"automatic", offDataLbl:"Download maps on mobile data too", offDataHint:"Off: offline maps come down on Wi-Fi only. A phone that does not say what it is connected to (every iPhone) waits for you to press Download.", offAskTitle:"Keep the maps on this phone?", offAskBody:"So the app works with no connection, it keeps the maps of {cities} on this device (about {mb} MB). You are on mobile data.", offAskBodyUnknown:"So the app works with no connection, it keeps the maps of {cities} on this device (about {mb} MB). This phone does not say whether it is on Wi-Fi.", offAskNow:"Download now", offAskWifi:"Wait for Wi-Fi", offAskLater:"The maps will wait. Start them any time in Settings → Map → Offline maps.", offDone:"{city} is ready to use offline", 
     fromPh:"From: a stop, place or address…", toPh:"To: a stop, place or address…", sheetResize:"Resize the planner: short, half or full height", ariaMapView:"Map view", ariaCity:"City", ariaLoading:"Loading", ariaPrevStep:"Previous step", ariaNextStep:"Next step", ariaApiKey:"Anthropic API key",
     mapLabel:"Transit map. Arrow keys move the map, plus and minus zoom.", zoomIn:"Zoom in", zoomOut:"Zoom out",
@@ -3095,13 +3152,17 @@ const I18N = {
     deleteAll:"Bu cihazdaki tüm verilerimi sil", deleteAllSure:"Her şeyi silmek için tekrar dokunun", deleteAllDone:"Bu cihazdaki tüm veriler silindi",
     deleteAllHint:"Bu uygulamanın burada sakladığı her şeyi siler: ayarlar, kayıtlı yerler, yolculuklar, favoriler, geçmiş, uygulamanın ve haritaların çevrimdışı kopyaları ve seçimleriniz. Uygulama sonra ilk ziyaret gibi açılır. Başka hiçbir yerde veri tutulmaz; bu yüzden başka yerde silinecek bir şey yok.",
     privTitle:"Gizliliğiniz, seçiminiz", privAllow:"Çevrimiçi aramalara izin ver", privKeep:"Her şey cihazımda kalsın", privRead:"Gizlilik bildirimini oku",
-    privBody:"Bu uygulamada hesap, reklam ve izleme yoktur; ayarlarınızı yalnızca bu cihazda saklar. İki isteğe bağlı özellik başka servislerden yardım ister: yer aramaları (yazdığınız metin) ve yürüyüş rotaları (yürüyüşün başlangıcı ve sonu). Siz izin vermedikçe kapalı kalırlar.",
+    privBody:"Reklam ve izleme yoktur; ayarlarınız bu cihazda kalır. Hesap isteğe bağlıdır ve yalnızca Arkadaşlar içindir (konumunuzu kabul ettiğiniz arkadaşlarla paylaşmak); Google Firebase'de saklanır. İki isteğe bağlı özellik başka servislerden yardım ister: yer aramaları (yazdığınız metin) ve yürüyüş rotaları (yürüyüşün başlangıcı ve sonu). Siz izin vermedikçe kapalı kalırlar.",
     privAllowed:"Çevrimiçi aramalar açık. Bunu istediğiniz zaman Ayarlar → Arama ve gizlilik'ten değiştirebilirsiniz.", privKept:"Her şey bu cihazda kalır. Bunu istediğiniz zaman Ayarlar → Arama ve gizlilik'ten değiştirebilirsiniz.",
     aiLookupOff:"Bunun için çevrimiçi aramalar gerekir; şu an kapalı. Ayarlar → Arama ve gizlilik'ten açabilirsiniz.",
     secAbout:"Hakkında ve yasal", legalPrivacy:"Gizlilik bildirimi", legalTerms:"Kullanım koşulları", legalStorage:"Çerezler ve saklanan veriler", legalCredits:"Katkılar ve lisanslar", legalAccess:"Erişilebilirlik",
     aboutProject:"TurkMaps, yazarının hazırladığı ücretsiz, ticari olmayan, açık kaynaklı bir projedir. Hiçbir ulaşım işletmecisinin resmî hizmeti değildir.",
     aboutContact:"İletişim", aboutVersion:"Sürüm", aboutSource:"Kaynak kod",
     liveBusOff:"Bu şehir için canlı otobüsler şu anda çalışmıyor", liveBusQuiet:"2 dakikadır veya daha uzun süredir haber alınamadı", liveBusQuietN:"{n} araçtan bir süredir haber yok", tabAirport:"✈ Havalimanları", airTitle:"Havalimanları", airIntro:"Bir havalimanı, sonra kalkış ya da varış seçin. Canlı tablo havalimanının kendi sitesinde açılır.", airNone:"Bu şehir için listelenmiş havalimanı yok.", airKind:"Kalkış ya da varış", airDep:"Kalkışlar", airArr:"Varışlar", airOpen:"Canlı tabloyu {site} sitesinde aç", airIntl:"Dış hatlar", airDom:"İç hatlar", airShared:"O sayfa kalkışları ve varışları birlikte gösterir.", airPick:"O sayfada bütün havalimanları listelenir: orada {name} seçin. Kalkışları ve varışları birlikte gösterir.", airWhy:"TurkMaps’in kendi uçuş verisi yoktur: havalimanları tablolarını başka uygulamalara sunmaz; bu yüzden tablo onların sitesinde gösterilir.", lineNoticesAria:"Bu hattın duyuruları", lineNotice1:"Bu hatta 1 duyuru var", lineNoticeN:"Bu hatta {n} duyuru var", ferryAllNotices:"Tüm vapurlar için duyurular ({n})", omniLines:"Hatlar", omniBusLine:"Otobüs hattı", busInfo:"Bilgi", busBack:"Geri", busStopsTitle:"Duraklar", secAppearanceSub:"Tema, renkler, yazı boyutu, dil", secMapSub:"Haritada ne görünür, simülasyon, çevrimdışı haritalar", secJourneySub:"Rotalar, yürüyüş, birimler, ulaşım kartı", secAccessSub:"Hareket ve kontrast", secYouSub:"Kayıtlı yerler, seyahat pasaportu", secPrivacySub:"Çevrimiçi aramalar, verileriniz", secAppSub:"Yükleme, veri kaynakları, tanılama", secAboutSub:"Yasal sayfalar, iletişim, sürüm", spMapUse:"Döndürme ve çevrimdışı", omniPlan:"Yolculuk planla", ariaMainNav:"Ana menü", remBtn:"Hatırlat", remTitle:"Hatırlat", remDir:"Yön", remStop:"Durak", remTime:"Duraktaki saat (sizin)", remHintBus:"Hafta içi ilk duraktan: {when}. TurkMaps'te otobüsler için durak durak saat yok: bildiğiniz saati girin.", remHintRail:"{hours} arası, yaklaşık {n} dakikada bir. Hatırlatılmak istediğiniz saati girin.", remHintNone:"Aracın bu durakta olduğunu bildiğiniz saati girin.", remDays:"Günler", remOnce:"Bir kez", remDaily:"Her gün", remWeekdays:"Hafta içi", remWeekends:"Hafta sonu", remBefore:"Ne kadar önce", remMin:"{n} dk", remSave:"Hatırlatıcıyı kaydet", remSaved:"{time} için hatırlatıcı kaydedildi", remIcs:"Takvimime ekle", remNeedTime:"Önce bir saat seçin", remNeedBefore:"En az birini seçin: 5, 10 veya 20 dk", remNote:"Hatırlatmalar bu uygulama açıkken ya da yakın zamanda kullanıldıysa gelir; telefon kapatıldığında uygulamayı durdurabilir. Her zaman gelen bir uyarı için takviminize de ekleyin. Saat sizindir: uygulama aracın gerçekte ne zaman geleceğini bilmez.", remList:"Hatırlatıcılar", remListHint:"Bir hattın panelinden ⏰ Hatırlat ile kurun.", remNone:"Henüz hatırlatıcı yok.", remOnLine:"Bu hattaki hatırlatıcılarınız", remDelete:"Hatırlatıcıyı sil", remOff:"bitti", remNotifyTitle:"⏰ {line} → {head}", remNotifyBody:"{stop}: {time} geliyor, {n} dk kaldı", remNoStops:"Bu hatta seçilecek durak yok", liveBusLoading:"Canlı otobüsler: soruluyor…", liveBusOffline:"Canlı otobüsler için bağlantı gerekir", liveBusBusy:"Canlı servis yoğun, yeniden deneniyor", liveBusError:"Canlı servis yanıt vermedi, yeniden deneniyor", liveBusKept:"son yanıttan {n} araç gösteriliyor", liveBusNone:"Canlı: şu anda bu hatta bildirilen otobüs yok", liveBusOne:"Canlı: bu hatta 1 otobüs", liveBusMany:"Canlı: bu hatta {n} otobüs", liveBusStanding:"{n} bekliyor", liveBusUnplaced:"{n} araç henüz yerleştirilemedi", liveBusTip:"Otobüs {id} · canlı konum", liveBusStill:"2 dakikadır veya daha uzun süredir hareket etmedi", liveBusAt:"Son yanıt {t}", tabBoat:"⛴ Vapurlar", boatsTitle:"Vapur hatları", boatsIntro:"Her hattın kendi rengi ve kendi şeridi var: hatlar aynı suyu paylaştığında yan yana ilerler. İskelelerini görmek için bir hatta dokunun.", boatPiers:"{n} iskele", boatCount:"{n} hat", modesTitle:"Haritada ne gösterilsin", modeRail:"Metro ve raylı", modeBus:"Otobüsler", modeBoat:"Vapurlar", modeHint:"Haritanın ne göstereceğini seçin. Metro ve raylı, haritanın tamamıdır.", 
+    mFriends:"Arkadaşlar",
+    shareTitle:"Konumumu arkadaşlarımla paylaş", share15:"15 dk", share60:"1 saat", share480:"8 saat", shareExact:"Tam", shareApprox:"Yaklaşık (yaklaşık 1 km)", shareStart:"Paylaşmaya başla", shareHint:"Siz başlatana kadar kapalıdır. Arkadaşlarınız sizi yalnızca bu sürerken ve uygulama açıkken görür; kapatırsanız 3 dakika içinde kaybolursunuz.", shareStop:"Paylaşımı durdur", shareOnExact:"Tam konumunuzu {time} saatine kadar arkadaşlarınızla paylaşıyorsunuz.", shareOnApprox:"Yaklaşık konumunuzu (yaklaşık 1 km) {time} saatine kadar arkadaşlarınızla paylaşıyorsunuz.", shareDenied:"Konumunuza ulaşılamadı, bu yüzden paylaşım başlamadı. Bu site için konuma izin verip yeniden deneyin.", sharePill:"Konumunuz paylaşılıyor · {m} dk kaldı", sharePillApprox:"Paylaşılıyor (yaklaşık) · {m} dk kaldı", frAgo:"{m} dk önce", frAgoNow:"az önce", frApproxTag:"yaklaşık",
+    frTitle:"Arkadaşlar", frFriends:"Arkadaşlarınız", frNone:"Henüz arkadaşınız yok. Güvendiğiniz birine bir arkadaş bağlantısı gönderin.", frRemove:"Kaldır", frSharingNow:"şu an paylaşıyor", frOpenLink:"Bekleyen arkadaş bağlantısı", frExpires:"yaklaşık {h} saat daha geçerli", frInvite:"Arkadaş davet et", frInviteHint:"Bir bağlantı bir kez, en fazla 48 saat ve yalnızca karşı taraf Kabul et'e basarsa çalışır.", frInviteGone:"Bu arkadaş bağlantısının süresi dolmuş ya da kullanılmış. Yenisini isteyin.", frInviteOwn:"Bu sizin kendi arkadaş bağlantınız. Bir arkadaşınıza gönderin.", frAlready:"Zaten arkadaşsınız.", frAcceptFailed:"Bağlantı kabul edilemedi. Yenisini isteyin.", frNowFriends:"Artık arkadaşsınız.", frInviteQ:"{name} TurkMaps'te arkadaşınız olmak istiyor. Arkadaşlar konumunuzu yalnızca siz paylaşmayı seçtiğinizde görebilir.", frInviteTitle:"Arkadaşlık isteği", frAccept:"Kabul et", frDecline:"Şimdi değil", frSignInFirst:"Bu arkadaş bağlantısını kabul etmek için giriş yapın ya da hesap oluşturun.", frShareText:"{name} sizi TurkMaps'te arkadaş olmaya davet ediyor", frCopied:"Arkadaş bağlantısı kopyalandı. Arkadaşınıza gönderin.", frCopyThis:"Bu arkadaş bağlantısını kopyalayıp gönderin:",
+    accTitle:"Hesap", accNotSetUp:"Arkadaşlar henüz kurulmadı.", accEmail:"E-posta", accPassword:"Şifre (en az 8 karakter)", accName:"Adınız (arkadaşlar bunu görür)", accSignUp:"Hesap oluştur", accSignIn:"Giriş yap", accHaveAccount:"Zaten hesabım var", accNoAccount:"Hesabınız yok mu? Oluşturun", accForgot:"Şifremi unuttum", accPrivacy:"İsteğe bağlı, yalnızca Arkadaşlar için. Arkadaşlar yalnızca adınızı görür, e-postanızı asla. Google Firebase'de saklanır (gizlilik bildirimi, 6. bölüm).", accCheckEmail:"E-postanızı kontrol edin: {email} adresine bir onay bağlantısı gönderdik. Açın, sonra buraya dönün.", accConfirmed:"Onayladım", accResend:"Bağlantıyı yeniden gönder", accSentConfirm:"Onay bağlantısı gönderildi. Gelen kutunuza (ve istenmeyenlere) bakın.", accNowConfirmed:"Onaylandı. Arkadaşlar hazır.", accNotYet:"Henüz onaylanmadı. Önce e-postadaki bağlantıyı açın.", accNameNeeded:"Arkadaşlarınızın göreceği adı seçin.", accSaveName:"Adı kaydet", accSignedIn:"{name} olarak giriş yapıldı", accSignOut:"Çıkış yap", accDelete:"Hesabımı sil", accDeleteAsk:"Hesabınızı ve hakkınızda saklanan her şeyi silmek için şifrenizi yazın: konumunuz, arkadaşlıklarınız, arkadaş bağlantılarınız ve adınız. Bu geri alınamaz.", accDeleteGo:"Her şeyi sil", accCancel:"Vazgeç", accRetry:"Yeniden dene", accDeletePending:"Hesabınızın silinmesi tamamlanmadı. Verileriniz zaten silindi; bitirmek için şifrenizi yazın.", accDeleted:"Hesabınız; konumunuz, {f} arkadaşlık, {i} arkadaş bağlantısı ve adınızla birlikte silindi.", accResetSent:"Bu e-postanın bir hesabı varsa, şifre sıfırlama bağlantısı yolda.", accErrExists:"Bu e-postanın zaten bir hesabı var. Giriş yapın.", accErrLogin:"E-posta veya şifre yanlış.", accErrWeak:"Şifre en az 8 karakter olmalı.", accErrMany:"Çok fazla deneme. Birkaç dakika bekleyip yeniden deneyin.", accErrName:"Bir ad seçin (1-30 karakter).", accErrEmail:"Geçerli bir e-posta adresi girin.", accErrNet:"Hesap servisine ulaşılamadı. Bağlantınızı kontrol edin.", accErrGeneric:"Bir şeyler ters gitti ({code}). Yeniden deneyin.",
     offPacksTitle:"Çevrimdışı haritalar", offPacksIntro:"Burada tutulan bir şehir bağlantı olmadan açılır ve çalışır: haritası, hatları, istasyonları, yolculuk planlayıcısı ve yer araması. İstanbul, İzmir ve Ankara kendiliğinden tutulur; diğerleri İndir'e bastığınızda. Hizmet duyuruları, hava durumu, resmî sefer saatleri ve uydu katmanı için yine bağlantı gerekir.", offGet:"İndir", offRemove:"Kaldır", offRetry:"Yeniden dene", offNow:"Şimdi indir", offReady:"Bu cihazda", offLoading:"İndiriliyor… %{p}", offWaiting:"Wi-Fi bekleniyor", offFailed:"İndirilemedi", offNone:"İndirilmedi", offAutoTag:"otomatik", offDataLbl:"Haritaları mobil veriyle de indir", offDataHint:"Kapalı: çevrimdışı haritalar yalnızca Wi-Fi ile iner. Neye bağlı olduğunu bildirmeyen bir telefon (her iPhone) İndir'e basmanızı bekler.", offAskTitle:"Haritalar bu telefonda tutulsun mu?", offAskBody:"Uygulama bağlantı olmadan da çalışsın diye {cities} haritalarını bu cihazda tutar (yaklaşık {mb} MB). Şu an mobil verideyiniz.", offAskBodyUnknown:"Uygulama bağlantı olmadan da çalışsın diye {cities} haritalarını bu cihazda tutar (yaklaşık {mb} MB). Bu telefon Wi-Fi'da olup olmadığını bildirmiyor.", offAskNow:"Şimdi indir", offAskWifi:"Wi-Fi'ı bekle", offAskLater:"Haritalar bekleyecek. İstediğiniz zaman Ayarlar → Harita → Çevrimdışı haritalar'dan başlatabilirsiniz.", offDone:"{city} çevrimdışı kullanıma hazır", 
     fromPh:"Nereden: durak, yer veya adres…", toPh:"Nereye: durak, yer veya adres…", sheetResize:"Planlayıcıyı boyutlandır: kısa, yarım veya tam yükseklik", ariaMapView:"Harita görünümü", ariaCity:"Şehir", ariaLoading:"Yükleniyor", ariaPrevStep:"Önceki adım", ariaNextStep:"Sonraki adım", ariaApiKey:"Anthropic API anahtarı",
     mapLabel:"Ulaşım haritası. Ok tuşları haritayı kaydırır, artı ve eksi yakınlaştırır.", zoomIn:"Yakınlaştır", zoomOut:"Uzaklaştır",
@@ -3271,13 +3332,17 @@ const I18N = {
     deleteAll:"احذف كل بياناتي على هذا الجهاز", deleteAllSure:"اضغط مرة أخرى لحذف كل شيء", deleteAllDone:"حُذفت كل البيانات على هذا الجهاز",
     deleteAllHint:"يحذف كل ما حفظه التطبيق هنا: الإعدادات والأماكن المحفوظة والرحلات والمفضلة والسجل والنسخ غير المتصلة من التطبيق والخرائط واختياراتك. ثم يبدأ التطبيق كأنها زيارتك الأولى. لا تُحفظ أي بيانات في مكان آخر، فلا شيء لحذفه في مكان آخر.",
     privTitle:"خصوصيتك، قرارك", privAllow:"السماح بالبحث عبر الإنترنت", privKeep:"أبقِ كل شيء على جهازي", privRead:"اقرأ إشعار الخصوصية",
-    privBody:"لا حسابات ولا إعلانات ولا تتبّع في هذا التطبيق، ويحفظ إعداداتك على هذا الجهاز فقط. ميزتان اختياريتان تطلبان العون من خدمات أخرى: البحث عن الأماكن (ما تكتبه) ومسارات المشي (بداية المشي ونهايته). وتبقيان متوقفتين ما لم تسمح بهما.",
+    privBody:"لا إعلانات ولا تتبّع، وتبقى إعداداتك على هذا الجهاز. الحساب اختياري ولميزة الأصدقاء فقط (مشاركة موقعك مع أصدقاء تقبلهم)، ويُحفظ لدى Google Firebase. ميزتان اختياريتان تطلبان العون من خدمات أخرى: البحث عن الأماكن (ما تكتبه) ومسارات المشي (بداية المشي ونهايته). وتبقيان متوقفتين ما لم تسمح بهما.",
     privAllowed:"عمليات البحث عبر الإنترنت مفعّلة. يمكنك تغيير ذلك في أي وقت من الإعدادات ← البحث والخصوصية.", privKept:"كل شيء يبقى على هذا الجهاز. يمكنك تغيير ذلك في أي وقت من الإعدادات ← البحث والخصوصية.",
     aiLookupOff:"هذا يحتاج إلى البحث عبر الإنترنت وهو متوقف الآن. فعّله من الإعدادات ← البحث والخصوصية.",
     secAbout:"حول التطبيق والمعلومات القانونية", legalPrivacy:"إشعار الخصوصية", legalTerms:"شروط الاستخدام", legalStorage:"ملفات تعريف الارتباط والبيانات المخزّنة", legalCredits:"الشكر والتراخيص", legalAccess:"إمكانية الوصول",
     aboutProject:"TurkMaps مشروع مجاني غير تجاري ومفتوح المصدر من إعداد صاحبه، وليس خدمة رسمية لأي مشغّل نقل.",
     aboutContact:"التواصل", aboutVersion:"الإصدار", aboutSource:"الشيفرة المصدرية",
     liveBusOff:"الحافلات المباشرة لهذه المدينة لا تعمل الآن", liveBusQuiet:"لم يصل منها شيء منذ دقيقتين أو أكثر", liveBusQuietN:"{n} لم يصل منها شيء مؤخرًا", tabAirport:"✈ المطارات", airTitle:"المطارات", airIntro:"اختر مطارًا ثم المغادرة أو الوصول. يُفتح الجدول المباشر على موقع المطار نفسه.", airNone:"لا يوجد مطار مُدرج لهذه المدينة.", airKind:"المغادرة أو الوصول", airDep:"المغادرة", airArr:"الوصول", airOpen:"افتح اللوحة المباشرة على {site}", airIntl:"الرحلات الدولية", airDom:"الرحلات الداخلية", airShared:"تعرض تلك الصفحة المغادرة والوصول معًا.", airPick:"تلك الصفحة تسرد كل المطارات: اختر {name} هناك. وتعرض المغادرة والوصول معًا.", airWhy:"لا يملك TurkMaps بيانات رحلات خاصة به: المطارات لا تتيح لوحاتها لتطبيقات أخرى، لذلك يُعرض الجدول على موقعها.", lineNoticesAria:"إشعارات هذا الخط", lineNotice1:"إشعار واحد على هذا الخط", lineNoticeN:"{n} إشعارات على هذا الخط", ferryAllNotices:"إشعارات لكل العبّارات ({n})", omniLines:"الخطوط", omniBusLine:"خط حافلات", busInfo:"معلومات", busBack:"رجوع", busStopsTitle:"المحطات", secAppearanceSub:"السمة والألوان وحجم النص واللغة", secMapSub:"ما تعرضه الخريطة والمحاكاة والخرائط دون اتصال", secJourneySub:"المسارات والمشي والوحدات وبطاقة الأجرة", secAccessSub:"الحركة والتباين", secYouSub:"الأماكن المحفوظة وجواز السفر", secPrivacySub:"البحث عبر الإنترنت وبياناتك", secAppSub:"التثبيت ومصادر البيانات والتشخيص", secAboutSub:"الصفحات القانونية والتواصل والإصدار", spMapUse:"التدوير والعمل دون اتصال", omniPlan:"خطّط رحلة", ariaMainNav:"القائمة الرئيسية", remBtn:"ذكّرني", remTitle:"ذكّرني", remDir:"الاتجاه", remStop:"المحطة", remTime:"الوقت عند المحطة (وقتك)", remHintBus:"من المحطة الأولى أيام الأسبوع: {when}. لا يملك التطبيق مواعيد كل محطة للحافلات: أدخل الوقت الذي تعرفه.", remHintRail:"يعمل {hours}، كل {n} دقيقة تقريبًا. أدخل الوقت الذي تريد التذكير به.", remHintNone:"أدخل الوقت الذي تعرف أن المركبة تكون فيه عند هذه المحطة.", remDays:"الأيام", remOnce:"مرة واحدة", remDaily:"كل يوم", remWeekdays:"أيام الأسبوع", remWeekends:"عطلة نهاية الأسبوع", remBefore:"ذكّرني قبل", remMin:"{n} دقيقة", remSave:"احفظ التذكير", remSaved:"حُفظ التذكير للساعة {time}", remIcs:"أضِف إلى تقويمي", remNeedTime:"اختر وقتًا أولًا", remNeedBefore:"اختر واحدًا على الأقل: 5 أو 10 أو 20 دقيقة", remNote:"تصل التذكيرات من هذا التطبيق ما دام مفتوحًا أو استُخدم مؤخرًا؛ قد يوقفه الهاتف عند إغلاقه. لتنبيه يصل دائمًا، أضِفه إلى تقويمك أيضًا. الوقت وقتك: لا يعرف التطبيق متى تصل المركبة فعلًا.", remList:"التذكيرات", remListHint:"أنشئ تذكيرًا من لوحة أي خط عبر ⏰ ذكّرني.", remNone:"لا تذكيرات بعد.", remOnLine:"تذكيراتك على هذا الخط", remDelete:"احذف التذكير", remOff:"انتهى", remNotifyTitle:"⏰ {line} باتجاه {head}", remNotifyBody:"{stop}: موعده {time}، بعد {n} دقيقة", remNoStops:"لا محطات لهذا الخط للاختيار منها", liveBusLoading:"الحافلات المباشرة: جارٍ الاستعلام…", liveBusOffline:"الحافلات المباشرة تحتاج إلى اتصال", liveBusBusy:"الخدمة المباشرة مشغولة، ستُعاد المحاولة", liveBusError:"لم تُجب الخدمة المباشرة، ستُعاد المحاولة", liveBusKept:"{n} معروضة من آخر إجابة", liveBusNone:"مباشر: لا حافلات مُبلَّغ عنها على هذا الخط الآن", liveBusOne:"مباشر: حافلة واحدة على هذا الخط", liveBusMany:"مباشر: {n} حافلات على هذا الخط", liveBusStanding:"{n} متوقفة", liveBusUnplaced:"{n} لم يُحدَّد موقعها بعد", liveBusTip:"الحافلة {id} · موقع مباشر", liveBusStill:"لم تتحرك منذ دقيقتين أو أكثر", liveBusAt:"آخر إجابة {t}", tabBoat:"⛴ العبّارات", boatsTitle:"خطوط العبّارات", boatsIntro:"لكل خط لونه ومساره الخاص: حيث تتشارك الخطوط المياه تسير جنبًا إلى جنب. اضغط على خط لعرض مراسيه.", boatPiers:"{n} مرسى", boatCount:"{n} خطًّا", modesTitle:"ما تعرضه الخريطة", modeRail:"المترو والسكك", modeBus:"الحافلات", modeBoat:"العبّارات", modeHint:"اختر ما تعرضه الخريطة. «المترو والسكك» هي الخريطة الكاملة.", 
+    mFriends:"الأصدقاء",
+    shareTitle:"شارك موقعي مع أصدقائي", share15:"15 دقيقة", share60:"ساعة", share480:"8 ساعات", shareExact:"دقيق", shareApprox:"تقريبي (نحو 1 كم)", shareStart:"ابدأ المشاركة", shareHint:"متوقفة حتى تبدأها. لا يراك أصدقاؤك إلا أثناء تشغيلها والتطبيق مفتوح؛ أغلقه فتختفي خلال 3 دقائق.", shareStop:"أوقف المشاركة", shareOnExact:"أنت تشارك موقعك الدقيق مع أصدقائك حتى {time}.", shareOnApprox:"أنت تشارك موقعك التقريبي (نحو 1 كم) مع أصدقائك حتى {time}.", shareDenied:"موقعك غير متاح، لذا لم تبدأ المشاركة. اسمح بالموقع لهذا الموقع الإلكتروني وأعد المحاولة.", sharePill:"تتم مشاركة موقعك · بقيت {m} دقيقة", sharePillApprox:"مشاركة (تقريبية) · بقيت {m} دقيقة", frAgo:"قبل {m} دقيقة", frAgoNow:"الآن", frApproxTag:"تقريبي",
+    frTitle:"الأصدقاء", frFriends:"أصدقاؤك", frNone:"لا أصدقاء بعد. أرسل رابط صداقة إلى شخص تثق به.", frRemove:"إزالة", frSharingNow:"يشارك الآن", frOpenLink:"رابط صداقة بانتظار القبول", frExpires:"صالح لنحو {h} ساعة أخرى", frInvite:"ادعُ صديقًا", frInviteHint:"يعمل الرابط مرة واحدة، لمدة أقصاها 48 ساعة، وفقط إذا ضغط الطرف الآخر على قبول.", frInviteGone:"انتهت صلاحية رابط الصداقة هذا أو استُخدم. اطلب رابطًا جديدًا.", frInviteOwn:"هذا رابط الصداقة الخاص بك. أرسله إلى صديق.", frAlready:"أنتما صديقان بالفعل.", frAcceptFailed:"تعذّر قبول الرابط. اطلب رابطًا جديدًا.", frNowFriends:"أصبحتما صديقين.", frInviteQ:"يريد {name} أن يكون صديقك على TurkMaps. لا يرى الأصدقاء موقعك إلا حين تختار مشاركته.", frInviteTitle:"طلب صداقة", frAccept:"قبول", frDecline:"ليس الآن", frSignInFirst:"سجّل الدخول أو أنشئ حسابًا لقبول رابط الصداقة هذا.", frShareText:"يدعوك {name} لتكونا صديقين على TurkMaps", frCopied:"نُسخ رابط الصداقة. أرسله إلى صديقك.", frCopyThis:"انسخ رابط الصداقة هذا وأرسله:",
+    accTitle:"الحساب", accNotSetUp:"ميزة الأصدقاء غير مُعدّة بعد.", accEmail:"البريد الإلكتروني", accPassword:"كلمة المرور (8 أحرف على الأقل)", accName:"اسمك (يراه أصدقاؤك)", accSignUp:"إنشاء حساب", accSignIn:"تسجيل الدخول", accHaveAccount:"لديّ حساب بالفعل", accNoAccount:"ليس لديك حساب؟ أنشئ واحدًا", accForgot:"نسيت كلمة المرور؟", accPrivacy:"اختياري، لميزة الأصدقاء فقط. يرى أصدقاؤك اسمك فقط، ولا يرون بريدك أبدًا. يُحفظ لدى Google Firebase (إشعار الخصوصية، القسم 6).", accCheckEmail:"تحقّق من بريدك: أرسلنا رابط تأكيد إلى {email}. افتحه ثم عُد إلى هنا.", accConfirmed:"لقد أكّدت", accResend:"أرسل الرابط مجددًا", accSentConfirm:"أُرسل رابط التأكيد. تفقّد صندوق الوارد (والرسائل المزعجة).", accNowConfirmed:"تم التأكيد. ميزة الأصدقاء جاهزة.", accNotYet:"لم يُؤكَّد بعد. افتح الرابط في البريد أولًا.", accNameNeeded:"اختر الاسم الذي سيراه أصدقاؤك.", accSaveName:"احفظ الاسم", accSignedIn:"مسجّل الدخول باسم {name}", accSignOut:"تسجيل الخروج", accDelete:"احذف حسابي", accDeleteAsk:"اكتب كلمة المرور لحذف حسابك وكل ما هو محفوظ عنك: موقعك وصداقاتك وروابط الأصدقاء واسمك. لا يمكن التراجع عن ذلك.", accDeleteGo:"احذف كل شيء", accCancel:"إلغاء", accRetry:"أعد المحاولة", accDeletePending:"لم يكتمل حذف حسابك. بياناتك حُذفت بالفعل؛ اكتب كلمة المرور لإتمامه.", accDeleted:"حُذف حسابك مع موقعك و{f} صداقة و{i} رابط صداقة واسمك.", accResetSent:"إن كان لهذا البريد حساب، فرابط إعادة تعيين كلمة المرور في الطريق.", accErrExists:"لهذا البريد حساب بالفعل. سجّل الدخول بدلًا من ذلك.", accErrLogin:"البريد أو كلمة المرور غير صحيحين.", accErrWeak:"يجب أن تتكوّن كلمة المرور من 8 أحرف على الأقل.", accErrMany:"محاولات كثيرة. انتظر بضع دقائق ثم أعد المحاولة.", accErrName:"اختر اسمًا (من 1 إلى 30 حرفًا).", accErrEmail:"أدخل بريدًا إلكترونيًا صالحًا.", accErrNet:"تعذّر الوصول إلى خدمة الحسابات. تحقّق من اتصالك.", accErrGeneric:"حدث خطأ ما ({code}). أعد المحاولة.",
     offPacksTitle:"خرائط دون اتصال", offPacksIntro:"المدينة المحفوظة هنا تفتح وتعمل دون اتصال: خريطتها وخطوطها ومحطاتها ومخطِّط الرحلات والبحث عن الأماكن. تُحفظ إسطنبول وإزمير وأنقرة تلقائيًا، والبقية عند الضغط على «تنزيل». إشعارات الخدمة والطقس والجداول الرسمية وطبقة القمر الصناعي تحتاج إلى اتصال.", offGet:"تنزيل", offRemove:"إزالة", offRetry:"أعد المحاولة", offNow:"نزِّل الآن", offReady:"على هذا الجهاز", offLoading:"جارٍ التنزيل… {p}%", offWaiting:"بانتظار شبكة الواي فاي", offFailed:"تعذَّر التنزيل", offNone:"غير منزَّلة", offAutoTag:"تلقائي", offDataLbl:"نزِّل الخرائط عبر بيانات الجوال أيضًا", offDataHint:"متوقف: تُنزَّل الخرائط عبر الواي فاي فقط. الهاتف الذي لا يُفصح عن نوع اتصاله (كل هواتف آيفون) ينتظر ضغطك على «تنزيل».", offAskTitle:"هل نحفظ الخرائط على هذا الهاتف؟", offAskBody:"ليعمل التطبيق دون اتصال يحفظ خرائط {cities} على هذا الجهاز (نحو {mb} ميغابايت). أنت الآن على بيانات الجوال.", offAskBodyUnknown:"ليعمل التطبيق دون اتصال يحفظ خرائط {cities} على هذا الجهاز (نحو {mb} ميغابايت). هذا الهاتف لا يُفصح إن كان على الواي فاي.", offAskNow:"نزِّل الآن", offAskWifi:"انتظر الواي فاي", offAskLater:"ستنتظر الخرائط. ابدأها متى شئت من الإعدادات ← الخريطة ← خرائط دون اتصال.", offDone:"{city} جاهزة للاستخدام دون اتصال", 
     fromPh:"من: محطة أو مكان أو عنوان…", toPh:"إلى: محطة أو مكان أو عنوان…", sheetResize:"تغيير حجم المخطِّط: قصير أو نصف أو كامل الارتفاع", ariaMapView:"عرض الخريطة", ariaCity:"المدينة", ariaLoading:"جارٍ التحميل", ariaPrevStep:"الخطوة السابقة", ariaNextStep:"الخطوة التالية", ariaApiKey:"مفتاح Anthropic API",
     mapLabel:"خريطة النقل. مفاتيح الأسهم تحرّك الخريطة، وزائد وناقص للتكبير والتصغير.", zoomIn:"تكبير", zoomOut:"تصغير",
@@ -3511,13 +3576,17 @@ const I18N = {
     deleteAll:"Supprimer toutes mes données sur cet appareil", deleteAllSure:"Touchez encore pour tout supprimer", deleteAllDone:"Toutes les données de cet appareil ont été supprimées",
     deleteAllHint:"Efface tout ce que l’application a enregistré ici : réglages, lieux, trajets, favoris, historique, copies hors ligne de l’application et des cartes, et vos choix. L’application repart ensuite comme à la première visite. Rien n’est conservé ailleurs, il n’y a donc rien à supprimer ailleurs.",
     privTitle:"Votre vie privée, votre choix", privAllow:"Autoriser les recherches en ligne", privKeep:"Tout garder sur mon appareil", privRead:"Lire l’avis de confidentialité",
-    privBody:"Cette application n’a ni compte, ni publicité, ni suivi, et garde vos réglages uniquement sur cet appareil. Deux extras facultatifs demandent de l’aide à d’autres services : la recherche de lieux (ce que vous tapez) et les itinéraires à pied (le début et la fin d’une marche). Ils restent désactivés sauf si vous les autorisez.",
+    privBody:"Ni publicité ni suivi, et vos réglages restent sur cet appareil. Un compte est facultatif, seulement pour Amis (partager votre position avec des amis acceptés) ; il est conservé chez Google Firebase. Deux extras facultatifs demandent de l’aide à d’autres services : la recherche de lieux (ce que vous tapez) et les itinéraires à pied (le début et la fin d’une marche). Ils restent désactivés sauf si vous les autorisez.",
     privAllowed:"Les recherches en ligne sont activées. Modifiez cela à tout moment dans Réglages → Recherche et confidentialité.", privKept:"Tout reste sur cet appareil. Modifiez cela à tout moment dans Réglages → Recherche et confidentialité.",
     aiLookupOff:"Cela demande les recherches en ligne, actuellement désactivées. Activez-les dans Réglages → Recherche et confidentialité.",
     secAbout:"À propos et mentions légales", legalPrivacy:"Avis de confidentialité", legalTerms:"Conditions d’utilisation", legalStorage:"Cookies et données stockées", legalCredits:"Crédits et licences", legalAccess:"Accessibilité",
     aboutProject:"TurkMaps est un projet gratuit, non commercial et open source, réalisé par son auteur. Ce n’est le service officiel d’aucun exploitant de transport.",
     aboutContact:"Contact", aboutVersion:"Version", aboutSource:"Code source",
     liveBusOff:"Les bus en direct ne fonctionnent pas pour cette ville en ce moment", liveBusQuiet:"sans nouvelles depuis 2 min ou plus", liveBusQuietN:"{n} sans nouvelles récentes", tabAirport:"✈ Aéroports", airTitle:"Aéroports", airIntro:"Choisissez un aéroport, puis départs ou arrivées. Le tableau en direct s’ouvre sur le site de l’aéroport.", airNone:"Aucun aéroport n’est répertorié pour cette ville.", airKind:"Départs ou arrivées", airDep:"Départs", airArr:"Arrivées", airOpen:"Ouvrir le tableau en direct sur {site}", airIntl:"International", airDom:"National", airShared:"Cette page affiche les départs et les arrivées ensemble.", airPick:"Cette page répertorie tous les aéroports : choisissez-y {name}. Elle affiche les départs et les arrivées ensemble.", airWhy:"TurkMaps n’a pas de données de vol propres : les aéroports ne proposent pas leurs tableaux aux autres applications, le tableau est donc affiché sur leur site.", lineNoticesAria:"Avis sur cette ligne", lineNotice1:"1 avis sur cette ligne", lineNoticeN:"{n} avis sur cette ligne", ferryAllNotices:"Avis pour tous les ferries ({n})", omniLines:"Lignes", omniBusLine:"Ligne de bus", busInfo:"Infos", busBack:"Retour", busStopsTitle:"Arrêts", secAppearanceSub:"Thème, couleurs, taille du texte, langue", secMapSub:"Ce que montre la carte, simulation, cartes hors ligne", secJourneySub:"Itinéraires, marche, unités, carte de transport", secAccessSub:"Mouvement et contraste", secYouSub:"Lieux enregistrés, passeport de voyage", secPrivacySub:"Recherches en ligne, vos données", secAppSub:"Installation, sources, diagnostic", secAboutSub:"Pages légales, contact, version", spMapUse:"Rotation et hors ligne", omniPlan:"Planifier un trajet", ariaMainNav:"Menu principal", remBtn:"Me rappeler", remTitle:"Me rappeler", remDir:"Sens", remStop:"Arrêt", remTime:"Heure à l’arrêt (la vôtre)", remHintBus:"Depuis le premier arrêt en semaine : {when}. TurkMaps n’a pas les horaires arrêt par arrêt des bus : saisissez l’heure que vous connaissez.", remHintRail:"Circule {hours}, environ toutes les {n} min. Saisissez l’heure pour laquelle vous voulez un rappel.", remHintNone:"Saisissez l’heure à laquelle le véhicule est à cet arrêt.", remDays:"Jours", remOnce:"Une fois", remDaily:"Tous les jours", remWeekdays:"En semaine", remWeekends:"Le week-end", remBefore:"Me prévenir avant", remMin:"{n} min", remSave:"Enregistrer le rappel", remSaved:"Rappel enregistré pour {time}", remIcs:"Ajouter à mon agenda", remNeedTime:"Choisissez d’abord une heure", remNeedBefore:"Choisissez au moins un délai : 5, 10 ou 20 min", remNote:"Les rappels viennent de l’application tant qu’elle est ouverte ou utilisée récemment ; le téléphone peut l’arrêter une fois fermée. Pour une alerte qui arrive toujours, ajoutez-le aussi à votre agenda. L’heure est la vôtre : l’application ne sait pas quand le véhicule arrivera vraiment.", remList:"Rappels", remListHint:"Créez-en un depuis le panneau d’une ligne avec ⏰ Me rappeler.", remNone:"Aucun rappel pour l’instant.", remOnLine:"Vos rappels sur cette ligne", remDelete:"Supprimer le rappel", remOff:"terminé", remNotifyTitle:"⏰ {line} → {head}", remNotifyBody:"{stop} : prévu à {time}, dans {n} min", remNoStops:"Cette ligne n’a pas d’arrêts à choisir", liveBusLoading:"Bus en direct : interrogation…", liveBusOffline:"Les bus en direct nécessitent une connexion", liveBusBusy:"Le service en direct est occupé, nouvel essai", liveBusError:"Le service en direct n’a pas répondu, nouvel essai", liveBusKept:"{n} affichés d’après la dernière réponse", liveBusNone:"En direct : aucun bus signalé sur cette ligne pour l’instant", liveBusOne:"En direct : 1 bus sur cette ligne", liveBusMany:"En direct : {n} bus sur cette ligne", liveBusStanding:"{n} à l’arrêt", liveBusUnplaced:"{n} pas encore placés", liveBusTip:"Bus {id} · position en direct", liveBusStill:"n’a pas bougé depuis 2 min ou plus", liveBusAt:"Dernière réponse {t}", tabBoat:"⛴ Bateaux", boatsTitle:"Lignes de bateau", boatsIntro:"Chaque ligne a sa couleur et son couloir : là où des lignes partagent l'eau, elles avancent côte à côte. Touchez une ligne pour voir ses embarcadères.", boatPiers:"{n} embarcadères", boatCount:"{n} lignes", modesTitle:"Ce que la carte montre", modeRail:"Métro et rail", modeBus:"Bus", modeBoat:"Bateaux", modeHint:"Choisissez ce que la carte montre. Métro et rail est la carte complète.", 
+    mFriends:"Amis",
+    shareTitle:"Partager ma position avec mes amis", share15:"15 min", share60:"1 heure", share480:"8 heures", shareExact:"Exacte", shareApprox:"Approximative (environ 1 km)", shareStart:"Commencer le partage", shareHint:"Désactivé tant que vous ne le lancez pas. Vos amis ne vous voient que pendant ce temps et si l’appli est ouverte ; fermez-la et vous disparaissez en 3 minutes.", shareStop:"Arrêter le partage", shareOnExact:"Vous partagez votre position exacte avec vos amis jusqu’à {time}.", shareOnApprox:"Vous partagez votre position approximative (environ 1 km) avec vos amis jusqu’à {time}.", shareDenied:"Votre position n’est pas disponible, le partage n’a donc pas commencé. Autorisez la localisation pour ce site et réessayez.", sharePill:"Position partagée · encore {m} min", sharePillApprox:"Partage (approximatif) · encore {m} min", frAgo:"il y a {m} min", frAgoNow:"à l’instant", frApproxTag:"approximative",
+    frTitle:"Amis", frFriends:"Vos amis", frNone:"Pas encore d’amis. Envoyez un lien d’ami à quelqu’un de confiance.", frRemove:"Retirer", frSharingNow:"partage en ce moment", frOpenLink:"Lien d’ami en attente", frExpires:"valable encore environ {h} heures", frInvite:"Inviter un ami", frInviteHint:"Un lien marche une fois, 48 heures au plus, et seulement si l’autre appuie sur Accepter.", frInviteGone:"Ce lien d’ami a expiré ou a déjà servi. Demandez-en un nouveau.", frInviteOwn:"C’est votre propre lien d’ami. Envoyez-le à un ami.", frAlready:"Vous êtes déjà amis.", frAcceptFailed:"Impossible d’accepter le lien. Demandez-en un nouveau.", frNowFriends:"Vous êtes amis maintenant.", frInviteQ:"{name} veut être votre ami sur TurkMaps. Vos amis ne voient votre position que lorsque vous choisissez de la partager.", frInviteTitle:"Demande d’ami", frAccept:"Accepter", frDecline:"Pas maintenant", frSignInFirst:"Connectez-vous ou créez un compte pour accepter ce lien d’ami.", frShareText:"{name} vous invite à être amis sur TurkMaps", frCopied:"Lien d’ami copié. Envoyez-le à votre ami.", frCopyThis:"Copiez ce lien d’ami et envoyez-le :",
+    accTitle:"Compte", accNotSetUp:"Amis n’est pas encore configuré.", accEmail:"E-mail", accPassword:"Mot de passe (8 caractères au moins)", accName:"Votre nom (vos amis le voient)", accSignUp:"Créer un compte", accSignIn:"Se connecter", accHaveAccount:"J’ai déjà un compte", accNoAccount:"Pas de compte ? Créez-en un", accForgot:"Mot de passe oublié ?", accPrivacy:"Facultatif, seulement pour Amis. Vos amis ne voient que votre nom, jamais votre e-mail. Conservé chez Google Firebase (avis de confidentialité, section 6).", accCheckEmail:"Vérifiez vos e-mails : nous avons envoyé un lien de confirmation à {email}. Ouvrez-le, puis revenez ici.", accConfirmed:"J’ai confirmé", accResend:"Renvoyer le lien", accSentConfirm:"Lien de confirmation envoyé. Regardez votre boîte (et les spams).", accNowConfirmed:"Confirmé. Amis est prêt.", accNotYet:"Pas encore confirmé. Ouvrez d’abord le lien de l’e-mail.", accNameNeeded:"Choisissez le nom que vos amis verront.", accSaveName:"Enregistrer le nom", accSignedIn:"Connecté en tant que {name}", accSignOut:"Se déconnecter", accDelete:"Supprimer mon compte", accDeleteAsk:"Tapez votre mot de passe pour supprimer votre compte et tout ce qui est conservé sur vous : votre position, vos amitiés, vos liens d’ami et votre nom. C’est irréversible.", accDeleteGo:"Tout supprimer", accCancel:"Annuler", accRetry:"Réessayer", accDeletePending:"La suppression de votre compte n’est pas terminée. Vos données sont déjà effacées ; tapez votre mot de passe pour finir.", accDeleted:"Votre compte a été supprimé, avec votre position, {f} amitiés, {i} liens d’ami et votre nom.", accResetSent:"Si cet e-mail a un compte, un lien pour réinitialiser le mot de passe arrive.", accErrExists:"Cet e-mail a déjà un compte. Connectez-vous plutôt.", accErrLogin:"L’e-mail ou le mot de passe est faux.", accErrWeak:"Le mot de passe doit faire 8 caractères au moins.", accErrMany:"Trop d’essais. Attendez quelques minutes puis réessayez.", accErrName:"Choisissez un nom (1 à 30 caractères).", accErrEmail:"Saisissez une adresse e-mail valide.", accErrNet:"Impossible de joindre le service de comptes. Vérifiez votre connexion.", accErrGeneric:"Un problème est survenu ({code}). Réessayez.",
     offPacksTitle:"Cartes hors ligne", offPacksIntro:"Une ville gardée ici s'ouvre et fonctionne sans connexion : sa carte, ses lignes, ses stations, le planificateur et la recherche de lieux. İstanbul, İzmir et Ankara sont gardées automatiquement ; les autres quand vous appuyez sur Télécharger. Les avis de service, la météo, les horaires officiels et la couche satellite demandent toujours une connexion.", offGet:"Télécharger", offRemove:"Retirer", offRetry:"Réessayer", offNow:"Télécharger maintenant", offReady:"Sur cet appareil", offLoading:"Téléchargement… {p} %", offWaiting:"En attente du Wi-Fi", offFailed:"Échec du téléchargement", offNone:"Non téléchargée", offAutoTag:"automatique", offDataLbl:"Télécharger les cartes aussi en données mobiles", offDataHint:"Désactivé : les cartes hors ligne ne se téléchargent qu'en Wi-Fi. Un téléphone qui ne dit pas à quoi il est connecté (tout iPhone) attend que vous appuyiez sur Télécharger.", offAskTitle:"Garder les cartes sur ce téléphone ?", offAskBody:"Pour fonctionner sans connexion, l'application garde les cartes de {cities} sur cet appareil (environ {mb} Mo). Vous êtes en données mobiles.", offAskBodyUnknown:"Pour fonctionner sans connexion, l'application garde les cartes de {cities} sur cet appareil (environ {mb} Mo). Ce téléphone ne dit pas s'il est en Wi-Fi.", offAskNow:"Télécharger maintenant", offAskWifi:"Attendre le Wi-Fi", offAskLater:"Les cartes attendront. Lancez-les quand vous voulez dans Réglages → Carte → Cartes hors ligne.", offDone:"{city} est prête pour une utilisation hors ligne", 
     fromPh:"De : arrêt, lieu ou adresse…", toPh:"À : arrêt, lieu ou adresse…", sheetResize:"Redimensionner le planificateur : court, moitié ou pleine hauteur", ariaMapView:"Vue de la carte", ariaCity:"Ville", ariaLoading:"Chargement", ariaPrevStep:"Étape précédente", ariaNextStep:"Étape suivante", ariaApiKey:"Clé API Anthropic",
     mapLabel:"Carte des transports. Les flèches déplacent la carte, plus et moins zooment.", zoomIn:"Zoom avant", zoomOut:"Zoom arrière",
@@ -4047,7 +4116,7 @@ let stepFreePref = lsStr('irn_stepfree')==='1';   // Settings → prefer step-fr
 let onlineSearchPref = lsStr('irn_online') === '1';
 /* Which version of the privacy notice was answered. Bump (in legal-config.json) when the notice changes in a way people should
    be asked about again; the notice then shows once more. */
-const PRIVACY_VERSION = '2';
+const PRIVACY_VERSION = '3';
 /* Turning the map (V4.2). Read once, when the map is made (08-map.js): off keeps Leaflet's own map, untouched. */
 let mapTurnPref = lsStr('irn_turn') !== '0';
 function setMapTurn(on){
@@ -5153,6 +5222,8 @@ const ACCESS_RAW = HAS.access ? [{"name":"4.LEVENT","elevators":5,"escalators":2
    to say what it knows and how well it knows it, rather than presenting a community-mapped
    route and an operator timetable with the same confidence. */
 const PROVENANCE = {"note":"Where every shipped dataset comes from and how far it can be trusted. build.cjs adds each file's real modification time, so freshness is measured rather than claimed. kind drives how the app words itself: 'operator' data may be stated plainly, 'community' and 'scraped' must be labelled.","kinds":{"operator":"Published by the transport operator. Exact; may be stated without qualification.","official":"Published by a public authority, but not the operator's own timetable.","community":"OpenStreetMap. Real, but coverage is uneven and there are no timetables — must be labelled.","scraped":"Read from a provider's web page with no open-data licence. Accurate when fetched, no guarantee of continuity.","curated":"Compiled by hand for this project from published sources. Subject to human error and to change."},"datasets":{"lines.json":{"kind":"community","source":"OpenStreetMap via Overpass","licence":"ODbL 1.0","covers":"İstanbul rail geometry and stations","covers_tr":"İstanbul raylı sistem geometrisi ve istasyonları","covers_ar":"هندسة شبكة السكك في إسطنبول ومحطاتها","covers_fr":"Géométrie et stations du réseau ferré d’İstanbul","present":true,"updated":"2026-07-16T14:54:42+03:00","updatedFrom":"commit"},"b2-line.json":{"kind":"community","source":"OpenStreetMap via Overpass","licence":"ODbL 1.0","covers":"B2 suburban line","covers_tr":"B2 banliyö hattı","covers_ar":"خط الضواحي B2","covers_fr":"Ligne de banlieue B2","present":true,"updated":"2026-07-20T16:49:38+03:00","updatedFrom":"commit"},"ferry-lines.json":{"kind":"community","source":"OpenStreetMap + hand-drawn Bosphorus shore lines","licence":"ODbL 1.0","covers":"İstanbul ferries; two shore routes have no OSM geometry and are approximated","covers_tr":"İstanbul vapurları; iki kıyı hattının OSM geometrisi yok, yaklaşık çizildi","covers_ar":"عبّارات إسطنبول؛ خطان ساحليان بلا هندسة في OpenStreetMap ورُسما تقريبيًا","covers_fr":"Ferries d’İstanbul ; deux lignes côtières sans géométrie OSM, tracées approximativement","present":true,"updated":"2026-07-20T22:07:41+03:00","updatedFrom":"commit"},"cable-lines.json":{"kind":"community","source":"OpenStreetMap via Overpass","licence":"ODbL 1.0","covers":"TF1/TF2 aerial cable cars","covers_tr":"TF1/TF2 teleferik hatları","covers_ar":"خطا التلفريك TF1/TF2","covers_fr":"Téléphériques TF1/TF2","present":true,"updated":"2026-07-05T05:29:15+03:00","updatedFrom":"commit"},"planned-lines.json":{"kind":"curated","source":"Generated by process-planned.cjs: OpenStreetMap alignments and stations + Metro İstanbul project pages + planned-registry.json","licence":"ODbL 1.0 (geometry); claims carry their own sources","covers":"Vision tab: projects under construction, planned, on hold or long-term, in all six cities","covers_tr":"Vision sekmesi: altı kentte yapım aşamasındaki, planlanan, askıdaki veya uzun vadeli projeler","covers_ar":"تبويب الرؤية: مشاريع قيد الإنشاء أو مخطَّطة أو متوقفة أو بعيدة المدى في ست مدن","covers_fr":"Onglet Vision : projets en construction, planifiés, suspendus ou à long terme, dans six villes","present":true,"updated":"2026-11-02T13:56:20Z","updatedFrom":"commit"},"ankara-lines.json":{"kind":"community","source":"OpenStreetMap via Overpass","licence":"ODbL 1.0","covers":"EGO metro, Ankaray, Başkentray","covers_tr":"EGO metrosu, Ankaray, Başkentray","covers_ar":"مترو EGO وAnkaray وBaşkentray","covers_fr":"Métro EGO, Ankaray, Başkentray","present":true,"updated":"2026-07-31T04:36:15+03:00","updatedFrom":"commit"},"izmir-lines.json":{"kind":"community","source":"OpenStreetMap via Overpass","licence":"ODbL 1.0","covers":"İzmir Metro, İZBAN, trams","covers_tr":"İzmir Metrosu, İZBAN, tramvaylar","covers_ar":"مترو İzmir وİZBAN والترام","covers_fr":"Métro d’İzmir, İZBAN, tramways","present":true,"updated":"2026-08-03T16:55:04+03:00","updatedFrom":"commit"},"bursa-lines.json":{"kind":"community","source":"OpenStreetMap via Overpass","licence":"ODbL 1.0","covers":"BursaRay and trams","covers_tr":"BursaRay ve tramvaylar","covers_ar":"BursaRay والترام","covers_fr":"BursaRay et tramways","present":true,"updated":"2026-07-30T02:25:56+03:00","updatedFrom":"commit"},"antalya-lines.json":{"kind":"community","source":"OpenStreetMap via Overpass","licence":"ODbL 1.0","covers":"AntRay tram lines","covers_tr":"AntRay tramvay hatları","covers_ar":"خطوط ترام AntRay","covers_fr":"Lignes de tramway AntRay","present":true,"updated":"2026-07-29T21:16:25+03:00","updatedFrom":"commit"},"kocaeli-lines.json":{"kind":"community","source":"OpenStreetMap via Overpass","licence":"ODbL 1.0","covers":"Akçaray trams and projects","covers_tr":"Akçaray tramvayları ve projeleri","covers_ar":"ترام Akçaray ومشاريعه","covers_fr":"Tramways Akçaray et projets","present":true,"updated":"2026-08-05T14:12:06+03:00","updatedFrom":"commit"},"intercity-lines.json":{"kind":"curated","source":"TCDD Taşımacılık published routes","licence":"n/a","covers":"National rail, YHT and main line","covers_tr":"Ulusal demiryolu, YHT ve ana hat","covers_ar":"السكك الوطنية وقطارات YHT السريعة والخط الرئيسي","covers_fr":"Réseau ferré national, YHT et ligne principale","present":true,"updated":"2026-07-22T21:30:59+03:00","updatedFrom":"commit"},"bus-directory.json":{"kind":"operator","source":"İETT line list","licence":"İBB Open Data terms","covers":"İstanbul bus routes; 40 rows are reconstructed from the GTFS graph because the line list omits them","covers_tr":"İstanbul otobüs güzergâhları; hat listesinde yer almayan 40 kayıt GTFS grafiğinden yeniden oluşturuldu","covers_ar":"خطوط حافلات إسطنبول؛ أُعيد بناء 40 سجلًا من رسم GTFS لأن قائمة الخطوط تغفلها","covers_fr":"Itinéraires de bus d’İstanbul ; 40 entrées reconstituées depuis le graphe GTFS, absentes de la liste des lignes","present":true,"updated":"2026-06-23T00:10:50+03:00","updatedFrom":"commit"},"bus-graph.json":{"kind":"operator","source":"İETT GTFS","licence":"İBB Open Data terms","covers":"İstanbul bus stops in order","covers_tr":"İstanbul otobüs durakları, sırasıyla","covers_ar":"مواقف حافلات إسطنبول بالترتيب","covers_fr":"Arrêts de bus d’İstanbul, dans l’ordre","present":true,"updated":"2026-07-12T07:42:46+03:00","updatedFrom":"commit"},"bus-schedules.json":{"kind":"operator","source":"İETT GTFS","licence":"İBB Open Data terms","covers":"İstanbul bus first/last/headway per day type — exact","covers_tr":"İstanbul otobüs ilk/son sefer ve sefer sıklığı, gün tipine göre — kesin","covers_ar":"أول وآخر رحلة ووتيرة حافلات إسطنبول حسب نوع اليوم — بيانات دقيقة","covers_fr":"Premier/dernier départ et fréquence des bus d’İstanbul par type de jour — exact","present":true,"updated":"2026-07-12T07:42:46+03:00","updatedFrom":"commit"},"bus-geom.json":{"kind":"operator","source":"İETT GTFS shapes","licence":"İBB Open Data terms","covers":"İstanbul bus road geometry","covers_tr":"İstanbul otobüs güzergâh geometrisi","covers_ar":"هندسة مسارات حافلات إسطنبول","covers_fr":"Tracé routier des bus d’İstanbul","present":true,"updated":"2026-08-01T09:35:58+03:00","updatedFrom":"commit"},"kocaeli-bus-directory.json":{"kind":"scraped","source":"Kocaeli BB / UlaşımPark route pages","licence":"no open-data licence","covers":"Kocaeli bus routes","covers_tr":"Kocaeli otobüs güzergâhları","covers_ar":"خطوط حافلات Kocaeli","covers_fr":"Itinéraires de bus de Kocaeli","present":true,"updated":"2026-08-04T20:54:32+03:00","updatedFrom":"commit"},"kocaeli-bus-graph.json":{"kind":"scraped","source":"Kocaeli BB / UlaşımPark route pages","licence":"no open-data licence","covers":"Kocaeli bus stops in order","covers_tr":"Kocaeli otobüs durakları, sırasıyla","covers_ar":"مواقف حافلات Kocaeli بالترتيب","covers_fr":"Arrêts de bus de Kocaeli, dans l’ordre","present":true,"updated":"2026-08-04T20:54:32+03:00","updatedFrom":"commit"},"kocaeli-bus-schedules.json":{"kind":"scraped","source":"Kocaeli BB / UlaşımPark route pages","licence":"no open-data licence","covers":"Kocaeli bus timetables","covers_tr":"Kocaeli otobüs tarifeleri","covers_ar":"جداول مواعيد حافلات Kocaeli","covers_fr":"Horaires des bus de Kocaeli","present":true,"updated":"2026-08-04T20:54:32+03:00","updatedFrom":"commit"},"ankara-bus-directory.json":{"kind":"community","source":"OpenStreetMap via Overpass","licence":"ODbL 1.0","covers":"264 EGO routes; coverage may be incomplete and there are NO timetables","covers_tr":"264 EGO güzergâhı; kapsam eksik olabilir ve tarife YOKTUR","covers_ar":"264 خط EGO؛ قد تكون التغطية ناقصة ولا تتوفّر جداول مواعيد إطلاقًا","covers_fr":"264 itinéraires EGO ; couverture possiblement incomplète, AUCUN horaire","present":true,"updated":"2026-08-14T23:45:42+03:00","updatedFrom":"commit"},"ankara-bus-graph.json":{"kind":"community","source":"OpenStreetMap via Overpass","licence":"ODbL 1.0","covers":"Ankara bus stops in order","covers_tr":"Ankara otobüs durakları, sırasıyla","covers_ar":"مواقف حافلات Ankara بالترتيب","covers_fr":"Arrêts de bus d’Ankara, dans l’ordre","present":true,"updated":"2026-08-14T23:45:42+03:00","updatedFrom":"commit"},"ankara-bus-schedules.json":{"kind":"community","source":"none — OSM has no timetables","licence":"n/a","covers":"Deliberately empty rather than invented","covers_tr":"Uydurmak yerine bilerek boş bırakıldı","covers_ar":"تُرك فارغًا عمدًا بدل اختلاق البيانات","covers_fr":"Volontairement vide plutôt qu’inventé","present":true,"updated":"2026-08-14T23:45:42+03:00","updatedFrom":"commit"},"disruptions.json":{"kind":"scraped","source":"metro.istanbul service status","licence":"no open-data licence","covers":"Live faults and closures; refreshed every 30 min","covers_tr":"Anlık arıza ve kapanmalar; 30 dakikada bir yenilenir","covers_ar":"الأعطال والإغلاقات المباشرة؛ تُحدَّث كل 30 دقيقة","covers_fr":"Pannes et fermetures en direct ; actualisé toutes les 30 min","present":true,"updated":"2026-11-14T09:25:40+03:00","updatedFrom":"commit"},"accessibility.json":{"kind":"official","source":"İBB Open Data, enriched with OSM wheelchair tags","licence":"İBB Open Data terms + ODbL","covers":"Lift and escalator counts, step-free flags — İstanbul only","covers_tr":"Asansör ve yürüyen merdiven sayıları, basamaksız erişim işaretleri — yalnızca İstanbul","covers_ar":"أعداد المصاعد والسلالم المتحركة ومؤشرات الوصول بلا درجات — إسطنبول فقط","covers_fr":"Nombre d’ascenseurs et d’escaliers mécaniques, accès sans marches — İstanbul uniquement","present":true,"updated":"2026-07-12T01:58:53+03:00","updatedFrom":"commit"},"mi-stations.json":{"kind":"official","source":"Metro İstanbul station registry","licence":"İBB Open Data terms","covers":"Official station ids used for exact departures","covers_tr":"Kesin sefer saatleri için kullanılan resmî istasyon kimlikleri","covers_ar":"معرّفات المحطات الرسمية المستخدَمة لمواعيد المغادرة الدقيقة","covers_fr":"Identifiants officiels de stations utilisés pour les départs exacts","present":true,"updated":"2026-07-02T01:08:31+03:00","updatedFrom":"commit"},"attractions.json":{"kind":"curated","source":"Compiled for this project","licence":"n/a","covers":"İstanbul landmarks for the Explore layer","covers_tr":"Keşfet katmanı için İstanbul simge yapıları","covers_ar":"معالم إسطنبول لطبقة الاستكشاف","covers_fr":"Lieux remarquables d’İstanbul pour la couche Explorer","present":true,"updated":"2026-07-13T09:31:56+03:00","updatedFrom":"commit"},"openings.json":{"kind":"curated","source":"Derived from planned-registry.json: projects under construction with a stated target","licence":"n/a","covers":"Announced targets, which slip; a quarter or year is shown as the END of that period","covers_tr":"Açıklanan hedef tarihler; değişebilir. Bir çeyrek veya yıl, o dönemin SONU olarak gösterilir","covers_ar":"المواعيد المعلنة، وهي عرضة للتأجيل؛ يُعرض الربع أو العام على أنه نهاية تلك الفترة","covers_fr":"Échéances annoncées, sujettes à report ; un trimestre ou une année est affiché comme la FIN de cette période","present":true,"updated":"2026-10-02T17:22:10+03:00","updatedFrom":"commit"},"card-images.json":{"kind":"curated","source":"Wikimedia Commons (public domain / Belbim)","licence":"see Commons per file","covers":"Fare card artwork","covers_tr":"Bilet kartı görselleri","covers_ar":"صور بطاقات الأجرة","covers_fr":"Visuels des cartes de transport","present":true,"updated":"2026-11-04T16:36:56+03:00","updatedFrom":"commit"},"cities.json":{"kind":"curated","source":"Operator tariffs and published figures","licence":"n/a","covers":"Per-city centre, bounds, fares, feature flags","covers_tr":"Şehir bazında merkez, sınırlar, ücretler ve özellik ayarları","covers_ar":"مركز كل مدينة وحدودها وأجورها وخياراتها","covers_fr":"Centre, limites, tarifs et options par ville","present":true,"updated":"2026-08-22T17:47:29+03:00","updatedFrom":"commit"},"izmir-bus-directory.json":{"kind":"official","source":"İzmir Büyükşehir open data (ESHOT)","licence":"İzmir açık veri terms","covers":"441 ESHOT bus lines with endpoints","covers_tr":"Uç noktalarıyla birlikte 441 ESHOT otobüs hattı","covers_ar":"441 خط حافلات ESHOT مع نقاط بدايتها ونهايتها","covers_fr":"441 lignes de bus ESHOT avec leurs terminus","present":true,"updated":"2026-08-22T17:47:29+03:00","updatedFrom":"commit"},"izmir-bus-graph.json":{"kind":"official","source":"İzmir Büyükşehir open data (ESHOT)","licence":"İzmir açık veri terms","covers":"İzmir bus stops in order, derived by projecting stops onto each line’s published route geometry","covers_tr":"İzmir otobüs durakları, sırasıyla; duraklar her hattın yayımlanan güzergâh geometrisine izdüşürülerek elde edildi","covers_ar":"مواقف حافلات İzmir بالترتيب، مستنتجة بإسقاط المواقف على هندسة المسار المنشورة لكل خط","covers_fr":"Arrêts de bus d’İzmir, dans l’ordre, obtenus en projetant les arrêts sur le tracé publié de chaque ligne","present":true,"updated":"2026-08-22T17:47:29+03:00","updatedFrom":"commit"},"izmir-bus-schedules.json":{"kind":"official","source":"none — İzmir publishes no bus timetable","licence":"n/a","covers":"Deliberately empty rather than invented","covers_tr":"Uydurmak yerine bilerek boş bırakıldı","covers_ar":"تُرك فارغًا عمدًا بدل اختلاق البيانات","covers_fr":"Volontairement vide plutôt qu’inventé","present":true,"updated":"2026-08-14T23:45:42+03:00","updatedFrom":"commit"},"izmir-bus-geom.json":{"kind":"official","source":"İzmir Büyükşehir open data (ESHOT)","licence":"İzmir açık veri terms","covers":"İzmir bus road geometry, simplified to 12 m","covers_tr":"İzmir otobüs güzergâh geometrisi, 12 m’ye sadeleştirildi","covers_ar":"هندسة مسارات حافلات İzmir، مبسّطة إلى 12 م","covers_fr":"Tracé routier des bus d’İzmir, simplifié à 12 m","present":true,"updated":"2026-08-22T17:47:29+03:00","updatedFrom":"commit"},"planned-registry.json":{"kind":"curated","source":"Compiled for this project from dated public statements, each with its source","licence":"n/a","covers":"Status, opening targets and progress figures for Vision projects, and the rules that match them to OpenStreetMap","covers_tr":"Vision projelerinin durumu, açılış hedefleri ve ilerleme oranları; OpenStreetMap ile eşleştirme kuralları","covers_ar":"حالة مشاريع الرؤية ومواعيد افتتاحها ونسب الإنجاز، وقواعد مطابقتها مع OpenStreetMap","covers_fr":"État, échéances d’ouverture et avancement des projets Vision, et règles de mise en correspondance avec OpenStreetMap","present":true,"updated":"2026-10-02T17:22:10+03:00","updatedFrom":"commit"},"planned-facts-mi.json":{"kind":"scraped","source":"metro.istanbul project pages (Proje Halindeki / İnşa Halindeki Hatlar)","licence":"No published open-data licence","covers":"Official length, station list, contractor, capacity and journey time for İstanbul projects","covers_tr":"İstanbul projeleri için resmî uzunluk, istasyon listesi, yüklenici, kapasite ve yolculuk süresi","covers_ar":"الطول الرسمي وقائمة المحطات والمقاول والسعة ومدة الرحلة لمشاريع إسطنبول","covers_fr":"Longueur officielle, liste des stations, entrepreneur, capacité et temps de trajet des projets d’İstanbul","present":true,"updated":"2026-10-02T17:22:10+03:00","updatedFrom":"commit"},"t6-line.json":{"kind":"community","source":"OpenStreetMap via Overpass","licence":"ODbL 1.0","covers":"T6 Sirkeci–Kazlıçeşme tram (operational since 26 Feb 2024)","covers_tr":"T6 Sirkeci–Kazlıçeşme tramvayı (26 Şubat 2024’ten beri hizmette)","covers_ar":"ترام T6 سيركجي–قازليتشيشمه (قيد التشغيل منذ 26 فبراير 2024)","covers_fr":"Tramway T6 Sirkeci–Kazlıçeşme (en service depuis le 26 février 2024)","present":true,"updated":"2026-10-02T17:22:10+03:00","updatedFrom":"commit"},"places-istanbul.json":{"kind":"community","source":"OpenStreetMap contributors (Overpass)","licence":"ODbL 1.0","covers":"Streets, areas, landmarks, shops, food, health, schools and worship in İstanbul, for the search","covers_tr":"İstanbul için arama: sokaklar, semtler, simge yapılar, mağazalar, yeme-içme, sağlık, okullar ve ibadet yerleri","covers_ar":"الشوارع والأحياء والمعالم والمتاجر والمطاعم والصحة والمدارس ودور العبادة في إسطنبول للبحث","covers_fr":"Rues, quartiers, lieux remarquables, commerces, restauration, santé, écoles et lieux de culte de İstanbul, pour la recherche","present":true,"updated":"2026-10-24T18:00:06+03:00","updatedFrom":"commit"},"places-ankara.json":{"kind":"community","source":"OpenStreetMap contributors (Overpass)","licence":"ODbL 1.0","covers":"Streets, areas, landmarks, shops, food, health, schools and worship in Ankara, for the search","covers_tr":"Ankara için arama: sokaklar, semtler, simge yapılar, mağazalar, yeme-içme, sağlık, okullar ve ibadet yerleri","covers_ar":"الشوارع والأحياء والمعالم والمتاجر والمطاعم والصحة والمدارس ودور العبادة في أنقرة للبحث","covers_fr":"Rues, quartiers, lieux remarquables, commerces, restauration, santé, écoles et lieux de culte de Ankara, pour la recherche","present":true,"updated":"2026-10-24T18:00:06+03:00","updatedFrom":"commit"},"places-izmir.json":{"kind":"community","source":"OpenStreetMap contributors (Overpass)","licence":"ODbL 1.0","covers":"Streets, areas, landmarks, shops, food, health, schools and worship in İzmir, for the search","covers_tr":"İzmir için arama: sokaklar, semtler, simge yapılar, mağazalar, yeme-içme, sağlık, okullar ve ibadet yerleri","covers_ar":"الشوارع والأحياء والمعالم والمتاجر والمطاعم والصحة والمدارس ودور العبادة في إزمير للبحث","covers_fr":"Rues, quartiers, lieux remarquables, commerces, restauration, santé, écoles et lieux de culte de İzmir, pour la recherche","present":true,"updated":"2026-10-24T18:00:06+03:00","updatedFrom":"commit"},"places-bursa.json":{"kind":"community","source":"OpenStreetMap contributors (Overpass)","licence":"ODbL 1.0","covers":"Streets, areas, landmarks, shops, food, health, schools and worship in Bursa, for the search","covers_tr":"Bursa için arama: sokaklar, semtler, simge yapılar, mağazalar, yeme-içme, sağlık, okullar ve ibadet yerleri","covers_ar":"الشوارع والأحياء والمعالم والمتاجر والمطاعم والصحة والمدارس ودور العبادة في بورصة للبحث","covers_fr":"Rues, quartiers, lieux remarquables, commerces, restauration, santé, écoles et lieux de culte de Bursa, pour la recherche","present":true,"updated":"2026-10-24T18:00:06+03:00","updatedFrom":"commit"},"places-antalya.json":{"kind":"community","source":"OpenStreetMap contributors (Overpass)","licence":"ODbL 1.0","covers":"Streets, areas, landmarks, shops, food, health, schools and worship in Antalya, for the search","covers_tr":"Antalya için arama: sokaklar, semtler, simge yapılar, mağazalar, yeme-içme, sağlık, okullar ve ibadet yerleri","covers_ar":"الشوارع والأحياء والمعالم والمتاجر والمطاعم والصحة والمدارس ودور العبادة في أنطاليا للبحث","covers_fr":"Rues, quartiers, lieux remarquables, commerces, restauration, santé, écoles et lieux de culte de Antalya, pour la recherche","present":true,"updated":"2026-10-24T18:00:06+03:00","updatedFrom":"commit"},"places-kocaeli.json":{"kind":"community","source":"OpenStreetMap contributors (Overpass)","licence":"ODbL 1.0","covers":"Streets, areas, landmarks, shops, food, health, schools and worship in Kocaeli, for the search","covers_tr":"Kocaeli için arama: sokaklar, semtler, simge yapılar, mağazalar, yeme-içme, sağlık, okullar ve ibadet yerleri","covers_ar":"الشوارع والأحياء والمعالم والمتاجر والمطاعم والصحة والمدارس ودور العبادة في قوجه إيلي للبحث","covers_fr":"Rues, quartiers, lieux remarquables, commerces, restauration, santé, écoles et lieux de culte de Kocaeli, pour la recherche","present":true,"updated":"2026-10-24T18:00:06+03:00","updatedFrom":"commit"},"water-mask.json":{"kind":"community","source":"OpenFreeMap vector tiles (OpenMapTiles schema), water polygons; data from OpenStreetMap","licence":"ODbL 1.0 (data), CC BY 4.0 (OpenMapTiles)","covers":"Where the sea is around İstanbul, the Gulf of İzmit and İzmir bay, used to keep ferry lines on water","covers_tr":"İstanbul çevresi, İzmit Körfezi ve İzmir Körfezi'nde denizin nerede olduğu; vapur hatlarını suda tutmak için","covers_ar":"مواضع البحر حول إسطنبول وخليج إزميت وخليج إزمير، لإبقاء خطوط العبّارات فوق الماء","covers_fr":"Où se trouve la mer autour d'İstanbul, du golfe d'İzmit et de la baie d'İzmir, pour garder les lignes de ferry sur l'eau","present":true,"updated":"2026-11-10T15:42:32+03:00","updatedFrom":"commit"},"packs.json":{"kind":"community","source":"OpenFreeMap vector tiles (OpenMapTiles schema); data from OpenStreetMap","licence":"ODbL 1.0 (data), CC BY 4.0 (OpenMapTiles)","covers":"The offline base map of each city (streets, water, green areas and names), kept on the device","covers_tr":"Her şehrin cihazda tutulan çevrimdışı altlık haritası (sokaklar, su, yeşil alanlar ve adlar)","covers_ar":"خريطة الأساس دون اتصال لكل مدينة (الشوارع والمياه والمساحات الخضراء والأسماء)، محفوظة على الجهاز","covers_fr":"Le fond de carte hors ligne de chaque ville (rues, eau, espaces verts et noms), gardé sur l'appareil","present":false,"updated":null}}};
+/* V4.6.3: the PUBLIC Firebase web config ({apiKey, projectId}), or null until the project is set up (build.cjs checks it) */
+const FIREBASE = null;
 /* --- curated İstanbul landmarks for the "Explore" layer (real places; the app computes the
        nearest station + walk). {name,cat,lat,lng} --- */
 const ATTRACTIONS = CITY.attractions || [{"name":"Hagia Sophia","cat":"historic","lat":41.0086,"lng":28.9802},{"name":"Blue Mosque","cat":"mosque","lat":41.0054,"lng":28.9768},{"name":"Topkapı Palace","cat":"palace","lat":41.0115,"lng":28.9833},{"name":"Basilica Cistern","cat":"historic","lat":41.0084,"lng":28.9779},{"name":"Hippodrome (Sultanahmet Sq.)","cat":"historic","lat":41.006,"lng":28.9754},{"name":"Gülhane Park","cat":"park","lat":41.0134,"lng":28.9814},{"name":"Grand Bazaar","cat":"market","lat":41.0106,"lng":28.968},{"name":"Spice Bazaar","cat":"market","lat":41.0165,"lng":28.9705},{"name":"Süleymaniye Mosque","cat":"mosque","lat":41.0165,"lng":28.9639},{"name":"Galata Bridge","cat":"landmark","lat":41.0201,"lng":28.9737},{"name":"Galata Tower","cat":"viewpoint","lat":41.0256,"lng":28.9744},{"name":"İstiklal Avenue","cat":"market","lat":41.0335,"lng":28.9778},{"name":"Taksim Square","cat":"landmark","lat":41.037,"lng":28.9857},{"name":"İstanbul Modern","cat":"museum","lat":41.0264,"lng":28.9805},{"name":"Dolmabahçe Palace","cat":"palace","lat":41.0391,"lng":29.0006},{"name":"Yıldız Park","cat":"park","lat":41.049,"lng":29.011},{"name":"Ortaköy Mosque","cat":"mosque","lat":41.0475,"lng":29.027},{"name":"Bebek Bay","cat":"waterfront","lat":41.0776,"lng":29.0433},{"name":"Rumeli Fortress","cat":"historic","lat":41.0847,"lng":29.0566},{"name":"Emirgan Park","cat":"park","lat":41.1085,"lng":29.0546},{"name":"Maiden's Tower","cat":"viewpoint","lat":41.0211,"lng":29.0041},{"name":"Kadıköy & Moda","cat":"waterfront","lat":40.988,"lng":29.027},{"name":"Beylerbeyi Palace","cat":"palace","lat":41.0428,"lng":29.0419},{"name":"Büyük Çamlıca Hill","cat":"viewpoint","lat":41.0289,"lng":29.0686},{"name":"Çamlıca Mosque","cat":"mosque","lat":41.0275,"lng":29.0669},{"name":"Üsküdar Waterfront","cat":"waterfront","lat":41.0256,"lng":29.015},{"name":"Chora (Kariye) Mosque","cat":"historic","lat":41.0312,"lng":28.9391},{"name":"Eyüp Sultan Mosque","cat":"mosque","lat":41.0479,"lng":28.9337},{"name":"Pierre Loti Hill","cat":"viewpoint","lat":41.049,"lng":28.9337},{"name":"Balat & Fener","cat":"landmark","lat":41.0296,"lng":28.949},{"name":"Miniatürk","cat":"park","lat":41.062,"lng":28.9497},{"name":"Panorama 1453","cat":"museum","lat":41.0186,"lng":28.92},{"name":"Zorlu Center","cat":"market","lat":41.0668,"lng":29.017},{"name":"Vialand / İsfanbul","cat":"park","lat":41.073,"lng":28.933},{"name":"Princes' Islands (ferry)","cat":"waterfront","lat":40.876,"lng":29.129}];
@@ -13932,6 +14003,9 @@ function openSheet(name){
   { const pb=document.getElementById('omniPlan'); if(pb){ pb.classList.toggle('on', name==='planner'); pb.setAttribute('aria-pressed', name==='planner' ? 'true' : 'false'); } }
   document.body.classList.toggle('plan-open', name==='planner'); if(name!=='planner') document.body.classList.remove('plan-full');
   if(name==='planner') setPlanDetent(planRouteShown() ? 'half' : 'compact');
+  /* V4.6.3: Friends loads when its sheet opens; friends' positions are read only while it is open (or while you share) */
+  if(name==='friends' && typeof friendsOpened==='function') friendsOpened();
+  if(name!=='friends' && typeof stopFriendPolling==='function') stopFriendPolling();
   for(const k in mNavBtns){ const on = (name===null || name==='modes' || name==='planner') ? k==='map' : k===name; mNavBtns[k].classList.toggle('on', on); if(on) mNavBtns[k].setAttribute('aria-current','page'); else mNavBtns[k].removeAttribute('aria-current'); }
   { const nav=document.querySelector('.mnav'); if(nav){ const keys=Object.keys(mNavBtns), i=keys.findIndex(k=>mNavBtns[k].classList.contains('on')); nav.dataset.on = String(Math.max(0, i)); } }
   if(navigator.vibrate) try{ navigator.vibrate(8); }catch(e){}
@@ -14082,7 +14156,7 @@ function setupMobile(){
   // sheets
   /* Four sheets, three buttons (V4.6.2): Map (and behind it the kinds of transport), Layers, Alerts; the planner opens from the button
      beside the search box. Weather and Airports are views in the Layers sheet, with no sheet or button of their own. */
-  mSheets={ planner:mkSheet('planner'), layers:mkSheet('layers'), alerts:mkSheet('alerts'), modes:mkSheet('modes') };
+  mSheets={ planner:mkSheet('planner'), friends:mkSheet('friends'), layers:mkSheet('layers'), alerts:mkSheet('alerts'), modes:mkSheet('modes') };
   /* V4.5: the kinds of transport live behind the Map button. Its first press is the default map; pressed again there, it opens this
      sheet: Metro & rail (the full map), Buses, Boats. Buses used to be one of the views in the Layers sheet. */
   mSheets.modes.classList.add('modes');
@@ -14100,6 +14174,7 @@ function setupMobile(){
   const controls=document.querySelector('.controls');
   [...controls.children].forEach(el=>{
     if(el.id==='cardPlanner') mSheets.planner.appendChild(el);
+    else if(el.id==='cardFriends') mSheets.friends.appendChild(el);      // V4.6.3: Friends has its own sheet and bottom button
     else if(el.id==='cardBus' || el.id==='cardBoats') mSheets.modes.appendChild(el);
     else mSheets.layers.appendChild(el);
     el.style.display='';   // sheets control visibility now; setTab still toggles the weather / bus / intercity cards
@@ -14115,10 +14190,11 @@ function setupMobile(){
   const ind=document.createElement('span'); ind.className='mnav-ind'; ind.setAttribute('aria-hidden','true'); nav.appendChild(ind);
   const ICON = {
     map: '<svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round" stroke-linecap="round" aria-hidden="true"><path d="M9 4 3.5 6v14L9 18l6 2 5.5-2V4L15 6 9 4Z"/><path d="M9 4v14M15 6v14"/></svg>',
+    friends: '<svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round" stroke-linecap="round" aria-hidden="true"><circle cx="9" cy="8.5" r="3.2"/><path d="M3 19.5c.6-3.3 3-5.2 6-5.2s5.4 1.9 6 5.2"/><circle cx="16.8" cy="9.5" r="2.5"/><path d="M16.2 14.4c2.6.1 4.3 1.7 4.8 4.4"/></svg>',
     layers: '<svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round" stroke-linecap="round" aria-hidden="true"><path d="M12 3.5 2.5 8.5 12 13.5l9.5-5L12 3.5Z"/><path d="m2.5 12.5 9.5 5 9.5-5"/><path d="m2.5 16.5 9.5 5 9.5-5" opacity=".55"/></svg>',
     alerts: '<svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round" stroke-linecap="round" aria-hidden="true"><path d="M6 16.5V11a6 6 0 0 1 12 0v5.5l1.5 2h-15l1.5-2Z"/><path d="M10 20.5a2.2 2.2 0 0 0 4 0"/></svg>',
   };
-  const items=[ ['map','mMap'], ['layers','mLayers'], ['alerts','mAlerts'] ];
+  const items=[ ['map','mMap'], ['friends','mFriends'], ['layers','mLayers'], ['alerts','mAlerts'] ];
   items.forEach(([k,key])=>{
     const b=document.createElement('button'); b.type='button'; b.dataset.k=k;
     b.innerHTML=`<span class="mi">${ICON[k]}</span><span class="ml" data-i18n="${key}">${t(key)}</span>` + (k==='alerts' ? '<span class="mnav-badge" id="mnavBadge" hidden></span>' : '');
@@ -15653,7 +15729,7 @@ renderProvenance();
 /* ---- diagnostics: show what was recorded, and let the user send it if they choose ---- */
 function diagReportText(){
   const env = [
-    "app: V4.6.2 build " + BUILD,
+    "app: V4.6.3 build " + BUILD,
     "city: " + CITY_ID,
     "lang: " + lang,
     "screen: " + innerWidth + "x" + innerHeight + " dpr" + (devicePixelRatio || 1),
@@ -15825,7 +15901,8 @@ const NAV_LAYERS = [
   { id:'linp',     open:() => navHas('linp','show'),          close:() => navClick('linpX') },
   { id:'near',     open:() => navHas('nearPanel','open'),     close:() => closeNearby() },
   { id:'pass',     open:() => navHas('passPanel','open'),     close:() => closePassport() },
-  { id:'remind',   open:() => navHas('remPanel','open'),      close:() => closeReminder() },       // a reminder being set (22b-reminders.js)
+  { id:'remind',   open:() => navHas('remPanel','open'),      close:() => closeReminder() },
+  { id:'invite',   open:() => navHas('inviteDlg','open'),     close:() => { declineInvite(); closeInviteDlg(); } },   // a friend request (22d-friends.js)       // a reminder being set (22b-reminders.js)
   { id:'finder',   open:() => navHas('stnFinder','open'),     close:() => closeFinder() },       // the list of stations in view (25-map-keyboard.js)
   { id:'settings', open:() => navHas('settingsPanel','open'), close:() => closeSettings() },
   { id:'ai',       open:() => document.body.classList.contains('ai-open'), close:() => aiShut() },
@@ -15899,7 +15976,7 @@ window.addEventListener('popstate', e => {
   try{ history.replaceState({ irnNav:true, d:0 }, ''); }catch(err){ return; }
   NAV.ready = true;
   const mo = new MutationObserver(navReconcile);
-  ['stn','linp','nearPanel','passPanel','remPanel','stnFinder','settingsPanel','omni','wcOverlay'].forEach(id => { const e = document.getElementById(id); if(e) mo.observe(e, { attributes:true, attributeFilter:['class'] }); });
+  ['stn','linp','nearPanel','passPanel','remPanel','stnFinder','settingsPanel','omni','wcOverlay','inviteDlg'].forEach(id => { const e = document.getElementById(id); if(e) mo.observe(e, { attributes:true, attributeFilter:['class'] }); });
   document.querySelectorAll('.msheet').forEach(e => mo.observe(e, { attributes:true, attributeFilter:['class'] }));
   mo.observe(document.body, { attributes:true, attributeFilter:['class'] });
   navReconcile();
@@ -15926,7 +16003,7 @@ function syncLegalLinks(){
 (function(){
   syncLegalLinks();
   const build = document.getElementById('aboutBuild');
-  if(build) build.textContent = 'V4.6.2' + ' · ' + BUILD;
+  if(build) build.textContent = 'V4.6.3' + ' · ' + BUILD;
 
   /* ---- the one-time question ---- */
   const box = document.getElementById('privNotice');
@@ -16420,6 +16497,549 @@ function renderRemList(){
   setTimeout(remTick, 3000);
 })();
 /* ===========================================================================
+   ACCOUNTS (V4.6.3) — email + password, the address confirmed, on Google Firebase
+   Asked for as "the ability to make accounts using your email in the app", for Friends (26b-friends.js).
+   Design: docs/superpowers/specs/2026-11-14-friends-location-design.md. What matters here:
+     * No Firebase SDK: the page may run only its own script (CSP), so this file talks to Firebase's REST endpoints with fetch.
+     * No secret key: FIREBASE (03-data.js) is the PUBLIC web config; the data is protected by firebase/firestore.rules.
+     * Nothing is sent until someone uses an account: with no project set up (FIREBASE null) or nobody signed in, no request.
+     * The password is sent to Firebase over HTTPS and never kept: the device keeps only Firebase's session tokens (irn_account).
+     * Friends stays locked until the email address is confirmed (the rules check it too).
+     * Delete my account: a fresh sign-in (Firebase requires it), then the data, THEN the account; if the last step fails, the
+       app remembers and offers to finish it.
+   ========================================================================== */
+/* ==ACCOUNT-PURE-START== */
+const ACC_KEY = 'irn_account';
+const FB_AUTH = 'https://identitytoolkit.googleapis.com/v1/accounts:';
+const FB_TOKEN = 'https://securetoken.googleapis.com/v1/token';
+const FS_ROOT = 'https://firestore.googleapis.com/v1/';
+function pwOk(s){ return typeof s === 'string' && s.length >= 8; }
+/* one friendship per pair: the two account ids sorted (the rules check the same) */
+function pairId(u1, u2){ return u1 < u2 ? u1 + '_' + u2 : u2 + '_' + u1; }
+function fsDocPath(projectId, ...segs){ return 'projects/' + projectId + '/databases/(default)/documents' + (segs.length ? '/' + segs.join('/') : ''); }
+/* Firestore's typed values, both ways */
+function fsVal(v){
+  if(v === null || v === undefined) return { nullValue: null };
+  if(typeof v === 'boolean') return { booleanValue: v };
+  if(typeof v === 'number') return Number.isInteger(v) ? { integerValue: String(v) } : { doubleValue: v };
+  if(v instanceof Date) return { timestampValue: v.toISOString() };
+  return { stringValue: String(v) };
+}
+function fsEncode(obj){ const fields = {}; for(const k in obj) fields[k] = fsVal(obj[k]); return { fields }; }
+function fsUnval(v){
+  if(!v) return undefined;
+  if('stringValue' in v) return v.stringValue;
+  if('integerValue' in v) return Number(v.integerValue);
+  if('doubleValue' in v) return v.doubleValue;
+  if('booleanValue' in v) return v.booleanValue;
+  if('timestampValue' in v) return Date.parse(v.timestampValue);
+  if('nullValue' in v) return null;
+  return undefined;
+}
+function fsDecode(doc){
+  const o = {}, f = (doc && doc.fields) || {};
+  for(const k in f) o[k] = fsUnval(f[k]);
+  if(doc && doc.name) o._id = doc.name.split('/').pop();
+  if(doc && doc.updateTime) o._updateTime = doc.updateTime;
+  return o;
+}
+/* the claims inside a Firebase ID token (read only to learn whether the email is confirmed; Google checks the token itself) */
+function jwtClaims(tok){
+  try{ const p = String(tok).split('.')[1].replace(/-/g, '+').replace(/_/g, '/'), bin = atob(p + '==='.slice((p.length + 3) % 4));
+       return JSON.parse(new TextDecoder().decode(Uint8Array.from(bin, c => c.charCodeAt(0)))); }catch(e){ return {}; }
+}
+function fbErr(code){ const c = String(code || 'error').toLowerCase(); const e = new Error(c); e.code = c; return e; }
+/* ==ACCOUNT-PURE-END== */
+/* ==ACCOUNT-CORE-START== */
+/* the session: { uid, email, name, verified, refreshToken, idToken, idExp, pendingDelete? }, or null. Never the password. */
+var acct = (function(){ const a = lsJSON(ACC_KEY); return a && a.uid && a.refreshToken ? a : null; })();
+var accMode = 'signin', accMsg = '', accMsgKind = '', accAskDelete = false;
+const accSubs = [], accLeaveHooks = [];
+function onAccountChange(fn){ accSubs.push(fn); }
+/* run before signing out or deleting the account (the friends file stops sharing here, which erases the stored position) */
+function accOnLeave(fn){ accLeaveHooks.push(fn); }
+async function accLeave(why){ for(const f of accLeaveHooks){ try{ await f(why); }catch(e){} } }
+function accSave(){
+  try{
+    if(acct) localStorage.setItem(ACC_KEY, JSON.stringify({ uid: acct.uid, email: acct.email, name: acct.name || '', verified: !!acct.verified,
+      refreshToken: acct.refreshToken, idToken: acct.idToken, idExp: acct.idExp, pendingDelete: acct.pendingDelete ? true : undefined }));
+    else localStorage.removeItem(ACC_KEY);
+  }catch(e){}
+}
+function accChanged(){ accSave(); accSubs.forEach(f => { try{ f(acct); }catch(e){} }); }
+function accReady(){ return !!(FIREBASE && acct && acct.verified && !acct.pendingDelete); }
+async function fbAuth(method, body){
+  if(!FIREBASE) throw fbErr('not_set_up');
+  let r;
+  try{ r = await fetch(FB_AUTH + method + '?key=' + encodeURIComponent(FIREBASE.apiKey), { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) }); }
+  catch(e){ throw fbErr('network'); }
+  const j = await r.json().catch(() => ({}));
+  if(!r.ok) throw fbErr(String((j.error && j.error.message) || ('HTTP_' + r.status)).split(/[ :]/)[0]);
+  return j;
+}
+function accFromAuth(j, email){
+  const keep = acct && acct.uid === j.localId ? acct.name : '';
+  acct = { uid: j.localId, email: j.email || email, name: keep || '', verified: jwtClaims(j.idToken).email_verified === true,
+           refreshToken: j.refreshToken, idToken: j.idToken, idExp: Date.now() + (+j.expiresIn || 3600) * 1000 };
+}
+/* a new ID token from the refresh token (an ID token lives one hour) */
+async function accRefresh(){
+  if(!FIREBASE || !acct) throw fbErr('signed_out');
+  let r;
+  try{ r = await fetch(FB_TOKEN + '?key=' + encodeURIComponent(FIREBASE.apiKey), { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: 'grant_type=refresh_token&refresh_token=' + encodeURIComponent(acct.refreshToken) }); }
+  catch(e){ throw fbErr('network'); }
+  const j = await r.json().catch(() => ({}));
+  if(!r.ok){
+    const code = String((j.error && j.error.message) || ('HTTP_' + r.status));
+    if(/token_expired|user_disabled|user_not_found|invalid_refresh_token/i.test(code)){ acct = null; accChanged(); }   // signed out elsewhere, or deleted
+    throw fbErr(code);
+  }
+  acct.idToken = j.id_token; acct.refreshToken = j.refresh_token || acct.refreshToken; acct.idExp = Date.now() + (+j.expires_in || 3600) * 1000;
+  acct.verified = jwtClaims(j.id_token).email_verified === true;
+  accSave();
+  return acct.idToken;
+}
+async function idToken(){
+  if(!acct) throw fbErr('signed_out');
+  if(!acct.idToken || Date.now() > acct.idExp - 60000) await accRefresh();
+  return acct.idToken;
+}
+/* a Firestore request as the signed-in person. Refused as signed out (401)? Renew the sign-in once and try once more (RF1). */
+async function fsFetch(path, opts){
+  opts = opts || {};
+  const go = tok => fetch(FS_ROOT + path, Object.assign({}, opts, { headers: Object.assign({ 'Content-Type': 'application/json' }, opts.headers || {}, { Authorization: 'Bearer ' + tok }) }));
+  let r;
+  try{
+    r = await go(await idToken());
+    if(r.status === 401){ await accRefresh(); r = await go(acct.idToken); }
+  }catch(e){ if(e && e.code) throw e; throw fbErr('network'); }
+  return r;
+}
+async function fsJSON(r){ const j = await r.json().catch(() => ({})); if(!r.ok) throw fbErr((j && j.error && (j.error.status || j.error.message)) || ('HTTP_' + r.status)); return j; }
+const docName = (...segs) => fsDocPath(FIREBASE.projectId, ...segs);
+async function fsCommit(writes){ return fsJSON(await fsFetch(fsDocPath(FIREBASE.projectId) + ':commit', { method: 'POST', body: JSON.stringify({ writes }) })); }
+async function fsQuery(structuredQuery){
+  const j = await fsJSON(await fsFetch(fsDocPath(FIREBASE.projectId) + ':runQuery', { method: 'POST', body: JSON.stringify({ structuredQuery }) }));
+  return (Array.isArray(j) ? j : []).filter(x => x && x.document).map(x => fsDecode(x.document));
+}
+function fsWhereEq(coll, field, value){ return { from: [{ collectionId: coll }], where: { fieldFilter: { field: { fieldPath: field }, op: 'EQUAL', value: fsVal(value) } } }; }
+async function accSaveProfile(){ await fsCommit([{ update: Object.assign({ name: docName('profiles', acct.uid) }, fsEncode({ name: acct.name })) }]); }
+async function accLoadName(){
+  const r = await fsFetch(docName('profiles', acct.uid));
+  if(r.ok){ const p = fsDecode(await r.json()); if(p.name) acct.name = p.name; }
+  else if(r.status === 404 && acct.name) await accSaveProfile();
+}
+async function accSignUp(email, pw, name){
+  email = String(email || '').trim(); name = String(name || '').trim().slice(0, 30);
+  if(!pwOk(pw)) throw fbErr('weak_password');
+  if(!name) throw fbErr('name_required');
+  const j = await fbAuth('signUp', { email, password: pw, returnSecureToken: true });
+  accFromAuth(j, email); acct.name = name; accChanged();
+  await fbAuth('sendOobCode', { requestType: 'VERIFY_EMAIL', idToken: acct.idToken });
+  return acct;
+}
+async function accSignIn(email, pw){
+  email = String(email || '').trim();
+  const j = await fbAuth('signInWithPassword', { email, password: pw, returnSecureToken: true });
+  accFromAuth(j, email);
+  if(acct.verified) try{ await accLoadName(); }catch(e){}
+  accChanged();
+  return acct;
+}
+/* "I've confirmed": a new token says whether the address is confirmed now; the profile (name only) is written from then on */
+async function accRecheckVerified(){
+  await accRefresh();
+  if(acct.verified){ if(acct.name) await accSaveProfile(); else await accLoadName(); }
+  accChanged();
+  return acct.verified;
+}
+async function accSetName(name){ name = String(name || '').trim().slice(0, 30); if(!name) throw fbErr('name_required'); acct.name = name; await accSaveProfile(); accChanged(); }
+async function accResendVerify(){ await fbAuth('sendOobCode', { requestType: 'VERIFY_EMAIL', idToken: await idToken() }); }
+async function accResetPassword(email){ await fbAuth('sendOobCode', { requestType: 'PASSWORD_RESET', email: String(email || '').trim() }); }
+async function accSignOut(){
+  await accLeave('signout');
+  acct = null; accChanged();
+}
+/* Everything about you, then the account. Firebase deletes an account only right after a sign-in, hence the password. */
+async function accDelete(pw){
+  const email = acct.email, name = acct.name;
+  const j = await fbAuth('signInWithPassword', { email, password: pw, returnSecureToken: true });
+  accFromAuth(j, email); acct.name = name;
+  let fr = [], inv = [];
+  if(acct.verified){                       // an unconfirmed account cannot have stored anything (the rules refuse it)
+    await accLeave('delete');
+    const me = acct.uid;
+    fr = (await fsQuery(fsWhereEq('friendships', 'a', me))).concat(await fsQuery(fsWhereEq('friendships', 'b', me)));
+    inv = await fsQuery(fsWhereEq('invites', 'from', me));
+    await fsCommit([{ delete: docName('locations', me) }]
+      .concat(fr.map(f => ({ delete: docName('friendships', f._id) })), inv.map(i => ({ delete: docName('invites', i._id) })), [{ delete: docName('profiles', me) }]));
+  }
+  try{ await fbAuth('delete', { idToken: acct.idToken }); }
+  catch(e){ acct.pendingDelete = true; accChanged(); throw e; }
+  acct = null; accChanged();
+  return { friendships: fr.length, invites: inv.length };
+}
+function accErrText(e){
+  const c = (e && e.code) || '';
+  const k = { email_exists: 'accErrExists', invalid_login_credentials: 'accErrLogin', invalid_password: 'accErrLogin', email_not_found: 'accErrLogin',
+              weak_password: 'accErrWeak', too_many_attempts_try_later: 'accErrMany', name_required: 'accErrName', invalid_email: 'accErrEmail',
+              missing_email: 'accErrEmail', missing_password: 'accErrLogin', network: 'accErrNet', not_set_up: 'accNotSetUp' }[c];
+  return k ? t(k) : t('accErrGeneric').replace('{code}', c || '?');
+}
+/* the account box, for the current state (Settings › You, and the Friends sheet). Every value from outside is escaped. */
+function accViewHTML(){
+  const msg = accMsg ? '<div class="acc-msg' + (accMsgKind ? ' ' + accMsgKind : '') + '" role="status">' + svgEsc(accMsg) + '</div>' : '';
+  const btn = (act, key, cls) => '<button type="button" class="' + (cls || 'btn') + '" data-acc="' + act + '">' + svgEsc(t(key)) + '</button>';
+  const ph = key => ' placeholder="' + attrEsc(t(key)) + '" aria-label="' + attrEsc(t(key)) + '">';
+  const EMAIL = '<input class="acc-in acc-email" type="email" autocomplete="email" maxlength="200"' + ph('accEmail');
+  const PW_NEW = '<input class="acc-in acc-pw" type="password" autocomplete="new-password" minlength="8"' + ph('accPassword');
+  const PW = '<input class="acc-in acc-pw" type="password" autocomplete="current-password"' + ph('accPassword');
+  const NAME = '<input class="acc-in acc-name" type="text" autocomplete="nickname" maxlength="30"' + ph('accName');
+  if(!FIREBASE) return '<p class="sp-hint">' + svgEsc(t('accNotSetUp')) + '</p>';
+  if(!acct){
+    const up = accMode === 'signup';
+    return '<div class="acc-form">' + EMAIL + (up ? PW_NEW + NAME : PW)
+      + '<div class="acc-acts">' + (up ? btn('signup', 'accSignUp') : btn('signin', 'accSignIn')) + '</div>'
+      + '<div class="acc-links">' + btn(up ? 'mode-signin' : 'mode-signup', up ? 'accHaveAccount' : 'accNoAccount', 'acc-link')
+      + (up ? '' : btn('forgot', 'accForgot', 'acc-link')) + '</div>' + msg
+      + '<p class="sp-hint">' + svgEsc(t('accPrivacy')) + '</p></div>';
+  }
+  if(acct.pendingDelete) return '<div class="acc-form"><p>' + svgEsc(t('accDeletePending')) + '</p>' + PW
+    + '<div class="acc-acts">' + btn('delete-go', 'accRetry') + '</div>' + msg + '</div>';
+  if(!acct.verified) return '<div class="acc-form"><p>' + svgEsc(t('accCheckEmail').replace('{email}', acct.email)) + '</p>'
+    + '<div class="acc-acts">' + btn('recheck', 'accConfirmed') + btn('resend', 'accResend', 'btn ghost') + '</div>'
+    + '<div class="acc-links">' + btn('signout', 'accSignOut', 'acc-link') + '</div>' + msg + '</div>';
+  if(!acct.name) return '<div class="acc-form"><p>' + svgEsc(t('accNameNeeded')) + '</p>' + NAME
+    + '<div class="acc-acts">' + btn('setname', 'accSaveName') + '</div>' + msg + '</div>';
+  return '<div class="acc-form"><p class="acc-who">' + svgEsc(t('accSignedIn')).replace('{name}', '<b>' + svgEsc(acct.name) + '</b>') + '<small>' + svgEsc(acct.email) + '</small></p>'
+    + '<div class="acc-acts">' + btn('signout', 'accSignOut', 'btn ghost') + btn('delete-ask', 'accDelete', 'btn danger') + '</div>'
+    + (accAskDelete ? '<div class="acc-del"><p>' + svgEsc(t('accDeleteAsk')) + '</p>' + PW
+        + '<div class="acc-acts">' + btn('delete-go', 'accDeleteGo', 'btn danger') + btn('delete-cancel', 'accCancel', 'btn ghost') + '</div></div>' : '')
+    + msg + '</div>';
+}
+/* ==ACCOUNT-CORE-END== */
+function renderAccount(){ document.querySelectorAll('.acc-box').forEach(b => { b.innerHTML = accViewHTML(); }); }
+function accSay(key, kind, raw){ accMsg = raw != null ? raw : t(key); accMsgKind = kind || ''; renderAccount(); }
+(function(){
+  onAccountChange(() => { accAskDelete = false; renderAccount(); });
+  document.addEventListener('click', async e => {
+    const b = e.target.closest('[data-acc]'); if(!b) return;
+    const box = b.closest('.acc-box'), val = c => { const i = box && box.querySelector('.' + c); return i ? i.value : ''; };
+    const act = b.dataset.acc;
+    if(act === 'mode-signup' || act === 'mode-signin'){ accMode = act === 'mode-signup' ? 'signup' : 'signin'; accMsg = ''; renderAccount(); return; }
+    if(act === 'delete-ask'){ accAskDelete = true; accMsg = ''; renderAccount(); return; }
+    if(act === 'delete-cancel'){ accAskDelete = false; renderAccount(); return; }
+    b.disabled = true;
+    try{
+      if(act === 'signup'){ await accSignUp(val('acc-email'), val('acc-pw'), val('acc-name')); accSay('accSentConfirm', 'ok'); }
+      else if(act === 'signin'){ await accSignIn(val('acc-email'), val('acc-pw')); accMsg = ''; renderAccount(); }
+      else if(act === 'forgot'){ if(!val('acc-email')) return accSay('accErrEmail', 'err'); await accResetPassword(val('acc-email')); accSay('accResetSent', 'ok'); }
+      else if(act === 'resend'){ await accResendVerify(); accSay('accSentConfirm', 'ok'); }
+      else if(act === 'recheck'){ accSay(await accRecheckVerified() ? 'accNowConfirmed' : 'accNotYet', ''); }
+      else if(act === 'setname'){ await accSetName(val('acc-name')); accMsg = ''; renderAccount(); }
+      else if(act === 'signout'){ await accSignOut(); accMsg = ''; renderAccount(); }
+      else if(act === 'delete-go'){
+        const r = await accDelete(val('acc-pw'));
+        accSay(null, 'ok', t('accDeleted').replace('{f}', r.friendships).replace('{i}', r.invites));
+      }
+    }catch(err){ accSay(null, 'err', accErrText(err)); }
+    finally{ b.disabled = false; }
+  });
+  renderAccount();
+})();
+/* ===========================================================================
+   FRIENDS AND SHARING YOUR LOCATION (V4.6.3)
+   Asked for as: "share location and show their locations on map but only to their friends ... add your friends via links".
+   Design: docs/superpowers/specs/2026-11-14-friends-location-design.md. The access rules (firebase/firestore.rules) are the real
+   protection; this file follows them:
+     * A friend link: 128 random bits, at most 48 hours, once, and only if the other person presses Accept. Accepting is ONE write
+       that uses up the link and creates the friendship, so neither can happen without the other.
+     * One friendship per pair (the two ids sorted), so Remove ends it both ways.
+   ========================================================================== */
+/* ==FRIENDS-PURE-START== */
+const INVITE_HOURS = 47;              // the rules allow 48 h from the SERVER's clock; an hour less leaves room for a phone whose clock runs ahead
+function newInviteId(rand){ return Array.from(rand, b => b.toString(16).padStart(2, '0')).join(''); }
+function parseInviteHash(hash){ const m = /^#invite=([0-9a-f]{32})$/.exec(String(hash || '')); return m ? m[1] : null; }
+function inviteLink(base, id){ return String(base).replace(/#.*$/, '') + '#invite=' + id; }
+/* Accept = claim the link (only if nobody changed it since we read it) + create the friendship (only if it does not exist) */
+function acceptWrites(projectId, invite, me){
+  const a = me < invite.from ? me : invite.from, b = me < invite.from ? invite.from : me;
+  return [
+    { update: Object.assign({ name: fsDocPath(projectId, 'invites', invite._id) }, fsEncode({ usedBy: me })),
+      updateMask: { fieldPaths: ['usedBy'] }, currentDocument: { updateTime: invite._updateTime } },
+    { update: Object.assign({ name: fsDocPath(projectId, 'friendships', pairId(me, invite.from)) }, fsEncode({ a, b, inviter: invite.from, acceptor: me, invite: invite._id })),
+      updateTransforms: [{ fieldPath: 'created', setToServerValue: 'REQUEST_TIME' }], currentDocument: { exists: false } },
+  ];
+}
+/* ==FRIENDS-PURE-END== */
+/* ==FRIENDS-CORE-START== */
+var friends = [], myInvites = [];
+/* a friend link opened while signed out waits here (this tab only) until the account is ready */
+function pendingInvite(){ try{ return sessionStorage.getItem('irn_pending_invite'); }catch(e){ return null; } }
+function setPendingInvite(id){ try{ if(id) sessionStorage.setItem('irn_pending_invite', id); else sessionStorage.removeItem('irn_pending_invite'); }catch(e){} }
+async function loadFriends(){
+  if(!accReady()){ friends = []; myInvites = []; return; }
+  const me = acct.uid;
+  const rows = (await fsQuery(fsWhereEq('friendships', 'a', me))).concat(await fsQuery(fsWhereEq('friendships', 'b', me)));
+  const prev = new Map(friends.map(f => [f.uid, f]));
+  friends = await Promise.all(rows.map(async f => {
+    const uid = f.a === me ? f.b : f.a, old = prev.get(uid);
+    let name = old ? old.name : '';
+    try{ const r = await fsFetch(docName('profiles', uid)); if(r.ok) name = fsDecode(await r.json()).name || name; }catch(e){}
+    return { uid, name: name || '?', sharing: old ? old.sharing : false, pos: old ? old.pos : null };
+  }));
+  friends.sort((x, y) => x.name.localeCompare(y.name));
+  const now = Date.now(), inv = await fsQuery(fsWhereEq('invites', 'from', me));
+  myInvites = inv.filter(i => i.usedBy == null && i.expires > now);
+  const stale = inv.filter(i => !(i.usedBy == null && i.expires > now));          // used or expired links are tidied away
+  if(stale.length) try{ await fsCommit(stale.map(i => ({ delete: docName('invites', i._id) }))); }catch(e){}
+}
+async function makeInvite(base){
+  const id = newInviteId(crypto.getRandomValues(new Uint8Array(16)));
+  await fsCommit([{ update: Object.assign({ name: docName('invites', id) },
+      fsEncode({ from: acct.uid, fromName: acct.name, usedBy: null, expires: new Date(Date.now() + INVITE_HOURS * 3600e3) })),
+    updateTransforms: [{ fieldPath: 'created', setToServerValue: 'REQUEST_TIME' }], currentDocument: { exists: false } }]);
+  return inviteLink(base, id);
+}
+async function cancelInvite(id){ await fsCommit([{ delete: docName('invites', id) }]); myInvites = myInvites.filter(i => i._id !== id); }
+async function removeFriend(uid){ await fsCommit([{ delete: docName('friendships', pairId(acct.uid, uid)) }]); friends = friends.filter(f => f.uid !== uid); }
+/* a friend link was opened: sign in first if needed (the link waits), then ask. Nothing is written before Accept. */
+async function openInvite(id){
+  if(!accReady()){ setPendingInvite(id); inviteUI.needAccount(); return; }
+  let inv = null;
+  try{ const r = await fsFetch(docName('invites', id)); if(r.ok) inv = fsDecode(await r.json()); }catch(e){}
+  if(!inv || !inv.from){ setPendingInvite(null); inviteUI.say('frInviteGone'); return; }
+  if(inv.from === acct.uid){ setPendingInvite(null); inviteUI.say('frInviteOwn'); return; }
+  if(inv.usedBy != null || !(inv.expires > Date.now())){ setPendingInvite(null); inviteUI.say('frInviteGone'); return; }
+  inviteUI.show(inv);
+}
+async function acceptInvite(inv){
+  setPendingInvite(null);
+  try{ await fsCommit(acceptWrites(FIREBASE.projectId, inv, acct.uid)); }
+  catch(e){ inviteUI.say(/already_exists|failed_precondition|aborted/.test(e.code || '') ? 'frAlready' : 'frAcceptFailed'); return false; }
+  inviteUI.say('frNowFriends');
+  try{ await loadFriends(); }catch(e){}
+  renderFriends();
+  return true;
+}
+function declineInvite(){ setPendingInvite(null); }
+onAccountChange(() => { if(accReady()){ const p = pendingInvite(); if(p) openInvite(p); } });
+/* the friends part of the Friends box (the account box above it handles signing in) */
+function friendsViewHTML(){
+  if(!accReady()) return '';
+  const btn = (act, key, cls, data) => '<button type="button" class="' + (cls || 'btn') + '" data-fr="' + act + '"' + (data || '') + '>' + svgEsc(t(key)) + '</button>';
+  const rows = friends.length ? friends.map(f => '<div class="fr-row"><span class="fr-av" aria-hidden="true">' + svgEsc((f.name || '?').trim().charAt(0).toUpperCase()) + '</span>'
+      + '<span class="fr-nm">' + svgEsc(f.name) + (f.sharing ? '<small class="fr-on">' + svgEsc(t('frSharingNow')) + '</small>' : '') + '</span>'
+      + btn('remove', 'frRemove', 'mini', ' data-uid="' + attrEsc(f.uid) + '" aria-label="' + attrEsc(t('frRemove') + ': ' + f.name) + '"') + '</div>').join('')
+    : '<p class="sp-hint">' + svgEsc(t('frNone')) + '</p>';
+  const inv = myInvites.map(i => '<div class="fr-row fr-inv"><span class="fr-nm">' + svgEsc(t('frOpenLink')) + '<small>'
+      + svgEsc(t('frExpires').replace('{h}', String(Math.max(1, Math.round((i.expires - Date.now()) / 3600e3))))) + '</small></span>'
+      + btn('cancel', 'accCancel', 'mini', ' data-id="' + attrEsc(i._id) + '"') + '</div>').join('');
+  return '<div class="fr-list"><div class="fr-h">' + svgEsc(t('frFriends')) + '</div>' + rows + inv + '</div>'
+    + '<div class="acc-acts">' + btn('invite', 'frInvite') + '</div><p class="sp-hint">' + svgEsc(t('frInviteHint')) + '</p>';
+}
+/* ==FRIENDS-CORE-END== */
+/* ---------------------------------------------------------------------------
+   SHARING YOUR LOCATION. Off until you start it; 15 min, 1 h or 8 h, never longer; exact, or rounded to about 1 km ON THE PHONE.
+   While it runs a "Sharing" sign with Stop stays on screen. The position is sent when you moved more than 25 m, and at least every
+   2 minutes (the rules hide you from friends 3 minutes after the last one, so a closed app disappears), never more than every 30 s.
+   Stop, sign out and delete erase the stored position; so does the next start of the app, for one a crash left behind.
+   --------------------------------------------------------------------------- */
+/* ==SHARE-PURE-START== */
+const SHARE_DURATIONS = [15, 60, 480];
+const SHARE_MIN_GAP = 30e3, SHARE_MAX_GAP = 120e3, SHARE_MOVE_M = 25;
+function approxPos(lat, lng){ return [Math.round(lat * 100) / 100, Math.round(lng * 100) / 100]; }
+function posMeters(a, b){
+  const R = 6371000, r = Math.PI / 180, dLat = (b.lat - a.lat) * r, dLng = (b.lng - a.lng) * r;
+  const h = Math.sin(dLat / 2) ** 2 + Math.cos(a.lat * r) * Math.cos(b.lat * r) * Math.sin(dLng / 2) ** 2;
+  return 2 * R * Math.asin(Math.min(1, Math.sqrt(h)));
+}
+/* send now? `last` = { t, pos } of the last send, or null */
+function shouldSend(last, now, pos){
+  if(!last) return true;
+  const dt = now - last.t;
+  if(dt < SHARE_MIN_GAP) return false;
+  if(dt >= SHARE_MAX_GAP) return true;
+  return posMeters(last.pos, pos) > SHARE_MOVE_M;
+}
+/* the one stored position. Approximate is rounded HERE, so the exact numbers never leave the phone. The time comes from the server. */
+function locationWrite(projectId, uid, pos, approx, untilMs){
+  const ll = approx ? approxPos(pos.lat, pos.lng) : [pos.lat, pos.lng];
+  return { update: Object.assign({ name: fsDocPath(projectId, 'locations', uid) },
+             fsEncode({ lat: ll[0], lng: ll[1], acc: approx ? 1000 : Math.min(5000, Math.max(0, Math.round(pos.acc || 0))), approx: !!approx, until: new Date(untilMs) })),
+           updateTransforms: [{ fieldPath: 'at', setToServerValue: 'REQUEST_TIME' }] };
+}
+/* ==SHARE-PURE-END== */
+/* ==SHARE-CORE-START== */
+var sharing = null;                        // { until, approx, watchId, tick, last, lastPos }
+var shareSel = { min: 60, approx: false };
+async function sendPosition(pos){
+  const now = Date.now();
+  if(!sharing) return;
+  if(now >= sharing.until){ await stopSharing('expired'); return; }
+  sharing.lastPos = pos;
+  if(!shouldSend(sharing.last, now, pos)) return;
+  sharing.last = { t: now, pos };
+  try{ await fsCommit([locationWrite(FIREBASE.projectId, acct.uid, pos, sharing.approx, sharing.until)]); }catch(e){ sharing && (sharing.last = null); }
+}
+/* resolves true once sharing runs, false if the location was refused or is unavailable (RF3) */
+function startSharing(minutes, approx){
+  return new Promise((resolve, reject) => {
+    if(SHARE_DURATIONS.indexOf(minutes) < 0) return reject(fbErr('bad_duration'));
+    if(!accReady()) return reject(fbErr('signed_out'));
+    if(!navigator.geolocation) return reject(fbErr('no_location'));
+    if(sharing) return resolve(true);
+    let first = true, watchId = null;
+    const onPos = p => {
+      const pos = { lat: p.coords.latitude, lng: p.coords.longitude, acc: p.coords.accuracy };
+      if(first){
+        first = false;
+        sharing = { until: Date.now() + minutes * 60e3, approx: !!approx, watchId, last: null, lastPos: pos,
+                    tick: setInterval(() => { if(sharing && sharing.lastPos) sendPosition(sharing.lastPos); shareUI.show(sharing); }, SHARE_MIN_GAP) };
+        shareUI.show(sharing);
+        sendPosition(pos).then(() => resolve(true), () => resolve(true));
+        return;
+      }
+      sendPosition(pos);
+    };
+    const onErr = () => {
+      if(!first) return;                    // a lost fix later: the heartbeat keeps the last position fresh until it is back
+      first = false; try{ navigator.geolocation.clearWatch(watchId); }catch(e){}
+      shareUI.say('shareDenied'); resolve(false);
+    };
+    watchId = navigator.geolocation.watchPosition(onPos, onErr, { enableHighAccuracy: !approx, maximumAge: 15000, timeout: 30000 });
+  });
+}
+async function stopSharing(why){
+  const s = sharing; sharing = null;
+  if(s){ try{ navigator.geolocation.clearWatch(s.watchId); }catch(e){} try{ clearInterval(s.tick); }catch(e){} }
+  shareUI.hide();
+  if(acct && acct.verified && FIREBASE) try{ await fsCommit([{ delete: docName('locations', acct.uid) }]); }catch(e){}
+}
+accOnLeave(async () => { if(sharing) await stopSharing('leave'); });
+/* a position a crash or a closed tab left behind is erased when the app starts (it is already hidden from friends after 3 min) */
+async function shareBootCleanup(){ if(accReady() && !sharing) try{ await fsCommit([{ delete: docName('locations', acct.uid) }]); }catch(e){} }
+/* each friend read on its own: one who is not sharing (refused or missing) must not hide the others (RF2) */
+async function pollFriends(){
+  if(!accReady() || !friends.length){ shareUI.drawFriends(friends); return; }
+  await Promise.all(friends.map(async f => {
+    try{
+      const r = await fsFetch(docName('locations', f.uid));
+      if(r.ok){ const d = fsDecode(await r.json()); f.pos = { lat: d.lat, lng: d.lng, at: d.at, approx: !!d.approx }; f.sharing = true; }
+      else { f.pos = null; f.sharing = false; }
+    }catch(e){ f.pos = null; f.sharing = false; }
+  }));
+  shareUI.drawFriends(friends);
+}
+function shareViewHTML(){
+  if(!accReady()) return '';
+  if(sharing){
+    const d = new Date(sharing.until), hm = String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0');
+    return '<div class="sh-box sh-on"><p>' + svgEsc(t(sharing.approx ? 'shareOnApprox' : 'shareOnExact').replace('{time}', typeof remClock === 'function' ? remClock(hm) : hm)) + '</p>'
+      + '<button type="button" class="btn danger" data-sh="stop">' + svgEsc(t('shareStop')) + '</button></div>';
+  }
+  const seg = (attr, opts, cur) => '<div class="seg">' + opts.map(([v, key]) => '<button type="button" ' + attr + '="' + v + '"' + (String(cur) === String(v) ? ' class="active" aria-pressed="true"' : ' aria-pressed="false"') + '>' + svgEsc(t(key)) + '</button>').join('') + '</div>';
+  return '<div class="sh-box"><div class="fr-h">' + svgEsc(t('shareTitle')) + '</div>'
+    + seg('data-sh-min', [[15, 'share15'], [60, 'share60'], [480, 'share480']], shareSel.min)
+    + seg('data-sh-approx', [[0, 'shareExact'], [1, 'shareApprox']], shareSel.approx ? 1 : 0)
+    + '<button type="button" class="btn" data-sh="start">' + svgEsc(t('shareStart')) + '</button>'
+    + '<p class="sp-hint">' + svgEsc(t('shareHint')) + '</p></div>';
+}
+/* ==SHARE-CORE-END== */
+/* ---- on the page ---- */
+const inviteUI = {
+  show: inv => {
+    const d = document.getElementById('inviteDlg'), o = document.getElementById('inviteOverlay'); if(!d) return;
+    d._inv = inv;
+    document.getElementById('inviteQ').textContent = t('frInviteQ').replace('{name}', inv.fromName || '?');
+    d.classList.add('open'); if(o) o.classList.add('on');
+    try{ document.getElementById('inviteAccept').focus(); }catch(e){}
+  },
+  say: key => { if(typeof showToast === 'function') showToast(t(key)); renderFriends(); },
+  needAccount: () => { if(typeof showToast === 'function') showToast(t('frSignInFirst')); openFriends(); },
+};
+function closeInviteDlg(){ const d = document.getElementById('inviteDlg'), o = document.getElementById('inviteOverlay'); if(d){ d.classList.remove('open'); d._inv = null; } if(o) o.classList.remove('on'); }
+function renderFriends(){ document.querySelectorAll('.fr-box').forEach(b => { b.innerHTML = shareViewHTML() + friendsViewHTML(); }); }
+/* the "Sharing" sign (on top of the map while you share), and your friends on the map */
+const shareUI = {
+  show: s => {
+    const p = document.getElementById('sharePill'); if(!p || !s) return;
+    const left = Math.max(1, Math.ceil((s.until - Date.now()) / 60e3));
+    document.getElementById('sharePillTxt').textContent = t(s.approx ? 'sharePillApprox' : 'sharePill').replace('{m}', String(left));
+    const tb = document.querySelector('.topbar'); if(tb) document.documentElement.style.setProperty('--share-top', Math.round(tb.getBoundingClientRect().bottom + 8) + 'px');
+    p.hidden = false; document.body.classList.add('sharing-on');
+  },
+  hide: () => { const p = document.getElementById('sharePill'); if(p) p.hidden = true; document.body.classList.remove('sharing-on'); renderFriends(); },
+  say: key => { if(typeof showToast === 'function') showToast(t(key)); renderFriends(); },
+  drawFriends: list => {
+    if(typeof map === 'undefined' || typeof L === 'undefined') return;
+    if(!friendLayer) friendLayer = L.layerGroup().addTo(map);
+    friendLayer.clearLayers();
+    const now = Date.now();
+    list.filter(f => f.pos && isFinite(f.pos.lat) && isFinite(f.pos.lng)).forEach(f => {
+      const ago = Math.max(0, Math.floor((now - (f.pos.at || now)) / 60e3));
+      const label = svgEsc(f.name) + ' · ' + svgEsc(ago < 1 ? t('frAgoNow') : t('frAgo').replace('{m}', String(ago))) + (f.pos.approx ? ' · ' + svgEsc(t('frApproxTag')) : '');
+      L.marker([f.pos.lat, f.pos.lng], { icon: L.divIcon({ className: 'friend-dot' + (f.pos.approx ? ' approx' : ''), html: '<span>' + svgEsc((f.name || '?').trim().charAt(0).toUpperCase()) + '</span>', iconSize: [30, 30], iconAnchor: [15, 15] }),
+        keyboard: false, title: (f.name || '') }).bindTooltip(label, { direction: 'top', offset: [0, -14] }).addTo(friendLayer);
+    });
+  },
+};
+var friendLayer = null, friendPoll = null;
+/* friends' positions are read every 20 s while the Friends view is open or while you share (no live push in Firestore's REST) */
+function startFriendPolling(){ if(friendPoll || !accReady()) return; const go = async () => { try{ await pollFriends(); renderFriends(); }catch(e){} }; go(); friendPoll = setInterval(go, 20e3); }
+function stopFriendPolling(){ if(sharing) return; if(friendPoll){ clearInterval(friendPoll); friendPoll = null; } }
+/* open the Friends view: the sheet on a phone, the card on a computer (18-mobile-shell.js adds the sheet) */
+function openFriends(){
+  if(typeof IS_MOBILE !== 'undefined' && IS_MOBILE && typeof mSheets !== 'undefined' && mSheets.friends) openSheet('friends');
+  else { const c = document.getElementById('cardFriends'); if(c) try{ c.scrollIntoView({ block: 'start', behavior: 'smooth' }); }catch(e){} }
+  friendsOpened();
+}
+async function friendsOpened(){ renderAccount(); renderFriends(); if(accReady()){ try{ await loadFriends(); renderFriends(); }catch(e){} startFriendPolling(); } }
+(function(){
+  onAccountChange(() => { renderFriends(); if(!accReady()){ if(friendPoll){ clearInterval(friendPoll); friendPoll = null; } friends = []; shareUI.drawFriends([]); } });
+  /* the share controls and the Stop on the sign */
+  document.addEventListener('click', async e => {
+    const m = e.target.closest('[data-sh-min]'), a = e.target.closest('[data-sh-approx]'), b = e.target.closest('[data-sh]');
+    if(m){ shareSel.min = +m.dataset.shMin; renderFriends(); return; }
+    if(a){ shareSel.approx = a.dataset.shApprox === '1'; renderFriends(); return; }
+    if(!b) return;
+    b.disabled = true;
+    try{
+      if(b.dataset.sh === 'start'){ if(await startSharing(shareSel.min, shareSel.approx)) startFriendPolling(); }
+      else if(b.dataset.sh === 'stop') await stopSharing('stop');
+    }catch(err){ showToast(accErrText(err)); }
+    finally{ b.disabled = false; renderFriends(); }
+  });
+  const ps = document.getElementById('sharePillStop'); if(ps) ps.addEventListener('click', () => stopSharing('stop'));
+  setTimeout(() => { shareBootCleanup(); }, 1500);
+  document.addEventListener('click', async e => {
+    const b = e.target.closest('[data-fr]'); if(!b) return;
+    const act = b.dataset.fr; b.disabled = true;
+    try{
+      if(act === 'invite'){
+        const link = await makeInvite(location.origin + location.pathname + location.search);
+        let shared = false;
+        if(navigator.share) try{ await navigator.share({ title: 'TurkMaps', text: t('frShareText').replace('{name}', acct.name), url: link }); shared = true; }catch(err){}
+        if(!shared){ try{ await navigator.clipboard.writeText(link); showToast(t('frCopied')); }catch(err){ prompt(t('frCopyThis'), link); } }
+        await loadFriends();
+      }
+      else if(act === 'cancel') await cancelInvite(b.dataset.id);
+      else if(act === 'remove') await removeFriend(b.dataset.uid);
+      renderFriends();
+    }catch(err){ showToast(accErrText(err)); }
+    finally{ b.disabled = false; }
+  });
+  const acc = document.getElementById('inviteAccept'), dec = document.getElementById('inviteDecline'), ov = document.getElementById('inviteOverlay');
+  if(acc) acc.addEventListener('click', async () => { const d = document.getElementById('inviteDlg'), inv = d && d._inv; closeInviteDlg(); if(inv) await acceptInvite(inv); });
+  if(dec) dec.addEventListener('click', () => { declineInvite(); closeInviteDlg(); });
+  if(ov) ov.addEventListener('click', () => { declineInvite(); closeInviteDlg(); });
+  /* a friend link opened this page: read it, take it out of the address bar, and ask (after signing in, if needed) */
+  const id = parseInviteHash(location.hash);
+  if(id){ try{ history.replaceState(history.state, '', location.pathname + location.search); }catch(e){} setTimeout(() => openInvite(id), 800); }
+  renderFriends();
+})();
+/* ===========================================================================
    ACCESSIBILITY (V4.3): names, switch state, keyboard, dialogs
    Four things a person using a screen reader or only a keyboard ran into:
    1. Names. Icon buttons, switches and the map itself carried a hard-coded English label, so Turkish, Arabic and French readers heard
@@ -16502,6 +17122,7 @@ document.addEventListener('keydown', e => {
   if(open('nearPanel', 'open')){ closeNearby(); e.preventDefault(); return; }
   if(open('passPanel', 'open')){ closePassport(); e.preventDefault(); return; }
   if(open('remPanel', 'open')){ closeReminder(); e.preventDefault(); return; }
+  if(open('inviteDlg', 'open')){ declineInvite(); closeInviteDlg(); e.preventDefault(); return; }
   const top = NAV && NAV.stack && NAV.stack[NAV.stack.length - 1];
   if(top && top.id !== 'omni' && top.id !== 'ai'){ e.preventDefault(); navCloseEntry(top); return; }
   if(typeof goState !== 'undefined' && goState){ e.preventDefault(); exitGo(); }
@@ -16514,6 +17135,7 @@ document.addEventListener('keydown', e => {
     { id: 'settingsPanel', cls: 'open', modal: true,  first: '#settingsX' },
     { id: 'passPanel',     cls: 'open', modal: true,  first: '#passX' },
     { id: 'remPanel',      cls: 'open', modal: true,  first: '#remX' },
+    { id: 'inviteDlg',     cls: 'open', modal: true,  first: '#inviteAccept' },
     { id: 'stnFinder',     cls: 'open', modal: true,  first: '#finderList button, #finderX' },     // the first of these that exists
     { id: 'wcOverlay',     cls: 'show', modal: true,  first: '#wcGo', hiddenByDisplay: true },
     { id: 'nearPanel',     cls: 'open', modal: false, first: '#nearX' },

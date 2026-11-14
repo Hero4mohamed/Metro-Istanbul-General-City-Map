@@ -2,7 +2,7 @@
    so every deploy activates immediately and the installed app self-updates.
    Strategy: NETWORK-FIRST for the page (updates always win; cached copy only when offline),
    stale-while-revalidate for static assets/CDNs, and NO caching for live data APIs. */
-const VERSION = '20261114092137';
+const VERSION = '20261114143045';
 const SHELL  = 'raynet-shell-' + VERSION;
 const STATIC = 'raynet-static-v1';
 const STATIC_HOSTS = [];     // the page loads no CDN files any more (V4.3): Leaflet and the fonts are shipped with it
