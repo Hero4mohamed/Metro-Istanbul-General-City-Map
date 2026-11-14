@@ -6,7 +6,7 @@
 <!-- Substituted by build.cjs, which hashes the inline script from the final bytes. Pages
      cannot set headers, so this ships as meta; frame-ancestors and report-uri are
      unavailable that way. -->
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-m/+6XhFOUYVwr686h/nEGaAKQwxpQB2Ld0d7jzU5JeU='; style-src 'self' 'unsafe-inline'; font-src 'self' data:; img-src 'self' data: blob: https://server.arcgisonline.com; connect-src 'self' https://server.arcgisonline.com https://tiles.openfreemap.org https://photon.komoot.io https://overpass-api.de https://api.ibb.gov.tr https://openapi.izmir.bel.tr https://turkmaps-relay.turkmaps-relay.workers.dev https://api.open-meteo.com https://air-quality-api.open-meteo.com https://routing.openstreetmap.de https://api.anthropic.com https://identitytoolkit.googleapis.com https://securetoken.googleapis.com https://firestore.googleapis.com; worker-src 'self'; frame-src 'none'; media-src 'none'; manifest-src 'self'; base-uri 'self'; form-action 'none'; object-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-hkoiBgD3NtCvClijd7k76ysr512MJq37zO6+wxIK5pg='; style-src 'self' 'unsafe-inline'; font-src 'self' data:; img-src 'self' data: blob: https://server.arcgisonline.com; connect-src 'self' https://server.arcgisonline.com https://tiles.openfreemap.org https://photon.komoot.io https://overpass-api.de https://api.ibb.gov.tr https://openapi.izmir.bel.tr https://turkmaps-relay.turkmaps-relay.workers.dev https://api.open-meteo.com https://air-quality-api.open-meteo.com https://routing.openstreetmap.de https://api.anthropic.com https://identitytoolkit.googleapis.com https://securetoken.googleapis.com https://firestore.googleapis.com; worker-src 'self'; frame-src 'none'; media-src 'none'; manifest-src 'self'; base-uri 'self'; form-action 'none'; object-src 'none'">
 <title>TurkMaps · Transit Network Map</title>
 <!-- Leaflet 1.9.4, shipped with the app rather than fetched from a CDN (V4.3): see vendor/README.md -->
 <link rel="stylesheet" href="vendor/leaflet/leaflet.css">
@@ -2625,7 +2625,7 @@
 
    The report carries the fault, the build, the city, the language and the browser. It never
    carries location, saved places, trip history or the API key. ===== */
-const BUILD = "20261114143045";
+const BUILD = "20261114143232";
 const DIAG_MAX = 20;
 let DIAG = [];
 try { DIAG = JSON.parse(localStorage.getItem("irn_diag") || "[]"); } catch (e) { DIAG = []; }
