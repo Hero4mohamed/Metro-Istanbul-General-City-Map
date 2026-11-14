@@ -213,3 +213,84 @@ test('account: the name a person chose is shown escaped, so it cannot inject any
   const h = w.api.accViewHTML();
   assert.ok(!/<img/i.test(h), 'a name injected markup'); assert.match(h, /&lt;img src=x/);
 });
+
+/* -------------------------------------------------------------- friends ---- */
+function friendsWorld(routes, opts = {}) {
+  const ui = { shown: [], said: [], needAccount: 0 }, sess = {};
+  const extra = Object.assign({
+    sessionStorage: { getItem: k => (k in sess ? sess[k] : null), setItem: (k, v) => { sess[k] = String(v); }, removeItem: k => { delete sess[k]; } },
+    inviteUI: { show: inv => ui.shown.push(inv), say: k => ui.said.push(k), needAccount: () => { ui.needAccount++; } },
+    crypto: { getRandomValues: a => { for (let i = 0; i < a.length; i++) a[i] = (i * 37 + 11) & 255; return a; } },
+    renderFriends: () => {},
+  }, opts.extra || {});
+  const w = accWorld(routes, Object.assign({}, opts, { extra, more: '\n' + region('FRIENDS-PURE') + region('FRIENDS-CORE'),
+    expose: '\nthis.fr = { newInviteId, parseInviteHash, inviteLink, acceptWrites, openInvite, acceptInvite, removeFriend, makeInvite, friendsViewHTML, get friends(){ return friends; }, set friends(v){ friends = v; }, fireAccount: () => accChanged() };' }));
+  return Object.assign(w, { ui, sess, fr: w.ctx.fr });
+}
+const INV_ID = 'ab'.repeat(16);
+const invDoc = (over = {}) => ({ name: 'projects/turkmaps-test/databases/(default)/documents/invites/' + INV_ID, updateTime: '2026-11-14T10:00:00.000000Z',
+  fields: Object.assign({ from: { stringValue: 'uidB' }, fromName: { stringValue: 'Bora' }, usedBy: { nullValue: null }, expires: { timestampValue: new Date(Date.now() + 3600e3).toISOString() } }, over) });
+
+test('friends: a link id is 32 hex characters (128 random bits), and only a well-formed #invite= link is read', () => {
+  const { fr } = friendsWorld(() => null);
+  const id = fr.newInviteId(new Uint8Array(16).map((_, i) => i));
+  assert.strictEqual(id, '000102030405060708090a0b0c0d0e0f');
+  assert.strictEqual(fr.parseInviteHash('#invite=' + 'a'.repeat(32)), 'a'.repeat(32));
+  for (const bad of ['#invite=xyz', '#invite=' + 'g'.repeat(32), '#invite=' + 'a'.repeat(33), '', '#invite=', null]) assert.strictEqual(fr.parseInviteHash(bad), null, String(bad));
+  assert.strictEqual(fr.inviteLink('https://h.io/app/?city=istanbul#old', 'c'.repeat(32)), 'https://h.io/app/?city=istanbul#invite=' + 'c'.repeat(32));
+});
+test('friends: accepting is ONE write that claims the link (only if unchanged since read) and creates the sorted friendship (only if new)', () => {
+  const { fr, api } = friendsWorld(() => null, { store: SESSION(true) });
+  const inv = api.fsDecode(invDoc());
+  const w = fr.acceptWrites('turkmaps-test', inv, 'uidA');
+  assert.strictEqual(w.length, 2);
+  assert.match(w[0].update.name, /\/invites\/(ab){16}$/); assert.deepStrictEqual([...w[0].updateMask.fieldPaths], ['usedBy']);
+  assert.strictEqual(w[0].update.fields.usedBy.stringValue, 'uidA'); assert.strictEqual(w[0].currentDocument.updateTime, '2026-11-14T10:00:00.000000Z');
+  assert.match(w[1].update.name, /\/friendships\/uidA_uidB$/);
+  const f = api.fsDecode(w[1].update);
+  assert.deepStrictEqual([f.a, f.b, f.inviter, f.acceptor, f.invite], ['uidA', 'uidB', 'uidB', 'uidA', INV_ID]);
+  assert.strictEqual(w[1].currentDocument.exists, false);
+  assert.deepStrictEqual(JSON.parse(JSON.stringify(w[1].updateTransforms)), [{ fieldPath: 'created', setToServerValue: 'REQUEST_TIME' }]);
+});
+test('friends (RF4): a link opened before signing in waits for the account to be ready, then asks; nothing is written before Accept', async () => {
+  const w = friendsWorld(url => /securetoken/.test(url) ? REFRESHED : /\/invites\//.test(url) ? [200, invDoc()] : /:commit/.test(url) ? [200, {}] : null);
+  await w.fr.openInvite(INV_ID);
+  assert.strictEqual(w.ui.needAccount, 1); assert.strictEqual(w.sess.irn_pending_invite, INV_ID);
+  assert.strictEqual(w.calls.length, 0, 'something was sent before signing in');
+  w.api.acct = JSON.parse(SESSION(true).irn_account); w.fr.fireAccount();
+  await new Promise(r => setTimeout(r, 20));
+  assert.strictEqual(w.ui.shown.length, 1, 'the Accept question did not come after signing in'); assert.strictEqual(w.ui.shown[0]._id, INV_ID);
+  assert.ok(!w.calls.some(c => /:commit/.test(c.url)), 'the link was accepted without pressing Accept');
+  await w.fr.acceptInvite(w.ui.shown[0]);
+  assert.ok(w.calls.some(c => /:commit/.test(c.url))); assert.ok(!('irn_pending_invite' in w.sess));
+});
+test('friends: your own, used or expired links are refused before anything is written', async () => {
+  for (const [over, me] of [[{ from: { stringValue: 'uidA' } }, 'own'], [{ usedBy: { stringValue: 'uidC' } }, 'used'], [{ expires: { timestampValue: new Date(Date.now() - 1000).toISOString() } }, 'expired']]) {
+    const w = friendsWorld(url => /\/invites\//.test(url) ? [200, invDoc(over)] : null, { store: SESSION(true) });
+    await w.fr.openInvite(INV_ID);
+    assert.strictEqual(w.ui.shown.length, 0, me + ' link was offered'); assert.ok(w.ui.said.length === 1, me + ' link gave no message');
+  }
+});
+test('friends: removing a friend deletes exactly your one friendship document', async () => {
+  const w = friendsWorld(url => /:commit/.test(url) ? [200, {}] : /:runQuery/.test(url) ? [200, []] : null, { store: SESSION(true) });
+  await w.fr.removeFriend('uid0');
+  const c = w.calls.find(x => /:commit/.test(x.url));
+  assert.deepStrictEqual(c.body.writes.map(x => x.delete.replace(/^.*documents\//, '')), ['friendships/uid0_uidA']);
+});
+test('friends: a new link expires within 48 hours, carries your chosen name, and its time is the server\'s', async () => {
+  const w = friendsWorld(url => /:commit/.test(url) ? [200, {}] : null, { store: SESSION(true) });
+  const link = await w.fr.makeInvite('https://h.io/app/');
+  const c = w.calls.find(x => /:commit/.test(x.url)).body.writes[0];
+  const f = w.api.fsDecode(c.update);
+  assert.match(link, /^https:\/\/h\.io\/app\/#invite=[0-9a-f]{32}$/);
+  assert.deepStrictEqual([f.from, f.fromName, f.usedBy], ['uidA', 'Ayşe', null]);
+  assert.ok(f.expires - Date.now() <= 48 * 3600e3 && f.expires - Date.now() > 46 * 3600e3, 'the link lasts longer than 48 h or much less');
+  assert.deepStrictEqual(JSON.parse(JSON.stringify(c.updateTransforms)), [{ fieldPath: 'created', setToServerValue: 'REQUEST_TIME' }]);
+  assert.strictEqual(c.currentDocument.exists, false);
+});
+test('friends: a friend\'s name is escaped in the list, so it cannot inject anything', () => {
+  const w = friendsWorld(() => null, { store: SESSION(true) });
+  w.fr.friends = [{ uid: 'uidB', name: '<img src=x onerror=alert(1)>', sharing: false }];
+  const h = w.fr.friendsViewHTML();
+  assert.ok(!/<img/i.test(h)); assert.match(h, /&lt;img src=x/);
+});

@@ -143,9 +143,10 @@ test('everything the app stores is under the irn_ prefix and no other kind of st
   assert.ok(keys.length > 20, 'found only ' + keys.length + ' storage calls: has the pattern drifted?');
   assert.deepStrictEqual([...new Set(keys.filter(k => !k.startsWith('irn_')))], [], 'storage keys outside irn_ would survive "delete all my data"');
   assert.ok(!/\bindexedDB\b|document\.cookie/.test(code), 'the storage page promises no IndexedDB or cookies');
-  /* session storage: the storage page names exactly one use, the irn_play marker of the Android app (a row of its own in STORAGE) */
+  /* session storage: the storage page names exactly two uses, each with a row of its own in STORAGE: the irn_play marker of the
+     Android app, and (V4.6.3) a friend link opened before signing in, irn_pending_invite */
   const session = [...raw.matchAll(/sessionStorage\.(?:getItem|setItem|removeItem)\(\s*['"]([^'"]+)['"]/g)].map(m => m[1]);
-  assert.deepStrictEqual([...new Set(session)], ['irn_play'], 'session storage is used for something the storage page does not name: ' + session);
+  assert.deepStrictEqual([...new Set(session)].sort(), ['irn_pending_invite', 'irn_play'], 'session storage is used for something the storage page does not name: ' + session);
   assert.strictEqual((code.match(/\bsessionStorage\b/g) || []).length, session.length, 'session storage is used in a way the check above cannot see');
   for (const bad of ['google-analytics', 'googletagmanager', 'gtag(', 'fbq(', 'connect.facebook', 'hotjar', 'mixpanel', 'segment.com', 'plausible.io', 'matomo', 'clarity.ms', 'sentry', 'doubleclick', 'adsbygoogle', 'sendBeacon'])
     assert.ok(!raw.includes(bad) && !markup().includes(bad), 'the page carries tracking or advertising code: ' + bad);

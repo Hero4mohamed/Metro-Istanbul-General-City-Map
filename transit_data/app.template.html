@@ -1589,6 +1589,16 @@
   .acc-who{display:flex;flex-direction:column;gap:2px;} .acc-who small{color:var(--dim);font-size:var(--fs-7);}
   .acc-del{display:flex;flex-direction:column;gap:8px;padding:10px;border-radius:12px;border:1px solid var(--stroke);}
   .btn.danger{background:var(--danger,#E5484D);color:#fff;}
+  .fr-head{font-weight:700;font-size:var(--fs-5);display:flex;gap:8px;align-items:center;margin-bottom:10px;}
+  #friendsBox{display:flex;flex-direction:column;gap:12px;}
+  .fr-list{display:flex;flex-direction:column;gap:6px;}
+  .fr-h{font-size:var(--fs-7);color:var(--dim);text-transform:uppercase;letter-spacing:.5px;}
+  .fr-row{display:flex;align-items:center;gap:10px;padding:6px 0;}
+  .fr-av{flex:none;width:30px;height:30px;border-radius:var(--r-round);display:grid;place-items:center;background:var(--surface-2);border:1px solid var(--stroke);font-weight:700;}
+  .fr-nm{flex:1;min-width:0;display:flex;flex-direction:column;overflow-wrap:anywhere;} .fr-nm small{color:var(--dim);font-size:var(--fs-7);}
+  .fr-nm small.fr-on{color:var(--ok,#30A46C);}
+  .fr-row .mini{flex:none;background:var(--surface-2);border:1px solid var(--stroke);color:var(--text);border-radius:10px;padding:6px 10px;font:inherit;font-size:var(--fs-7);cursor:pointer;}
+  .invite-dlg{max-width:380px;} .invite-dlg p{line-height:1.5;margin:6px 0 14px;}
   .settings-panel .btn{margin-top:2px;}
   /* on a phone a full-screen blur behind a moving sheet is the costliest thing on the page: a darker wash does the same job */
   body.mobile .settings-overlay{backdrop-filter:none;background:rgba(3,6,10,.64);}
@@ -2317,6 +2327,13 @@
   <div id="remBody"></div>
 </div>
 
+<div class="settings-overlay" id="inviteOverlay"></div>
+<div class="settings-panel glass invite-dlg" id="inviteDlg" role="dialog" aria-modal="true" aria-labelledby="inviteTitle">
+  <div class="sp-head"><span id="inviteTitle">👥 <span data-i18n="frInviteTitle">Friend request</span></span></div>
+  <p id="inviteQ"></p>
+  <div class="acc-acts"><button type="button" class="btn" id="inviteAccept" data-i18n="frAccept">Accept</button><button type="button" class="btn ghost" id="inviteDecline" data-i18n="frDecline">Not now</button></div>
+</div>
+
 <div class="controls" id="controls">
   <div class="card glass" id="cardTabs" style="padding:7px;">
     <div class="tabs" id="tabs" role="tablist" aria-label="Map view" data-i18n-aria="ariaMapView">
@@ -2328,6 +2345,10 @@
       <button data-tab="weather" role="tab" aria-selected="false" data-i18n="tabWeather">☀ Weather</button>
       <button data-tab="airport" role="tab" aria-selected="false" data-i18n="tabAirport">✈ Airports</button>
     </div>
+  </div>
+  <div class="card glass" id="cardFriends">
+    <div class="fr-head"><span aria-hidden="true">👥</span> <span data-i18n="frTitle">Friends</span></div>
+    <div id="friendsBox"><div class="acc-box"></div><div class="fr-box"></div></div>
   </div>
   <div class="card glass" id="cardLayers">
     <button class="lyr-head" id="layersHead" aria-expanded="true" aria-controls="layersBody">
