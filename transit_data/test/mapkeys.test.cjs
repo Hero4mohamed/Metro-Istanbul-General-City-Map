@@ -90,7 +90,7 @@ test('L lists the stations in view as buttons, nearest first, and choosing one r
 test('the list is a modal layer of the back button and the dialog manager, the map describes its keys, and the button is reachable by Tab', () => {
   const s = script(), h = H.html();
   assert.match(s, /\{ id:'finder',\s+open:\(\) => navHas\('stnFinder','open'\)/, 'the list is not a layer of the back button');
-  assert.match(s, /\['stn','linp','nearPanel','passPanel','stnFinder'/, 'the list is not watched for opening and closing');
+  assert.match(s, /\['stn','linp','nearPanel','passPanel','remPanel','stnFinder'/, 'the list is not watched for opening and closing');
   assert.match(s, /id: 'stnFinder',\s+cls: 'open', modal: true/, 'the list is not a managed modal dialog (focus, Tab trap, inert when closed)');
   assert.match(s, /map\.setAttribute\('aria-describedby', 'mapHelp'\)/, 'the map does not point at its key help');
   assert.match(h, /<button id="stnFinderBtn" class="sr-focusable"/, 'no Browse stations button');

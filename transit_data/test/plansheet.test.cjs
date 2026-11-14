@@ -40,23 +40,24 @@ test('plan sheet: a drag settles on the nearest height, a flick goes one step, a
 /* a fake page around openSheet / setPlanDetent / planHeights */
 function world(opts) {
   const o = Object.assign({ route: false, adventure: false, vh: 812, compactContent: 248 }, opts);
-  const sheet = { classList: classList(['msheet', 'plan']), style: { height: '' }, scrollTop: 40, get className() { return this.classList.list.join(' '); }, set className(v) { this.classList = classList(v.split(' ').filter(Boolean)); },
+  const sheet = { dataset: {}, classList: classList(['msheet', 'plan']), style: { height: '' }, scrollTop: 40, get className() { return this.classList.list.join(' '); }, set className(v) { this.classList = classList(v.split(' ').filter(Boolean)); },
     get offsetHeight() { return this.style.height === 'auto' ? o.compactContent : parseInt(this.style.height, 10) || 0; }, querySelector: () => grab };
   const grab = { attrs: {}, setAttribute(k, v) { this.attrs[k] = v; } };
-  const other = { classList: classList(['msheet']) };
+  const other = { dataset: { dragKind: 'sheet' }, classList: classList(['msheet']) };
   const backdrop = { classList: classList() }, body = { classList: classList(['mobile']) }, rootStyle = {};
   const rout = { classList: classList(o.route ? ['show'] : []) }, adv = { style: { display: o.adventure ? '' : 'none' } };
-  const nav = { map: { classList: classList() }, planner: { classList: classList() }, layers: { classList: classList() } };
+  const btn = () => ({ classList: classList(), setAttribute() {}, removeAttribute() {} });
+  const nav = { map: btn(), layers: btn(), alerts: btn() };
   const ctx = vm.createContext({ Math, parseInt, window: { innerHeight: o.vh }, navigator: {},
-    document: { getElementById: id => ({ mbackdrop: backdrop, rout, plannerAdv: adv })[id] || null, body, documentElement: { style: { setProperty: (k, v) => { rootStyle[k] = v; } } } },
-    mSheets: { planner: sheet, layers: other }, mNavBtns: nav });
+    document: { getElementById: id => ({ mbackdrop: backdrop, rout, plannerAdv: adv })[id] || null, querySelector: () => null, body, documentElement: { style: { setProperty: (k, v) => { rootStyle[k] = v; } } } },
+    mSheets: { planner: sheet, layers: other }, mNavBtns: nav, setDragDetent: (el, d) => { el.dataset.detent = d; }, closeAllPanels: () => { ctx.panelsClosed = (ctx.panelsClosed || 0) + 1; } });
   const s = script();
   vm.runInContext("const PLAN_DETENTS = ['compact', 'half', 'full'];\nlet planDetent = 'compact', planTyping = false;\n" +
     ['planRouteShown', 'planHeights', 'planFloor', 'setPlanDetent', 'openSheet'].map(n => fnSource(s, n)).join('\n'), ctx);
   return { ctx, sheet, other, backdrop, body, rootStyle, rout, grab, nav, run: code => vm.runInContext(code, ctx) };
 }
 
-test('plan sheet: opening the planner leaves the map in view and usable: compact height, nothing dimmed, and the other sheets still dim', () => {
+test('plan sheet: opening the planner leaves the map in view and usable: compact height, nothing dimmed, and no other sheet dims it either', () => {
   const w = world();
   w.run("openSheet('planner')");
   assert.ok(w.sheet.classList.contains('open') && w.sheet.classList.contains('d-compact') && w.sheet.classList.contains('short'), 'the planner did not open at its compact height: ' + w.sheet.className);
@@ -65,9 +66,13 @@ test('plan sheet: opening the planner leaves the map in view and usable: compact
   assert.strictEqual(w.backdrop.classList.contains('on'), false, 'the map is dimmed (and untouchable) behind the planner');
   assert.ok(w.body.classList.contains('plan-open')); assert.strictEqual(w.rootStyle['--plan-h'], '248px', 'the buttons that ride above the sheet do not know its height');
   assert.strictEqual(w.sheet.scrollTop, 0); assert.strictEqual(w.grab.attrs['aria-expanded'], 'false');
-  assert.ok(w.nav.planner.classList.contains('on') && !w.nav.map.classList.contains('on'));
+  assert.ok(w.nav.map.classList.contains('on'), 'with the planner open no bottom button is marked (the planner has no button there since V4.6.2)');
   w.run("openSheet('layers')");
-  assert.ok(w.backdrop.classList.contains('on'), 'the Layers sheet no longer dims the map'); assert.ok(!w.body.classList.contains('plan-open') && !w.sheet.classList.contains('open'));
+  assert.ok(!w.backdrop.classList.contains('on'), 'the Layers sheet dims the map again (V4.6.2: the map stays in view behind every sheet)');
+  assert.strictEqual(w.other.dataset.detent, 'low', 'the Layers sheet does not open at its low height');
+  assert.ok(w.ctx.panelsClosed >= 1, 'a line or station panel stays open over the sheet');
+  assert.ok(w.nav.layers.classList.contains('on') && !w.nav.map.classList.contains('on'));
+  assert.ok(!w.body.classList.contains('plan-open') && !w.sheet.classList.contains('open'));
   w.run('openSheet(null)');
   assert.ok(!w.backdrop.classList.contains('on') && w.nav.map.classList.contains('on'));
 });

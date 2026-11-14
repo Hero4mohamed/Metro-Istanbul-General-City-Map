@@ -1505,8 +1505,8 @@ const MUTATIONS = [
   // ---- V4.2: four bottom buttons, the back button, the warning bubble, buses, rotation ----
   {
     name: 'bring the Weather button back to the phone\'s bottom bar',
-    expect: 'the phone has four bottom buttons - Map, Planner, Layers, Alerts - and no sheet of its own for the weather',
-    apply: h => h.replace("['layers','◈','mLayers'], ['alerts','📢','mAlerts']", "['layers','◈','mLayers'], ['weather','☀','mWeather'], ['alerts','📢','mAlerts']"),
+    expect: 'the phone has three bottom buttons - Map, Layers, Alerts - the planner opens from the search bar, and the weather has no sheet',
+    apply: h => h.replace("['layers','mLayers'], ['alerts','mAlerts'] ];", "['layers','mLayers'], ['weather','mWeather'], ['alerts','mAlerts'] ];"),
   },
   {
     name: 'put the weather card back in a sheet that no longer exists',
@@ -2194,7 +2194,7 @@ const MUTATIONS = [
   {
     name: 'the warning ring catches the presses meant for the sign',
     expect: 'warning sign: the sign and its ring are one fixed size',
-    apply: h => h.replace('border:2px solid var(--wc);pointer-events:none;animation:disrPulse', 'border:2px solid var(--wc);animation:disrPulse'),
+    apply: h => h.replace('border:1.5px solid var(--wc);pointer-events:none;animation:disrPulse', 'border:1.5px solid var(--wc);animation:disrPulse'),
   },
   {
     name: 'a line\'s notices are listed in no order of severity',
@@ -2319,9 +2319,9 @@ const MUTATIONS = [
   },
   /* ---- the planner on a phone keeps the map in view (18-mobile-shell.js, V4.4.1) ---- */
   {
-    name: 'the map is dimmed behind the planner again',
+    name: 'the map is dimmed behind the planner and the sheets again',
     expect: 'plan sheet: opening the planner leaves the map in view',
-    apply: h => h.replace("classList.toggle('on', !!name && name!=='planner' && name!=='modes');", "classList.toggle('on', !!name && name!=='modes');"),
+    apply: h => h.replace("document.getElementById('mbackdrop').classList.remove('on');", "document.getElementById('mbackdrop').classList.toggle('on', !!name);"),
   },
   {
     name: 'the planner opens at full height',
@@ -2409,6 +2409,98 @@ const MUTATIONS = [
     name: 'session storage is used for something the storage page does not name',
     expect: 'everything the app stores is under the irn_ prefix',
     apply: h => h.replace('sessionStorage.getItem(\'irn_play\')', 'sessionStorage.getItem(\'irn_other\')'),
+  },
+  /* ---- V4.6.2: one small size for the sign and the piers, sheets and panels that leave the map in view and move with a finger,
+     the planner in the search bar, a pressed line shown on the map, reminders ---- */
+  {
+    name: 'the warning sign is drawn large again',
+    expect: 'the warning sign and its ring are one small fixed size',
+    apply: h => h.replace('const WARN_SIZE = 20, WARN_RING = 27;', 'const WARN_SIZE = 26, WARN_RING = 36;'),
+  },
+  {
+    name: 'the boat piers are big dots again',
+    expect: 'a boat pier is a small dot of one size at every zoom',
+    apply: h => h.replace('const PIER_DOT = 6, PIER_DOT_MULTI = 8;', 'const PIER_DOT = 11, PIER_DOT_MULTI = 14;'),
+  },
+  {
+    name: 'a pier dot takes the taps meant for the boats under it',
+    expect: 'a boat pier is a small dot of one size at every zoom',
+    apply: h => h.replace('.pier-dot{display:flex;align-items:center;justify-content:center;pointer-events:none;}', '.pier-dot{display:flex;align-items:center;justify-content:center;}'),
+  },
+  {
+    name: 'a sheet covers almost the whole phone screen again',
+    expect: 'on a phone a sheet opens at a LOW height',
+    apply: h => h.replace('z-index:1300;max-height:55vh;', 'z-index:1300;max-height:92vh;'),
+  },
+  {
+    name: 'a sheet opens at nearly full height',
+    expect: 'on a phone a sheet opens at a LOW height',
+    apply: h => h.replace('return { low: Math.round(vh * 0.55), high: Math.round(vh * 0.86) };', 'return { low: Math.round(vh * 0.86), high: Math.round(vh * 0.92) };'),
+  },
+  {
+    name: 'dragging a panel down never closes it',
+    expect: 'where a drag settles',
+    apply: h => h.replace("if((shrink > 80 && h < H.low - 60) || (from === 'low' && v < -0.6 && shrink > 24)) return null;", "if((shrink > 80 && h < H.low - 60) || (from === 'low' && v < -0.6 && shrink > 24)) return from;"),
+  },
+  {
+    name: 'the end of a drag reads the old, still-animating height',
+    expect: 'the end of a drag reads the height BEFORE the animation comes back',
+    apply: h => h.replace(/const h = el\.getBoundingClientRect\(\)\.height;(\r?\n)    el\.classList\.remove\('dragging'\);/, "el.classList.remove('dragging');$1    const h = el.getBoundingClientRect().height;"),
+  },
+  {
+    name: 'a line panel reopens at the height a drag left it',
+    expect: 'the end of a drag reads the height BEFORE the animation comes back',
+    apply: h => h.replace("setDragDetent(el, 'low', true); shown = now;", 'shown = now;'),
+  },
+  {
+    name: 'opening Layers leaves the line panel stuck on top',
+    expect: 'opening a sheet (Layers, Alerts',
+    apply: h => h.replace("if(name && typeof closeAllPanels==='function') closeAllPanels();", ''),
+  },
+  {
+    name: 'the planner button does nothing on a computer',
+    expect: 'the button beside the search box opens the planner',
+    apply: h => h.replace("if(typeof openPlannerCard === 'function') openPlannerCard();", ''),
+  },
+  {
+    name: 'the Planner button comes back to the bottom bar',
+    expect: 'the button beside the search box opens the planner',
+    apply: h => h.replace("const items=[ ['map','mMap'], ['layers','mLayers'], ['alerts','mAlerts'] ];", "const items=[ ['map','mMap'], ['planner','mPlanner'], ['layers','mLayers'], ['alerts','mAlerts'] ];"),
+  },
+  {
+    name: 'a pressed line is only highlighted, the map does not move to it',
+    expect: 'pressing a line fits the whole line into the part of the map nothing covers',
+    apply: h => h.replace(/\n {2,4}showLineOnMap\(line\);/g, '\n'),
+  },
+  {
+    name: 'on a phone the pressed line is fitted under the panel',
+    expect: 'pressing a line fits the whole line into the part of the map nothing covers',
+    apply: h => h.replace('br = [24, pr ? Math.max(40, Hh - pr.top + 12) : 100];', 'br = [24, 24];'),
+  },
+  {
+    name: 'a reminder\'s heads-up is given again and again',
+    expect: 'heads-ups: none before the earliest one',
+    apply: h => h.replace('const fresh = come.filter(b => given.indexOf(b) < 0);', 'const fresh = come;'),
+  },
+  {
+    name: 'after the app slept, the stale 20-minute heads-up is given instead of the latest',
+    expect: 'heads-ups: none before the earliest one',
+    apply: h => h.replace('before: Math.min.apply(null, come)', 'before: Math.max.apply(null, come)'),
+  },
+  {
+    name: 'a weekday reminder also rings at the weekend',
+    expect: 'the next time a reminder is due',
+    apply: h => h.replace("(days === 'weekdays' && d >= 1 && d <= 5)", "days === 'weekdays'"),
+  },
+  {
+    name: 'the calendar file puts the reminder at the UTC time, not the local one',
+    expect: '"Add to my calendar" writes a valid calendar file',
+    apply: h => h.replace("'DTSTART:' + start", "'DTSTART:' + start + 'Z'"),
+  },
+  {
+    name: 'Back leaves the reminder dialog open',
+    expect: 'reminders can be set from a line panel and a bus panel',
+    apply: h => h.replace(/\{ id:'remind',[^\n]*\n/, ''),
   },
 ];
 
