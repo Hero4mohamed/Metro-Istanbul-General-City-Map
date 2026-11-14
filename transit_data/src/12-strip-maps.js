@@ -155,6 +155,10 @@ function openLine(line){
     if(cl && cl.lines.size>1){ const others=[...cl.lines].filter(r=>r!==line.ref); if(others.length) conns.push({at:st.name, others}); }
   });
   const third = live ? conns.length : (line.launch ? fmtLaunch(line.launch) : t('soonWord'));
+  /* the line's own notices, first thing under its name (V4.6, 12b-line-notices.js); a boat line also shows the ferry notices
+     that name no line. A line that is not running yet has none. */
+  { const ferry = line.kind === 'ferry', box = document.getElementById('lpNotices');
+    if(box) box.innerHTML = live ? lineNoticesHTML(lineNotices(line.ref, ferry ? 'ferry' : ''), ferry ? ferryGeneralNotices() : null) : ''; }
   if(!live){
     /* A line that is not running: its own panel (11a-planned-panel.js). The connectivity and
        expansion blocks are about running lines and are hidden rather than filled with filler. */

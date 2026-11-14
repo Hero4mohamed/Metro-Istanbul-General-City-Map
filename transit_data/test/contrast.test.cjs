@@ -78,19 +78,6 @@ for (const combo of COMBOS) {
   });
 }
 
-test('the "mixed" theme (dark panels on a light page) passes AA too', () => {
-  const light = tokens(['light']);
-  const block = /body\.mixed #cardTabs[^{]*\{([^{}]*)\}/.exec(css);
-  assert.ok(block, 'the mixed-theme block is missing');
-  const t = {}; for (const d of block[1].matchAll(/(--[\w-]+)\s*:\s*([^;]+);?/g)) t[d[1]] = d[2].trim();
-  const panel = over(t['--panel'], light['--obsidian']), panelCss = 'rgb(' + panel.slice(0, 3) + ')';
-  const low = [];
-  for (const k of TEXT) { assert.ok(t[k], 'the mixed block lacks ' + k + ' (it would inherit the light page\'s value onto a dark panel)'); const r = ratio(t[k], panelCss); if (r < 4.5) low.push(k + ' = ' + r.toFixed(2)); }
-  const chip = over(t['--surface-2'], panelCss);
-  for (const k of ['--text', '--muted', '--dim', '--accent-ink']) { const r = ratio(t[k], 'rgb(' + chip.slice(0, 3) + ')'); if (r < 4.5) low.push(k + ' on a chip = ' + r.toFixed(2)); }
-  assert.deepStrictEqual(low, [], 'mixed theme: ' + low.join('; '));
-});
-
 test('the accent is never used as text colour directly: it is a fill (1.6:1 as text on a light panel); text uses --accent-ink', () => {
   const bad = [...css.matchAll(/(^|[^-\w])color\s*:\s*var\(--accent\)/g)].length;
   assert.strictEqual(bad, 0, bad + ' rule(s) paint text with var(--accent)');

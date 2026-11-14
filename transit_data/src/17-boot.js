@@ -35,6 +35,7 @@ function captureReady(opts){
 function captureEnd(){ if(!animOn){ animOn=true; last=performance.now(); animRaf=requestAnimationFrame(frame); } return true; }
 /* ---- Announcements: live disruptions (faults / closures) + map warning markers ---- */
 const SEV_COLOR = { major:'#E5484D', partial:'#F5A623', minor:'#FFD400' };
+const WARN_SIZE = 22, WARN_RING = 34;      // px, the same at every zoom: the sign, and the ring round a sign pinned to one station
 const SEV_LABEL = { major:'Major', partial:'Partial', minor:'Minor' };
 const disruptionLayer = L.layerGroup().addTo(map);   // shown on the Active tab only (setTab manages it)
 const hazardRenderer = L.svg({ padding:0.5 });       // SVG so the dash animation (CSS) works
@@ -101,7 +102,10 @@ function openDisruption(d){
 function renderDisruptionMarkers(){
   disruptionLayer.clearLayers();
   const z = map.getZoom();
-  const isz = Math.round(22 * Math.max(0.6, markerScale(z)));   // ⚠ shrinks a bit when zoomed out
+  /* The warning sign and its ring are ONE fixed size at every zoom (V4.6). The ring used to be a circle drawn on the map's own
+     overlay: it was scaled with the map while a zoom was animating (growing or shrinking around a sign that did not) and was
+     redrawn smaller when zoomed out. Both now live in the sign's own element, which a zoom moves but never scales. */
+  const isz = WARN_SIZE;
   activeDisruptions().forEach(d=>{
     const col = SEV_COLOR[d.severity] || SEV_COLOR.major;
     const line = lineByRef[d.ref];
@@ -136,19 +140,16 @@ function renderDisruptionMarkers(){
       hit.on('click', e=>{ hit.closeTooltip(); pinDisr(d, e.latlng, 8); openDisruption(d); });
       wash.addTo(disruptionLayer); stripe.addTo(disruptionLayer); hit.addTo(disruptionLayer);
     });
-    // warning marker(s): fixed screen size, gently smaller when zoomed out
+    // warning marker(s): one fixed screen size
     disruptionPoints(d).forEach(p=>{
       // A line-wide or sectional fault is marked along its stripe. A fault we can only pin to
       // a single station has no stripe, so it would sit there as a flat signpost with nothing
-      // around it. Give it a halo instead — visible, without inventing a length.
-      if(!bands.length){
-        L.circleMarker(p, { renderer:hazardRenderer, className:'disr-halo',
-          radius:Math.max(10, isz*0.62), color:col, weight:2, opacity:.9,
-          fillColor:col, fillOpacity:.16, interactive:false }).addTo(disruptionLayer);
-      }
-      const icon = L.divIcon({ className:'warn-icon',
-        html:`<span style="--wc:${col};width:${isz}px;height:${isz}px;font-size:${Math.round(isz*0.55)}px">⚠</span>`,
-        iconSize:[isz,isz], iconAnchor:[isz/2,isz/2] });
+      // around it. Give it a ring instead — visible, without inventing a length.
+      const ring = !bands.length, box = ring ? WARN_RING : isz;
+      const icon = L.divIcon({ className:'warn-icon' + (ring ? ' warn-ringed' : ''),
+        html:(ring ? `<i class="warn-ring" style="--wc:${col};width:${WARN_RING}px;height:${WARN_RING}px"></i>` : '')
+          + `<span style="--wc:${col};width:${isz}px;height:${isz}px;font-size:${Math.round(isz*0.55)}px">⚠</span>`,
+        iconSize:[box,box], iconAnchor:[box/2,box/2] });
       const mk = L.marker(p, { icon, zIndexOffset:2000 });
       if(CAN_HOVER) mk.bindTooltip(disrTip(d), { className:'lt', direction:'top', offset:[0,-8] });
       mk.on('click', ()=>{ mk.closeTooltip(); pinDisr(d, p, isz/2 + 4); openDisruption(d); });
