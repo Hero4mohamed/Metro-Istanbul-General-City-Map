@@ -243,7 +243,7 @@ test('every dataset the build consumes declares its provenance', () => {
   // every .json the build reads by name, minus provenance.json itself
   const consumed = new Set(
     [...build.matchAll(/['"]([a-z0-9-]+\.json)['"]/g)].map(m => m[1])
-      .filter(f => f !== 'provenance.json' && f !== 'roadmap.json' && f !== 'legal-config.json')   // legal-config.json is who runs the app (V4.3), not data
+      .filter(f => f !== 'provenance.json' && f !== 'roadmap.json' && f !== 'legal-config.json' && f !== 'firebase-config.json')   // legal-config.json is who runs the app (V4.3), firebase-config.json the public Firebase project name (V4.6.3): settings, not data
   );
   const undeclared = [...consumed].filter(f => !prov.datasets[f]).sort();
   assert.deepStrictEqual(undeclared, [],

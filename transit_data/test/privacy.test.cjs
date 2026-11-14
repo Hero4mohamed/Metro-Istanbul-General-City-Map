@@ -143,16 +143,17 @@ test('everything the app stores is under the irn_ prefix and no other kind of st
   assert.ok(keys.length > 20, 'found only ' + keys.length + ' storage calls: has the pattern drifted?');
   assert.deepStrictEqual([...new Set(keys.filter(k => !k.startsWith('irn_')))], [], 'storage keys outside irn_ would survive "delete all my data"');
   assert.ok(!/\bindexedDB\b|document\.cookie/.test(code), 'the storage page promises no IndexedDB or cookies');
-  /* session storage: the storage page names exactly one use, the irn_play marker of the Android app (a row of its own in STORAGE) */
+  /* session storage: the storage page names exactly two uses, each with a row of its own in STORAGE: the irn_play marker of the
+     Android app, and (V4.6.3) a friend link opened before signing in, irn_pending_invite */
   const session = [...raw.matchAll(/sessionStorage\.(?:getItem|setItem|removeItem)\(\s*['"]([^'"]+)['"]/g)].map(m => m[1]);
-  assert.deepStrictEqual([...new Set(session)], ['irn_play'], 'session storage is used for something the storage page does not name: ' + session);
+  assert.deepStrictEqual([...new Set(session)].sort(), ['irn_pending_invite', 'irn_play'], 'session storage is used for something the storage page does not name: ' + session);
   assert.strictEqual((code.match(/\bsessionStorage\b/g) || []).length, session.length, 'session storage is used in a way the check above cannot see');
   for (const bad of ['google-analytics', 'googletagmanager', 'gtag(', 'fbq(', 'connect.facebook', 'hotjar', 'mixpanel', 'segment.com', 'plausible.io', 'matomo', 'clarity.ms', 'sentry', 'doubleclick', 'adsbygoogle', 'sendBeacon'])
     assert.ok(!raw.includes(bad) && !markup().includes(bad), 'the page carries tracking or advertising code: ' + bad);
 });
 
 /* ---- forms and consent -------------------------------------------------------------------------------------------------- */
-test('there is no sign-up, contact or payment form: no field asks for an e-mail, phone number, name or address, and the policy forbids submitting forms', () => {
+test('no contact or payment form, and the only sign-up is the optional account box (V4.6.3): no other field asks for an e-mail, phone number, name or address, and the policy forbids submitting forms', () => {
   const html = markup();
   assert.ok(!/<form[\s>]/i.test(html), 'a <form> element appeared: a form needs a consent line and a place in the privacy notice');
   assert.match(csp(), /form-action 'none'/, 'the policy no longer forbids form submission');
@@ -160,9 +161,13 @@ test('there is no sign-up, contact or payment form: no field asks for an e-mail,
   assert.ok(inputs.length > 0, 'found no inputs: has the pattern drifted?');
   for (const i of inputs) {
     const type = (/type="([^"]+)"/.exec(i) || [, 'text'])[1];
-    assert.ok(['text', 'search', 'password', 'range', 'checkbox', 'time', 'date', 'number'].includes(type), 'an input of type ' + type + ' (' + i.slice(0, 60) + ')');
-    assert.ok(!/autocomplete="(?:name|given-name|family-name|email|tel|street-address|postal-code|cc-)/.test(i), 'a field asks the browser to fill personal details: ' + i.slice(0, 80));
-    if (type === 'password') assert.ok(/id="aiKeyIn"/.test(i) && /autocomplete="off"/.test(i), 'the only password field is the optional API key, with autocomplete off');
+    /* V4.6.3: the account box (22c-account.js) asks for an e-mail, a password and a chosen name, only when someone opens it;
+       the privacy notice's section 6 says what happens to them. Nothing else may ask for personal details. */
+    const acc = /class="acc-in acc-(?:email|pw|name)"/.test(i);
+    assert.ok(['text', 'search', 'password', 'range', 'checkbox', 'time', 'date', 'number'].includes(type) || (acc && type === 'email'), 'an input of type ' + type + ' (' + i.slice(0, 60) + ')');
+    if (!acc) assert.ok(!/autocomplete="(?:name|given-name|family-name|email|tel|street-address|postal-code|cc-)/.test(i), 'a field asks the browser to fill personal details: ' + i.slice(0, 80));
+    if (acc) assert.ok(!/autocomplete="(?:name|given-name|family-name|tel|street-address|postal-code|cc-)/.test(i), 'the account box asks for more than an e-mail, a password and a chosen name: ' + i.slice(0, 80));
+    if (type === 'password') assert.ok((/id="aiKeyIn"/.test(i) && /autocomplete="off"/.test(i)) || /class="acc-in acc-pw"/.test(i), 'a password field other than the optional API key and the account box');
   }
 });
 function csp() { return /Content-Security-Policy" content="([^"]+)"/.exec(H.html())[1]; }

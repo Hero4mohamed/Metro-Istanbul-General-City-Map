@@ -72,3 +72,6 @@ relay/node_modules/
 relay/.wrangler/
 relay/.dev.vars
 relay/feeder.env
+
+# V4.6.3: the two test accounts for firebase/rules-check.cjs (passwords) - never committed
+firebase/.test-accounts.json

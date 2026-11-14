@@ -181,9 +181,13 @@ test('the page loads no file from a CDN or any other host (V4.3); anything that 
   assert.deepStrictEqual(outside.map(t => t.slice(0, 80)), [], 'the page loads a file from another host again; ship it with the app instead (vendor/README.md)');
 });
 
-test('no API key is baked into the shipped page', () => {
-  const bad = H.html().match(/sk-ant-[A-Za-z0-9]{8,}|AIza[0-9A-Za-z_-]{20,}/g);
-  assert.strictEqual(bad, null, 'secret-shaped string found in the build');
+test('no API key is baked into the shipped page (except, once, the PUBLIC Firebase web key in const FIREBASE)', () => {
+  /* V4.6.3: Google's Firebase web key looks like any Google key (AIza...) but is public by design: it only names the project, and
+     firebase/firestore.rules protect the data. It is allowed exactly once, inside const FIREBASE, and nowhere else. */
+  const html = H.html(), fb = /const FIREBASE = \{"apiKey":"(AIza[0-9A-Za-z_-]{20,})","projectId":"[a-z0-9-]+"\};/.exec(html);
+  const found = html.match(/sk-ant-[A-Za-z0-9]{8,}|AIza[0-9A-Za-z_-]{20,}/g) || [];
+  const bad = found.filter((k, i) => !(fb && k === fb[1] && found.indexOf(k) === i));
+  assert.deepStrictEqual(bad, [], 'secret-shaped string found in the build');
 });
 
 /* --- 7. the split source assembles into exactly what ships -------------------------

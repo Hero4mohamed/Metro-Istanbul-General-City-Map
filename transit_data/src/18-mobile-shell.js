@@ -39,6 +39,9 @@ function openSheet(name){
   { const pb=document.getElementById('omniPlan'); if(pb){ pb.classList.toggle('on', name==='planner'); pb.setAttribute('aria-pressed', name==='planner' ? 'true' : 'false'); } }
   document.body.classList.toggle('plan-open', name==='planner'); if(name!=='planner') document.body.classList.remove('plan-full');
   if(name==='planner') setPlanDetent(planRouteShown() ? 'half' : 'compact');
+  /* V4.6.3: Friends loads when its sheet opens; friends' positions are read only while it is open (or while you share) */
+  if(name==='friends' && typeof friendsOpened==='function') friendsOpened();
+  if(name!=='friends' && typeof stopFriendPolling==='function') stopFriendPolling();
   for(const k in mNavBtns){ const on = (name===null || name==='modes' || name==='planner') ? k==='map' : k===name; mNavBtns[k].classList.toggle('on', on); if(on) mNavBtns[k].setAttribute('aria-current','page'); else mNavBtns[k].removeAttribute('aria-current'); }
   { const nav=document.querySelector('.mnav'); if(nav){ const keys=Object.keys(mNavBtns), i=keys.findIndex(k=>mNavBtns[k].classList.contains('on')); nav.dataset.on = String(Math.max(0, i)); } }
   if(navigator.vibrate) try{ navigator.vibrate(8); }catch(e){}
@@ -189,7 +192,7 @@ function setupMobile(){
   // sheets
   /* Four sheets, three buttons (V4.6.2): Map (and behind it the kinds of transport), Layers, Alerts; the planner opens from the button
      beside the search box. Weather and Airports are views in the Layers sheet, with no sheet or button of their own. */
-  mSheets={ planner:mkSheet('planner'), layers:mkSheet('layers'), alerts:mkSheet('alerts'), modes:mkSheet('modes') };
+  mSheets={ planner:mkSheet('planner'), friends:mkSheet('friends'), layers:mkSheet('layers'), alerts:mkSheet('alerts'), modes:mkSheet('modes') };
   /* V4.5: the kinds of transport live behind the Map button. Its first press is the default map; pressed again there, it opens this
      sheet: Metro & rail (the full map), Buses, Boats. Buses used to be one of the views in the Layers sheet. */
   mSheets.modes.classList.add('modes');
@@ -207,6 +210,7 @@ function setupMobile(){
   const controls=document.querySelector('.controls');
   [...controls.children].forEach(el=>{
     if(el.id==='cardPlanner') mSheets.planner.appendChild(el);
+    else if(el.id==='cardFriends') mSheets.friends.appendChild(el);      // V4.6.3: Friends has its own sheet and bottom button
     else if(el.id==='cardBus' || el.id==='cardBoats') mSheets.modes.appendChild(el);
     else mSheets.layers.appendChild(el);
     el.style.display='';   // sheets control visibility now; setTab still toggles the weather / bus / intercity cards
@@ -222,10 +226,11 @@ function setupMobile(){
   const ind=document.createElement('span'); ind.className='mnav-ind'; ind.setAttribute('aria-hidden','true'); nav.appendChild(ind);
   const ICON = {
     map: '<svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round" stroke-linecap="round" aria-hidden="true"><path d="M9 4 3.5 6v14L9 18l6 2 5.5-2V4L15 6 9 4Z"/><path d="M9 4v14M15 6v14"/></svg>',
+    friends: '<svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round" stroke-linecap="round" aria-hidden="true"><circle cx="9" cy="8.5" r="3.2"/><path d="M3 19.5c.6-3.3 3-5.2 6-5.2s5.4 1.9 6 5.2"/><circle cx="16.8" cy="9.5" r="2.5"/><path d="M16.2 14.4c2.6.1 4.3 1.7 4.8 4.4"/></svg>',
     layers: '<svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round" stroke-linecap="round" aria-hidden="true"><path d="M12 3.5 2.5 8.5 12 13.5l9.5-5L12 3.5Z"/><path d="m2.5 12.5 9.5 5 9.5-5"/><path d="m2.5 16.5 9.5 5 9.5-5" opacity=".55"/></svg>',
     alerts: '<svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round" stroke-linecap="round" aria-hidden="true"><path d="M6 16.5V11a6 6 0 0 1 12 0v5.5l1.5 2h-15l1.5-2Z"/><path d="M10 20.5a2.2 2.2 0 0 0 4 0"/></svg>',
   };
-  const items=[ ['map','mMap'], ['layers','mLayers'], ['alerts','mAlerts'] ];
+  const items=[ ['map','mMap'], ['friends','mFriends'], ['layers','mLayers'], ['alerts','mAlerts'] ];
   items.forEach(([k,key])=>{
     const b=document.createElement('button'); b.type='button'; b.dataset.k=k;
     b.innerHTML=`<span class="mi">${ICON[k]}</span><span class="ml" data-i18n="${key}">${t(key)}</span>` + (k==='alerts' ? '<span class="mnav-badge" id="mnavBadge" hidden></span>' : '');

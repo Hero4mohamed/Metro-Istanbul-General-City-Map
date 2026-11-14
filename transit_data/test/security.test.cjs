@@ -138,7 +138,12 @@ test('SECURITY.md says how to report a vulnerability privately, and the contact 
 
 test('no secret-shaped string is anywhere in the committed files that ship or run', () => {
   const bad = [];
-  const walk = d => { for (const e of fs.readdirSync(d, { withFileTypes: true })) { if (['node_modules', '.git', '.claude', 'vendor'].includes(e.name)) continue; const p = path.join(d, e.name); if (e.isDirectory()) walk(p); else if (/\.(html|js|cjs|json|ya?ml|md|webmanifest|txt)$/.test(e.name) && fs.statSync(p).size < 4e6) { const t = fs.readFileSync(p, 'utf8'); for (const m of t.matchAll(/sk-ant-[A-Za-z0-9_-]{16,}|AKIA[0-9A-Z]{16}|ghp_[A-Za-z0-9]{30,}|github_pat_[A-Za-z0-9_]{30,}|-----BEGIN (?:RSA |EC |OPENSSH )?PRIVATE KEY-----|AIza[0-9A-Za-z_-]{30,}/g)) bad.push(path.relative(H.ROOT, p) + ': ' + m[0].slice(0, 12) + '…'); } } };
+  /* V4.6.3: the PUBLIC Firebase web key (transit_data/firebase-config.json, public by Google's design, see firebase/README.md) may
+     appear in that file and in the page built from it, and nowhere else. Every other key-shaped string still fails. */
+  const cfgPath = path.join(H.ROOT, 'transit_data', 'firebase-config.json');
+  const fbKey = fs.existsSync(cfgPath) ? JSON.parse(fs.readFileSync(cfgPath, 'utf8')).apiKey : null;
+  const fbOk = p => /^(?:transit_data[\\/]firebase-config\.json|index\.html)$/.test(path.relative(H.ROOT, p));
+  const walk = d => { for (const e of fs.readdirSync(d, { withFileTypes: true })) { if (['node_modules', '.git', '.claude', 'vendor'].includes(e.name)) continue; const p = path.join(d, e.name); if (e.isDirectory()) walk(p); else if (/\.(html|js|cjs|json|ya?ml|md|webmanifest|txt)$/.test(e.name) && fs.statSync(p).size < 4e6) { const t = fs.readFileSync(p, 'utf8'); for (const m of t.matchAll(/sk-ant-[A-Za-z0-9_-]{16,}|AKIA[0-9A-Z]{16}|ghp_[A-Za-z0-9]{30,}|github_pat_[A-Za-z0-9_]{30,}|-----BEGIN (?:RSA |EC |OPENSSH )?PRIVATE KEY-----|AIza[0-9A-Za-z_-]{30,}/g)) if (!(fbKey && m[0] === fbKey && fbOk(p))) bad.push(path.relative(H.ROOT, p) + ': ' + m[0].slice(0, 12) + '…'); } } };
   walk(H.ROOT);
   assert.deepStrictEqual(bad, [], 'secret-shaped strings found');
 });

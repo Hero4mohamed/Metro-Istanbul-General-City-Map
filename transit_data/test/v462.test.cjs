@@ -108,7 +108,8 @@ test('the button beside the search box opens the planner (and on a phone closes 
   assert.deepStrictEqual(plannerWorld(true, 'bus', false), ['tab active', 'sheet planner'], 'the planner opens over the bus view');
   assert.deepStrictEqual(plannerWorld(false, 'active', false), ['card', 'focus selO'], 'on a computer it does not open the Trip Planner card');
   assert.match(HTML, /<button class="omni-plan" id="omniPlan" type="button"/);
-  assert.match(APP, /const items=\[ \['map','mMap'\], \['layers','mLayers'\], \['alerts','mAlerts'\] \];/);
+  /* V4.6.3 added Friends as the second button (v463.test.cjs); the planner is still not in the bar */
+  assert.match(APP, /const items=\[ \['map','mMap'\], \['friends','mFriends'\], \['layers','mLayers'\], \['alerts','mAlerts'\] \];/);
   assert.ok(/ind\.className='mnav-ind'/.test(APP) && /\.mnav\[data-on="1"\] \.mnav-ind\{transform:translateX\(100%\);\}/.test(CSS), 'the bottom bar lost its sliding marker');
 });
 

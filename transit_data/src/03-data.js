@@ -62,6 +62,8 @@ const ACCESS_RAW = HAS.access ? __ACCESS_JSON__ : [];
    to say what it knows and how well it knows it, rather than presenting a community-mapped
    route and an operator timetable with the same confidence. */
 const PROVENANCE = __PROVENANCE_JSON__;
+/* V4.6.3: the PUBLIC Firebase web config ({apiKey, projectId}), or null until the project is set up (build.cjs checks it) */
+const FIREBASE = __FIREBASE_JSON__;
 /* --- curated İstanbul landmarks for the "Explore" layer (real places; the app computes the
        nearest station + walk). {name,cat,lat,lng} --- */
 const ATTRACTIONS = CITY.attractions || __ATTRACTIONS_JSON__;

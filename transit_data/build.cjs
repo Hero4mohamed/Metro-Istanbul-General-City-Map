@@ -201,7 +201,24 @@ for (const id of Object.keys(cities)) {
 }
 let html = template.replace('__APP_JS__', () => appJs);
 
-for (const t of ['__CITIES_JSON__','__INTERCITY_JSON__','__BUS_JSON__','__DISRUPTIONS_JSON__','__OPENINGS_JSON__','__MISTATIONS_JSON__','__ACCESS_JSON__','__ATTRACTIONS_JSON__','__CARDIMG_JSON__','__TRANSLATOR_JS__','__BUILD__','__PROVENANCE_JSON__','__OFFLINE_JSON__'])
+/* V4.6.3: the PUBLIC Firebase web config (accounts, friends, location sharing), or null until the owner has set the project up.
+   Google publishes this kind of key in every web app; it only names the project, and the access rules protect the data.
+   Anything else in the file (a service-account key above all) is refused, so a secret can never be shipped by mistake. */
+let firebaseCfg = null;
+{
+  const f = path.join(DIR, 'firebase-config.json');
+  if (fs.existsSync(f)) {
+    const c = JSON.parse(fs.readFileSync(f, 'utf8'));
+    const keys = Object.keys(c).sort().join(',');
+    if (keys !== 'apiKey,projectId' || typeof c.apiKey !== 'string' || typeof c.projectId !== 'string'
+        || !/^[A-Za-z0-9_-]{20,60}$/.test(c.apiKey) || !/^[a-z0-9-]{4,40}$/.test(c.projectId)) {
+      console.error('FIREBASE config may hold only apiKey and projectId (strings): ' + f); process.exit(1);
+    }
+    firebaseCfg = { apiKey: c.apiKey, projectId: c.projectId };
+  }
+}
+
+for (const t of ['__CITIES_JSON__','__INTERCITY_JSON__','__BUS_JSON__','__DISRUPTIONS_JSON__','__OPENINGS_JSON__','__MISTATIONS_JSON__','__ACCESS_JSON__','__ATTRACTIONS_JSON__','__CARDIMG_JSON__','__TRANSLATOR_JS__','__BUILD__','__PROVENANCE_JSON__','__OFFLINE_JSON__','__FIREBASE_JSON__'])
   if (!html.includes(t)) { console.error('token missing:', t); process.exit(1); }
 
 html = html.replace('__BUILD__', () => buildStamp)
@@ -216,7 +233,8 @@ html = html.replace('__BUILD__', () => buildStamp)
                      .replace('__CARDIMG_JSON__', () => JSON.stringify(cardImg))
                      .replace('__TRANSLATOR_JS__', () => translatorJS)
                      .replace('__PROVENANCE_JSON__', () => JSON.stringify(provenance))
-                     .replace('__OFFLINE_JSON__', () => JSON.stringify(offlineInfo));
+                     .replace('__OFFLINE_JSON__', () => JSON.stringify(offlineInfo))
+                     .replace('__FIREBASE_JSON__', () => JSON.stringify(firebaseCfg));
 /* Who runs the app and how to reach them (V4.3). One file feeds the app (Settings > About & legal, the privacy notice) and the
    legal pages (legal/*.html, built below), so the two cannot say different things. */
 const LEGAL = JSON.parse(fs.readFileSync(path.join(DIR, 'legal-config.json'), 'utf8'));
@@ -264,7 +282,9 @@ const CSP = [
    'https://server.arcgisonline.com', 'https://tiles.openfreemap.org',
    'https://photon.komoot.io', 'https://overpass-api.de', 'https://api.ibb.gov.tr', 'https://openapi.izmir.bel.tr', 'https://turkmaps-relay.turkmaps-relay.workers.dev',
    'https://api.open-meteo.com', 'https://air-quality-api.open-meteo.com', 'https://routing.openstreetmap.de',
-   'https://api.anthropic.com'].join(' '),
+   'https://api.anthropic.com',
+   // V4.6.3: accounts (Identity Toolkit), keeping you signed in (Secure Token), friends and shared locations (Firestore)
+   'https://identitytoolkit.googleapis.com', 'https://securetoken.googleapis.com', 'https://firestore.googleapis.com'].join(' '),
   "worker-src 'self'",
   "frame-src 'none'",           // the app embeds nothing, and (see 00-diagnostics.js) refuses to be embedded
   "media-src 'none'",           // no audio or video
