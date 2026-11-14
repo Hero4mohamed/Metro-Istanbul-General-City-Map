@@ -413,3 +413,11 @@ test('ui: the friend-request dialog is a proper dialog: Back and Escape decline 
   assert.match(s, /if\(open\('inviteDlg', 'open'\)\)\{ declineInvite\(\); closeInviteDlg\(\); e\.preventDefault\(\); return; \}/, 'Escape does not close the friend request');
   assert.match(s, /\{ id: 'inviteDlg',\s+cls: 'open', modal: true,\s+first: '#inviteAccept' \}/, 'the keyboard can leave the friend request');
 });
+test('ui: the Sharing sign is above every card, sheet and dialog, so it stays visible (and its Stop reachable) the whole time', () => {
+  const css = CSS();
+  const pill = /\.share-pill\{[^}]*z-index:(\d+)/.exec(css);
+  assert.ok(pill, 'the Sharing sign has no z-index');
+  const others = [...css.matchAll(/([^{}]+)\{[^}]*z-index:(\d+)/g)].filter(m => !/share-pill|#bootSplash/.test(m[1]))   /* the loading splash: shown only while the app starts, when nothing can be shared */.map(m => +m[2]).filter(z => z < 100000);
+  assert.ok(+pill[1] > Math.max(...others), 'something can cover the Sharing sign: it is at ' + pill[1] + ', another layer at ' + Math.max(...others));
+  assert.match(css, /body\.mobile \.share-pill\{top:/, 'on a phone the sign sits at the bottom, over the buttons of cards and sheets');
+});

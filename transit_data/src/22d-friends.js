@@ -217,6 +217,7 @@ const shareUI = {
     const p = document.getElementById('sharePill'); if(!p || !s) return;
     const left = Math.max(1, Math.ceil((s.until - Date.now()) / 60e3));
     document.getElementById('sharePillTxt').textContent = t(s.approx ? 'sharePillApprox' : 'sharePill').replace('{m}', String(left));
+    const tb = document.querySelector('.topbar'); if(tb) document.documentElement.style.setProperty('--share-top', Math.round(tb.getBoundingClientRect().bottom + 8) + 'px');
     p.hidden = false; document.body.classList.add('sharing-on');
   },
   hide: () => { const p = document.getElementById('sharePill'); if(p) p.hidden = true; document.body.classList.remove('sharing-on'); renderFriends(); },

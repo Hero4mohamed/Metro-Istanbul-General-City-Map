@@ -314,12 +314,12 @@ const MUTATIONS = [
   },
   {
     name: 'ask for an e-mail address',
-    expect: 'there is no sign-up, contact or payment form',
+    expect: 'no contact or payment form, and the only sign-up is the optional account box',
     apply: h => h.replace('<div class="priv-btns">', '<input type="email" name="email" autocomplete="email"><div class="priv-btns">'),
   },
   {
     name: 'add a sign-up form',
-    expect: 'there is no sign-up, contact or payment form',
+    expect: 'no contact or payment form, and the only sign-up is the optional account box',
     apply: h => h.replace('<div class="priv-btns">', '<form action="https://example.com/join"></form><div class="priv-btns">'),
   },
   {
@@ -1505,7 +1505,7 @@ const MUTATIONS = [
   // ---- V4.2: four bottom buttons, the back button, the warning bubble, buses, rotation ----
   {
     name: 'bring the Weather button back to the phone\'s bottom bar',
-    expect: 'the phone has three bottom buttons - Map, Layers, Alerts - the planner opens from the search bar, and the weather has no sheet',
+    expect: 'the phone has four bottom buttons - Map, Friends, Layers, Alerts',
     apply: h => h.replace("['layers','mLayers'], ['alerts','mAlerts'] ];", "['layers','mLayers'], ['weather','mWeather'], ['alerts','mAlerts'] ];"),
   },
   {
@@ -2465,7 +2465,7 @@ const MUTATIONS = [
   {
     name: 'the Planner button comes back to the bottom bar',
     expect: 'the button beside the search box opens the planner',
-    apply: h => h.replace("const items=[ ['map','mMap'], ['layers','mLayers'], ['alerts','mAlerts'] ];", "const items=[ ['map','mMap'], ['planner','mPlanner'], ['layers','mLayers'], ['alerts','mAlerts'] ];"),
+    apply: h => h.replace("const items=[ ['map','mMap'], ['friends','mFriends'], ['layers','mLayers'], ['alerts','mAlerts'] ];", "const items=[ ['map','mMap'], ['planner','mPlanner'], ['friends','mFriends'], ['layers','mLayers'], ['alerts','mAlerts'] ];"),
   },
   {
     name: 'a pressed line is only highlighted, the map does not move to it',
@@ -2501,6 +2501,112 @@ const MUTATIONS = [
     name: 'Back leaves the reminder dialog open',
     expect: 'reminders can be set from a line panel and a bus panel',
     apply: h => h.replace(/\{ id:'remind',[^\n]*\n/, ''),
+  },
+  /* ---- V4.6.3: accounts, friends and location sharing: each safety measure that lives in the page ---- */
+  {
+    name: "the security policy no longer lets the app reach Firestore",
+    expect: "config: the security policy lets the app reach exactly the three Firebase addresses",
+    apply: h => h.replace(" https://identitytoolkit.googleapis.com https://securetoken.googleapis.com https://firestore.googleapis.com", " https://identitytoolkit.googleapis.com https://securetoken.googleapis.com"),
+  },
+  {
+    name: "Approximate sends the exact position",
+    expect: "sharing: Approximate rounds to about 1 km ON THE PHONE",
+    apply: h => h.replace("const ll = approx ? approxPos(pos.lat, pos.lng) : [pos.lat, pos.lng];", "const ll = [pos.lat, pos.lng];"),
+  },
+  {
+    name: "sharing can last a whole day",
+    expect: "sharing: only 15 minutes, 1 hour or 8 hours",
+    apply: h => h.replace("const SHARE_DURATIONS = [15, 60, 480];", "const SHARE_DURATIONS = [15, 60, 480, 1440];"),
+  },
+  {
+    name: "a position is sent on every tiny move, with no 30-second floor",
+    expect: "sharing: a position is sent when moved more than 25 m",
+    apply: h => h.replace("if(dt < SHARE_MIN_GAP) return false;", ""),
+  },
+  {
+    name: "the phone, not the server, dates a shared position",
+    expect: "sharing: the stored position carries only lat, lng, acc, approx and until",
+    apply: h => h.replace("updateTransforms: [{ fieldPath: 'at', setToServerValue: 'REQUEST_TIME' }] };", "updateTransforms: [] };"),
+  },
+  {
+    name: "Stop leaves the position stored",
+    expect: "sharing: Stop deletes the stored position",
+    apply: h => h.replace("if(acct && acct.verified && FIREBASE) try{ await fsCommit([{ delete: docName('locations', acct.uid) }]); }catch(e){}", ""),
+  },
+  {
+    name: "a position left by a crash stays stored",
+    expect: "sharing (RF5)",
+    apply: h => h.replace("async function shareBootCleanup(){ if(accReady() && !sharing) try{ await fsCommit([{ delete: docName('locations', acct.uid) }]); }catch(e){} }", "async function shareBootCleanup(){}"),
+  },
+  {
+    name: "a refused location starts sharing silently",
+    expect: "sharing (RF3)",
+    apply: h => h.replace("shareUI.say('shareDenied'); resolve(false);", "resolve(false);"),
+  },
+  {
+    name: "a friend who stopped sharing stays on the map",
+    expect: "sharing (RF2)",
+    apply: h => h.replace("else { f.pos = null; f.sharing = false; }", "else {}"),
+  },
+  {
+    name: "an expired sign-in is not renewed and retried",
+    expect: "account (RF1)",
+    apply: h => h.replace("    if(r.status === 401){ await accRefresh(); r = await go(acct.idToken); }", ""),
+  },
+  {
+    name: "a friend's name goes into the list unescaped",
+    expect: "friends: a friend's name is escaped in the list",
+    apply: h => h.replace("'<span class=\"fr-nm\">' + svgEsc(f.name)", "'<span class=\"fr-nm\">' + (f.name)"),
+  },
+  {
+    name: "a friend link is accepted without asking",
+    expect: "friends (RF4)",
+    apply: h => h.replace("  inviteUI.show(inv);", "  acceptInvite(inv);"),
+  },
+  {
+    name: "a friend link opened before signing in is forgotten",
+    expect: "friends (RF4)",
+    apply: h => h.replace("if(!accReady()){ setPendingInvite(id); inviteUI.needAccount(); return; }", "if(!accReady()){ inviteUI.needAccount(); return; }"),
+  },
+  {
+    name: "a friend link lasts three days",
+    expect: "friends: a new link expires within 48 hours",
+    apply: h => h.replace("const INVITE_HOURS = 47;", "const INVITE_HOURS = 72;"),
+  },
+  {
+    name: "a friendship id is not sorted, so Remove could miss the other one",
+    expect: "account: Firestore values are written and read back",
+    apply: h => h.replace("function pairId(u1, u2){ return u1 < u2 ? u1 + '_' + u2 : u2 + '_' + u1; }", "function pairId(u1, u2){ return u1 + '_' + u2; }"),
+  },
+  {
+    name: "the password is kept on the device",
+    expect: "account: signing up asks Firebase to email a confirmation link, keeps no password",
+    apply: h => h.replace("accFromAuth(j, email); acct.name = name; accChanged();", "accFromAuth(j, email); acct.name = name; acct.password = pw; accChanged();").replace("pendingDelete: acct.pendingDelete ? true : undefined }));", "pendingDelete: acct.pendingDelete ? true : undefined })));").replace("    if(acct) localStorage.setItem(ACC_KEY, JSON.stringify({ uid: acct.uid,", "    if(acct) localStorage.setItem(ACC_KEY, JSON.stringify(Object.assign({}, acct, { uid: acct.uid,"),
+  },
+  {
+    name: "Delete my account skips the data and deletes only the account",
+    expect: "account: deleting signs in again, removes the data",
+    apply: h => h.replace("  if(acct.verified){                       // an unconfirmed", "  if(false){                       // an unconfirmed"),
+  },
+  {
+    name: "with no Firebase project the account form still shows",
+    expect: "account: with no Firebase project set up",
+    apply: h => h.replace("  if(!FIREBASE) return '<p class=\"sp-hint\">' + svgEsc(t('accNotSetUp')) + '</p>';", ""),
+  },
+  {
+    name: "opening the Friends sheet does not load friends",
+    expect: "ui: on a phone the Friends card lives in its own sheet",
+    apply: h => h.replace("  if(name==='friends' && typeof friendsOpened==='function') friendsOpened();", ""),
+  },
+  {
+    name: "the Sharing sign can be covered by a card",
+    expect: "ui: the Sharing sign is above every card, sheet and dialog",
+    apply: h => h.replace(".share-pill{position:fixed;left:50%;transform:translateX(-50%);top:14px;z-index:2700;", ".share-pill{position:fixed;left:50%;transform:translateX(-50%);top:14px;z-index:1400;"),
+  },
+  {
+    name: "a Google API key is shipped outside the Firebase config",
+    expect: "no API key is baked into the shipped page",
+    apply: h => h.replace("const FIREBASE = null;", "const FIREBASE = null; const MAPS_KEY = \"AIzaSyDUMMYDUMMYDUMMYDUMMYDUMMYDUMMY12\";"),
   },
 ];
 
