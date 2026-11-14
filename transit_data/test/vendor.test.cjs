@@ -73,7 +73,11 @@ test('every vendor/ file the page names exists', () => {
 });
 
 test('neither the page, its policy nor its service worker names a third-party file host', () => {
-  const html = H.html(), sw = H.read('sw.js');
+  /* V4.6.3: the three Firebase DATA addresses (accounts, friends, shared locations) are allowed by name, only in connect-src and
+     only contacted when someone opens Friends (v463.test.cjs). Any other googleapis.com name (fonts, scripts, files) still fails. */
+  const FB_API = /https:\/\/(?:identitytoolkit|securetoken|firestore)\.googleapis\.com/g;
+  const html = H.html().replace(FB_API, ''), sw = H.read('sw.js');
+  assert.ok(!/(?:identitytoolkit|securetoken|firestore)\.googleapis/.test(sw), 'the service worker names a Firebase address');
   for (const host of ['unpkg.com', 'googleapis.com', 'gstatic.com', 'cdnjs.cloudflare.com', 'jsdelivr.net', 'fonts.google']) {
     assert.ok(!html.includes(host), 'the page names ' + host + ' again (a visit would tell it the visitor\'s address)');
     assert.ok(!sw.includes(host), 'the service worker names ' + host);
