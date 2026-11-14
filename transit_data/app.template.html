@@ -1598,6 +1598,19 @@
   .fr-nm{flex:1;min-width:0;display:flex;flex-direction:column;overflow-wrap:anywhere;} .fr-nm small{color:var(--dim);font-size:var(--fs-7);}
   .fr-nm small.fr-on{color:var(--ok,#30A46C);}
   .fr-row .mini{flex:none;background:var(--surface-2);border:1px solid var(--stroke);color:var(--text);border-radius:10px;padding:6px 10px;font:inherit;font-size:var(--fs-7);cursor:pointer;}
+  .sh-box{display:flex;flex-direction:column;gap:8px;padding:10px;border-radius:14px;border:1px solid var(--stroke);}
+  .sh-box.sh-on{border-color:var(--ok,#30A46C);} .sh-box p{margin:0;font-size:var(--fs-6);line-height:1.5;}
+  .share-pill{position:fixed;left:50%;transform:translateX(-50%);top:14px;z-index:1400;display:flex;align-items:center;gap:10px;
+    padding:8px 8px 8px 14px;border-radius:var(--r-pill);background:var(--ok,#30A46C);color:#fff;font-weight:700;font-size:var(--fs-6);box-shadow:0 8px 24px -10px rgba(0,0,0,.6);max-width:calc(100vw - 32px);}
+  .share-pill[hidden]{display:none;}
+  .share-pill button{border:none;border-radius:var(--r-pill);padding:6px 12px;background:rgba(0,0,0,.25);color:#fff;font:inherit;cursor:pointer;}
+  .sh-dot{width:9px;height:9px;border-radius:var(--r-round);background:#fff;flex:none;animation:shPulse 1.6s ease-in-out infinite;}
+  @keyframes shPulse{50%{opacity:.35;}}
+  body.calm .sh-dot{animation:none;}
+  body.mobile .share-pill{top:auto;bottom:calc(92px + env(safe-area-inset-bottom));}
+  .friend-dot{display:grid;place-items:center;}
+  .friend-dot span{display:grid;place-items:center;width:30px;height:30px;border-radius:var(--r-round);background:var(--accent-ink);color:#fff;font-weight:800;font-size:14px;border:2.5px solid #fff;box-shadow:0 3px 10px rgba(0,0,0,.45);}
+  .friend-dot.approx span{border-style:dashed;}
   .invite-dlg{max-width:380px;} .invite-dlg p{line-height:1.5;margin:6px 0 14px;}
   .settings-panel .btn{margin-top:2px;}
   /* on a phone a full-screen blur behind a moving sheet is the costliest thing on the page: a darker wash does the same job */
@@ -2327,6 +2340,7 @@
   <div id="remBody"></div>
 </div>
 
+<div class="share-pill" id="sharePill" role="status" hidden><span class="sh-dot" aria-hidden="true"></span><span id="sharePillTxt"></span><button type="button" id="sharePillStop" data-i18n="shareStop">Stop sharing</button></div>
 <div class="settings-overlay" id="inviteOverlay"></div>
 <div class="settings-panel glass invite-dlg" id="inviteDlg" role="dialog" aria-modal="true" aria-labelledby="inviteTitle">
   <div class="sp-head"><span id="inviteTitle">👥 <span data-i18n="frInviteTitle">Friend request</span></span></div>

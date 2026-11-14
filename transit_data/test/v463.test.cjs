@@ -294,3 +294,98 @@ test('friends: a friend\'s name is escaped in the list, so it cannot inject anyt
   const h = w.fr.friendsViewHTML();
   assert.ok(!/<img/i.test(h)); assert.match(h, /&lt;img src=x/);
 });
+
+/* -------------------------------------------------------------- sharing ---- */
+function shareWorld(routes, opts = {}) {
+  const sh = { said: [], shown: 0, hidden: 0, drawn: null }, geo = { watching: 0, cleared: 0, ok: null, err: null };
+  const extra = Object.assign({
+    navigator: { geolocation: { watchPosition: (ok, err) => { geo.watching++; geo.ok = ok; geo.err = err; return 7; }, clearWatch: () => { geo.cleared++; } } },
+    setInterval: () => 9, clearInterval: () => {},
+    shareUI: { show: () => { sh.shown++; }, hide: () => { sh.hidden++; }, say: k => sh.said.push(k), drawFriends: list => { sh.drawn = list.map(f => ({ uid: f.uid, pos: f.pos })); } },
+  }, opts.extra || {});
+  const w = friendsWorld(routes, Object.assign({}, opts, { extra }));
+  vm.runInContext(region('SHARE-PURE') + region('SHARE-CORE')
+    + '\nthis.sh = { SHARE_DURATIONS, approxPos, posMeters, shouldSend, locationWrite, startSharing, stopSharing, pollFriends, shareBootCleanup, shareViewHTML, get sharing(){ return sharing; } };', w.ctx);
+  return Object.assign(w, { sh: w.ctx.sh, shUI: sh, geo });
+}
+const POS = (lat, lng, acc = 12) => ({ coords: { latitude: lat, longitude: lng, accuracy: acc } });
+
+test('sharing: only 15 minutes, 1 hour or 8 hours; nothing longer, nothing in between', async () => {
+  const w = shareWorld(url => /:commit/.test(url) ? [200, {}] : null, { store: SESSION(true) });
+  assert.deepStrictEqual([...w.sh.SHARE_DURATIONS], [15, 60, 480]);
+  await assert.rejects(w.sh.startSharing(30, false)); await assert.rejects(w.sh.startSharing(1440, false));
+  assert.strictEqual(w.geo.watching, 0, 'the location was asked for a refused duration');
+  const p = w.sh.startSharing(480, false); w.geo.ok(POS(41.0123456, 28.9876543)); await p;
+  assert.ok(Math.abs(w.sh.sharing.until - (Date.now() + 480 * 60e3)) < 5000);
+});
+test('sharing: Approximate rounds to about 1 km ON THE PHONE; the exact numbers are never sent', async () => {
+  const w = shareWorld(url => /:commit/.test(url) ? [200, {}] : null, { store: SESSION(true) });
+  assert.deepStrictEqual([...w.sh.approxPos(41.012345, 28.987654)], [41.01, 28.99]);
+  const p = w.sh.startSharing(60, true); w.geo.ok(POS(41.012345, 28.987654)); await p;
+  const sent = JSON.stringify(w.calls.filter(c => /:commit/.test(c.url)).map(c => c.body));
+  assert.ok(sent.length > 0 && !/41\.0123|28\.9876/.test(sent), 'the exact position left the phone: ' + sent);
+});
+test('sharing: a position is sent when moved more than 25 m, at least every 2 minutes, never more often than every 30 s', () => {
+  const { sh } = shareWorld(() => null);
+  const at = (lat, lng) => ({ lat, lng }), t0 = 1e12, last = { t: t0, pos: at(41, 29) }, m = d => at(41 + d / 111320, 29);
+  assert.strictEqual(sh.shouldSend(null, t0, at(41, 29)), true);
+  assert.strictEqual(sh.shouldSend(last, t0 + 10e3, m(100)), false);
+  assert.strictEqual(sh.shouldSend(last, t0 + 31e3, m(30)), true);
+  assert.strictEqual(sh.shouldSend(last, t0 + 60e3, m(10)), false);
+  assert.strictEqual(sh.shouldSend(last, t0 + 121e3, m(0)), true);
+  assert.ok(Math.abs(sh.posMeters(at(41, 29), m(100)) - 100) < 1);
+});
+test('sharing: the stored position carries only lat, lng, acc, approx and until, and its time is set by the server', () => {
+  const { sh } = shareWorld(() => null);
+  const w = sh.locationWrite('turkmaps-test', 'uidA', { lat: 41.5, lng: 29.25, acc: 12.7 }, false, Date.UTC(2026, 10, 14, 12));
+  assert.match(w.update.name, /\/documents\/locations\/uidA$/);
+  assert.deepStrictEqual(Object.keys(w.update.fields).sort(), ['acc', 'approx', 'lat', 'lng', 'until']);
+  assert.deepStrictEqual(JSON.parse(JSON.stringify(w.updateTransforms)), [{ fieldPath: 'at', setToServerValue: 'REQUEST_TIME' }]);
+  assert.strictEqual(w.update.fields.until.timestampValue, '2026-11-14T12:00:00.000Z');
+});
+test('sharing: Stop deletes the stored position, stops watching and hides the sign; signing out does the same', async () => {
+  const w = shareWorld(url => /:commit/.test(url) ? [200, {}] : null, { store: SESSION(true) });
+  const p = w.sh.startSharing(15, false); w.geo.ok(POS(41, 29)); await p;
+  assert.strictEqual(w.shUI.shown, 1, 'the Sharing sign did not show');
+  await w.sh.stopSharing('stop');
+  assert.strictEqual(w.sh.sharing, null); assert.strictEqual(w.geo.cleared, 1); assert.ok(w.shUI.hidden >= 1);
+  const last = w.calls.filter(c => /:commit/.test(c.url)).pop();
+  assert.deepStrictEqual(last.body.writes.map(x => x.delete && x.delete.replace(/^.*documents\//, '')), ['locations/uidA']);
+  const p2 = w.sh.startSharing(15, false); w.geo.ok(POS(41, 29)); await p2;
+  await vm.runInContext('accSignOut()', w.ctx);
+  assert.strictEqual(w.sh.sharing, null, 'signing out left sharing on');
+  assert.deepStrictEqual(w.calls.filter(c => /:commit/.test(c.url)).pop().body.writes.map(x => x.delete && x.delete.replace(/^.*documents\//, '')), ['locations/uidA']);
+});
+test('sharing (RF3): if the location is refused, sharing does not start, no sign shows, and the person is told', async () => {
+  const w = shareWorld(() => null, { store: SESSION(true) });
+  const p = w.sh.startSharing(60, false); w.geo.err({ code: 1 }); const r = await p;
+  assert.strictEqual(r, false); assert.strictEqual(w.sh.sharing, null); assert.strictEqual(w.shUI.shown, 0);
+  assert.deepStrictEqual(w.shUI.said, ['shareDenied']); assert.strictEqual(w.geo.cleared, 1);
+  assert.ok(!w.calls.some(c => /:commit/.test(c.url)), 'something was sent');
+});
+test('sharing (RF2): a friend who stops sharing disappears from the map; the others stay, and no error is shown', async () => {
+  const loc = { name: 'x/locations/uidB', fields: { lat: { doubleValue: 41.1 }, lng: { doubleValue: 29.1 }, acc: { integerValue: '9' }, approx: { booleanValue: false },
+    at: { timestampValue: new Date().toISOString() }, until: { timestampValue: new Date(Date.now() + 3600e3).toISOString() } } };
+  const w = shareWorld(url => /locations\/uidB$/.test(url) ? [200, loc] : /locations\/uidC$/.test(url) ? [403, {}] : /locations\/uidD$/.test(url) ? [404, {}] : null, { store: SESSION(true) });
+  w.fr.friends = [{ uid: 'uidB', name: 'B', pos: null }, { uid: 'uidC', name: 'C', pos: { lat: 1, lng: 1 } }, { uid: 'uidD', name: 'D', pos: { lat: 2, lng: 2 } }];
+  await w.sh.pollFriends();
+  assert.deepStrictEqual(w.shUI.drawn.filter(f => f.pos).map(f => f.uid), ['uidB']);
+  assert.strictEqual(w.shUI.drawn.find(f => f.uid === 'uidB').pos.lat, 41.1);
+  assert.deepStrictEqual(w.shUI.said, [], 'an error was shown');
+  assert.strictEqual(w.calls.filter(c => /\/locations\//.test(c.url)).length, 3, 'friends were not read one by one');
+});
+test('sharing (RF5): when the app starts, a position left by a crash is deleted and the sign does not come back by itself', async () => {
+  const w = shareWorld(url => /:commit/.test(url) ? [200, {}] : null, { store: SESSION(true) });
+  await w.sh.shareBootCleanup();
+  const c = w.calls.filter(x => /:commit/.test(x.url));
+  assert.strictEqual(c.length, 1); assert.deepStrictEqual(c[0].body.writes.map(x => x.delete.replace(/^.*documents\//, '')), ['locations/uidA']);
+  assert.strictEqual(w.sh.sharing, null); assert.strictEqual(w.shUI.shown, 0);
+});
+test('sharing: the share controls offer only 15 min / 1 h / 8 h and Exact / Approximate, and show Stop while sharing', async () => {
+  const w = shareWorld(url => /:commit/.test(url) ? [200, {}] : null, { store: SESSION(true) });
+  const h = w.sh.shareViewHTML();
+  assert.deepStrictEqual([...h.matchAll(/data-sh-min="(\d+)"/g)].map(m => +m[1]), [15, 60, 480]);
+  assert.match(h, /data-sh-approx="0"/); assert.match(h, /data-sh-approx="1"/); assert.match(h, /data-sh="start"/);
+  const p = w.sh.startSharing(15, false); w.geo.ok(POS(41, 29)); await p;
+  assert.match(w.sh.shareViewHTML(), /data-sh="stop"/);
+});
