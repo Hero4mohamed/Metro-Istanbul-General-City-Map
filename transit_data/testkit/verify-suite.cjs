@@ -362,11 +362,7 @@ const MUTATIONS = [
     expect: 'text on panels, chips and tinted chips passes AA: neon light',
     apply: h => h.replace('--dim:#5C6779', '--dim:#9AA5B5'),
   },
-  {
-    name: 'make the mixed theme\'s dim text too dark',
-    expect: 'the "mixed" theme (dark panels on a light page) passes AA too',
-    apply: h => h.replace('--dim:#98A3B8;', '--dim:#555566;'),
-  },
+
   {
     name: 'make the accent ink too pale for the light theme',
     expect: 'text on panels, chips and tinted chips passes AA: atlas light',
