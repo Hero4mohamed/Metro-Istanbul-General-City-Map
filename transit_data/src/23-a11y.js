@@ -81,6 +81,7 @@ document.addEventListener('keydown', e => {
   if(open('nearPanel', 'open')){ closeNearby(); e.preventDefault(); return; }
   if(open('passPanel', 'open')){ closePassport(); e.preventDefault(); return; }
   if(open('remPanel', 'open')){ closeReminder(); e.preventDefault(); return; }
+  if(open('inviteDlg', 'open')){ declineInvite(); closeInviteDlg(); e.preventDefault(); return; }
   const top = NAV && NAV.stack && NAV.stack[NAV.stack.length - 1];
   if(top && top.id !== 'omni' && top.id !== 'ai'){ e.preventDefault(); navCloseEntry(top); return; }
   if(typeof goState !== 'undefined' && goState){ e.preventDefault(); exitGo(); }
@@ -93,6 +94,7 @@ document.addEventListener('keydown', e => {
     { id: 'settingsPanel', cls: 'open', modal: true,  first: '#settingsX' },
     { id: 'passPanel',     cls: 'open', modal: true,  first: '#passX' },
     { id: 'remPanel',      cls: 'open', modal: true,  first: '#remX' },
+    { id: 'inviteDlg',     cls: 'open', modal: true,  first: '#inviteAccept' },
     { id: 'stnFinder',     cls: 'open', modal: true,  first: '#finderList button, #finderX' },     // the first of these that exists
     { id: 'wcOverlay',     cls: 'show', modal: true,  first: '#wcGo', hiddenByDisplay: true },
     { id: 'nearPanel',     cls: 'open', modal: false, first: '#nearX' },

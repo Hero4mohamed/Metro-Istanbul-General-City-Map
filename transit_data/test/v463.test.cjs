@@ -389,3 +389,27 @@ test('sharing: the share controls offer only 15 min / 1 h / 8 h and Exact / Appr
   const p = w.sh.startSharing(15, false); w.geo.ok(POS(41, 29)); await p;
   assert.match(w.sh.shareViewHTML(), /data-sh="stop"/);
 });
+
+/* ------------------------------------------------------------------- ui ---- */
+const CSS = () => H.appStyle().replace(/\r\n/g, '\n');
+test('ui: the phone\'s bottom bar is Map, Friends, Layers, Alerts, and its sliding marker is a quarter wide', () => {
+  assert.match(APP(), /const items=\[ \['map','mMap'\], \['friends','mFriends'\], \['layers','mLayers'\], \['alerts','mAlerts'\] \];/);
+  assert.match(CSS(), /\.mnav-ind\{[^}]*width:calc\(\(100% - 12px\) \/ 4\)/, 'the marker is not a quarter of the bar');
+  assert.match(CSS(), /\.mnav\[data-on="3"\] \.mnav-ind\{transform:translateX\(300%\);\}/, 'the marker cannot reach the fourth button');
+  assert.match(APP(), /friends: '<svg /, 'the Friends button has no drawn icon');
+});
+test('ui: on a phone the Friends card lives in its own sheet; opening it loads friends, leaving it stops reading their positions', () => {
+  const s = APP();
+  assert.match(s, /mSheets=\{ planner:mkSheet\('planner'\), friends:mkSheet\('friends'\), layers:mkSheet\('layers'\)/);
+  assert.match(s, /if\(el\.id==='cardFriends'\) mSheets\.friends\.appendChild\(el\);/, 'the Friends card ends up in the Layers sheet');
+  const os = /function openSheet\(name\)\{[\s\S]*?\n\}/.exec(s)[0];
+  assert.match(os, /if\(name==='friends' && typeof friendsOpened==='function'\) friendsOpened\(\);/, 'opening Friends does not load them');
+  assert.match(os, /if\(name!=='friends' && typeof stopFriendPolling==='function'\) stopFriendPolling\(\);/, 'friends\' positions are read with the sheet closed');
+  assert.match(H.html(), /<div class="card glass" id="cardFriends">/);
+});
+test('ui: the friend-request dialog is a proper dialog: Back and Escape decline it, and the keyboard stays inside', () => {
+  const s = APP();
+  assert.match(s, /\{ id:'invite',\s+open:\(\) => navHas\('inviteDlg','open'\),\s+close:\(\) => \{ declineInvite\(\); closeInviteDlg\(\); \} \}/, 'Back does not close the friend request');
+  assert.match(s, /if\(open\('inviteDlg', 'open'\)\)\{ declineInvite\(\); closeInviteDlg\(\); e\.preventDefault\(\); return; \}/, 'Escape does not close the friend request');
+  assert.match(s, /\{ id: 'inviteDlg',\s+cls: 'open', modal: true,\s+first: '#inviteAccept' \}/, 'the keyboard can leave the friend request');
+});
