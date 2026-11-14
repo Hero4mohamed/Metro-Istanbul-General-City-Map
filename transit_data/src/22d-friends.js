@@ -37,7 +37,7 @@ async function loadFriends(){
     const uid = f.a === me ? f.b : f.a, old = prev.get(uid);
     let name = old ? old.name : '';
     try{ const r = await fsFetch(docName('profiles', uid)); if(r.ok) name = fsDecode(await r.json()).name || name; }catch(e){}
-    return { uid, name: name || '?', sharing: old ? old.sharing : false, pos: old ? old.pos : null };
+    return { uid, name: name || '?', sharing: old ? old.sharing : false, pos: old ? old.pos : null, viaMyLink: f.inviter === me, since: f.created || 0 };
   }));
   friends.sort((x, y) => x.name.localeCompare(y.name));
   const now = Date.now(), inv = await fsQuery(fsWhereEq('invites', 'from', me));
@@ -80,7 +80,8 @@ function friendsViewHTML(){
   if(!accReady()) return '';
   const btn = (act, key, cls, data) => '<button type="button" class="' + (cls || 'btn') + '" data-fr="' + act + '"' + (data || '') + '>' + svgEsc(t(key)) + '</button>';
   const rows = friends.length ? friends.map(f => '<div class="fr-row"><span class="fr-av" aria-hidden="true">' + svgEsc((f.name || '?').trim().charAt(0).toUpperCase()) + '</span>'
-      + '<span class="fr-nm">' + svgEsc(f.name) + (f.sharing ? '<small class="fr-on">' + svgEsc(t('frSharingNow')) + '</small>' : '') + '</span>'
+      + '<span class="fr-nm">' + svgEsc(f.name) + (f.sharing ? '<small class="fr-on">' + svgEsc(t('frSharingNow')) + '</small>' : '')
+      + (f.viaMyLink && f.since > Date.now() - 48 * 3600e3 ? '<small class="fr-new">' + svgEsc(t('frJustJoined')) + '</small>' : '') + '</span>'
       + btn('remove', 'frRemove', 'mini', ' data-uid="' + attrEsc(f.uid) + '" aria-label="' + attrEsc(t('frRemove') + ': ' + f.name) + '"') + '</div>').join('')
     : '<p class="sp-hint">' + svgEsc(t('frNone')) + '</p>';
   const inv = myInvites.map(i => '<div class="fr-row fr-inv"><span class="fr-nm">' + svgEsc(t('frOpenLink')) + '<small>'
@@ -122,52 +123,73 @@ function locationWrite(projectId, uid, pos, approx, untilMs){
 }
 /* ==SHARE-PURE-END== */
 /* ==SHARE-CORE-START== */
-var sharing = null;                        // { until, approx, watchId, tick, last, lastPos }
+var sharing = null;                        // { until (server ms), approx, watchId, tick, last, fix: { pos, t }, fails }
 var shareSel = { min: 60, approx: false };
-async function sendPosition(pos){
-  const now = Date.now();
+var shareChain = Promise.resolve(), shareStarting = null;
+const FIX_MAX_AGE = 150e3;                 // a fix older than this is not sent as live (the rules hide you 3 min after the last one)
+/* Every location write goes through ONE queue, so Stop's delete always lands after a write already on its way, and a write that had
+   not started yet is dropped. Without this a late write could put your position back after Stop. */
+function shareQueue(job){ const p = shareChain.then(job, job); shareChain = p.catch(() => {}); return p; }
+function serverNow(){ return Date.now() + serverSkew; }
+async function sendPosition(pos, fixT){
   if(!sharing) return;
-  if(now >= sharing.until){ await stopSharing('expired'); return; }
-  sharing.lastPos = pos;
+  const now = Date.now();
+  if(serverNow() >= sharing.until){ await stopSharing('expired'); return; }
+  sharing.fix = { pos, t: fixT || now };
+  if(now - sharing.fix.t > FIX_MAX_AGE) return;           // underground, or the fix is lost: say nothing rather than an old place as "now"
   if(!shouldSend(sharing.last, now, pos)) return;
-  sharing.last = { t: now, pos };
-  try{ await fsCommit([locationWrite(FIREBASE.projectId, acct.uid, pos, sharing.approx, sharing.until)]); }catch(e){ sharing && (sharing.last = null); }
+  sharing.last = { t: now, pos };                          // set before trying: a refused write also waits the 30-second floor
+  const s = sharing;
+  await shareQueue(async () => {
+    if(sharing !== s) return;                             // stopped meanwhile: never write after Stop
+    const until = Math.min(s.until, serverNow() + 8 * 3600e3 - 60e3);     // the 8-hour rule, by the server's clock
+    try{ await fsCommit([locationWrite(FIREBASE.projectId, acct.uid, pos, s.approx, until)]); if(s.fails) shareUI.trouble(false); s.fails = 0; }
+    catch(e){ s.fails = (s.fails || 0) + 1; if(s.fails >= 3) shareUI.trouble(true); }   // the sign says so; it never claims all is well
+  });
 }
+/* every 30 s: re-send the last fix if it is still recent (standing still sends nothing otherwise), and refresh the sign */
+function shareHeartbeat(){ if(sharing && sharing.fix) return sendPosition(sharing.fix.pos, sharing.fix.t); return Promise.resolve(); }
 /* resolves true once sharing runs, false if the location was refused or is unavailable (RF3) */
 function startSharing(minutes, approx){
-  return new Promise((resolve, reject) => {
-    if(SHARE_DURATIONS.indexOf(minutes) < 0) return reject(fbErr('bad_duration'));
-    if(!accReady()) return reject(fbErr('signed_out'));
-    if(!navigator.geolocation) return reject(fbErr('no_location'));
-    if(sharing) return resolve(true);
+  if(SHARE_DURATIONS.indexOf(minutes) < 0) return Promise.reject(fbErr('bad_duration'));
+  if(!accReady()) return Promise.reject(fbErr('signed_out'));
+  if(!navigator.geolocation) return Promise.reject(fbErr('no_location'));
+  if(sharing) return Promise.resolve(true);
+  if(shareStarting) return shareStarting;   // pressed again while the location question is open: still ONE location watch
+  const p = new Promise(resolve => {
     let first = true, watchId = null;
-    const onPos = p => {
-      const pos = { lat: p.coords.latitude, lng: p.coords.longitude, acc: p.coords.accuracy };
+    const onPos = q => {
+      const pos = { lat: q.coords.latitude, lng: q.coords.longitude, acc: q.coords.accuracy }, fixT = q.timestamp || Date.now();
       if(first){
         first = false;
-        sharing = { until: Date.now() + minutes * 60e3, approx: !!approx, watchId, last: null, lastPos: pos,
-                    tick: setInterval(() => { if(sharing && sharing.lastPos) sendPosition(sharing.lastPos); shareUI.show(sharing); }, SHARE_MIN_GAP) };
+        sharing = { until: serverNow() + minutes * 60e3, approx: !!approx, watchId, last: null, fix: null, fails: 0,
+                    tick: setInterval(() => { shareHeartbeat(); if(sharing) shareUI.show(sharing); }, SHARE_MIN_GAP) };
         shareUI.show(sharing);
-        sendPosition(pos).then(() => resolve(true), () => resolve(true));
+        sendPosition(pos, fixT).then(() => resolve(true), () => resolve(true));
         return;
       }
-      sendPosition(pos);
+      sendPosition(pos, fixT);
     };
-    const onErr = () => {
-      if(!first) return;                    // a lost fix later: the heartbeat keeps the last position fresh until it is back
-      first = false; try{ navigator.geolocation.clearWatch(watchId); }catch(e){}
-      shareUI.say('shareDenied'); resolve(false);
+    const onErr = err => {
+      if(first){ first = false; try{ navigator.geolocation.clearWatch(watchId); }catch(e){} shareUI.say('shareDenied'); resolve(false); return; }
+      /* later: a refusal (permission taken back) stops sharing; a lost fix just stops the sends until it is back */
+      if(err && err.code === 1 && sharing && sharing.watchId === watchId){ shareUI.say('shareDenied'); stopSharing('denied'); }
     };
     watchId = navigator.geolocation.watchPosition(onPos, onErr, { enableHighAccuracy: !approx, maximumAge: 15000, timeout: 30000 });
   });
+  shareStarting = p;
+  const done = () => { shareStarting = null; }; p.then(done, done);
+  return p;
 }
 async function stopSharing(why){
   const s = sharing; sharing = null;
   if(s){ try{ navigator.geolocation.clearWatch(s.watchId); }catch(e){} try{ clearInterval(s.tick); }catch(e){} }
   shareUI.hide();
-  if(acct && acct.verified && FIREBASE) try{ await fsCommit([{ delete: docName('locations', acct.uid) }]); }catch(e){}
+  if(acct && acct.verified && FIREBASE){ const uid = acct.uid; await shareQueue(async () => { try{ await fsCommit([{ delete: docName('locations', uid) }]); }catch(e){} }); }
 }
 accOnLeave(async () => { if(sharing) await stopSharing('leave'); });
+/* the account was lost (sign-in expired or disabled elsewhere): sharing stops at once, and the sign with it */
+onAccountChange(() => { if(sharing && !accReady()) stopSharing('lost'); });
 /* a position a crash or a closed tab left behind is erased when the app starts (it is already hidden from friends after 3 min) */
 async function shareBootCleanup(){ if(accReady() && !sharing) try{ await fsCommit([{ delete: docName('locations', acct.uid) }]); }catch(e){} }
 /* each friend read on its own: one who is not sharing (refused or missing) must not hide the others (RF2) */
@@ -185,7 +207,7 @@ async function pollFriends(){
 function shareViewHTML(){
   if(!accReady()) return '';
   if(sharing){
-    const d = new Date(sharing.until), hm = String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0');
+    const d = new Date(sharing.until - serverSkew), hm = String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0');
     return '<div class="sh-box sh-on"><p>' + svgEsc(t(sharing.approx ? 'shareOnApprox' : 'shareOnExact').replace('{time}', typeof remClock === 'function' ? remClock(hm) : hm)) + '</p>'
       + '<button type="button" class="btn danger" data-sh="stop">' + svgEsc(t('shareStop')) + '</button></div>';
   }
@@ -215,12 +237,14 @@ function renderFriends(){ document.querySelectorAll('.fr-box').forEach(b => { b.
 const shareUI = {
   show: s => {
     const p = document.getElementById('sharePill'); if(!p || !s) return;
-    const left = Math.max(1, Math.ceil((s.until - Date.now()) / 60e3));
+    const left = Math.max(1, Math.ceil((s.until - serverNow()) / 60e3));
     document.getElementById('sharePillTxt').textContent = t(s.approx ? 'sharePillApprox' : 'sharePill').replace('{m}', String(left));
     const tb = document.querySelector('.topbar'); if(tb) document.documentElement.style.setProperty('--share-top', Math.round(tb.getBoundingClientRect().bottom + 8) + 'px');
     p.hidden = false; document.body.classList.add('sharing-on');
   },
-  hide: () => { const p = document.getElementById('sharePill'); if(p) p.hidden = true; document.body.classList.remove('sharing-on'); renderFriends(); },
+  hide: () => { const p = document.getElementById('sharePill'); if(p){ p.hidden = true; p.classList.remove('trouble'); } document.body.classList.remove('sharing-on'); renderFriends(); if(!friendsVisible()) stopFriendPolling(); },
+  /* three refused writes in a row: the sign says friends may not see you, until a write gets through */
+  trouble: on => { const p = document.getElementById('sharePill'); if(!p) return; p.classList.toggle('trouble', !!on); if(on) document.getElementById('sharePillTxt').textContent = t('sharePillTrouble'); },
   say: key => { if(typeof showToast === 'function') showToast(t(key)); renderFriends(); },
   drawFriends: list => {
     if(typeof map === 'undefined' || typeof L === 'undefined') return;
@@ -238,7 +262,9 @@ const shareUI = {
 var friendLayer = null, friendPoll = null;
 /* friends' positions are read every 20 s while the Friends view is open or while you share (no live push in Firestore's REST) */
 function startFriendPolling(){ if(friendPoll || !accReady()) return; const go = async () => { try{ await pollFriends(); renderFriends(); }catch(e){} }; go(); friendPoll = setInterval(go, 20e3); }
-function stopFriendPolling(){ if(sharing) return; if(friendPoll){ clearInterval(friendPoll); friendPoll = null; } }
+function stopFriendPolling(){ if(sharing) return; if(friendPoll){ clearInterval(friendPoll); friendPoll = null; } if(friendLayer) friendLayer.clearLayers(); }
+/* is the Friends view on screen? On a computer its card always is; on a phone, while its sheet is open */
+function friendsVisible(){ return typeof IS_MOBILE === 'undefined' || !IS_MOBILE || !!(typeof mSheets !== 'undefined' && mSheets.friends && mSheets.friends.classList.contains('open')); }
 /* open the Friends view: the sheet on a phone, the card on a computer (18-mobile-shell.js adds the sheet) */
 function openFriends(){
   if(typeof IS_MOBILE !== 'undefined' && IS_MOBILE && typeof mSheets !== 'undefined' && mSheets.friends) openSheet('friends');
@@ -247,7 +273,7 @@ function openFriends(){
 }
 async function friendsOpened(){ renderAccount(); renderFriends(); if(accReady()){ try{ await loadFriends(); renderFriends(); }catch(e){} startFriendPolling(); } }
 (function(){
-  onAccountChange(() => { renderFriends(); if(!accReady()){ if(friendPoll){ clearInterval(friendPoll); friendPoll = null; } friends = []; shareUI.drawFriends([]); } });
+  onAccountChange(() => { renderFriends(); if(accReady()){ if(friendsVisible()) friendsOpened(); } else { if(friendPoll){ clearInterval(friendPoll); friendPoll = null; } friends = []; shareUI.drawFriends([]); } });
   /* the share controls and the Stop on the sign */
   document.addEventListener('click', async e => {
     const m = e.target.closest('[data-sh-min]'), a = e.target.closest('[data-sh-approx]'), b = e.target.closest('[data-sh]');
@@ -262,7 +288,7 @@ async function friendsOpened(){ renderAccount(); renderFriends(); if(accReady())
     finally{ b.disabled = false; renderFriends(); }
   });
   const ps = document.getElementById('sharePillStop'); if(ps) ps.addEventListener('click', () => stopSharing('stop'));
-  setTimeout(() => { shareBootCleanup(); }, 1500);
+  setTimeout(() => { shareBootCleanup(); if(!IS_MOBILE && accReady()) friendsOpened(); }, 1500);
   document.addEventListener('click', async e => {
     const b = e.target.closest('[data-fr]'); if(!b) return;
     const act = b.dataset.fr; b.disabled = true;

@@ -421,3 +421,102 @@ test('ui: the Sharing sign is above every card, sheet and dialog, so it stays vi
   assert.ok(+pill[1] > Math.max(...others), 'something can cover the Sharing sign: it is at ' + pill[1] + ', another layer at ' + Math.max(...others));
   assert.match(css, /body\.mobile \.share-pill\{top:/, 'on a phone the sign sits at the bottom, over the buttons of cards and sheets');
 });
+
+/* ------------------------------------------- final review fixes (14 Nov 2026) ---- */
+function fixWorld(routes, opts = {}) {
+  const w = shareWorld(routes, Object.assign({ store: SESSION(true) }, opts, { extra: Object.assign({}, opts.extra || {}) }));
+  w.shUI.trouble = 0;
+  w.ctx.shareUI.trouble = () => { w.shUI.trouble++; };
+  vm.runInContext('globalThis.__now = Date.now(); Date.now = () => globalThis.__now;', w.ctx);
+  w.tick = ms => { vm.runInContext('globalThis.__now += ' + ms + ';', w.ctx); };
+  w.now = () => vm.runInContext('globalThis.__now', w.ctx);
+  w.commits = () => w.calls.filter(c => /:commit/.test(c.url)).map(c => c.body.writes);
+  return w;
+}
+const POST = (lat, lng, ts) => ({ coords: { latitude: lat, longitude: lng, accuracy: 10 }, timestamp: ts });
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+
+test('review fix 3: Stop waits for a position still being sent, so the delete is always the LAST write', async () => {
+  const w = fixWorld(url => /:commit/.test(url) ? [200, {}] : null);
+  const orig = w.ctx.fetch;
+  w.ctx.fetch = async (url, o) => { if (/:commit/.test(url) && /"update"/.test(o.body)) await sleep(60); return orig(url, o); };
+  const started = w.sh.startSharing(15, false);
+  w.geo.ok(POST(41, 29, w.now())); await sleep(5);           // the first position is now on its way (its answer takes 60 ms)
+  const stopped = w.sh.stopSharing('stop');
+  await Promise.all([started, stopped]);
+  const c = w.commits();
+  assert.ok(c.length >= 2, 'nothing was written');
+  assert.ok(c[c.length - 1][0].delete && /locations\/uidA$/.test(c[c.length - 1][0].delete), 'a position landed after Stop deleted it');
+  assert.strictEqual(w.sh.sharing, null);
+});
+test('review fix 4: after a refused write the next try waits 30 s; three in a row show trouble on the sign', async () => {
+  const w = fixWorld(url => /:commit/.test(url) ? [500, { error: { status: 'INTERNAL' } }] : null);
+  const p = w.sh.startSharing(60, false); w.geo.ok(POST(41, 29, w.now())); await p;
+  assert.strictEqual(w.commits().length, 1);
+  w.geo.ok(POST(41.01, 29, w.now())); await sleep(5);
+  assert.strictEqual(w.commits().length, 1, 'a refused write is retried at once (it hammers the server)');
+  w.tick(31e3); w.geo.ok(POST(41.02, 29, w.now())); await sleep(5);
+  w.tick(31e3); w.geo.ok(POST(41.03, 29, w.now())); await sleep(5);
+  assert.strictEqual(w.commits().length, 3); assert.ok(w.shUI.trouble >= 1, 'three refused writes in a row, and the sign still says all is well');
+});
+test('review fix 4: the end time follows the SERVER clock (learnt from its answers) and stays inside the 8-hour rule', async () => {
+  let first = true;
+  const w = fixWorld(url => /:commit/.test(url) ? [200, first ? (first = false, { commitTime: new Date(Date.now() + 3600e3).toISOString() }) : {}] : null);
+  await w.sh.shareBootCleanup();                                // the server answers: its clock is 1 h ahead of this phone
+  const p = w.sh.startSharing(480, false); w.geo.ok(POST(41, 29, w.now())); await p;
+  const loc = w.commits().pop()[0];
+  const until = w.api.fsDecode(loc.update).until, serverNow = w.now() + 3600e3;
+  assert.ok(until <= serverNow + 8 * 3600e3 - 30e3, 'the end time breaks the 8-hour rule on the server');
+  assert.ok(until > serverNow + 7.9 * 3600e3, 'the end time was cut short');
+});
+test('review fix 5: a lost location fix is not re-sent as live; a later refusal of location stops sharing', async () => {
+  const w = fixWorld(url => /:commit/.test(url) ? [200, {}] : null);
+  const p = w.sh.startSharing(60, false); w.geo.ok(POST(41, 29, w.now())); await p;
+  const n = w.commits().length;
+  w.tick(200e3); await vm.runInContext('shareHeartbeat()', w.ctx);
+  assert.strictEqual(w.commits().length, n, 'a 3-minute-old fix was sent as if it were current');
+  w.geo.err({ code: 1 }); await sleep(5);
+  assert.strictEqual(w.sh.sharing, null, 'sharing went on after location was refused');
+  assert.ok(w.shUI.said.includes('shareDenied'));
+  assert.ok(w.commits().pop()[0].delete, 'the stored position was not deleted');
+});
+test('review fix 6: if the sign-in is lost (expired, disabled), sharing stops and the sign goes', async () => {
+  const w = fixWorld(url => /securetoken/.test(url) ? [400, { error: { message: 'TOKEN_EXPIRED' } }] : /:commit/.test(url) ? [200, {}] : null);
+  const p = w.sh.startSharing(60, false); w.geo.ok(POST(41, 29, w.now())); await p;
+  w.api.acct.idExp = 0;
+  await assert.rejects(w.api.idToken());
+  await sleep(5);
+  assert.strictEqual(w.api.acct, null); assert.strictEqual(w.sh.sharing, null, 'the sign still says Sharing after the account was lost');
+  assert.ok(w.shUI.hidden >= 1); assert.ok(w.geo.cleared >= 1);
+});
+test('review fix 10: pressing Start twice while the location question is open starts ONE location watch', async () => {
+  const w = fixWorld(url => /:commit/.test(url) ? [200, {}] : null);
+  const a = w.sh.startSharing(60, false), b = w.sh.startSharing(60, false);
+  w.geo.ok(POST(41, 29, w.now())); await Promise.all([a, b]);
+  assert.strictEqual(w.geo.watching, 1, 'a second watch was started, and Stop would never clear it');
+});
+test('review fix 7: a friend who joined with YOUR link is marked new, so you can check it is who you meant', async () => {
+  const fdoc = { document: { name: 'x/friendships/uidA_uidZ', fields: { a: { stringValue: 'uidA' }, b: { stringValue: 'uidZ' }, inviter: { stringValue: 'uidA' }, acceptor: { stringValue: 'uidZ' }, created: { timestampValue: new Date().toISOString() } } } };
+  const w = fixWorld((url, body) => /:runQuery/.test(url) ? [200, body.structuredQuery.from[0].collectionId === 'friendships' && body.structuredQuery.where.fieldFilter.field.fieldPath === 'a' ? [fdoc] : []]
+    : /profiles\/uidZ/.test(url) ? [200, { name: 'x/profiles/uidZ', fields: { name: { stringValue: 'Zeynep' } } }] : null);
+  await vm.runInContext('loadFriends()', w.ctx);
+  assert.strictEqual(w.fr.friends[0].viaMyLink, true);
+  assert.match(w.fr.friendsViewHTML(), /frJustJoined/, 'the new friend is not marked');
+});
+test('review fixes 1-2: friends load as soon as the account is ready (and on a computer at start), and leave the map when no longer read', () => {
+  const s = APP();
+  assert.match(s, /onAccountChange\(\(\) => \{ renderFriends\(\); if\(accReady\(\)\)\{ if\(friendsVisible\(\)\) friendsOpened\(\); \}/, 'signing in inside the open Friends view does not load friends');
+  assert.match(s, /function friendsVisible\(\)\{/);
+  assert.match(s, /if\(!IS_MOBILE && accReady\(\)\) friendsOpened\(\);/, 'on a computer friends are never loaded');
+  assert.match(s, /function stopFriendPolling\(\)\{ if\(sharing\) return; if\(friendPoll\)\{ clearInterval\(friendPoll\); friendPoll = null; \} if\(friendLayer\) friendLayer\.clearLayers\(\); \}/, 'friends stay on the map, frozen, after their positions stop being read');
+});
+test('review fix 3: a position queued but not yet sent when Stop is pressed is never sent at all', async () => {
+  const w = fixWorld(url => /:commit/.test(url) ? [200, {}] : null);
+  const started = w.sh.startSharing(15, false);
+  w.geo.ok(POST(41, 29, w.now()));
+  const stopped = w.sh.stopSharing('stop');                    // at once: the first position is queued, not on its way yet
+  await Promise.all([started, stopped]);
+  const writes = w.commits().flat();
+  assert.ok(!writes.some(x => x.update), 'a position was written after Stop was pressed');
+  assert.ok(writes.some(x => x.delete), 'Stop did not delete the stored position');
+});

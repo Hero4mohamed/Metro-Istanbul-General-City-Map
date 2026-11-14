@@ -2531,7 +2531,7 @@ const MUTATIONS = [
   {
     name: "Stop leaves the position stored",
     expect: "sharing: Stop deletes the stored position",
-    apply: h => h.replace("if(acct && acct.verified && FIREBASE) try{ await fsCommit([{ delete: docName('locations', acct.uid) }]); }catch(e){}", ""),
+    apply: h => h.replace("await fsCommit([{ delete: docName('locations', uid) }]);", ""),
   },
   {
     name: "a position left by a crash stays stored",
@@ -2607,6 +2607,62 @@ const MUTATIONS = [
     name: "a Google API key is shipped outside the Firebase config",
     expect: "no API key is baked into the shipped page",
     apply: h => h.replace('const FIREBASE = null;', 'const FIREBASE = null; const MAPS_KEY = "' + ['AI', 'za', 'Sy'].join('') + 'DUMMY'.repeat(6) + '12";'),   // assembled here so this file holds no key-shaped string
+  },
+  /* ---- V4.6.3 final review fixes ---- */
+  {
+    name: "a write already queued still lands after Stop",
+    expect: "review fix 3: a position queued but not yet sent",
+    apply: h => h.replace("    if(sharing !== s) return;                             // stopped meanwhile: never write after Stop", ""),
+  },
+  {
+    name: "a refused write is retried on the very next move",
+    expect: "review fix 4: after a refused write",
+    apply: h => h.replace("  sharing.last = { t: now, pos };                          // set before trying: a refused write also waits the 30-second floor", "  sharing.last = null;"),
+  },
+  {
+    name: "refused writes never show trouble on the sign",
+    expect: "review fix 4: after a refused write",
+    apply: h => h.replace("if(s.fails >= 3) shareUI.trouble(true);", "if(s.fails >= 3000) shareUI.trouble(true);"),
+  },
+  {
+    name: "the end time ignores the server clock",
+    expect: "review fix 4: the end time follows the SERVER clock",
+    apply: h => h.replace("const until = Math.min(s.until, serverNow() + 8 * 3600e3 - 60e3);", "const until = s.until;"),
+  },
+  {
+    name: "an old fix is sent as live",
+    expect: "review fix 5: a lost location fix",
+    apply: h => h.replace("  if(now - sharing.fix.t > FIX_MAX_AGE) return;", "  if(false) return;"),
+  },
+  {
+    name: "taking back the location permission does not stop sharing",
+    expect: "review fix 5: a lost location fix",
+    apply: h => h.replace("if(err && err.code === 1 && sharing && sharing.watchId === watchId){ shareUI.say('shareDenied'); stopSharing('denied'); }", ""),
+  },
+  {
+    name: "losing the account leaves sharing on",
+    expect: "review fix 6",
+    apply: h => h.replace("onAccountChange(() => { if(sharing && !accReady()) stopSharing('lost'); });", ""),
+  },
+  {
+    name: "a double press starts two location watches",
+    expect: "review fix 10",
+    apply: h => h.replace("  if(shareStarting) return shareStarting;", ""),
+  },
+  {
+    name: "a friend who joined with your link is not marked",
+    expect: "review fix 7",
+    apply: h => h.replace("(f.viaMyLink && f.since > Date.now() - 48 * 3600e3 ?", "(false ?"),
+  },
+  {
+    name: "friends stay drawn on the map after reading stops",
+    expect: "review fixes 1-2",
+    apply: h => h.replace(" if(friendLayer) friendLayer.clearLayers(); }", " }"),
+  },
+  {
+    name: "signing in does not load friends",
+    expect: "review fixes 1-2",
+    apply: h => h.replace("if(accReady()){ if(friendsVisible()) friendsOpened(); }", "if(accReady()){ }"),
   },
 ];
 

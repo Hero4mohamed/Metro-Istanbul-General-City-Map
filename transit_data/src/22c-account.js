@@ -120,7 +120,13 @@ async function fsFetch(path, opts){
 }
 async function fsJSON(r){ const j = await r.json().catch(() => ({})); if(!r.ok) throw fbErr((j && j.error && (j.error.status || j.error.message)) || ('HTTP_' + r.status)); return j; }
 const docName = (...segs) => fsDocPath(FIREBASE.projectId, ...segs);
-async function fsCommit(writes){ return fsJSON(await fsFetch(fsDocPath(FIREBASE.projectId) + ':commit', { method: 'POST', body: JSON.stringify({ writes }) })); }
+/* how far the server's clock is ahead of this phone's, learnt from each write's commitTime (the rules judge times by the server) */
+var serverSkew = 0;
+async function fsCommit(writes){
+  const j = await fsJSON(await fsFetch(fsDocPath(FIREBASE.projectId) + ':commit', { method: 'POST', body: JSON.stringify({ writes }) }));
+  if(j && j.commitTime){ const t = Date.parse(j.commitTime); if(isFinite(t)) serverSkew = t - Date.now(); }
+  return j;
+}
 async function fsQuery(structuredQuery){
   const j = await fsJSON(await fsFetch(fsDocPath(FIREBASE.projectId) + ':runQuery', { method: 'POST', body: JSON.stringify({ structuredQuery }) }));
   return (Array.isArray(j) ? j : []).filter(x => x && x.document).map(x => fsDecode(x.document));
