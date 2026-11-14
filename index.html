@@ -6,7 +6,7 @@
 <!-- Substituted by build.cjs, which hashes the inline script from the final bytes. Pages
      cannot set headers, so this ships as meta; frame-ancestors and report-uri are
      unavailable that way. -->
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-wCEBMIL0Vvp42Q5FBotJyRBhV/2N2MmBXDjkqfBbwA4='; style-src 'self' 'unsafe-inline'; font-src 'self' data:; img-src 'self' data: blob: https://server.arcgisonline.com; connect-src 'self' https://server.arcgisonline.com https://tiles.openfreemap.org https://photon.komoot.io https://overpass-api.de https://api.ibb.gov.tr https://openapi.izmir.bel.tr https://turkmaps-relay.turkmaps-relay.workers.dev https://api.open-meteo.com https://air-quality-api.open-meteo.com https://routing.openstreetmap.de https://api.anthropic.com; worker-src 'self'; frame-src 'none'; media-src 'none'; manifest-src 'self'; base-uri 'self'; form-action 'none'; object-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-SnavLOlDOclF/cT0eaX7KTMJdtTIAUFuDxu2z6X43Jc='; style-src 'self' 'unsafe-inline'; font-src 'self' data:; img-src 'self' data: blob: https://server.arcgisonline.com; connect-src 'self' https://server.arcgisonline.com https://tiles.openfreemap.org https://photon.komoot.io https://overpass-api.de https://api.ibb.gov.tr https://openapi.izmir.bel.tr https://turkmaps-relay.turkmaps-relay.workers.dev https://api.open-meteo.com https://air-quality-api.open-meteo.com https://routing.openstreetmap.de https://api.anthropic.com; worker-src 'self'; frame-src 'none'; media-src 'none'; manifest-src 'self'; base-uri 'self'; form-action 'none'; object-src 'none'">
 <title>TurkMaps · Transit Network Map</title>
 <!-- Leaflet 1.9.4, shipped with the app rather than fetched from a CDN (V4.3): see vendor/README.md -->
 <link rel="stylesheet" href="vendor/leaflet/leaflet.css">
@@ -1158,6 +1158,12 @@
     line-height:1;padding:2px 3px;display:none;}
   .omni-x:hover{color:var(--text);}
   .omni.has-q .omni-x{display:block;}
+  /* planner mode, from the search bar (V4.6.2) */
+  .omni-plan{flex:none;display:flex;align-items:center;justify-content:center;width:30px;height:30px;margin:-5px -6px -5px 2px;border-radius:9px;
+    border:1px solid var(--stroke-2);background:var(--surface-2);color:var(--accent-ink);cursor:pointer;transition:background .15s var(--ease),transform .12s var(--ease);}
+  .omni-plan:hover{background:rgba(var(--ok-rgb),.14);}
+  .omni-plan:active{transform:scale(.9);}
+  .omni-plan.on{background:var(--grad-accent);color:var(--btn-ink);border-color:transparent;}
   .omni-res{position:absolute;top:calc(100% + 7px);left:0;right:0;z-index:1100;display:none;
     max-height:min(52vh,430px);overflow-y:auto;overscroll-behavior:contain;border-radius:13px;
     padding:6px;flex-direction:column;gap:2px;
@@ -1291,9 +1297,39 @@
   /* pulsing ring behind a station-level fault, so it reads as live rather than as a pin. It is part of the sign's own element
      (V4.6): a map zoom moves it with the sign and never scales it */
   .warn-icon.warn-ringed{display:flex;align-items:center;justify-content:center;}
+  /* reminders (V4.6.2, 22b-reminders.js) */
+  .rem-panel{max-width:400px;}
+  .rem-head{margin:0 0 10px;}
+  .rem-line{display:inline-flex;align-items:center;gap:5px;padding:4px 10px;border-radius:var(--r-pill);font:800 12px var(--font);}
+  .rem-f{margin:0 0 12px;}
+  .rem-l{display:block;margin:0 0 6px;font-size:var(--fs-6);font-weight:800;letter-spacing:.8px;text-transform:uppercase;color:var(--dim);}
+  .rem-f select,.rem-f input[type="time"]{width:100%;box-sizing:border-box;padding:9px 11px;border-radius:11px;border:1px solid var(--stroke-2);
+    background:var(--surface);color:var(--text);font:600 13px var(--font);}
+  .rem-seg{flex-wrap:wrap;}
+  .rem-seg button{flex:1 1 auto;min-width:0;padding:7px 8px;}
+  .rem-acts{display:flex;gap:8px;flex-wrap:wrap;margin:4px 0 6px;}
+  .rem-acts .btn{flex:1 1 140px;margin:0;}
+  .rem-note{margin-top:4px;}
+  .rem-mine{margin-top:14px;}
+  .rem-list{display:flex;flex-direction:column;gap:6px;}
+  .rem-row{display:flex;align-items:center;gap:8px;padding:8px 9px;border-radius:11px;border:1px solid var(--stroke);background:var(--surface);}
+  .rem-row.off{opacity:.6;}
+  .rem-row .rem-line{flex:none;padding:2px 8px;font-size:var(--fs-6);}
+  .rem-t{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px;}
+  .rem-t b{font-size:var(--fs-8);color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .rem-t small{font-size:var(--fs-6);color:var(--muted);}
+  .rem-del{flex:none;width:28px;height:28px;border-radius:9px;border:1px solid var(--stroke);background:var(--surface-2);color:var(--muted);cursor:pointer;}
+  .rem-del:hover{color:var(--text);border-color:var(--stroke-2);}
+  .bd-remind{display:flex;align-items:center;justify-content:center;gap:7px;width:100%;margin:12px 0 0;padding:10px;border-radius:12px;border:1px solid var(--stroke-2);
+    background:var(--surface);color:var(--text);font:700 var(--fs-8) var(--font);cursor:pointer;}
+  .bd-remind:hover{background:var(--surface-2);}
+  .bd-remind+.bd-info-btn{margin-top:8px;}
+  /* a pier in the Boats view (V4.6.2): a small white dot with a thin dark rim, one size at every zoom */
+  .pier-dot{display:flex;align-items:center;justify-content:center;pointer-events:none;}
+  .pier-dot i{display:block;box-sizing:border-box;border-radius:var(--r-round);background:#FFFFFF;border:1.4px solid #0B1220;}
   .warn-ring{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);box-sizing:border-box;border-radius:var(--r-round);
-    border:2px solid var(--wc);pointer-events:none;animation:disrPulse 2.3s ease-in-out infinite;}
-  .warn-ring::before{content:"";position:absolute;inset:0;border-radius:inherit;background:var(--wc);opacity:.16;}
+    border:1.5px solid var(--wc);pointer-events:none;animation:disrPulse 2.3s ease-in-out infinite;}
+  .warn-ring::before{content:"";position:absolute;inset:0;border-radius:inherit;background:var(--wc);opacity:.10;}
   .warn-ringed span{position:relative;}
   @keyframes disrPulse{0%,100%{opacity:.30;}50%{opacity:1;}}
   body.calm .warn-ring{animation:none;opacity:.75;}
@@ -1332,20 +1368,40 @@
   body.mobile .omni{order:1;flex:0 0 100%;width:100%;margin-top:9px;}
   body.mobile .topbar .sub,body.mobile .topbar .stats{display:none;}
   body.mobile .topbar .langseg{margin:0;flex:0 0 148px;}
-  body.mobile .mnav{position:fixed;left:10px;right:10px;bottom:calc(10px + env(safe-area-inset-bottom));
-    z-index:1400;display:flex;gap:3px;padding:6px;border-radius:22px;}
-  .mnav button{flex:1;background:none;border:none;color:var(--muted);cursor:pointer;border-radius:16px;
-    display:flex;flex-direction:column;align-items:center;gap:3px;padding:7px 0 6px;transition:all .18s var(--ease);}
-  .mnav button .mi{font-size:17px;line-height:1;}
-  .mnav button .ml{font:650 8.5px var(--font);letter-spacing:.3px;}
-  .mnav button.on{color:var(--ok-ink);background:rgba(var(--ok-rgb),.14);box-shadow:inset 0 0 0 1px rgba(var(--ok-rgb),.35);}
-  .mnav button:active{transform:scale(.93);}
+  /* the bottom bar (V4.6.2): three buttons, a marker that slides under the one in use with a little spring, drawn icons that lift when
+     chosen, a count of live notices on Alerts. Respects reduced motion (the global rule switches the movement off). */
+  body.mobile .mnav{position:fixed;left:14px;right:14px;bottom:calc(10px + env(safe-area-inset-bottom));
+    z-index:1400;display:flex;padding:6px;border-radius:24px;box-shadow:0 14px 34px -14px rgba(0,0,0,.55),inset 0 0 0 1px var(--stroke);}
+  .mnav-ind{position:absolute;top:6px;bottom:6px;left:6px;width:calc((100% - 12px) / 3);border-radius:18px;
+    background:rgba(var(--ok-rgb),.15);box-shadow:inset 0 0 0 1px rgba(var(--ok-rgb),.38);transition:transform .38s cubic-bezier(.34,1.45,.64,1);pointer-events:none;}
+  .mnav[data-on="1"] .mnav-ind{transform:translateX(100%);}
+  .mnav[data-on="2"] .mnav-ind{transform:translateX(200%);}
+  .mnav button{position:relative;flex:1;min-width:0;background:none;border:none;color:var(--muted);cursor:pointer;border-radius:18px;
+    display:flex;flex-direction:column;align-items:center;gap:3px;padding:8px 0 7px;transition:color .2s var(--ease),transform .15s var(--ease);
+    -webkit-tap-highlight-color:transparent;}
+  .mnav button .mi{display:flex;line-height:0;transition:transform .3s cubic-bezier(.34,1.45,.64,1);}
+  .mnav button .ml{font:700 9.5px var(--font);letter-spacing:.3px;}
+  .mnav button.on{color:var(--ok-ink);}
+  .mnav button.on .mi{transform:translateY(-1px) scale(1.12);}
+  .mnav button:active{transform:scale(.92);}
+  .mnav-badge{position:absolute;top:4px;left:calc(50% + 6px);min-width:16px;height:16px;padding:0 4px;box-sizing:border-box;border-radius:var(--r-pill);
+    background:#E5484D;color:#fff;font:800 9px/16px var(--font);text-align:center;box-shadow:0 0 0 2px var(--obsidian);}
+  .mnav-badge[hidden]{display:none;}
   body.mobile .mbackdrop{display:block;position:fixed;inset:0;z-index:1250;background:rgba(3,6,10,.5);
     opacity:0;pointer-events:none;transition:opacity .25s;}
   body.mobile .mbackdrop.on{opacity:1;pointer-events:auto;}
-  body.mobile .msheet{display:block;position:fixed;left:0;right:0;bottom:0;z-index:1300;max-height:80vh;
-    overflow-y:auto;border-radius:24px 24px 0 0;padding:8px 14px calc(88px + env(safe-area-inset-bottom));
-    transform:translateY(105%);transition:transform .32s var(--ease);}
+  body.mobile .msheet{display:block;position:fixed;left:0;right:0;bottom:0;z-index:1300;max-height:55vh;
+    overflow-y:auto;overscroll-behavior:contain;border-radius:24px 24px 0 0;padding:8px 14px calc(88px + env(safe-area-inset-bottom));
+    transform:translateY(105%);transition:transform .32s var(--ease),max-height .28s var(--ease);box-shadow:0 -16px 40px -20px rgba(0,0,0,.6);}
+  body.mobile .msheet.dragging,body.mobile .linep.dragging,body.mobile .station.dragging{transition:none;}
+  /* the grip of a sheet or panel you can drag (V4.6.2): a wide target, a short bar */
+  .sgrab{display:none;}
+  .sgrab-btn{display:block;position:sticky;top:0;z-index:3;width:100%;height:22px;margin:-6px 0 2px;padding:0;border:0;background:none;cursor:grab;touch-action:none;}
+  .sgrab-btn .mgrab,.sgrab-btn .sgrab{display:block;width:42px;height:4.5px;margin:9px auto 0;border-radius:var(--r-pill);background:rgba(255,255,255,.22);transition:width .2s var(--ease),background-color .2s;}
+  body.light .sgrab-btn .mgrab,body.light .sgrab-btn .sgrab{background:rgba(20,30,55,.22);}
+  .dragging>.sgrab-btn .mgrab,.dragging>.sgrab-btn .sgrab{width:58px;background:rgba(var(--ok-rgb),.75);}
+  .sgrab-btn:focus-visible{outline:2px solid var(--accent);outline-offset:-4px;border-radius:12px;}
+  body:not(.mobile) .sgrab-btn{display:none;}
   body.mobile .msheet.open{transform:none;}
   .msheet .mgrab{width:42px;height:4.5px;background:rgba(255,255,255,.22);border-radius:var(--r-pill);margin:4px auto 12px;}
   /* ---- the planner sheet: three heights, the map stays in view (V4.4.1; the logic is in 18-mobile-shell.js) ---- */
@@ -1387,7 +1443,8 @@
   .msheet .ann-body{max-height:none;padding:0;}
   .msheet .wx-list,.msheet .bus-list{max-height:none;}
   body.mobile .station,body.mobile .linep{left:8px;right:8px;width:auto;z-index:1360;
-    bottom:calc(86px + env(safe-area-inset-bottom));max-height:56vh;border-radius:20px;}
+    bottom:calc(86px + env(safe-area-inset-bottom));max-height:44vh;overflow-y:auto;overscroll-behavior:contain;border-radius:20px;
+    padding-top:6px;transition:max-height .28s var(--ease);}
   .mtoast{position:fixed;top:20px;left:50%;transform:translate(-50%,-14px);z-index:1700;
     padding:9px 16px;border-radius:var(--r-pill);font-size:11.5px;font-weight:700;max-width:88vw;text-align:center;
     color:var(--btn-ink);background:var(--grad-accent);box-shadow:0 10px 28px -8px rgba(var(--ok-rgb),.8);
@@ -1946,6 +2003,10 @@
              placeholder="Search anywhere — places, food, hospitals…" autocomplete="off"
              role="combobox" aria-expanded="false" aria-controls="omniRes" />
       <button class="omni-x" id="omniX" data-i18n-title="clear" title="Clear" aria-label="Clear">✕</button>
+      <button class="omni-plan" id="omniPlan" type="button" data-i18n-title="omniPlan" data-i18n-aria="omniPlan" title="Plan a trip" aria-label="Plan a trip" aria-pressed="false">
+        <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <circle cx="6" cy="18.5" r="2.3"/><circle cx="18" cy="5.5" r="2.3"/><path d="M8.3 18.5h6.2a3.5 3.5 0 0 0 0-7h-5a3.5 3.5 0 0 1 0-7h6.2"/></svg>
+      </button>
     </div>
     <div class="omni-res glass" id="omniRes" role="listbox"></div>
   </div>
@@ -2128,6 +2189,11 @@
           <button class="mini" data-place="work" data-act="clear" data-i18n="clear">Clear</button></div>
         <div class="sp-hint" data-i18n="placeHowto">Type a place in “From”, then tap Set.</div>
       </div>
+      <div class="sp-item" id="remRow">
+        <div class="sp-row"><span data-i18n="remList">Reminders</span></div>
+        <div class="rem-list" id="remList"></div>
+        <div class="sp-hint" data-i18n="remListHint">Set one from a line's panel with ⏰ Remind me.</div>
+      </div>
       <div class="sp-item"><button class="btn" id="openPassport">🎫 <span data-i18n="passport">Your travel passport</span></button></div>
     </div>
   </details>
@@ -2226,6 +2292,12 @@
 <div class="settings-panel glass" id="passPanel" role="dialog" aria-modal="true" aria-label="Travel passport" data-i18n-aria="passport">
   <div class="sp-head"><span>🎫 <span data-i18n="passport">Your travel passport</span></span><button class="x" id="passX" aria-label="Close" data-i18n-aria="close">✕</button></div>
   <div id="passBody"></div>
+</div>
+
+<div class="settings-overlay" id="remOverlay"></div>
+<div class="settings-panel glass rem-panel" id="remPanel" role="dialog" aria-modal="true" aria-labelledby="remTitle">
+  <div class="sp-head"><span id="remTitle">⏰ <span data-i18n="remTitle">Remind me</span></span><button class="x" id="remX" aria-label="Close" data-i18n-aria="close">✕</button></div>
+  <div id="remBody"></div>
 </div>
 
 <div class="controls" id="controls">
@@ -2432,6 +2504,7 @@
 </div>
 
 <div class="station glass" id="stn">
+  <div class="sgrab" aria-hidden="true"></div>
   <button class="x" id="stnX">✕</button>
   <div class="st-nm" id="stnNm"></div>
   <div class="st-lines" id="stnLines"></div>
@@ -2453,6 +2526,7 @@
 </div>
 
 <div class="linep glass" id="linp">
+  <div class="sgrab" aria-hidden="true"></div>
   <button class="x" id="linpX">✕</button>
   <div class="lp-head">
     <span class="lp-sw" id="lpSw"></span>
@@ -2461,6 +2535,7 @@
   <div class="lp-kind" id="lpKind"></div>
   <div class="lp-notices" id="lpNotices"></div>
   <button class="lp-follow" id="lpFollow"></button>
+  <button class="lp-follow lp-remind" id="lpRemind" type="button">⏰ <span data-i18n="remBtn">Remind me</span></button>
   <div class="lp-stats" id="lpStats"></div>
   <div class="lp-plan" id="lpPlan" style="display:none"></div>
   <div class="bt" id="lpStripBt" data-i18n="lineMap">Line map</div>
@@ -2497,7 +2572,7 @@
 
    The report carries the fault, the build, the city, the language and the browser. It never
    carries location, saved places, trip history or the API key. ===== */
-const BUILD = "20261114070201";
+const BUILD = "20261114092137";
 const DIAG_MAX = 20;
 let DIAG = [];
 try { DIAG = JSON.parse(localStorage.getItem("irn_diag") || "[]"); } catch (e) { DIAG = []; }
@@ -2798,7 +2873,7 @@ const I18N = {
     secAbout:"About & legal", legalPrivacy:"Privacy notice", legalTerms:"Terms of use", legalStorage:"Cookies & stored data", legalCredits:"Credits & licences", legalAccess:"Accessibility",
     aboutProject:"TurkMaps is a free, non-commercial, open-source project by its author. It is not an official service of any transit operator.",
     aboutContact:"Contact", aboutVersion:"Version", aboutSource:"Source code",
-    liveBusOff:"Live buses are not running for this city right now", liveBusQuiet:"not heard from for 2 min or more", liveBusQuietN:"{n} not heard from lately", tabAirport:"✈ Airports", airTitle:"Airports", airIntro:"Choose an airport, then departures or arrivals. The live table opens on the airport’s own website.", airNone:"No airport is listed for this city.", airKind:"Departures or arrivals", airDep:"Departures", airArr:"Arrivals", airOpen:"Open the live board on {site}", airIntl:"International", airDom:"Domestic", airShared:"That page shows departures and arrivals together.", airPick:"That page lists every airport: choose {name} there. It shows departures and arrivals together.", airWhy:"TurkMaps has no flight data of its own: airports do not offer their boards to other apps, so the table is shown on their site.", lineNoticesAria:"Notices for this line", lineNotice1:"1 notice on this line", lineNoticeN:"{n} notices on this line", ferryAllNotices:"Notices for all ferries ({n})", omniLines:"Lines", omniBusLine:"Bus line", busInfo:"Info", busBack:"Back", busStopsTitle:"Stops", secAppearanceSub:"Theme, colours, text size, language", secMapSub:"What the map shows, simulation, offline maps", secJourneySub:"Routes, walking, units, fare card", secAccessSub:"Motion and contrast", secYouSub:"Saved places, travel passport", secPrivacySub:"Online look-ups, your data", secAppSub:"Install, data sources, diagnostics", secAboutSub:"Legal pages, contact, version", spMapUse:"Turning & offline", liveBusLoading:"Live buses: asking…", liveBusOffline:"Live buses need a connection", liveBusBusy:"The live service is busy, trying again", liveBusError:"The live service did not answer, trying again", liveBusKept:"{n} shown from the last answer", liveBusNone:"Live: no buses reported on this line right now", liveBusOne:"Live: 1 bus on this line", liveBusMany:"Live: {n} buses on this line", liveBusStanding:"{n} standing", liveBusUnplaced:"{n} more not placed yet", liveBusTip:"Bus {id} · live position", liveBusStill:"has not moved for 2 min or more", liveBusAt:"Last answer {t}", tabBoat:"⛴ Boats", boatsTitle:"Boat lines", boatsIntro:"Each line has its own colour and its own lane: where lines share the water they run side by side. Tap a line to see its piers.", boatPiers:"{n} piers", boatCount:"{n} lines", modesTitle:"What the map shows", modeRail:"Metro & rail", modeBus:"Buses", modeBoat:"Boats", modeHint:"Choose what the map shows. Metro & rail is the full map.", 
+    liveBusOff:"Live buses are not running for this city right now", liveBusQuiet:"not heard from for 2 min or more", liveBusQuietN:"{n} not heard from lately", tabAirport:"✈ Airports", airTitle:"Airports", airIntro:"Choose an airport, then departures or arrivals. The live table opens on the airport’s own website.", airNone:"No airport is listed for this city.", airKind:"Departures or arrivals", airDep:"Departures", airArr:"Arrivals", airOpen:"Open the live board on {site}", airIntl:"International", airDom:"Domestic", airShared:"That page shows departures and arrivals together.", airPick:"That page lists every airport: choose {name} there. It shows departures and arrivals together.", airWhy:"TurkMaps has no flight data of its own: airports do not offer their boards to other apps, so the table is shown on their site.", lineNoticesAria:"Notices for this line", lineNotice1:"1 notice on this line", lineNoticeN:"{n} notices on this line", ferryAllNotices:"Notices for all ferries ({n})", omniLines:"Lines", omniBusLine:"Bus line", busInfo:"Info", busBack:"Back", busStopsTitle:"Stops", secAppearanceSub:"Theme, colours, text size, language", secMapSub:"What the map shows, simulation, offline maps", secJourneySub:"Routes, walking, units, fare card", secAccessSub:"Motion and contrast", secYouSub:"Saved places, travel passport", secPrivacySub:"Online look-ups, your data", secAppSub:"Install, data sources, diagnostics", secAboutSub:"Legal pages, contact, version", spMapUse:"Turning & offline", omniPlan:"Plan a trip", ariaMainNav:"Main", remBtn:"Remind me", remTitle:"Remind me", remDir:"Direction", remStop:"Stop", remTime:"Time at the stop (yours)", remHintBus:"From the first stop on weekdays: {when}. TurkMaps has no stop-by-stop times for buses: enter the time you know.", remHintRail:"Runs {hours}, about every {n} min. Enter the time you want to be reminded about.", remHintNone:"Enter the time you know the vehicle is at this stop.", remDays:"Days", remOnce:"Once", remDaily:"Every day", remWeekdays:"Weekdays", remWeekends:"Weekends", remBefore:"Remind me before", remMin:"{n} min", remSave:"Save reminder", remSaved:"Reminder saved for {time}", remIcs:"Add to my calendar", remNeedTime:"Choose a time first", remNeedBefore:"Choose at least one: 5, 10 or 20 min", remNote:"Reminders come from this app while it is open or recently used; a phone may stop it when it is closed. For an alert that always comes, add it to your calendar as well. The time is yours: the app does not know when a vehicle will really arrive.", remList:"Reminders", remListHint:"Set one from a line's panel with ⏰ Remind me.", remNone:"No reminders yet.", remOnLine:"Your reminders on this line", remDelete:"Delete reminder", remOff:"done", remNotifyTitle:"⏰ {line} → {head}", remNotifyBody:"{stop}: due at {time}, in {n} min", remNoStops:"This line has no stops to choose from", liveBusLoading:"Live buses: asking…", liveBusOffline:"Live buses need a connection", liveBusBusy:"The live service is busy, trying again", liveBusError:"The live service did not answer, trying again", liveBusKept:"{n} shown from the last answer", liveBusNone:"Live: no buses reported on this line right now", liveBusOne:"Live: 1 bus on this line", liveBusMany:"Live: {n} buses on this line", liveBusStanding:"{n} standing", liveBusUnplaced:"{n} more not placed yet", liveBusTip:"Bus {id} · live position", liveBusStill:"has not moved for 2 min or more", liveBusAt:"Last answer {t}", tabBoat:"⛴ Boats", boatsTitle:"Boat lines", boatsIntro:"Each line has its own colour and its own lane: where lines share the water they run side by side. Tap a line to see its piers.", boatPiers:"{n} piers", boatCount:"{n} lines", modesTitle:"What the map shows", modeRail:"Metro & rail", modeBus:"Buses", modeBoat:"Boats", modeHint:"Choose what the map shows. Metro & rail is the full map.", 
     offPacksTitle:"Offline maps", offPacksIntro:"A city kept here opens and works with no connection: its map, lines, stations, trip planner and place search. İstanbul, İzmir and Ankara are kept automatically; the others when you press Download. Service notices, weather, official timetables and the satellite layer still need a connection.", offGet:"Download", offRemove:"Remove", offRetry:"Try again", offNow:"Download now", offReady:"On this device", offLoading:"Downloading… {p}%", offWaiting:"Waiting for Wi-Fi", offFailed:"Could not download", offNone:"Not downloaded", offAutoTag:"automatic", offDataLbl:"Download maps on mobile data too", offDataHint:"Off: offline maps come down on Wi-Fi only. A phone that does not say what it is connected to (every iPhone) waits for you to press Download.", offAskTitle:"Keep the maps on this phone?", offAskBody:"So the app works with no connection, it keeps the maps of {cities} on this device (about {mb} MB). You are on mobile data.", offAskBodyUnknown:"So the app works with no connection, it keeps the maps of {cities} on this device (about {mb} MB). This phone does not say whether it is on Wi-Fi.", offAskNow:"Download now", offAskWifi:"Wait for Wi-Fi", offAskLater:"The maps will wait. Start them any time in Settings → Map → Offline maps.", offDone:"{city} is ready to use offline", 
     fromPh:"From: a stop, place or address…", toPh:"To: a stop, place or address…", sheetResize:"Resize the planner: short, half or full height", ariaMapView:"Map view", ariaCity:"City", ariaLoading:"Loading", ariaPrevStep:"Previous step", ariaNextStep:"Next step", ariaApiKey:"Anthropic API key",
     mapLabel:"Transit map. Arrow keys move the map, plus and minus zoom.", zoomIn:"Zoom in", zoomOut:"Zoom out",
@@ -3026,7 +3101,7 @@ const I18N = {
     secAbout:"Hakkında ve yasal", legalPrivacy:"Gizlilik bildirimi", legalTerms:"Kullanım koşulları", legalStorage:"Çerezler ve saklanan veriler", legalCredits:"Katkılar ve lisanslar", legalAccess:"Erişilebilirlik",
     aboutProject:"TurkMaps, yazarının hazırladığı ücretsiz, ticari olmayan, açık kaynaklı bir projedir. Hiçbir ulaşım işletmecisinin resmî hizmeti değildir.",
     aboutContact:"İletişim", aboutVersion:"Sürüm", aboutSource:"Kaynak kod",
-    liveBusOff:"Bu şehir için canlı otobüsler şu anda çalışmıyor", liveBusQuiet:"2 dakikadır veya daha uzun süredir haber alınamadı", liveBusQuietN:"{n} araçtan bir süredir haber yok", tabAirport:"✈ Havalimanları", airTitle:"Havalimanları", airIntro:"Bir havalimanı, sonra kalkış ya da varış seçin. Canlı tablo havalimanının kendi sitesinde açılır.", airNone:"Bu şehir için listelenmiş havalimanı yok.", airKind:"Kalkış ya da varış", airDep:"Kalkışlar", airArr:"Varışlar", airOpen:"Canlı tabloyu {site} sitesinde aç", airIntl:"Dış hatlar", airDom:"İç hatlar", airShared:"O sayfa kalkışları ve varışları birlikte gösterir.", airPick:"O sayfada bütün havalimanları listelenir: orada {name} seçin. Kalkışları ve varışları birlikte gösterir.", airWhy:"TurkMaps’in kendi uçuş verisi yoktur: havalimanları tablolarını başka uygulamalara sunmaz; bu yüzden tablo onların sitesinde gösterilir.", lineNoticesAria:"Bu hattın duyuruları", lineNotice1:"Bu hatta 1 duyuru var", lineNoticeN:"Bu hatta {n} duyuru var", ferryAllNotices:"Tüm vapurlar için duyurular ({n})", omniLines:"Hatlar", omniBusLine:"Otobüs hattı", busInfo:"Bilgi", busBack:"Geri", busStopsTitle:"Duraklar", secAppearanceSub:"Tema, renkler, yazı boyutu, dil", secMapSub:"Haritada ne görünür, simülasyon, çevrimdışı haritalar", secJourneySub:"Rotalar, yürüyüş, birimler, ulaşım kartı", secAccessSub:"Hareket ve kontrast", secYouSub:"Kayıtlı yerler, seyahat pasaportu", secPrivacySub:"Çevrimiçi aramalar, verileriniz", secAppSub:"Yükleme, veri kaynakları, tanılama", secAboutSub:"Yasal sayfalar, iletişim, sürüm", spMapUse:"Döndürme ve çevrimdışı", liveBusLoading:"Canlı otobüsler: soruluyor…", liveBusOffline:"Canlı otobüsler için bağlantı gerekir", liveBusBusy:"Canlı servis yoğun, yeniden deneniyor", liveBusError:"Canlı servis yanıt vermedi, yeniden deneniyor", liveBusKept:"son yanıttan {n} araç gösteriliyor", liveBusNone:"Canlı: şu anda bu hatta bildirilen otobüs yok", liveBusOne:"Canlı: bu hatta 1 otobüs", liveBusMany:"Canlı: bu hatta {n} otobüs", liveBusStanding:"{n} bekliyor", liveBusUnplaced:"{n} araç henüz yerleştirilemedi", liveBusTip:"Otobüs {id} · canlı konum", liveBusStill:"2 dakikadır veya daha uzun süredir hareket etmedi", liveBusAt:"Son yanıt {t}", tabBoat:"⛴ Vapurlar", boatsTitle:"Vapur hatları", boatsIntro:"Her hattın kendi rengi ve kendi şeridi var: hatlar aynı suyu paylaştığında yan yana ilerler. İskelelerini görmek için bir hatta dokunun.", boatPiers:"{n} iskele", boatCount:"{n} hat", modesTitle:"Haritada ne gösterilsin", modeRail:"Metro ve raylı", modeBus:"Otobüsler", modeBoat:"Vapurlar", modeHint:"Haritanın ne göstereceğini seçin. Metro ve raylı, haritanın tamamıdır.", 
+    liveBusOff:"Bu şehir için canlı otobüsler şu anda çalışmıyor", liveBusQuiet:"2 dakikadır veya daha uzun süredir haber alınamadı", liveBusQuietN:"{n} araçtan bir süredir haber yok", tabAirport:"✈ Havalimanları", airTitle:"Havalimanları", airIntro:"Bir havalimanı, sonra kalkış ya da varış seçin. Canlı tablo havalimanının kendi sitesinde açılır.", airNone:"Bu şehir için listelenmiş havalimanı yok.", airKind:"Kalkış ya da varış", airDep:"Kalkışlar", airArr:"Varışlar", airOpen:"Canlı tabloyu {site} sitesinde aç", airIntl:"Dış hatlar", airDom:"İç hatlar", airShared:"O sayfa kalkışları ve varışları birlikte gösterir.", airPick:"O sayfada bütün havalimanları listelenir: orada {name} seçin. Kalkışları ve varışları birlikte gösterir.", airWhy:"TurkMaps’in kendi uçuş verisi yoktur: havalimanları tablolarını başka uygulamalara sunmaz; bu yüzden tablo onların sitesinde gösterilir.", lineNoticesAria:"Bu hattın duyuruları", lineNotice1:"Bu hatta 1 duyuru var", lineNoticeN:"Bu hatta {n} duyuru var", ferryAllNotices:"Tüm vapurlar için duyurular ({n})", omniLines:"Hatlar", omniBusLine:"Otobüs hattı", busInfo:"Bilgi", busBack:"Geri", busStopsTitle:"Duraklar", secAppearanceSub:"Tema, renkler, yazı boyutu, dil", secMapSub:"Haritada ne görünür, simülasyon, çevrimdışı haritalar", secJourneySub:"Rotalar, yürüyüş, birimler, ulaşım kartı", secAccessSub:"Hareket ve kontrast", secYouSub:"Kayıtlı yerler, seyahat pasaportu", secPrivacySub:"Çevrimiçi aramalar, verileriniz", secAppSub:"Yükleme, veri kaynakları, tanılama", secAboutSub:"Yasal sayfalar, iletişim, sürüm", spMapUse:"Döndürme ve çevrimdışı", omniPlan:"Yolculuk planla", ariaMainNav:"Ana menü", remBtn:"Hatırlat", remTitle:"Hatırlat", remDir:"Yön", remStop:"Durak", remTime:"Duraktaki saat (sizin)", remHintBus:"Hafta içi ilk duraktan: {when}. TurkMaps'te otobüsler için durak durak saat yok: bildiğiniz saati girin.", remHintRail:"{hours} arası, yaklaşık {n} dakikada bir. Hatırlatılmak istediğiniz saati girin.", remHintNone:"Aracın bu durakta olduğunu bildiğiniz saati girin.", remDays:"Günler", remOnce:"Bir kez", remDaily:"Her gün", remWeekdays:"Hafta içi", remWeekends:"Hafta sonu", remBefore:"Ne kadar önce", remMin:"{n} dk", remSave:"Hatırlatıcıyı kaydet", remSaved:"{time} için hatırlatıcı kaydedildi", remIcs:"Takvimime ekle", remNeedTime:"Önce bir saat seçin", remNeedBefore:"En az birini seçin: 5, 10 veya 20 dk", remNote:"Hatırlatmalar bu uygulama açıkken ya da yakın zamanda kullanıldıysa gelir; telefon kapatıldığında uygulamayı durdurabilir. Her zaman gelen bir uyarı için takviminize de ekleyin. Saat sizindir: uygulama aracın gerçekte ne zaman geleceğini bilmez.", remList:"Hatırlatıcılar", remListHint:"Bir hattın panelinden ⏰ Hatırlat ile kurun.", remNone:"Henüz hatırlatıcı yok.", remOnLine:"Bu hattaki hatırlatıcılarınız", remDelete:"Hatırlatıcıyı sil", remOff:"bitti", remNotifyTitle:"⏰ {line} → {head}", remNotifyBody:"{stop}: {time} geliyor, {n} dk kaldı", remNoStops:"Bu hatta seçilecek durak yok", liveBusLoading:"Canlı otobüsler: soruluyor…", liveBusOffline:"Canlı otobüsler için bağlantı gerekir", liveBusBusy:"Canlı servis yoğun, yeniden deneniyor", liveBusError:"Canlı servis yanıt vermedi, yeniden deneniyor", liveBusKept:"son yanıttan {n} araç gösteriliyor", liveBusNone:"Canlı: şu anda bu hatta bildirilen otobüs yok", liveBusOne:"Canlı: bu hatta 1 otobüs", liveBusMany:"Canlı: bu hatta {n} otobüs", liveBusStanding:"{n} bekliyor", liveBusUnplaced:"{n} araç henüz yerleştirilemedi", liveBusTip:"Otobüs {id} · canlı konum", liveBusStill:"2 dakikadır veya daha uzun süredir hareket etmedi", liveBusAt:"Son yanıt {t}", tabBoat:"⛴ Vapurlar", boatsTitle:"Vapur hatları", boatsIntro:"Her hattın kendi rengi ve kendi şeridi var: hatlar aynı suyu paylaştığında yan yana ilerler. İskelelerini görmek için bir hatta dokunun.", boatPiers:"{n} iskele", boatCount:"{n} hat", modesTitle:"Haritada ne gösterilsin", modeRail:"Metro ve raylı", modeBus:"Otobüsler", modeBoat:"Vapurlar", modeHint:"Haritanın ne göstereceğini seçin. Metro ve raylı, haritanın tamamıdır.", 
     offPacksTitle:"Çevrimdışı haritalar", offPacksIntro:"Burada tutulan bir şehir bağlantı olmadan açılır ve çalışır: haritası, hatları, istasyonları, yolculuk planlayıcısı ve yer araması. İstanbul, İzmir ve Ankara kendiliğinden tutulur; diğerleri İndir'e bastığınızda. Hizmet duyuruları, hava durumu, resmî sefer saatleri ve uydu katmanı için yine bağlantı gerekir.", offGet:"İndir", offRemove:"Kaldır", offRetry:"Yeniden dene", offNow:"Şimdi indir", offReady:"Bu cihazda", offLoading:"İndiriliyor… %{p}", offWaiting:"Wi-Fi bekleniyor", offFailed:"İndirilemedi", offNone:"İndirilmedi", offAutoTag:"otomatik", offDataLbl:"Haritaları mobil veriyle de indir", offDataHint:"Kapalı: çevrimdışı haritalar yalnızca Wi-Fi ile iner. Neye bağlı olduğunu bildirmeyen bir telefon (her iPhone) İndir'e basmanızı bekler.", offAskTitle:"Haritalar bu telefonda tutulsun mu?", offAskBody:"Uygulama bağlantı olmadan da çalışsın diye {cities} haritalarını bu cihazda tutar (yaklaşık {mb} MB). Şu an mobil verideyiniz.", offAskBodyUnknown:"Uygulama bağlantı olmadan da çalışsın diye {cities} haritalarını bu cihazda tutar (yaklaşık {mb} MB). Bu telefon Wi-Fi'da olup olmadığını bildirmiyor.", offAskNow:"Şimdi indir", offAskWifi:"Wi-Fi'ı bekle", offAskLater:"Haritalar bekleyecek. İstediğiniz zaman Ayarlar → Harita → Çevrimdışı haritalar'dan başlatabilirsiniz.", offDone:"{city} çevrimdışı kullanıma hazır", 
     fromPh:"Nereden: durak, yer veya adres…", toPh:"Nereye: durak, yer veya adres…", sheetResize:"Planlayıcıyı boyutlandır: kısa, yarım veya tam yükseklik", ariaMapView:"Harita görünümü", ariaCity:"Şehir", ariaLoading:"Yükleniyor", ariaPrevStep:"Önceki adım", ariaNextStep:"Sonraki adım", ariaApiKey:"Anthropic API anahtarı",
     mapLabel:"Ulaşım haritası. Ok tuşları haritayı kaydırır, artı ve eksi yakınlaştırır.", zoomIn:"Yakınlaştır", zoomOut:"Uzaklaştır",
@@ -3202,7 +3277,7 @@ const I18N = {
     secAbout:"حول التطبيق والمعلومات القانونية", legalPrivacy:"إشعار الخصوصية", legalTerms:"شروط الاستخدام", legalStorage:"ملفات تعريف الارتباط والبيانات المخزّنة", legalCredits:"الشكر والتراخيص", legalAccess:"إمكانية الوصول",
     aboutProject:"TurkMaps مشروع مجاني غير تجاري ومفتوح المصدر من إعداد صاحبه، وليس خدمة رسمية لأي مشغّل نقل.",
     aboutContact:"التواصل", aboutVersion:"الإصدار", aboutSource:"الشيفرة المصدرية",
-    liveBusOff:"الحافلات المباشرة لهذه المدينة لا تعمل الآن", liveBusQuiet:"لم يصل منها شيء منذ دقيقتين أو أكثر", liveBusQuietN:"{n} لم يصل منها شيء مؤخرًا", tabAirport:"✈ المطارات", airTitle:"المطارات", airIntro:"اختر مطارًا ثم المغادرة أو الوصول. يُفتح الجدول المباشر على موقع المطار نفسه.", airNone:"لا يوجد مطار مُدرج لهذه المدينة.", airKind:"المغادرة أو الوصول", airDep:"المغادرة", airArr:"الوصول", airOpen:"افتح اللوحة المباشرة على {site}", airIntl:"الرحلات الدولية", airDom:"الرحلات الداخلية", airShared:"تعرض تلك الصفحة المغادرة والوصول معًا.", airPick:"تلك الصفحة تسرد كل المطارات: اختر {name} هناك. وتعرض المغادرة والوصول معًا.", airWhy:"لا يملك TurkMaps بيانات رحلات خاصة به: المطارات لا تتيح لوحاتها لتطبيقات أخرى، لذلك يُعرض الجدول على موقعها.", lineNoticesAria:"إشعارات هذا الخط", lineNotice1:"إشعار واحد على هذا الخط", lineNoticeN:"{n} إشعارات على هذا الخط", ferryAllNotices:"إشعارات لكل العبّارات ({n})", omniLines:"الخطوط", omniBusLine:"خط حافلات", busInfo:"معلومات", busBack:"رجوع", busStopsTitle:"المحطات", secAppearanceSub:"السمة والألوان وحجم النص واللغة", secMapSub:"ما تعرضه الخريطة والمحاكاة والخرائط دون اتصال", secJourneySub:"المسارات والمشي والوحدات وبطاقة الأجرة", secAccessSub:"الحركة والتباين", secYouSub:"الأماكن المحفوظة وجواز السفر", secPrivacySub:"البحث عبر الإنترنت وبياناتك", secAppSub:"التثبيت ومصادر البيانات والتشخيص", secAboutSub:"الصفحات القانونية والتواصل والإصدار", spMapUse:"التدوير والعمل دون اتصال", liveBusLoading:"الحافلات المباشرة: جارٍ الاستعلام…", liveBusOffline:"الحافلات المباشرة تحتاج إلى اتصال", liveBusBusy:"الخدمة المباشرة مشغولة، ستُعاد المحاولة", liveBusError:"لم تُجب الخدمة المباشرة، ستُعاد المحاولة", liveBusKept:"{n} معروضة من آخر إجابة", liveBusNone:"مباشر: لا حافلات مُبلَّغ عنها على هذا الخط الآن", liveBusOne:"مباشر: حافلة واحدة على هذا الخط", liveBusMany:"مباشر: {n} حافلات على هذا الخط", liveBusStanding:"{n} متوقفة", liveBusUnplaced:"{n} لم يُحدَّد موقعها بعد", liveBusTip:"الحافلة {id} · موقع مباشر", liveBusStill:"لم تتحرك منذ دقيقتين أو أكثر", liveBusAt:"آخر إجابة {t}", tabBoat:"⛴ العبّارات", boatsTitle:"خطوط العبّارات", boatsIntro:"لكل خط لونه ومساره الخاص: حيث تتشارك الخطوط المياه تسير جنبًا إلى جنب. اضغط على خط لعرض مراسيه.", boatPiers:"{n} مرسى", boatCount:"{n} خطًّا", modesTitle:"ما تعرضه الخريطة", modeRail:"المترو والسكك", modeBus:"الحافلات", modeBoat:"العبّارات", modeHint:"اختر ما تعرضه الخريطة. «المترو والسكك» هي الخريطة الكاملة.", 
+    liveBusOff:"الحافلات المباشرة لهذه المدينة لا تعمل الآن", liveBusQuiet:"لم يصل منها شيء منذ دقيقتين أو أكثر", liveBusQuietN:"{n} لم يصل منها شيء مؤخرًا", tabAirport:"✈ المطارات", airTitle:"المطارات", airIntro:"اختر مطارًا ثم المغادرة أو الوصول. يُفتح الجدول المباشر على موقع المطار نفسه.", airNone:"لا يوجد مطار مُدرج لهذه المدينة.", airKind:"المغادرة أو الوصول", airDep:"المغادرة", airArr:"الوصول", airOpen:"افتح اللوحة المباشرة على {site}", airIntl:"الرحلات الدولية", airDom:"الرحلات الداخلية", airShared:"تعرض تلك الصفحة المغادرة والوصول معًا.", airPick:"تلك الصفحة تسرد كل المطارات: اختر {name} هناك. وتعرض المغادرة والوصول معًا.", airWhy:"لا يملك TurkMaps بيانات رحلات خاصة به: المطارات لا تتيح لوحاتها لتطبيقات أخرى، لذلك يُعرض الجدول على موقعها.", lineNoticesAria:"إشعارات هذا الخط", lineNotice1:"إشعار واحد على هذا الخط", lineNoticeN:"{n} إشعارات على هذا الخط", ferryAllNotices:"إشعارات لكل العبّارات ({n})", omniLines:"الخطوط", omniBusLine:"خط حافلات", busInfo:"معلومات", busBack:"رجوع", busStopsTitle:"المحطات", secAppearanceSub:"السمة والألوان وحجم النص واللغة", secMapSub:"ما تعرضه الخريطة والمحاكاة والخرائط دون اتصال", secJourneySub:"المسارات والمشي والوحدات وبطاقة الأجرة", secAccessSub:"الحركة والتباين", secYouSub:"الأماكن المحفوظة وجواز السفر", secPrivacySub:"البحث عبر الإنترنت وبياناتك", secAppSub:"التثبيت ومصادر البيانات والتشخيص", secAboutSub:"الصفحات القانونية والتواصل والإصدار", spMapUse:"التدوير والعمل دون اتصال", omniPlan:"خطّط رحلة", ariaMainNav:"القائمة الرئيسية", remBtn:"ذكّرني", remTitle:"ذكّرني", remDir:"الاتجاه", remStop:"المحطة", remTime:"الوقت عند المحطة (وقتك)", remHintBus:"من المحطة الأولى أيام الأسبوع: {when}. لا يملك التطبيق مواعيد كل محطة للحافلات: أدخل الوقت الذي تعرفه.", remHintRail:"يعمل {hours}، كل {n} دقيقة تقريبًا. أدخل الوقت الذي تريد التذكير به.", remHintNone:"أدخل الوقت الذي تعرف أن المركبة تكون فيه عند هذه المحطة.", remDays:"الأيام", remOnce:"مرة واحدة", remDaily:"كل يوم", remWeekdays:"أيام الأسبوع", remWeekends:"عطلة نهاية الأسبوع", remBefore:"ذكّرني قبل", remMin:"{n} دقيقة", remSave:"احفظ التذكير", remSaved:"حُفظ التذكير للساعة {time}", remIcs:"أضِف إلى تقويمي", remNeedTime:"اختر وقتًا أولًا", remNeedBefore:"اختر واحدًا على الأقل: 5 أو 10 أو 20 دقيقة", remNote:"تصل التذكيرات من هذا التطبيق ما دام مفتوحًا أو استُخدم مؤخرًا؛ قد يوقفه الهاتف عند إغلاقه. لتنبيه يصل دائمًا، أضِفه إلى تقويمك أيضًا. الوقت وقتك: لا يعرف التطبيق متى تصل المركبة فعلًا.", remList:"التذكيرات", remListHint:"أنشئ تذكيرًا من لوحة أي خط عبر ⏰ ذكّرني.", remNone:"لا تذكيرات بعد.", remOnLine:"تذكيراتك على هذا الخط", remDelete:"احذف التذكير", remOff:"انتهى", remNotifyTitle:"⏰ {line} باتجاه {head}", remNotifyBody:"{stop}: موعده {time}، بعد {n} دقيقة", remNoStops:"لا محطات لهذا الخط للاختيار منها", liveBusLoading:"الحافلات المباشرة: جارٍ الاستعلام…", liveBusOffline:"الحافلات المباشرة تحتاج إلى اتصال", liveBusBusy:"الخدمة المباشرة مشغولة، ستُعاد المحاولة", liveBusError:"لم تُجب الخدمة المباشرة، ستُعاد المحاولة", liveBusKept:"{n} معروضة من آخر إجابة", liveBusNone:"مباشر: لا حافلات مُبلَّغ عنها على هذا الخط الآن", liveBusOne:"مباشر: حافلة واحدة على هذا الخط", liveBusMany:"مباشر: {n} حافلات على هذا الخط", liveBusStanding:"{n} متوقفة", liveBusUnplaced:"{n} لم يُحدَّد موقعها بعد", liveBusTip:"الحافلة {id} · موقع مباشر", liveBusStill:"لم تتحرك منذ دقيقتين أو أكثر", liveBusAt:"آخر إجابة {t}", tabBoat:"⛴ العبّارات", boatsTitle:"خطوط العبّارات", boatsIntro:"لكل خط لونه ومساره الخاص: حيث تتشارك الخطوط المياه تسير جنبًا إلى جنب. اضغط على خط لعرض مراسيه.", boatPiers:"{n} مرسى", boatCount:"{n} خطًّا", modesTitle:"ما تعرضه الخريطة", modeRail:"المترو والسكك", modeBus:"الحافلات", modeBoat:"العبّارات", modeHint:"اختر ما تعرضه الخريطة. «المترو والسكك» هي الخريطة الكاملة.", 
     offPacksTitle:"خرائط دون اتصال", offPacksIntro:"المدينة المحفوظة هنا تفتح وتعمل دون اتصال: خريطتها وخطوطها ومحطاتها ومخطِّط الرحلات والبحث عن الأماكن. تُحفظ إسطنبول وإزمير وأنقرة تلقائيًا، والبقية عند الضغط على «تنزيل». إشعارات الخدمة والطقس والجداول الرسمية وطبقة القمر الصناعي تحتاج إلى اتصال.", offGet:"تنزيل", offRemove:"إزالة", offRetry:"أعد المحاولة", offNow:"نزِّل الآن", offReady:"على هذا الجهاز", offLoading:"جارٍ التنزيل… {p}%", offWaiting:"بانتظار شبكة الواي فاي", offFailed:"تعذَّر التنزيل", offNone:"غير منزَّلة", offAutoTag:"تلقائي", offDataLbl:"نزِّل الخرائط عبر بيانات الجوال أيضًا", offDataHint:"متوقف: تُنزَّل الخرائط عبر الواي فاي فقط. الهاتف الذي لا يُفصح عن نوع اتصاله (كل هواتف آيفون) ينتظر ضغطك على «تنزيل».", offAskTitle:"هل نحفظ الخرائط على هذا الهاتف؟", offAskBody:"ليعمل التطبيق دون اتصال يحفظ خرائط {cities} على هذا الجهاز (نحو {mb} ميغابايت). أنت الآن على بيانات الجوال.", offAskBodyUnknown:"ليعمل التطبيق دون اتصال يحفظ خرائط {cities} على هذا الجهاز (نحو {mb} ميغابايت). هذا الهاتف لا يُفصح إن كان على الواي فاي.", offAskNow:"نزِّل الآن", offAskWifi:"انتظر الواي فاي", offAskLater:"ستنتظر الخرائط. ابدأها متى شئت من الإعدادات ← الخريطة ← خرائط دون اتصال.", offDone:"{city} جاهزة للاستخدام دون اتصال", 
     fromPh:"من: محطة أو مكان أو عنوان…", toPh:"إلى: محطة أو مكان أو عنوان…", sheetResize:"تغيير حجم المخطِّط: قصير أو نصف أو كامل الارتفاع", ariaMapView:"عرض الخريطة", ariaCity:"المدينة", ariaLoading:"جارٍ التحميل", ariaPrevStep:"الخطوة السابقة", ariaNextStep:"الخطوة التالية", ariaApiKey:"مفتاح Anthropic API",
     mapLabel:"خريطة النقل. مفاتيح الأسهم تحرّك الخريطة، وزائد وناقص للتكبير والتصغير.", zoomIn:"تكبير", zoomOut:"تصغير",
@@ -3442,7 +3517,7 @@ const I18N = {
     secAbout:"À propos et mentions légales", legalPrivacy:"Avis de confidentialité", legalTerms:"Conditions d’utilisation", legalStorage:"Cookies et données stockées", legalCredits:"Crédits et licences", legalAccess:"Accessibilité",
     aboutProject:"TurkMaps est un projet gratuit, non commercial et open source, réalisé par son auteur. Ce n’est le service officiel d’aucun exploitant de transport.",
     aboutContact:"Contact", aboutVersion:"Version", aboutSource:"Code source",
-    liveBusOff:"Les bus en direct ne fonctionnent pas pour cette ville en ce moment", liveBusQuiet:"sans nouvelles depuis 2 min ou plus", liveBusQuietN:"{n} sans nouvelles récentes", tabAirport:"✈ Aéroports", airTitle:"Aéroports", airIntro:"Choisissez un aéroport, puis départs ou arrivées. Le tableau en direct s’ouvre sur le site de l’aéroport.", airNone:"Aucun aéroport n’est répertorié pour cette ville.", airKind:"Départs ou arrivées", airDep:"Départs", airArr:"Arrivées", airOpen:"Ouvrir le tableau en direct sur {site}", airIntl:"International", airDom:"National", airShared:"Cette page affiche les départs et les arrivées ensemble.", airPick:"Cette page répertorie tous les aéroports : choisissez-y {name}. Elle affiche les départs et les arrivées ensemble.", airWhy:"TurkMaps n’a pas de données de vol propres : les aéroports ne proposent pas leurs tableaux aux autres applications, le tableau est donc affiché sur leur site.", lineNoticesAria:"Avis sur cette ligne", lineNotice1:"1 avis sur cette ligne", lineNoticeN:"{n} avis sur cette ligne", ferryAllNotices:"Avis pour tous les ferries ({n})", omniLines:"Lignes", omniBusLine:"Ligne de bus", busInfo:"Infos", busBack:"Retour", busStopsTitle:"Arrêts", secAppearanceSub:"Thème, couleurs, taille du texte, langue", secMapSub:"Ce que montre la carte, simulation, cartes hors ligne", secJourneySub:"Itinéraires, marche, unités, carte de transport", secAccessSub:"Mouvement et contraste", secYouSub:"Lieux enregistrés, passeport de voyage", secPrivacySub:"Recherches en ligne, vos données", secAppSub:"Installation, sources, diagnostic", secAboutSub:"Pages légales, contact, version", spMapUse:"Rotation et hors ligne", liveBusLoading:"Bus en direct : interrogation…", liveBusOffline:"Les bus en direct nécessitent une connexion", liveBusBusy:"Le service en direct est occupé, nouvel essai", liveBusError:"Le service en direct n’a pas répondu, nouvel essai", liveBusKept:"{n} affichés d’après la dernière réponse", liveBusNone:"En direct : aucun bus signalé sur cette ligne pour l’instant", liveBusOne:"En direct : 1 bus sur cette ligne", liveBusMany:"En direct : {n} bus sur cette ligne", liveBusStanding:"{n} à l’arrêt", liveBusUnplaced:"{n} pas encore placés", liveBusTip:"Bus {id} · position en direct", liveBusStill:"n’a pas bougé depuis 2 min ou plus", liveBusAt:"Dernière réponse {t}", tabBoat:"⛴ Bateaux", boatsTitle:"Lignes de bateau", boatsIntro:"Chaque ligne a sa couleur et son couloir : là où des lignes partagent l'eau, elles avancent côte à côte. Touchez une ligne pour voir ses embarcadères.", boatPiers:"{n} embarcadères", boatCount:"{n} lignes", modesTitle:"Ce que la carte montre", modeRail:"Métro et rail", modeBus:"Bus", modeBoat:"Bateaux", modeHint:"Choisissez ce que la carte montre. Métro et rail est la carte complète.", 
+    liveBusOff:"Les bus en direct ne fonctionnent pas pour cette ville en ce moment", liveBusQuiet:"sans nouvelles depuis 2 min ou plus", liveBusQuietN:"{n} sans nouvelles récentes", tabAirport:"✈ Aéroports", airTitle:"Aéroports", airIntro:"Choisissez un aéroport, puis départs ou arrivées. Le tableau en direct s’ouvre sur le site de l’aéroport.", airNone:"Aucun aéroport n’est répertorié pour cette ville.", airKind:"Départs ou arrivées", airDep:"Départs", airArr:"Arrivées", airOpen:"Ouvrir le tableau en direct sur {site}", airIntl:"International", airDom:"National", airShared:"Cette page affiche les départs et les arrivées ensemble.", airPick:"Cette page répertorie tous les aéroports : choisissez-y {name}. Elle affiche les départs et les arrivées ensemble.", airWhy:"TurkMaps n’a pas de données de vol propres : les aéroports ne proposent pas leurs tableaux aux autres applications, le tableau est donc affiché sur leur site.", lineNoticesAria:"Avis sur cette ligne", lineNotice1:"1 avis sur cette ligne", lineNoticeN:"{n} avis sur cette ligne", ferryAllNotices:"Avis pour tous les ferries ({n})", omniLines:"Lignes", omniBusLine:"Ligne de bus", busInfo:"Infos", busBack:"Retour", busStopsTitle:"Arrêts", secAppearanceSub:"Thème, couleurs, taille du texte, langue", secMapSub:"Ce que montre la carte, simulation, cartes hors ligne", secJourneySub:"Itinéraires, marche, unités, carte de transport", secAccessSub:"Mouvement et contraste", secYouSub:"Lieux enregistrés, passeport de voyage", secPrivacySub:"Recherches en ligne, vos données", secAppSub:"Installation, sources, diagnostic", secAboutSub:"Pages légales, contact, version", spMapUse:"Rotation et hors ligne", omniPlan:"Planifier un trajet", ariaMainNav:"Menu principal", remBtn:"Me rappeler", remTitle:"Me rappeler", remDir:"Sens", remStop:"Arrêt", remTime:"Heure à l’arrêt (la vôtre)", remHintBus:"Depuis le premier arrêt en semaine : {when}. TurkMaps n’a pas les horaires arrêt par arrêt des bus : saisissez l’heure que vous connaissez.", remHintRail:"Circule {hours}, environ toutes les {n} min. Saisissez l’heure pour laquelle vous voulez un rappel.", remHintNone:"Saisissez l’heure à laquelle le véhicule est à cet arrêt.", remDays:"Jours", remOnce:"Une fois", remDaily:"Tous les jours", remWeekdays:"En semaine", remWeekends:"Le week-end", remBefore:"Me prévenir avant", remMin:"{n} min", remSave:"Enregistrer le rappel", remSaved:"Rappel enregistré pour {time}", remIcs:"Ajouter à mon agenda", remNeedTime:"Choisissez d’abord une heure", remNeedBefore:"Choisissez au moins un délai : 5, 10 ou 20 min", remNote:"Les rappels viennent de l’application tant qu’elle est ouverte ou utilisée récemment ; le téléphone peut l’arrêter une fois fermée. Pour une alerte qui arrive toujours, ajoutez-le aussi à votre agenda. L’heure est la vôtre : l’application ne sait pas quand le véhicule arrivera vraiment.", remList:"Rappels", remListHint:"Créez-en un depuis le panneau d’une ligne avec ⏰ Me rappeler.", remNone:"Aucun rappel pour l’instant.", remOnLine:"Vos rappels sur cette ligne", remDelete:"Supprimer le rappel", remOff:"terminé", remNotifyTitle:"⏰ {line} → {head}", remNotifyBody:"{stop} : prévu à {time}, dans {n} min", remNoStops:"Cette ligne n’a pas d’arrêts à choisir", liveBusLoading:"Bus en direct : interrogation…", liveBusOffline:"Les bus en direct nécessitent une connexion", liveBusBusy:"Le service en direct est occupé, nouvel essai", liveBusError:"Le service en direct n’a pas répondu, nouvel essai", liveBusKept:"{n} affichés d’après la dernière réponse", liveBusNone:"En direct : aucun bus signalé sur cette ligne pour l’instant", liveBusOne:"En direct : 1 bus sur cette ligne", liveBusMany:"En direct : {n} bus sur cette ligne", liveBusStanding:"{n} à l’arrêt", liveBusUnplaced:"{n} pas encore placés", liveBusTip:"Bus {id} · position en direct", liveBusStill:"n’a pas bougé depuis 2 min ou plus", liveBusAt:"Dernière réponse {t}", tabBoat:"⛴ Bateaux", boatsTitle:"Lignes de bateau", boatsIntro:"Chaque ligne a sa couleur et son couloir : là où des lignes partagent l'eau, elles avancent côte à côte. Touchez une ligne pour voir ses embarcadères.", boatPiers:"{n} embarcadères", boatCount:"{n} lignes", modesTitle:"Ce que la carte montre", modeRail:"Métro et rail", modeBus:"Bus", modeBoat:"Bateaux", modeHint:"Choisissez ce que la carte montre. Métro et rail est la carte complète.", 
     offPacksTitle:"Cartes hors ligne", offPacksIntro:"Une ville gardée ici s'ouvre et fonctionne sans connexion : sa carte, ses lignes, ses stations, le planificateur et la recherche de lieux. İstanbul, İzmir et Ankara sont gardées automatiquement ; les autres quand vous appuyez sur Télécharger. Les avis de service, la météo, les horaires officiels et la couche satellite demandent toujours une connexion.", offGet:"Télécharger", offRemove:"Retirer", offRetry:"Réessayer", offNow:"Télécharger maintenant", offReady:"Sur cet appareil", offLoading:"Téléchargement… {p} %", offWaiting:"En attente du Wi-Fi", offFailed:"Échec du téléchargement", offNone:"Non téléchargée", offAutoTag:"automatique", offDataLbl:"Télécharger les cartes aussi en données mobiles", offDataHint:"Désactivé : les cartes hors ligne ne se téléchargent qu'en Wi-Fi. Un téléphone qui ne dit pas à quoi il est connecté (tout iPhone) attend que vous appuyiez sur Télécharger.", offAskTitle:"Garder les cartes sur ce téléphone ?", offAskBody:"Pour fonctionner sans connexion, l'application garde les cartes de {cities} sur cet appareil (environ {mb} Mo). Vous êtes en données mobiles.", offAskBodyUnknown:"Pour fonctionner sans connexion, l'application garde les cartes de {cities} sur cet appareil (environ {mb} Mo). Ce téléphone ne dit pas s'il est en Wi-Fi.", offAskNow:"Télécharger maintenant", offAskWifi:"Attendre le Wi-Fi", offAskLater:"Les cartes attendront. Lancez-les quand vous voulez dans Réglages → Carte → Cartes hors ligne.", offDone:"{city} est prête pour une utilisation hors ligne", 
     fromPh:"De : arrêt, lieu ou adresse…", toPh:"À : arrêt, lieu ou adresse…", sheetResize:"Redimensionner le planificateur : court, moitié ou pleine hauteur", ariaMapView:"Vue de la carte", ariaCity:"Ville", ariaLoading:"Chargement", ariaPrevStep:"Étape précédente", ariaNextStep:"Étape suivante", ariaApiKey:"Clé API Anthropic",
     mapLabel:"Carte des transports. Les flèches déplacent la carte, plus et moins zooment.", zoomIn:"Zoom avant", zoomOut:"Zoom arrière",
@@ -9805,7 +9880,10 @@ function openLine(line){
   /* the line's own notices, first thing under its name (V4.6, 12b-line-notices.js); a boat line also shows the ferry notices
      that name no line. A line that is not running yet has none. */
   { const ferry = line.kind === 'ferry', box = document.getElementById('lpNotices');
-    if(box) box.innerHTML = live ? lineNoticesHTML(lineNotices(line.ref, ferry ? 'ferry' : ''), ferry ? ferryGeneralNotices() : null) : ''; }
+    if(box) box.innerHTML = live ? lineNoticesHTML(lineNotices(line.ref, ferry ? 'ferry' : ''), ferry ? ferryGeneralNotices() : null) : '';
+    /* V4.6.2: a reminder for a stop on this line (22b-reminders.js); a line that is not running yet has no stops to be at */
+    const rb = document.getElementById('lpRemind');
+    if(rb){ rb.style.display = live && (line.stations || []).length >= 2 ? '' : 'none'; rb.dataset.ref = line.ref; rb.dataset.mode = ferry ? 'ferry' : 'rail'; } }
   if(!live){
     /* A line that is not running: its own panel (11a-planned-panel.js). The connectivity and
        expansion blocks are about running lines and are hidden rather than filled with filler. */
@@ -9820,6 +9898,7 @@ function openLine(line){
     if(stripBt0) stripBt0.style.display = stripHTML0 ? '' : 'none';
     ['lpConnBt','lpConn','lpExpBt','lpExp','lpSrcNote'].forEach(id => { const el=document.getElementById(id); if(el) el.style.display='none'; });
     document.getElementById('linp').classList.add('show');
+    showLineOnMap(line);
     return;
   }
   ['lpConnBt','lpConn','lpExpBt','lpExp','lpSrcNote'].forEach(id => { const el=document.getElementById(id); if(el) el.style.display=''; });
@@ -9859,6 +9938,13 @@ function openLine(line){
   }
   document.getElementById('linp').classList.add('show');
   if(typeof setLineGlow === 'function') setLineGlow(line);      // the line this panel is about glows on the map (12a-line-glow.js)
+  showLineOnMap(line);
+}
+/* V4.6.2: opening a line also brings it into view, in the part of the map the panel does not cover; on a phone an open sheet steps
+   aside first, so the panel and the line are seen together */
+function showLineOnMap(line){
+  if(IS_MOBILE && document.querySelector('.msheet.open') && typeof openSheet === 'function') openSheet(null);
+  if(typeof fitLineInView === 'function') fitLineInView(line);
 }
 function closeAllPanels(){
   selected=null;
@@ -11734,6 +11820,7 @@ const boatLines = NETWORK.filter(l => l.kind === 'ferry' && isLive(l) && Array.i
 const boatLayer = L.layerGroup();
 const boatColour = new Map(boatLines.map((l, i) => [l.ref, BOAT_COLOURS[i % BOAT_COLOURS.length]]));
 /* every pier once, with the lines that call there (the names the map prints in this tab) */
+const PIER_DOT = 6, PIER_DOT_MULTI = 8;      // px across, the same at every zoom (V4.6.2)
 const boatStations = (function () {
   const by = new Map();
   boatLines.forEach(l => (l.stations || []).forEach(s => { const k = s.lat + ',' + s.lng; let e = by.get(k); if (!e) by.set(k, e = { name: s.name, lat: s.lat, lng: s.lng, lines: new Set() }); e.lines.add(l.ref); }));
@@ -11762,9 +11849,13 @@ function renderBoats() {
     const hit = L.polyline(ll, { renderer: lineRenderer, color: col, weight: 14, opacity: 0, lineCap: 'round' });
     [hit, core].forEach(pl => { pl.bindTooltip(tip, { sticky: true, className: 'lt' }); pl.on('click', e => { openLine(l); L.DomEvent.stop(e); }); pl.addTo(boatLayer); });
   });
-  /* the piers: one white dot each, a little larger where several lines call */
+  /* the piers: one small white dot each, a little larger where several lines call. ONE size at every zoom (V4.6.2: they were drawn
+     on the map's own canvas, which is scaled while a zoom animates, and looked large and crowded zoomed out); an element of its own
+     is moved by a zoom but never scaled. */
   boatStations.forEach(s => {
-    L.circleMarker([s.lat, s.lng], { renderer: lineRenderer, radius: s.lines.size > 1 ? 4.6 : 3.4, color: '#0B1220', weight: 1.6, fillColor: '#FFFFFF', fillOpacity: 1, interactive: false }).addTo(boatLayer);
+    const d = s.lines.size > 1 ? PIER_DOT_MULTI : PIER_DOT;
+    L.marker([s.lat, s.lng], { icon: L.divIcon({ className: 'pier-dot', html: '<i style="width:' + d + 'px;height:' + d + 'px"></i>', iconSize: [d, d], iconAnchor: [d / 2, d / 2] }),
+      interactive: false, keyboard: false }).addTo(boatLayer);
   });
 }
 /* an opened line stands out among the boats too: called by setLineGlow (12a-line-glow.js) with the line's ref, or null */
@@ -12203,6 +12294,7 @@ function busCompactStopsHTML(dirs){
 }
 function busMainHTML(ref, dirs){
   return '<div class="bd-main">' + liveBusHTML(ref) + lineNoticesHTML(lineNotices(ref, 'bus')) + busFareHTML(ref) + busCompactStopsHTML(dirs)
+    + '<button type="button" class="bd-remind" data-remind="' + attrEsc(ref) + '"><span aria-hidden="true">⏰</span> ' + svgEsc(t('remBtn')) + '</button>'
     + '<button type="button" class="bd-info-btn" data-bd="info"><span aria-hidden="true">ⓘ</span> ' + svgEsc(t('busInfo')) + '</button></div>';
 }
 function busInfoHTML(ref, dirs){
@@ -12226,8 +12318,9 @@ function busShowInfo(box, on){
 (function(){
   const box = document.getElementById('busDetail'); if(!box) return;
   box.addEventListener('click', e => {
-    const b = e.target.closest('[data-bd]'), cs = e.target.closest('[data-csdir]');
+    const b = e.target.closest('[data-bd]'), cs = e.target.closest('[data-csdir]'), rm = e.target.closest('[data-remind]');
     if(b){ busShowInfo(box, b.dataset.bd === 'info'); return; }
+    if(rm){ if(typeof openReminder === 'function') openReminder('bus', rm.dataset.remind); return; }   // V4.6.2 (22b-reminders.js)
     if(cs){
       const i = cs.dataset.csdir;
       box.querySelectorAll('[data-csdir]').forEach(x => { const on = x.dataset.csdir === i; x.classList.toggle('active', on); x.setAttribute('aria-pressed', on ? 'true' : 'false'); });
@@ -13407,7 +13500,9 @@ function captureReady(opts){
 function captureEnd(){ if(!animOn){ animOn=true; last=performance.now(); animRaf=requestAnimationFrame(frame); } return true; }
 /* ---- Announcements: live disruptions (faults / closures) + map warning markers ---- */
 const SEV_COLOR = { major:'#E5484D', partial:'#F5A623', minor:'#FFD400' };
-const WARN_SIZE = 22, WARN_RING = 34;      // px, the same at every zoom: the sign, and the ring round a sign pinned to one station
+/* px, the same at every zoom: the sign, and the ring round a sign pinned to one station. V4.6 made them fixed (22 and 34); V4.6.2
+   makes them smaller (asked for: "too big on the screen"), the ring now a thin line just outside the sign rather than a disc round it */
+const WARN_SIZE = 20, WARN_RING = 27;
 const SEV_LABEL = { major:'Major', partial:'Partial', minor:'Minor' };
 const disruptionLayer = L.layerGroup().addTo(map);   // shown on the Active tab only (setTab manages it)
 const hazardRenderer = L.svg({ padding:0.5 });       // SVG so the dash animation (CSS) works
@@ -13689,6 +13784,8 @@ function renderAnnouncements(){
   const groups = busGroups(bus);
   // the badge counts what the card SHOWS: a notice per rail fault and ferry notice, a row per bus group
   document.getElementById('annCount').textContent = rail.length + ferry.length + groups.length + ops.length;
+  { const mb=document.getElementById('mnavBadge'), n=rail.length + ferry.length + groups.length;   // the bottom bar's Alerts button (V4.6.2): live notices only
+    if(mb){ mb.hidden = !n; mb.textContent = n > 99 ? '99+' : String(n); } }
   const opRows = ops.map((o,i)=>{
     const col = o.color || colorForLine(o.ref);
     const rel = opensRel(o);
@@ -13821,22 +13918,22 @@ function mkSheet(id){
   s.innerHTML='<div class="mgrab"></div>';
   document.body.appendChild(s);
   if(id==='planner') return s;                 // the planner sheet has three heights and its own dragging (setupPlanSheet)
-  // swipe-down to close
-  let y0=null, dy=0;
-  s.addEventListener('touchstart',e=>{ if(s.scrollTop<=0){ y0=e.touches[0].clientY; dy=0; } },{passive:true});
-  s.addEventListener('touchmove',e=>{ if(y0===null) return; dy=e.touches[0].clientY-y0;
-    if(dy>0){ s.style.transform=`translateY(${dy}px)`; } },{passive:true});
-  s.addEventListener('touchend',()=>{ if(y0===null) return;
-    s.style.transform=''; if(dy>90) openSheet(null); y0=null; },{passive:true});
+  /* every other sheet opens at a low height with the map in view above it, and a finger takes it higher or closes it (V4.6.2) */
+  makeDraggable(s, id==='modes' ? 'modes' : 'sheet', () => openSheet(null));
   return s;
 }
 function openSheet(name){
-  for(const k in mSheets) mSheets[k].classList.toggle('open', k===name);
-  /* the planner keeps the map in view and usable, so nothing is dimmed behind it (V4.4.1); the other sheets still dim the map */
-  document.getElementById('mbackdrop').classList.toggle('on', !!name && name!=='planner' && name!=='modes');   // nor behind the kinds-of-transport sheet (V4.5): choosing Boats is about seeing the map
+  for(const k in mSheets){ const on = k===name; if(on && !mSheets[k].classList.contains('open') && mSheets[k].dataset.dragKind) setDragDetent(mSheets[k], 'low', true); mSheets[k].classList.toggle('open', on); }
+  /* No sheet dims the map any more (V4.6.2: "I want to see what is happening in the background"): each opens at a low height with
+     the map above it, undimmed and usable, as the planner has since V4.4.1 */
+  document.getElementById('mbackdrop').classList.remove('on');
+  /* a sheet and a line or station panel are never on screen together: the panel stayed over the Layers sheet (V4.6.2) */
+  if(name && typeof closeAllPanels==='function') closeAllPanels();
+  { const pb=document.getElementById('omniPlan'); if(pb){ pb.classList.toggle('on', name==='planner'); pb.setAttribute('aria-pressed', name==='planner' ? 'true' : 'false'); } }
   document.body.classList.toggle('plan-open', name==='planner'); if(name!=='planner') document.body.classList.remove('plan-full');
   if(name==='planner') setPlanDetent(planRouteShown() ? 'half' : 'compact');
-  for(const k in mNavBtns) mNavBtns[k].classList.toggle('on', (name===null? k==='map' : k===name));
+  for(const k in mNavBtns){ const on = (name===null || name==='modes' || name==='planner') ? k==='map' : k===name; mNavBtns[k].classList.toggle('on', on); if(on) mNavBtns[k].setAttribute('aria-current','page'); else mNavBtns[k].removeAttribute('aria-current'); }
+  { const nav=document.querySelector('.mnav'); if(nav){ const keys=Object.keys(mNavBtns), i=keys.findIndex(k=>mNavBtns[k].classList.contains('on')); nav.dataset.on = String(Math.max(0, i)); } }
   if(navigator.vibrate) try{ navigator.vibrate(8); }catch(e){}
 }
 /* ---------------------------------------------------------------------------
@@ -13983,8 +14080,8 @@ function setupMobile(){
   const bd=document.createElement('div'); bd.id='mbackdrop'; bd.className='mbackdrop';
   bd.addEventListener('click',()=>openSheet(null)); document.body.appendChild(bd);
   // sheets
-  /* Four sheets, four buttons. Weather is one of the scopes in the Layers sheet (Active / Vision / Buses / Intercity / Weather), so it
-     has no sheet or button of its own. */
+  /* Four sheets, three buttons (V4.6.2): Map (and behind it the kinds of transport), Layers, Alerts; the planner opens from the button
+     beside the search box. Weather and Airports are views in the Layers sheet, with no sheet or button of their own. */
   mSheets={ planner:mkSheet('planner'), layers:mkSheet('layers'), alerts:mkSheet('alerts'), modes:mkSheet('modes') };
   /* V4.5: the kinds of transport live behind the Map button. Its first press is the default map; pressed again there, it opens this
      sheet: Metro & rail (the full map), Buses, Boats. Buses used to be one of the views in the Layers sheet. */
@@ -14010,22 +14107,31 @@ function setupMobile(){
   document.getElementById('cardPlanner').style.display='';
   setupPlanSheet(mSheets.planner);
   const ann=document.getElementById('announce'); mSheets.alerts.appendChild(ann); ann.classList.remove('collapsed');
-  // bottom navigation
-  const nav=document.createElement('div'); nav.className='mnav glass';
-  const items=[ ['map','🗺','mMap'], ['planner','⇆','mPlanner'], ['layers','◈','mLayers'], ['alerts','📢','mAlerts'] ];
-  items.forEach(([k,icon,key])=>{
-    const b=document.createElement('button');
-    b.innerHTML=`<span class="mi">${icon}</span><span class="ml" data-i18n="${key}">${t(key)}</span>`;
+  /* The bottom bar (V4.6.2): three buttons, Map, Layers and Alerts. The planner moved to the button beside the search box
+     (plannerFromSearch, 18b-sheet-drag.js). Drawn icons in place of emoji, a marker that slides to the button in use, the number of
+     live notices on Alerts, and a press that answers at once. Pressing the button in use again closes its sheet. */
+  const nav=document.createElement('nav'); nav.className='mnav glass'; nav.setAttribute('aria-label', t('ariaMainNav')); nav.setAttribute('data-i18n-aria','ariaMainNav');
+  nav.dataset.on='0';
+  const ind=document.createElement('span'); ind.className='mnav-ind'; ind.setAttribute('aria-hidden','true'); nav.appendChild(ind);
+  const ICON = {
+    map: '<svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round" stroke-linecap="round" aria-hidden="true"><path d="M9 4 3.5 6v14L9 18l6 2 5.5-2V4L15 6 9 4Z"/><path d="M9 4v14M15 6v14"/></svg>',
+    layers: '<svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round" stroke-linecap="round" aria-hidden="true"><path d="M12 3.5 2.5 8.5 12 13.5l9.5-5L12 3.5Z"/><path d="m2.5 12.5 9.5 5 9.5-5"/><path d="m2.5 16.5 9.5 5 9.5-5" opacity=".55"/></svg>',
+    alerts: '<svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round" stroke-linecap="round" aria-hidden="true"><path d="M6 16.5V11a6 6 0 0 1 12 0v5.5l1.5 2h-15l1.5-2Z"/><path d="M10 20.5a2.2 2.2 0 0 0 4 0"/></svg>',
+  };
+  const items=[ ['map','mMap'], ['layers','mLayers'], ['alerts','mAlerts'] ];
+  items.forEach(([k,key])=>{
+    const b=document.createElement('button'); b.type='button'; b.dataset.k=k;
+    b.innerHTML=`<span class="mi">${ICON[k]}</span><span class="ml" data-i18n="${key}">${t(key)}</span>` + (k==='alerts' ? '<span class="mnav-badge" id="mnavBadge" hidden></span>' : '');
     b.addEventListener('click',()=>{
       if(k==='map'){ mapButton(); return; }
-      // the planner only works on the İstanbul network — leave any non-metro scope first
-      if(k==='planner' && (currentTab==='weather'||currentTab==='bus'||currentTab==='boat'||currentTab==='intercity')) setTab('active');
+      if(mSheets[k] && mSheets[k].classList.contains('open')){ openSheet(null); return; }
       openSheet(k);
     });
     mNavBtns[k]=b; nav.appendChild(b);
   });
   document.body.appendChild(nav);
-  mNavBtns.map.classList.add('on');
+  mNavBtns.map.classList.add('on'); mNavBtns.map.setAttribute('aria-current','page');
+  setupPanelDrag();
 
 }
 // toast (used for PWA update notifications)
@@ -14218,6 +14324,145 @@ document.addEventListener('keydown', e=>{ if(e.key==='Escape' && focusRefs) clea
   ov.addEventListener('click', e=>{ if(e.target===ov) close(); });
   document.getElementById('helpBtn').addEventListener('click', ()=> ov.classList.add('show'));
   try{ if(!localStorage.getItem('irn_welcomed')) ov.classList.add('show'); }catch(e){}
+})();
+/* ===========================================================================
+   SHEETS AND PANELS THAT LEAVE THE MAP IN VIEW, AND MOVE WITH A FINGER (V4.6.2)
+   Asked for as: "whenever I pull a panel like the layers panel it doesn't cover the whole screen", and "give me the ability to pull
+   the [line] panel up and down". So on a phone the Layers and Alerts sheets, the Buses/Boats sheet, and the line and station panels
+   open at a LOW height with the map above them, undimmed and usable; a drag (or a tap on the grip) takes them to a HIGH height for
+   reading, and a drag down past the low height closes them. The planner keeps its own three heights (18-mobile-shell.js).
+   Heights are set as max-height, so a sheet with little in it stays as small as its content.
+   ========================================================================== */
+/* the two heights, in px, for this screen. A panel sits above the bottom bar and stops below the top bar. */
+function dragHeights(el){
+  const vh = window.innerHeight, kind = el.dataset.dragKind, tb = document.querySelector('.topbar');
+  const top = tb ? Math.max(0, tb.getBoundingClientRect().bottom) : 60;
+  if(kind === 'panel') return { low: Math.round(vh * 0.44), high: Math.max(Math.round(vh * 0.44) + 40, Math.round(vh - top - 104)) };
+  if(kind === 'modes') return { low: Math.round(vh * 0.46), high: Math.round(vh * 0.86) };
+  return { low: Math.round(vh * 0.55), high: Math.round(vh * 0.86) };
+}
+/* `instant`: no animation. Used when a panel or sheet opens or closes, so it never opens squashed at the height a drag left it at
+   while the animation back catches up. */
+function setDragDetent(el, d, instant){
+  el.dataset.detent = d === 'high' ? 'high' : 'low';
+  const H = dragHeights(el);
+  if(instant) el.classList.add('dragging');
+  el.style.maxHeight = (el.dataset.detent === 'high' ? H.high : H.low) + 'px';
+  if(instant){ void el.offsetHeight; el.classList.remove('dragging'); }
+  if(el.dataset.detent === 'low') el.scrollTop = 0;
+  const g = el.querySelector(':scope > .sgrab-btn, :scope > .mgrab-btn');
+  if(g) g.setAttribute('aria-expanded', el.dataset.detent === 'high' ? 'true' : 'false');
+}
+/* Where a drag settles. `h0` and `h` are the heights at the start and the end, `v` the speed at the end in px/ms (+ = growing),
+   `from` the height it started at, `H` the two heights. null = close. A short sheet (its content smaller than the low height)
+   cannot be closed by a drag UP: nothing shrank. */
+function dragSettle(h0, h, v, from, H){
+  const shrink = h0 - h;
+  if(shrink > 0){
+    if((shrink > 80 && h < H.low - 60) || (from === 'low' && v < -0.6 && shrink > 24)) return null;
+    if(from === 'high' && (v < -0.45 || h < (H.low + H.high) / 2)) return 'low';
+    return from;
+  }
+  return (v > 0.45 || h > (H.low + H.high) / 2) ? 'high' : 'low';
+}
+/* `el` follows the finger from its grip, or from anywhere while its content is scrolled to the top */
+function makeDraggable(el, kind, close){
+  el.dataset.dragKind = kind;
+  el.classList.add('draggable');
+  let grip = el.querySelector(':scope > .mgrab, :scope > .sgrab');
+  if(grip){
+    const btn = document.createElement('button'); btn.type = 'button'; btn.className = 'sgrab-btn';
+    btn.setAttribute('data-i18n-aria', 'sheetResize'); btn.setAttribute('aria-label', t('sheetResize')); btn.setAttribute('aria-expanded', 'false');
+    el.replaceChild(btn, grip); btn.appendChild(grip);
+    btn.addEventListener('click', () => setDragDetent(el, el.dataset.detent === 'high' ? 'low' : 'high'));
+  }
+  setDragDetent(el, 'low');
+  let y0 = null, h0 = 0, moved = false, t0 = 0, H = null, onGrip = false;
+  el.addEventListener('touchstart', e => {
+    y0 = null;
+    if(e.touches.length !== 1 || e.target.closest('input,select,textarea,.ac-list,.jmap,.lp-strip,.bd-cs-l,.leaflet-container')) return;
+    onGrip = !!e.target.closest('.sgrab-btn');
+    if(!onGrip && el.scrollTop > 0) return;                 // scrolled content scrolls; only the top of it drags
+    y0 = e.touches[0].clientY; h0 = el.getBoundingClientRect().height; moved = false; t0 = performance.now(); H = dragHeights(el);
+  }, { passive: true });
+  el.addEventListener('touchmove', e => {
+    if(y0 === null) return;
+    const dy = e.touches[0].clientY - y0;
+    if(!moved){
+      if(Math.abs(dy) < 6) return;
+      if(dy < 0 && !onGrip && el.dataset.detent === 'high'){ y0 = null; return; }   // at the high height an upward finger scrolls
+    }
+    moved = true; el.classList.add('dragging');
+    el.style.maxHeight = Math.max(60, Math.min(H.high, h0 - dy)) + 'px';
+  }, { passive: true });
+  const end = () => {
+    if(y0 === null) return;
+    y0 = null;
+    /* measured BEFORE the animation is switched back on: otherwise the browser can animate from the height it last drew and this
+       reads that old height, not where the finger left the panel */
+    const h = el.getBoundingClientRect().height;
+    el.classList.remove('dragging');
+    if(!moved) return;
+    const v = (h - h0) / Math.max(1, performance.now() - t0);
+    const to = dragSettle(h0, h, v, el.dataset.detent, H);
+    if(to === null){ close(); setDragDetent(el, 'low', true); } else setDragDetent(el, to);
+  };
+  el.addEventListener('touchend', end, { passive: true });
+  el.addEventListener('touchcancel', end, { passive: true });
+  window.addEventListener('resize', () => setDragDetent(el, el.dataset.detent));
+}
+/* the line and station panels: draggable on a phone, and back at the low height each time they open */
+function setupPanelDrag(){
+  if(!IS_MOBILE) return;
+  [['linp', 'linpX'], ['stn', 'stnX']].forEach(([id, x]) => {
+    const el = document.getElementById(id); if(!el) return;
+    makeDraggable(el, 'panel', () => { const b = document.getElementById(x); if(b) b.click(); });
+    /* back at the low height when it OPENS (not on every class change: the end of a drag changes the class too, and would undo it) */
+    let shown = el.classList.contains('show');
+    if(typeof MutationObserver !== 'undefined') new MutationObserver(() => { const now = el.classList.contains('show'); if(now && !shown) setDragDetent(el, 'low', true); shown = now; })
+      .observe(el, { attributes: true, attributeFilter: ['class'] });
+  });
+}
+/* Show a line in the part of the map nothing covers (V4.6.2: "not only it highlights, the screen pans to the line"). On a phone that is
+   between the top bar and the panel; on a computer, between the panel on the left and the column of cards on the right. */
+function fitLineInView(line){
+  if(!line || typeof map === 'undefined') return;
+  const pts = [];
+  (line.paths || []).forEach(p => (p || []).forEach(q => pts.push(q)));
+  if(pts.length < 2) (line.stations || []).forEach(s => { if(isFinite(s.lat) && isFinite(s.lng)) pts.push([s.lat, s.lng]); });
+  if(pts.length < 2) return;
+  const W = window.innerWidth, Hh = window.innerHeight, p = document.getElementById('linp');
+  const pr = p && p.classList.contains('show') ? p.getBoundingClientRect() : null;
+  let tl, br;
+  if(IS_MOBILE){
+    const tb = document.querySelector('.topbar');
+    tl = [24, (tb ? Math.max(0, tb.getBoundingClientRect().bottom) : 60) + 12];
+    br = [24, pr ? Math.max(40, Hh - pr.top + 12) : 100];
+  } else {
+    const c = document.querySelector('.controls'), cr = c ? c.getBoundingClientRect() : null;
+    tl = [pr ? pr.right + 24 : 30, 30];
+    br = [cr && cr.width ? Math.max(30, W - cr.left + 24) : 30, 30];
+    if(tl[0] + br[0] > W - 160){ tl[0] = 30; }               // a narrow window: better the whole line under the panel than none
+  }
+  map.fitBounds(L.latLngBounds(pts), { paddingTopLeft: tl, paddingBottomRight: br, maxZoom: 15 });
+}
+/* Planner mode, from the search bar (V4.6.2). The bottom bar has no Planner button any more: the button beside the search box opens
+   the planner (on a phone, its sheet; on a computer, the Trip Planner card), and on a phone pressing it again closes it. */
+function plannerFromSearch(){
+  const scoped = ['weather', 'bus', 'boat', 'intercity', 'airport'];
+  if(IS_MOBILE){
+    if(mSheets.planner && mSheets.planner.classList.contains('open')){ openSheet(null); return; }
+    if(scoped.indexOf(currentTab) >= 0) setTab('active');      // the planner works on the metro network: leave any other view first
+    openSheet('planner');
+    return;
+  }
+  if(scoped.indexOf(currentTab) >= 0) setTab('active');
+  if(typeof openPlannerCard === 'function') openPlannerCard();
+  const c = document.getElementById('cardPlanner'); if(c) try{ c.scrollIntoView({ block: 'start', behavior: 'smooth' }); }catch(e){}
+  const i = document.getElementById('selO'); if(i) try{ i.focus({ preventScroll: true }); }catch(e){}
+}
+(function(){
+  const b = document.getElementById('omniPlan'); if(b) b.addEventListener('click', plannerFromSearch);
 })();
 /* ==================================================================================
    OMNI SEARCH + MAP ASSISTANT
@@ -15408,7 +15653,7 @@ renderProvenance();
 /* ---- diagnostics: show what was recorded, and let the user send it if they choose ---- */
 function diagReportText(){
   const env = [
-    "app: V4.6 build " + BUILD,
+    "app: V4.6.2 build " + BUILD,
     "city: " + CITY_ID,
     "lang: " + lang,
     "screen: " + innerWidth + "x" + innerHeight + " dpr" + (devicePixelRatio || 1),
@@ -15580,6 +15825,7 @@ const NAV_LAYERS = [
   { id:'linp',     open:() => navHas('linp','show'),          close:() => navClick('linpX') },
   { id:'near',     open:() => navHas('nearPanel','open'),     close:() => closeNearby() },
   { id:'pass',     open:() => navHas('passPanel','open'),     close:() => closePassport() },
+  { id:'remind',   open:() => navHas('remPanel','open'),      close:() => closeReminder() },       // a reminder being set (22b-reminders.js)
   { id:'finder',   open:() => navHas('stnFinder','open'),     close:() => closeFinder() },       // the list of stations in view (25-map-keyboard.js)
   { id:'settings', open:() => navHas('settingsPanel','open'), close:() => closeSettings() },
   { id:'ai',       open:() => document.body.classList.contains('ai-open'), close:() => aiShut() },
@@ -15653,7 +15899,7 @@ window.addEventListener('popstate', e => {
   try{ history.replaceState({ irnNav:true, d:0 }, ''); }catch(err){ return; }
   NAV.ready = true;
   const mo = new MutationObserver(navReconcile);
-  ['stn','linp','nearPanel','passPanel','stnFinder','settingsPanel','omni','wcOverlay'].forEach(id => { const e = document.getElementById(id); if(e) mo.observe(e, { attributes:true, attributeFilter:['class'] }); });
+  ['stn','linp','nearPanel','passPanel','remPanel','stnFinder','settingsPanel','omni','wcOverlay'].forEach(id => { const e = document.getElementById(id); if(e) mo.observe(e, { attributes:true, attributeFilter:['class'] }); });
   document.querySelectorAll('.msheet').forEach(e => mo.observe(e, { attributes:true, attributeFilter:['class'] }));
   mo.observe(document.body, { attributes:true, attributeFilter:['class'] });
   navReconcile();
@@ -15680,7 +15926,7 @@ function syncLegalLinks(){
 (function(){
   syncLegalLinks();
   const build = document.getElementById('aboutBuild');
-  if(build) build.textContent = 'V4.6' + ' · ' + BUILD;
+  if(build) build.textContent = 'V4.6.2' + ' · ' + BUILD;
 
   /* ---- the one-time question ---- */
   const box = document.getElementById('privNotice');
@@ -15937,6 +16183,243 @@ function offRender() {
   const c = navigator.connection; if (c && c.addEventListener) c.addEventListener('change', () => setTimeout(offAuto, 1500));
 })();
 /* ===========================================================================
+   REMINDERS (V4.6.2) — asked for as "scheduling"
+   Pick a bus, metro, tram or boat line, its direction, a stop, and the time the vehicle is at that stop (your own time), and the
+   app gives a heads-up 5, 10 or 20 minutes before it. Once, every day, on weekdays or at weekends.
+   What it is and is not, said where it is set:
+     * The time is the person's. TurkMaps has no stop-by-stop timetable for buses (İETT publishes the first and last departure and
+       the gap between them, from the first stop); the dialog shows what is known, as a hint, and nothing is filled in for them.
+     * There is no server, so a web app can only remind while it is running: open, or recently used and not yet stopped by the
+       phone. For an alert that always comes, "Add to my calendar" writes the same reminder (with the same alerts before it) into a
+       calendar file the phone's own calendar app keeps and rings.
+   Everything stays on the device (localStorage `irn_reminders`).
+   ========================================================================== */
+/* ==REMIND-PURE-START== */
+const REM_KEY = 'irn_reminders';
+const REM_BEFORE = [5, 10, 20];
+const REM_DAYS = ['once', 'daily', 'weekdays', 'weekends'];
+/* "05:20" → 320 (minutes after midnight), or null */
+function remParseTime(s){
+  const m = /^(\d{1,2}):(\d{2})$/.exec(String(s || '').trim());
+  if(!m) return null;
+  const h = +m[1], mi = +m[2];
+  return h < 24 && mi < 60 ? h * 60 + mi : null;
+}
+function remDayOk(days, date){
+  const d = date.getDay();
+  return days === 'daily' || days === 'once' || (days === 'weekdays' && d >= 1 && d <= 5) || (days === 'weekends' && (d === 0 || d === 6));
+}
+const remYmd = d => d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+/* the next time the vehicle is due at the stop (ms, this device's clock), from a minute ago on; null when a one-off has passed */
+function remNextDue(r, now){
+  const mins = remParseTime(r.time); if(mins === null) return null;
+  if(r.days === 'once'){
+    const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(r.date || '')); if(!m) return null;
+    const due = new Date(+m[1], +m[2] - 1, +m[3], Math.floor(mins / 60), mins % 60, 0, 0).getTime();
+    return due >= now - 60000 ? due : null;
+  }
+  const base = new Date(now);
+  for(let i = 0; i < 8; i++){
+    const d = new Date(base.getFullYear(), base.getMonth(), base.getDate() + i, Math.floor(mins / 60), mins % 60, 0, 0);
+    if(!remDayOk(r.days, d)) continue;
+    if(d.getTime() >= now - 60000) return d.getTime();
+  }
+  return null;
+}
+/* for a one-off: the date the time next comes, today or tomorrow */
+function remOnceDate(time, now){
+  const mins = remParseTime(time); if(mins === null) return null;
+  const b = new Date(now), d = new Date(b.getFullYear(), b.getMonth(), b.getDate(), Math.floor(mins / 60), mins % 60, 0, 0);
+  if(d.getTime() < now - 60000) d.setDate(d.getDate() + 1);
+  return remYmd(d);
+}
+/* The heads-ups due now. For each reminder, the moments (due − 5, 10, 20 min) that have come and were not given yet for this due
+   time; when several have come at once (the app was asleep), ONE heads-up is given, the latest (the fewest minutes left), and the
+   others count as given. `covers` = every moment it stands for, to remember as given. */
+function remDueAlerts(list, now){
+  const out = [];
+  for(const r of list){
+    if(!r || !r.on) continue;
+    const due = remNextDue(r, now); if(due === null || now >= due) continue;
+    const key = String(due), given = (r.fired && r.fired.due === key && Array.isArray(r.fired.b)) ? r.fired.b : [];
+    const come = (r.before || []).filter(b => now >= due - b * 60000);
+    const fresh = come.filter(b => given.indexOf(b) < 0);
+    if(!fresh.length) continue;
+    out.push({ r: r, due: due, before: Math.min.apply(null, come), covers: given.concat(fresh) });
+  }
+  return out;
+}
+/* the same reminder as a calendar file (iCalendar): local time, repeated as chosen, an alarm for each "before" */
+function remICS(r, now){
+  const esc = s => String(s || '').replace(/\\/g, '\\\\').replace(/;/g, '\\;').replace(/,/g, '\\,').replace(/\r?\n/g, '\\n');
+  const mins = remParseTime(r.time); if(mins === null) return null;
+  const date = r.days === 'once' ? r.date : (function(){ const due = remNextDue(Object.assign({}, r, { on: true }), now); return due ? remYmd(new Date(due)) : remYmd(new Date(now)); })();
+  const p2 = n => String(n).padStart(2, '0');
+  const start = String(date).replace(/-/g, '') + 'T' + p2(Math.floor(mins / 60)) + p2(mins % 60) + '00';
+  const stamp = new Date(now).toISOString().replace(/[-:]/g, '').replace(/\.\d+Z$/, 'Z');
+  const rule = { daily: 'FREQ=DAILY', weekdays: 'FREQ=WEEKLY;BYDAY=MO,TU,WE,TH,FR', weekends: 'FREQ=WEEKLY;BYDAY=SA,SU' }[r.days];
+  const lines = ['BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//TurkMaps//Reminder//EN', 'CALSCALE:GREGORIAN', 'BEGIN:VEVENT',
+    'UID:' + esc(r.id) + '@turkmaps', 'DTSTAMP:' + stamp, 'DTSTART:' + start, 'DURATION:PT5M',
+    'SUMMARY:' + esc(r.title), 'DESCRIPTION:' + esc(r.desc || '')];
+  if(rule) lines.push('RRULE:' + rule);
+  (r.before || []).slice().sort((a, b) => b - a).forEach(b => lines.push('BEGIN:VALARM', 'ACTION:DISPLAY', 'DESCRIPTION:' + esc(r.title), 'TRIGGER:-PT' + b + 'M', 'END:VALARM'));
+  lines.push('END:VEVENT', 'END:VCALENDAR');
+  return lines.join('\r\n') + '\r\n';
+}
+/* ==REMIND-PURE-END== */
+
+/* `var`: the line panels can ask before this file has run (see the note in 16b-bus-routes.js) */
+var reminders = (function(){ const a = lsJSON(REM_KEY); return Array.isArray(a) ? a.filter(x => x && x.id && remParseTime(x.time) !== null) : []; })();
+var remCtx = null;            // the dialog's line: { mode, ref, label, col, dirs:[{ head, stops:[names] }], dir, stop, time, days, before }
+function remSave(){ try{ localStorage.setItem(REM_KEY, JSON.stringify(reminders)); }catch(e){} renderRemList(); }
+const remModeIcon = m => m === 'bus' ? '🚌' : (m === 'ferry' ? '⛴' : '🚇');
+function remClock(time){
+  const mins = remParseTime(time); if(mins === null) return time || '';
+  if(typeof clock24 === 'undefined' || clock24) return time;
+  const h = Math.floor(mins / 60), m = mins % 60;
+  return ((h % 12) || 12) + ':' + String(m).padStart(2, '0') + (h < 12 ? ' AM' : ' PM');
+}
+/* the line's directions and stops, as the dialog lists them */
+function remLineInfo(mode, ref){
+  if(mode === 'bus'){
+    const dirs = (typeof busDirs === 'function' ? busDirs(ref) : []).map((d, i) => ({ head: d.head || (i ? t('busReturn') : t('busOutbound')), stops: busStopNames(d) }));
+    return { label: ref, col: BUS_COLOR, dirs: dirs };
+  }
+  const l = lineByRef[ref]; if(!l) return null;
+  const names = (l.stations || []).map(s => s.name).filter(Boolean);
+  if(names.length < 2) return null;
+  const rev = names.slice().reverse();
+  const dirs = names[0] === names[names.length - 1] ? [{ head: names[names.length - 1], stops: names }] : [{ head: names[names.length - 1], stops: names }, { head: names[0], stops: rev }];
+  return { label: l.partOf || l.ref, col: l.color || colorForLine(ref), dirs: dirs };
+}
+/* what is known about the times, said as a hint and not filled in */
+function remHint(c){
+  if(c.mode === 'bus'){
+    const s = (typeof BUS_SCHED !== 'undefined' && BUS_SCHED[c.ref]) || null, d = s && s[c.dir];
+    if(d && d.wd && d.wd.first) return t('remHintBus').replace('{when}', fmtSchedBucket(d.wd));
+    return t('remHintNone');
+  }
+  const lt = typeof lineTiming === 'function' ? lineTiming(c.ref) : null;
+  if(lt && lt.hours) return t('remHintRail').replace('{hours}', lt.hours).replace('{n}', Math.round(lt.hwMin || 0) || '?');
+  return t('remHintNone');
+}
+function openReminder(mode, ref){
+  const info = remLineInfo(mode, ref);
+  if(!info || !info.dirs.length){ showToast(t('remNoStops'), 'err'); return; }
+  remCtx = { mode: mode, ref: ref, label: info.label, col: info.col, dirs: info.dirs, dir: 0, stop: info.dirs[0].stops[0], time: '', days: 'weekdays', before: [10] };
+  renderReminder();
+  document.getElementById('remPanel').classList.add('open'); document.getElementById('remOverlay').classList.add('on');
+}
+function closeReminder(){ document.getElementById('remPanel').classList.remove('open'); document.getElementById('remOverlay').classList.remove('on'); }
+function remRowHTML(r, withLine){
+  const daysLbl = { once: t('remOnce'), daily: t('remDaily'), weekdays: t('remWeekdays'), weekends: t('remWeekends') }[r.days] || '';
+  return '<div class="rem-row' + (r.on ? '' : ' off') + '" data-rid="' + attrEsc(r.id) + '">'
+    + (withLine ? '<span class="rem-line" style="background:' + r.col + ';color:' + inkOn(r.col) + '">' + svgEsc(r.label) + '</span>' : '')
+    + '<span class="rem-t"><b>' + svgEsc(remClock(r.time)) + ' · ' + svgEsc(r.stop) + '</b><small>→ ' + svgEsc(r.head) + ' · ' + svgEsc(daysLbl)
+    + ' · ' + r.before.slice().sort((a, b) => a - b).map(b => t('remMin').replace('{n}', b)).join(', ') + (r.on ? '' : ' · ' + svgEsc(t('remOff'))) + '</small></span>'
+    + '<button type="button" class="rem-del" data-rdel="' + attrEsc(r.id) + '" aria-label="' + attrEsc(t('remDelete')) + '" title="' + attrEsc(t('remDelete')) + '">✕</button></div>';
+}
+function renderReminder(){
+  const c = remCtx, box = document.getElementById('remBody'); if(!c || !box) return;
+  const d = c.dirs[c.dir] || c.dirs[0];
+  const seg = (name, items, on) => '<div class="seg rem-seg" data-rseg="' + name + '">' + items.map(([v, lbl]) => '<button type="button" data-v="' + attrEsc(v) + '"' + (on(v) ? ' class="active" aria-pressed="true"' : ' aria-pressed="false"') + '>' + svgEsc(lbl) + '</button>').join('') + '</div>';
+  const mine = reminders.filter(r => r.mode === c.mode && r.ref === c.ref && r.city === CITY_ID);
+  box.innerHTML =
+    '<div class="rem-head"><span class="rem-line" style="background:' + c.col + ';color:' + inkOn(c.col) + '">' + remModeIcon(c.mode) + ' ' + svgEsc(c.label) + '</span></div>'
+    + (c.dirs.length > 1 ? '<div class="rem-f"><div class="rem-l">' + svgEsc(t('remDir')) + '</div>' + seg('dir', c.dirs.map((x, i) => [String(i), '→ ' + x.head]), v => +v === c.dir) + '</div>' : '')
+    + '<div class="rem-f"><label class="rem-l" for="remStop">' + svgEsc(t('remStop')) + '</label><select id="remStop">'
+    + d.stops.map(n => '<option' + (n === c.stop ? ' selected' : '') + '>' + svgEsc(n) + '</option>').join('') + '</select></div>'
+    + '<div class="rem-f"><label class="rem-l" for="remTime">' + svgEsc(t('remTime')) + '</label><input id="remTime" type="time" step="60" value="' + attrEsc(c.time) + '">'
+    + '<div class="sp-hint">' + svgEsc(remHint(c)) + '</div></div>'
+    + '<div class="rem-f"><div class="rem-l">' + svgEsc(t('remDays')) + '</div>' + seg('days', [['once', t('remOnce')], ['daily', t('remDaily')], ['weekdays', t('remWeekdays')], ['weekends', t('remWeekends')]], v => v === c.days) + '</div>'
+    + '<div class="rem-f"><div class="rem-l">' + svgEsc(t('remBefore')) + '</div>' + seg('before', REM_BEFORE.map(b => [String(b), t('remMin').replace('{n}', b)]), v => c.before.indexOf(+v) >= 0) + '</div>'
+    + '<div class="rem-acts"><button type="button" class="btn" id="remSaveBtn">' + svgEsc(t('remSave')) + '</button>'
+    + '<button type="button" class="btn ghost" id="remIcsBtn">📅 ' + svgEsc(t('remIcs')) + '</button></div>'
+    + '<div class="sp-hint rem-note">' + svgEsc(t('remNote')) + '</div>'
+    + (mine.length ? '<div class="rem-l rem-mine">' + svgEsc(t('remOnLine')) + '</div><div class="rem-list">' + mine.map(r => remRowHTML(r, false)).join('') + '</div>' : '');
+}
+/* the reminder the dialog describes, or a reason it cannot be made yet */
+function remFromDialog(){
+  const c = remCtx; if(!c) return null;
+  if(remParseTime(c.time) === null) return { error: t('remNeedTime') };
+  if(!c.before.length) return { error: t('remNeedBefore') };
+  const d = c.dirs[c.dir] || c.dirs[0], now = Date.now();
+  const r = { id: 'r' + now.toString(36) + Math.random().toString(36).slice(2, 6), city: CITY_ID, mode: c.mode, ref: c.ref, label: c.label, col: c.col,
+    head: d.head, stop: c.stop, time: c.time, days: c.days, before: c.before.slice().sort((a, b) => a - b), on: true, created: now };
+  if(r.days === 'once') r.date = remOnceDate(r.time, now);
+  r.title = remModeIcon(r.mode) + ' ' + r.label + ' → ' + r.head;
+  r.desc = t('remNotifyBody').replace('{stop}', r.stop).replace('{time}', r.time).replace('{n}', r.before.join('/'));
+  return r;
+}
+function remTick(){
+  const now = Date.now(); let changed = false;
+  remDueAlerts(reminders, now).forEach(a => {
+    a.r.fired = { due: String(a.due), b: a.covers }; changed = true;
+    const left = Math.max(1, Math.round((a.due - now) / 60000));
+    notify(t('remNotifyTitle').replace('{line}', a.r.label).replace('{head}', a.r.head),
+      t('remNotifyBody').replace('{stop}', a.r.stop).replace('{time}', remClock(a.r.time)).replace('{n}', left));
+  });
+  // a one-off whose time has gone is switched off, and kept in the list until it is removed
+  reminders.forEach(r => { if(r.on && r.days === 'once' && remNextDue(r, now) === null){ r.on = false; changed = true; } });
+  if(changed) remSave();
+}
+function renderRemList(){
+  const box = document.getElementById('remList'); if(!box) return;
+  box.innerHTML = reminders.length ? reminders.map(r => remRowHTML(r, true)).join('') : '<div class="sp-note">' + svgEsc(t('remNone')) + '</div>';
+}
+(function(){
+  const panel = document.getElementById('remPanel'); if(!panel) return;
+  document.getElementById('remX').addEventListener('click', closeReminder);
+  document.getElementById('remOverlay').addEventListener('click', closeReminder);
+  panel.addEventListener('click', e => {
+    const c = remCtx; if(!c) return;
+    const b = e.target.closest('[data-rseg] button');
+    if(b){
+      const name = b.parentElement.dataset.rseg, v = b.dataset.v;
+      if(name === 'dir'){ c.dir = +v; c.stop = (c.dirs[c.dir] || c.dirs[0]).stops[0]; }
+      else if(name === 'days') c.days = v;
+      else if(name === 'before'){ const n = +v, i = c.before.indexOf(n); if(i >= 0) c.before.splice(i, 1); else c.before.push(n); }
+      renderReminder(); return;
+    }
+    if(e.target.closest('#remSaveBtn')){
+      const r = remFromDialog(); if(!r) return;
+      if(r.error){ showToast(r.error, 'err'); return; }
+      reminders.push(r); remSave(); askNotify(); renderReminder();
+      showToast(t('remSaved').replace('{time}', remClock(r.time)));
+      return;
+    }
+    if(e.target.closest('#remIcsBtn')){
+      const r = remFromDialog(); if(!r) return;
+      if(r.error){ showToast(r.error, 'err'); return; }
+      const ics = remICS(r, Date.now()); if(!ics) return;
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(new Blob([ics], { type: 'text/calendar;charset=utf-8' }));
+      a.download = 'turkmaps-' + String(r.label).replace(/[^\w-]+/g, '') + '-' + r.time.replace(':', '') + '.ics';
+      document.body.appendChild(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 2000);
+      return;
+    }
+  });
+  panel.addEventListener('input', e => {
+    const c = remCtx; if(!c) return;
+    if(e.target.id === 'remTime') c.time = e.target.value;
+    if(e.target.id === 'remStop') c.stop = e.target.value;
+  });
+  panel.addEventListener('change', e => { const c = remCtx; if(c && e.target.id === 'remStop') c.stop = e.target.value; });
+  // deleting, from the dialog or from Settings > You
+  document.addEventListener('click', e => {
+    const del = e.target.closest('[data-rdel]'); if(!del) return;
+    reminders = reminders.filter(r => r.id !== del.dataset.rdel); remSave();
+    if(panel.classList.contains('open')) renderReminder();
+  });
+  // the line panel's button
+  const lb = document.getElementById('lpRemind');
+  if(lb) lb.addEventListener('click', () => { if(lb.dataset.ref) openReminder(lb.dataset.mode || 'rail', lb.dataset.ref); });
+  renderRemList();
+  setInterval(remTick, 20000);
+  document.addEventListener('visibilitychange', () => { if(!document.hidden) remTick(); });
+  setTimeout(remTick, 3000);
+})();
+/* ===========================================================================
    ACCESSIBILITY (V4.3): names, switch state, keyboard, dialogs
    Four things a person using a screen reader or only a keyboard ran into:
    1. Names. Icon buttons, switches and the map itself carried a hard-coded English label, so Turkish, Arabic and French readers heard
@@ -16018,6 +16501,7 @@ document.addEventListener('keydown', e => {
   if(open('settingsPanel', 'open')){ closeSettings(); e.preventDefault(); return; }
   if(open('nearPanel', 'open')){ closeNearby(); e.preventDefault(); return; }
   if(open('passPanel', 'open')){ closePassport(); e.preventDefault(); return; }
+  if(open('remPanel', 'open')){ closeReminder(); e.preventDefault(); return; }
   const top = NAV && NAV.stack && NAV.stack[NAV.stack.length - 1];
   if(top && top.id !== 'omni' && top.id !== 'ai'){ e.preventDefault(); navCloseEntry(top); return; }
   if(typeof goState !== 'undefined' && goState){ e.preventDefault(); exitGo(); }
@@ -16029,6 +16513,7 @@ document.addEventListener('keydown', e => {
   const DIALOGS = [
     { id: 'settingsPanel', cls: 'open', modal: true,  first: '#settingsX' },
     { id: 'passPanel',     cls: 'open', modal: true,  first: '#passX' },
+    { id: 'remPanel',      cls: 'open', modal: true,  first: '#remX' },
     { id: 'stnFinder',     cls: 'open', modal: true,  first: '#finderList button, #finderX' },     // the first of these that exists
     { id: 'wcOverlay',     cls: 'show', modal: true,  first: '#wcGo', hiddenByDisplay: true },
     { id: 'nearPanel',     cls: 'open', modal: false, first: '#nearX' },
