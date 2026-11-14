@@ -30,19 +30,6 @@ test('the line-panel strip map uses the same station dot', () => {
   assert.strictEqual(dots.length, 3, 'the terminus, interchange and ordinary-stop circles are not all the shared white/black dot');
 });
 
-test('the fourth theme, Mixed, is offered, remembered and keeps the tabs, layers, planner and announcements dark', () => {
-  const html = H.html(), s = H.appScript(), css = H.appStyle();
-  assert.ok(/<button data-theme="split"[^>]*data-i18n="themeSplit"/.test(html), 'the Mixed option is not in the theme control');
-  assert.ok(/id="cardTabs"/.test(html), 'the tab card cannot be targeted');
-  assert.ok(/s==='split'\)\s*return s/.test(s), 'a saved Mixed theme is not restored at boot');
-  assert.ok(/\(pref==='light'\|\|pref==='auto'\|\|pref==='split'\)/.test(s), 'applyTheme does not accept Mixed');
-  assert.ok(/return \(pref==='light'\|\|pref==='split'\)\?'light':'dark'/.test(s), 'Mixed does not resolve to the light page');
-  assert.ok(/classList\.toggle\('mixed', themePref==='split'\)/.test(s), 'the body never gets its mixed marker');
-  const rule = /body\.mixed #cardTabs,body\.mixed #cardLayers,body\.mixed #cardPlanner,body\.mixed #announce,body\.mixed \.mnav\{([^}]*)\}/.exec(css);
-  assert.ok(rule, 'the dark-panels rule is missing, or does not cover the tabs, Layers, Trip Planner and announcements');
-  assert.ok(/--panel:rgba\(13,17,27/.test(rule[1]) && /--text:#EEF2F8/.test(rule[1]), 'the tabs do not restate the dark palette');
-});
-
 test('station dots are small with a thin ring, and a plain stop is only drawn once the map is zoomed in', () => {
   const s = H.appScript();
   const ring = +/const STATION_RING = ([\d.]+);/.exec(s)[1];

@@ -156,10 +156,12 @@ function renderBusList(q){
        Say so, rather than let a partial directory read as the whole network. */
     (CITY.busSource === 'osm'
       ? '<div class="sp-note" style="margin-top:5px">' + svgEsc(t('busOsmNote')) + '</div>' : '');
-  const noticed = new Set(activeDisruptions().filter(x => x.mode === 'bus').map(x => x.ref));
+  // each line's notices, for the coloured pill on its row (12b-line-notices.js)
+  const noticesBy = {};
+  activeDisruptions().forEach(x => { if(x.mode === 'bus') (noticesBy[x.ref] = noticesBy[x.ref] || []).push(x); });
   document.getElementById('busList').innerHTML = shown.length
     ? shown.map(d => `<div class="bus-row" data-id="${d.id}" data-ref="${(d.ref||'').replace(/"/g,'&quot;')}">
-        <span class="bn">${d.ref}</span><span class="br">${d.from} <small>↔</small> ${d.to}${d.op?` <small>· ${d.op}</small>`:''}</span>${noticed.has(d.ref)?`<span class="bn-warn" title="${attrEsc(t('busNotices'))}">⚠</span>`:''}</div>`).join('')
+        <span class="bn">${d.ref}</span><span class="br">${d.from} <small>↔</small> ${d.to}${d.op?` <small>· ${d.op}</small>`:''}</span>${noticePillHTML(noticesBy[d.ref], 'bn-warn')}</div>`).join('')
     : `<div class="none">${t('noLines')}</div>`;
   document.querySelectorAll('#busList .bus-row').forEach(row =>
     row.addEventListener('click', () => selectBus(row.dataset.id, row)));
@@ -284,16 +286,68 @@ function drawBusNotices(ref, dirs, chains){
       .bindTooltip(svgEsc(s[2] || ''), { className:'lt', direction:'top' }).addTo(busLayer));
   });
 }
-// the notices that bear on one bus line, at the top of its panel
-function busNoticesHTML(ref){
-  const ns = activeDisruptions().filter(d => d.mode === 'bus' && d.ref === ref);
-  if(!ns.length) return '';
-  return `<div class="bd-h">${svgEsc(t('busNotices'))}</div>` + ns.map(d => {
-    const col = SEV_COLOR[d.severity] || SEV_COLOR.minor;
-    return `<div class="bn-item" style="border-left-color:${col}"><b>${svgEsc(disTitle(d))}</b> ${disTrTag(d)}${svgEsc(disMsg(d))}`
-         + `${d.detour ? `<div class="bn-hint">${svgEsc(t('detourDrawn'))}</div>` : ''}${d.recorded ? `<div class="bn-hint">🕒 ${svgEsc(d.recorded)}</div>` : ''}</div>`;
-  }).join('');
+/* ===========================================================================
+   A BUS LINE'S PANEL, IN TWO VIEWS (V4.6)
+   Asked for as: the panel shows too much at once. So the first view is what a person checks before getting on: the live buses,
+   the line's notices, the fare, and its stops as one compact list (a direction at a time). Everything else (which direction the
+   map shows, the departures by day, every stop of both directions as a numbered list, who runs it) is one press away, behind
+   Info, laid out as sections; Back returns. Choosing another line starts on the first view again.
+   ========================================================================== */
+/* a direction's stops as names, one per stop: a stop served from both sides of the road is listed twice in a row in the feed */
+function busStopNames(d){
+  const out = [];
+  (d.stops || []).forEach(s => { const n = s[2] || ''; if(n && n !== out[out.length - 1]) out.push(n); });
+  return out;
 }
+function busCompactStopsHTML(dirs){
+  if(!dirs || !dirs.length) return '';
+  const sw = dirs.length > 1
+    ? '<div class="bd-cs-sw" role="group" aria-label="' + attrEsc(t('busDirections')) + '">' + dirs.map((d, i) =>
+        '<button type="button" data-csdir="' + i + '"' + (i ? '' : ' class="active"') + ' aria-pressed="' + (i ? 'false' : 'true') + '">'
+        + '<span class="bd-sw" style="background:' + BUS_DIR_COLOR[i % BUS_DIR_COLOR.length] + '"></span>→ ' + svgEsc(d.head || (i ? t('busReturn') : t('busOutbound'))) + '</button>').join('') + '</div>'
+    : '';
+  const one = (d, i) => {
+    const ns = busStopNames(d);
+    return '<div class="bd-cs" data-dir="' + i + '"' + (i ? ' hidden' : '') + '>'
+      + '<div class="bd-cs-n">' + ns.length + ' ' + svgEsc(t('stopsWord')) + '</div>'
+      + '<ol class="bd-cs-l">' + ns.map((n, k) => '<li' + (k === 0 || k === ns.length - 1 ? ' class="end"' : '') + '>' + svgEsc(n) + '</li>').join('') + '</ol></div>';
+  };
+  return '<div class="bd-h">' + svgEsc(t('busStopsTitle')) + '</div>' + sw + dirs.map(one).join('');
+}
+function busMainHTML(ref, dirs){
+  return '<div class="bd-main">' + liveBusHTML(ref) + lineNoticesHTML(lineNotices(ref, 'bus')) + busFareHTML(ref) + busCompactStopsHTML(dirs)
+    + '<button type="button" class="bd-info-btn" data-bd="info"><span aria-hidden="true">ⓘ</span> ' + svgEsc(t('busInfo')) + '</button></div>';
+}
+function busInfoHTML(ref, dirs){
+  const sec = html => html ? '<div class="bd-sec">' + html + '</div>' : '';
+  const toggle = busDirToggleHTML(dirs);
+  return '<div class="bd-info" hidden>'
+    + '<div class="bd-info-head"><button type="button" class="bd-back" data-bd="back"><span aria-hidden="true">‹</span> ' + svgEsc(t('busBack')) + '</button>'
+    + '<b>' + svgEsc(ref) + ' · ' + svgEsc(t('busInfo')) + '</b></div>'
+    + sec(toggle ? '<div class="bd-h">' + svgEsc(t('busDirections')) + '</div>' + toggle : '')
+    + lineNoticesHTML(lineNotices(ref, 'bus'))
+    + sec(busScheduleHTML(ref))
+    + sec('<div class="bd-h">' + svgEsc(t('busStopsTitle')) + '</div>' + busStopsHTML(dirs))
+    + '</div>';
+}
+function busShowInfo(box, on){
+  const main = box.querySelector('.bd-main'), info = box.querySelector('.bd-info'); if(!main || !info) return;
+  main.hidden = on; info.hidden = !on;
+  const f = on ? info.querySelector('.bd-back') : main.querySelector('.bd-info-btn');
+  try{ (box.closest('.msheet') || box.closest('.card') || box).scrollTop = 0; box.scrollIntoView({ block:'nearest' }); if(f) f.focus({ preventScroll:true }); }catch(e){}
+}
+(function(){
+  const box = document.getElementById('busDetail'); if(!box) return;
+  box.addEventListener('click', e => {
+    const b = e.target.closest('[data-bd]'), cs = e.target.closest('[data-csdir]');
+    if(b){ busShowInfo(box, b.dataset.bd === 'info'); return; }
+    if(cs){
+      const i = cs.dataset.csdir;
+      box.querySelectorAll('[data-csdir]').forEach(x => { const on = x.dataset.csdir === i; x.classList.toggle('active', on); x.setAttribute('aria-pressed', on ? 'true' : 'false'); });
+      box.querySelectorAll('.bd-cs').forEach(x => { x.hidden = x.dataset.dir !== i; });
+    }
+  });
+})();
 /* Open one bus line on the Bus tab, the way picking it from the list does, so the route and its notices draw. */
 function openBusRoute(ref){
   setTab('bus');
@@ -361,7 +415,7 @@ async function selectBus(id, row){
     const chains = (BUS_GEOM && BUS_GEOM[ref]) ? BUS_GEOM[ref] : null;
     let all = drawBusDirs(dirs, chains);
     drawBusNotices(ref, dirs, chains);
-    detail.innerHTML = liveBusHTML(ref) + busDirToggleHTML(dirs) + busNoticesHTML(ref) + busFareHTML(ref) + busScheduleHTML(ref) + busStopsHTML(dirs);
+    detail.innerHTML = busMainHTML(ref, dirs) + busInfoHTML(ref, dirs);   // the first view, and Info behind it (V4.6)
     wireBusDirToggle(detail);
     liveBusStart(ref);                           // where this line's buses really are, in the cities that publish it (V4.5)
     countEl.textContent = ref+' · '+dl;
@@ -536,7 +590,7 @@ map.on('dragstart', function(){ if(goState && !goFollowing){ goState.follow=fals
   const b=document.getElementById('goFollowBtn'); if(b) b.classList.remove('on'); } });
 document.getElementById('goPrev').addEventListener('click', ()=>goStep(-1));
 document.getElementById('goNext').addEventListener('click', ()=>goStep(1));
-document.getElementById('tglExplore').addEventListener('change', e=>toggleAttractions(e.target.checked));
+document.getElementById('swExplore').addEventListener('click', ()=>toggleAttractions(!attractionsOn));
 document.getElementById('shareBtn').addEventListener('click', shareTrip);
 document.getElementById('printBtn').addEventListener('click', function(){ printTrip('trip'); });
 document.getElementById('advPrintBtn').addEventListener('click', function(){ printTrip('adv'); });
@@ -557,11 +611,14 @@ document.getElementById('speedSeg').addEventListener('click', e=>{
   [...e.currentTarget.children].forEach(x=>x.classList.toggle('active', x.dataset.s===s));
   simSpeed=parseInt(s,10);
 });
-document.getElementById('tglTrains').addEventListener('change', e=>{ showTrains=e.target.checked; renderBoard(); });
-document.getElementById('tglStations').addEventListener('change', e=>{
-  showStations=e.target.checked;
-  const g = currentTab==='active' ? stationGroup : plannedStationGroup;
-  if(showStations) g.addTo(map); else map.removeLayer(g);
+/* "Show on map" lives in Settings > Map since V4.6 (it was in the Layers card): switches now, the same effects */
+function setSwitch(id, on){ const b=document.getElementById(id); if(b){ b.classList.toggle('on', !!on); b.setAttribute('aria-checked', on?'true':'false'); } }
+document.getElementById('swTrains').addEventListener('click', ()=>{ showTrains=!showTrains; setSwitch('swTrains', showTrains); renderBoard(); });
+document.getElementById('swStations').addEventListener('click', ()=>{
+  showStations=!showStations; setSwitch('swStations', showStations);
+  // the stations of the view on screen: the running network, or Vision's planned stations; the other views draw none
+  const g = currentTab==='active' ? stationGroup : (currentTab==='vision' ? plannedStationGroup : null);
+  if(g){ if(showStations) g.addTo(map); else map.removeLayer(g); }
 });
 document.getElementById('allOn').addEventListener('click', ()=>tabLines().forEach(l=>setLine(l.ref,true)));
 document.getElementById('allOff').addEventListener('click', ()=>tabLines().forEach(l=>setLine(l.ref,false)));

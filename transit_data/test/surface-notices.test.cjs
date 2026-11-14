@@ -249,7 +249,7 @@ test('a verified detour is drawn on the route, dashed, only from a stored direct
   assert.ok(/dir\.stops\.slice\(d\.detour\.ia, d\.detour\.ib \+ 1\)/.test(fn[0]), 'the band is not the stretch between the two verified stops');
   assert.ok(/dashArray:'2,7'/.test(fn[0]), 'the detour is not dashed, the map\'s word for "not in normal service"');
   assert.ok(/drawBusNotices\(ref, dirs, chains\);/.test(s), 'the overlay is never drawn when a route is selected');
-  assert.ok(/class=\\"bn-warn\\"/.test(s) || /class="bn-warn"/.test(s), 'a bus line with a notice carries no marker in the list');
+  assert.ok(/noticePillHTML\(noticesBy\[d\.ref\], 'bn-warn'\)/.test(s), 'a bus line with a notice carries no marker in the list');
 });
 
 test('a trip leg on a line with a notice says so', () => {

@@ -208,6 +208,31 @@ document.addEventListener("click", e=>{
     const ic = p.poi ? (ATTR_CAT[p.cat] || "📍") : (p.bus ? "🚌" : "🚇");
     return rowH(ic, hl(p.name, lastQ), p.ref || "", org ? dist(metersBetween([org.lat, org.lng], [p.lat, p.lng])) : "");
   }
+  /* A line looked up by its name (V4.6): "M2", "34G", "T1", "KM". It comes first, with the line's colour and a coloured pill when
+     it has a notice, and opens the line itself. Only an exact name, or the start of one from two characters on, so a word
+     typed for a place does not fill the list with lines. */
+  const lineKey = s => fold(String(s || '')).replace(/[\s\-–]/g, '');
+  function searchLines(q){
+    const k = lineKey(q); if(!k || k.length > 8) return [];
+    const exact = [], start = [];
+    const take = (ref, row) => { const r = lineKey(ref); if(r === k) exact.push(row); else if(k.length >= 2 && r.indexOf(k) === 0) start.push(row); };
+    NETWORK.forEach(l => {
+      if(!l.ref || l.partOf || l.scope === 'intercity' || !isLive(l)) return;
+      const mode = l.kind === 'ferry' ? 'ferry' : '';
+      take(l.ref, { lineRef:l.ref, bus:false, col:l.color || colorForLine(l.ref), name:l.official || (LINE_META[l.ref] || {}).official || l.ref, sb:kindLabel(l.kind), notices:lineNotices(l.ref, mode) });
+    });
+    if(HAS.bus) BUS_DIR.forEach(d => {
+      if(!d.ref) return;
+      take(d.ref, { lineRef:String(d.ref), bus:true, col:BUS_COLOR, name:(d.from || '') + ' ↔ ' + (d.to || ''), sb:t('omniBusLine'), notices:lineNotices(String(d.ref), 'bus') });
+    });
+    const seen = new Set();
+    return exact.concat(start).filter(r => { const key = (r.bus ? 'b:' : 'r:') + r.lineRef; if(seen.has(key)) return false; seen.add(key); return true; }).slice(0, 4);
+  }
+  function lineRow(p){
+    return '<div class="omni-row omni-lrow" role="option"><span class="omni-ico"><span class="omni-line" style="background:' + p.col + ';color:' + inkOn(p.col) + '">' + svgEsc(p.lineRef) + '</span></span>' +
+      '<span class="omni-tx"><span class="omni-nm">' + svgEsc(p.name) + '</span><span class="omni-sb">' + svgEsc(p.sb) + '</span></span>' +
+      noticePillHTML(p.notices) + '</div>';
+  }
   function placeRow(p){
     return rowH(p.ic || "📍", hl(p.name, lastQ), [p.tr, p.type, p.ctx].filter(Boolean).join(" · "), p.m != null ? dist(p.m) : "");
   }
@@ -290,19 +315,21 @@ document.addEventListener("click", e=>{
     // a curated landmark and the places file's entry for it are one place: keep the curated one (it has the English name)
     const gz = gazFind(q, 60).filter(g => !(SIGHT_TYPES[g.typeKey] && lm.some(l => metersBetween([l.lat, l.lng], [g.lat, g.lng]) < 150)));
     const top = rail.concat(lm), more = Math.max(0, gz.length - shown);
+    const lines = searchLines(q);
     const sections = [
+      { h:t("omniLines"),  items:lines,              row:lineRow },
       { h:t("omniStops"),  items:top,                row:p => stopRow(p, org) },
       { h:t("omniPlaces"), items:gz.slice(0, shown), row:placeRow, more:more },
       { h:t("omniBus"),    items:bus,                row:p => stopRow(p, org) }
     ];
-    if(top.length + gz.length + bus.length) render(sections);
+    if(lines.length + top.length + gz.length + bus.length) render(sections);
     else paint('<div class="omni-note">' + svgEsc(onlineSearchPref && foldQ(q).length >= 3 ? t("omniLook") : t("omniNone")) + "</div>");
 
     // the network only tops up a thin answer
     if(!gazThin(top.length + gz.length, q) || foldQ(q).length < 3) return;
     const on = (await photonSearch(q)).filter(g => !gz.some(z => foldQ(z.name) === foldQ(g.name)) && !top.some(l => fold(l.name) === fold(g.name)));
     if(my !== seq) return;
-    if(!on.length){ if(!top.length && !gz.length && !bus.length) paint('<div class="omni-note">' + svgEsc(onlineSearchPref ? t("omniNone") : t("omniOff")) + "</div>"); return; }
+    if(!on.length){ if(!lines.length && !top.length && !gz.length && !bus.length) paint('<div class="omni-note">' + svgEsc(onlineSearchPref ? t("omniNone") : t("omniOff")) + "</div>"); return; }
     sections.push({ h:t("omniOnline"), items:on.slice(0, 8), row:p => rowH("📍", hl(p.name, q), p.ctx || "", "") });
     render(sections);
   }
@@ -324,6 +351,11 @@ document.addEventListener("click", e=>{
     const r = e.target.closest(".omni-row"); if(!r) return;
     const i = [...res.querySelectorAll(".omni-row")].indexOf(r);
     const p = results[i]; if(!p) return;
+    if(p.lineRef){                                   // a line: open it, with its notices at the top
+      shut(); inp.blur();
+      if(p.bus) openBusRoute(p.lineRef); else if(lineByRef[p.lineRef]) openLine(lineByRef[p.lineRef]);
+      return;
+    }
     remember(p);
     dropPin(p, ZOOM_FOR[p.typeKey]); shut(); inp.blur();
   });

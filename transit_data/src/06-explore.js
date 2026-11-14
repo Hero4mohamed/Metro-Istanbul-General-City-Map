@@ -24,7 +24,7 @@ function toggleAttractions(on){
   attractionsOn = (on!=null) ? !!on : !attractionsOn;
   if(attractionsOn) attractionLayer.addTo(map); else map.removeLayer(attractionLayer);
   renderAttractions();
-  const cb=document.getElementById('tglExplore'); if(cb) cb.checked=attractionsOn;
+  const sw=document.getElementById('swExplore'); if(sw){ sw.classList.toggle('on', attractionsOn); sw.setAttribute('aria-checked', attractionsOn?'true':'false'); }
 }
 function goToAttraction(i){
   const a=ATTRACTIONS[i]; if(!a) return;

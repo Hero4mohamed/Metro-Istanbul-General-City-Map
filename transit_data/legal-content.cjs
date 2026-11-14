@@ -77,7 +77,7 @@ const HOSTS = [
 /* ---- every key the app writes to localStorage -------------------------------------------------------------------------- */
 const STORAGE = [
   { key: 'irn_lang', en: 'The language you picked.', tr: 'Seçtiğiniz dil.', when: 'You change the language.' , whenTr: 'Dili değiştirdiğinizde.' },
-  { key: 'irn_theme', en: 'Theme: dark, light, automatic or mixed.', tr: 'Tema: koyu, açık, otomatik veya karma.', when: 'You change it.', whenTr: 'Değiştirdiğinizde.' },
+  { key: 'irn_theme', en: 'Theme: light, dark, or automatic (follows the device).', tr: 'Tema: açık, koyu veya otomatik (cihaza uyar).', when: 'You change it.', whenTr: 'Değiştirdiğinizde.' },
   { key: 'irn_uistyle', en: 'Icon and colour style.', tr: 'Simge ve renk stili.', when: 'You change it.', whenTr: 'Değiştirdiğinizde.' },
   { key: 'irn_textsize', en: 'Larger text on or off.', tr: 'Büyük yazı açık/kapalı.', when: 'You change it.', whenTr: 'Değiştirdiğinizde.' },
   { key: 'irn_motion', en: 'Reduced motion on or off.', tr: 'Hareketi azalt açık/kapalı.', when: 'You change it.', whenTr: 'Değiştirdiğinizde.' },
@@ -345,7 +345,7 @@ PAGES.accessibility = {
       '<strong>Keyboard.</strong> Everything in the app can be reached and operated without a mouse or touch: buttons, the legend of lines, notices, Settings and panels. Panels take focus when they open, keep Tab inside while they are open, and give focus back when they close. Escape closes the newest panel.',
       '<strong>The map\'s stations by keyboard.</strong> Focus the map (Tab), then press <kbd>N</kbd> and <kbd>P</kbd> to step through the stations in view (nearest the centre first); the station is ringed on the map and announced. <kbd>Enter</kbd> opens it, <kbd>L</kbd> lists them all, <kbd>Esc</kbd> clears. A "Browse the stations in view" button does the same for screen readers. Arrow keys pan the map and <kbd>+</kbd> and <kbd>-</kbd> zoom it.',
       '<strong>Screen readers.</strong> Buttons, switches (with on and off), dialogs and the map have names, in English, Turkish, Arabic and French. Station choices and results are announced.',
-      '<strong>Colour and contrast.</strong> Text colour against its background was measured in every style (Neon, Atlas, Calm, Paper) in dark, light and mixed themes, and with high contrast on, and meets 4.5:1 (WCAG AA). Line chips choose black or white text to stay readable on any line colour.',
+      '<strong>Colour and contrast.</strong> Text colour against its background was measured in every style (Neon, Atlas, Calm, Paper) in the dark and light themes, and with high contrast on, and meets 4.5:1 (WCAG AA). Line chips choose black or white text to stay readable on any line colour.',
       '<strong>Motion.</strong> The system "reduce motion" setting and Settings, Accessibility, Reduce motion both calm the animations.',
       '<strong>Text size.</strong> Settings, Text size makes text larger. Languages that read right to left (Arabic) are laid out right to left.']) +
     '<h2 id="limits">What does not work yet, or works differently</h2>' + ul([
@@ -363,7 +363,7 @@ PAGES.accessibility = {
       '<strong>Klavye.</strong> Uygulamadaki her şeye fare veya dokunma olmadan ulaşılır ve kullanılır: düğmeler, hat göstergesi, duyurular, Ayarlar ve paneller. Paneller açılınca odağı alır, açıkken Tab\'ı kendi içinde tutar, kapanınca odağı geri verir. Esc en yeni paneli kapatır.',
       '<strong>Haritadaki istasyonlar klavyeyle.</strong> Haritaya odaklanın (Tab), sonra görünümdeki istasyonlar arasında gezinmek için <kbd>N</kbd> ve <kbd>P</kbd> tuşlarına basın (merkeze en yakından başlar); istasyon haritada halkayla işaretlenir ve sesli bildirilir. <kbd>Enter</kbd> açar, <kbd>L</kbd> hepsini listeler, <kbd>Esc</kbd> seçimi temizler. "Görünümdeki istasyonlara göz at" düğmesi aynısını ekran okuyucular için yapar. Ok tuşları haritayı kaydırır, <kbd>+</kbd> ve <kbd>-</kbd> yakınlaştırır.',
       '<strong>Ekran okuyucular.</strong> Düğmelerin, anahtarların (açık ve kapalı durumuyla), iletişim kutularının ve haritanın İngilizce, Türkçe, Arapça ve Fransızca adları vardır. İstasyon seçimleri ve sonuçlar sesli bildirilir.',
-      '<strong>Renk ve karşıtlık.</strong> Metin renginin arka planına karşı karşıtlığı her stilde (Neon, Atlas, Calm, Paper) koyu, açık ve karma temalarda, ayrıca yüksek karşıtlık açıkken ölçüldü ve 4,5:1\'i (WCAG AA) karşılıyor. Hat etiketleri, her hat renginde okunur kalmak için siyah ya da beyaz metin seçer.',
+      '<strong>Renk ve karşıtlık.</strong> Metin renginin arka planına karşı karşıtlığı her stilde (Neon, Atlas, Calm, Paper) koyu ve açık temalarda, ayrıca yüksek karşıtlık açıkken ölçüldü ve 4,5:1\'i (WCAG AA) karşılıyor. Hat etiketleri, her hat renginde okunur kalmak için siyah ya da beyaz metin seçer.',
       '<strong>Hareket.</strong> Sistemin "hareketi azalt" ayarı ve Ayarlar, Erişilebilirlik, Hareketi azalt animasyonları yumuşatır.',
       '<strong>Yazı boyutu.</strong> Ayarlar, Yazı boyutu metni büyütür. Sağdan sola okunan diller (Arapça) sağdan sola dizilir.']) +
     '<h2 id="limits">Henüz çalışmayanlar veya farklı çalışanlar</h2>' + ul([

@@ -165,7 +165,7 @@ test('live buses: the page is allowed to reach the service, and the bus view sta
   assert.ok(H.html().split('connect-src')[1].split(';')[0].includes(P.LIVE_RELAY), 'the security policy does not let the page talk to its own relay: live buses in İstanbul would be blocked silently');
   const sel = fnSource(APP, 'selectBus'), tab = fnSource(APP, 'setTab');
   assert.ok(sel.indexOf('liveBusStop()') > 0 && sel.indexOf('liveBusStop()') < sel.indexOf('liveBusStart(ref)'), 'opening a line does not stop the line before it and start this one');
-  assert.ok(/detail\.innerHTML = liveBusHTML\(ref\)/.test(sel), 'the line panel has no live strip');
+  assert.ok(/detail\.innerHTML = busMainHTML\(ref, dirs\)/.test(sel) && /'<div class="bd-main">' \+ liveBusHTML\(ref\)/.test(APP), 'the line panel has no live strip');
   assert.ok(tab.includes('liveBusStop()'), 'leaving the bus view does not stop the asking');
   assert.ok(/cache:'no-store'/.test(fnSource(APP, 'liveBusPoll')), 'an old answer could be served from a cache as "now"');
 });

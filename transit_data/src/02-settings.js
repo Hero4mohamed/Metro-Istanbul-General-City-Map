@@ -4,13 +4,16 @@
    =========================================================================== */
 const lsStr=(k,def)=>{ try{ const s=localStorage.getItem(k); return s==null?def:s; }catch(e){ return def; } };
 const lsJSON=(k)=>{ try{ return JSON.parse(localStorage.getItem(k)); }catch(e){ return null; } };
-let themePref = (function(){ const s=lsStr('irn_theme'); if(s==='light'||s==='dark'||s==='auto'||s==='split') return s;
-  return (window.matchMedia && matchMedia('(prefers-color-scheme: light)').matches) ? 'light' : 'dark'; })();
+/* Three themes (V4.6): Light, Dark, and Auto, which follows the device's own light/dark setting and changes with it. The fourth,
+   "Mixed" (a light page with dark panels), is gone; a device that had it saved gets Light, which is what its page was. A first
+   visit starts on Auto. */
+let themePref = (function(){ const s=lsStr('irn_theme'); if(s==='light'||s==='dark'||s==='auto') return s;
+  return s==='split' ? 'light' : 'auto'; })();
 let routePref = (function(){ const s=lsStr('irn_routePref'); return (s==='fast'||s==='easy')?s:'fast'; })();
-/* 'split' is the fourth choice, "Mixed": a light page whose tabs, layers, trip planner and announcements stay dark. For the
-   page it is the light theme (so it resolves to 'light' and the light basemap goes with it); the dark panels are the
-   only thing that differs, and that is a body class (`mixed`), not a second palette. */
-function resolveTheme(pref){ if(pref==='auto'){ const h=new Date().getHours(); return (h>=19||h<7)?'dark':'light'; } return (pref==='light'||pref==='split')?'light':'dark'; }
+/* the device's own choice; a browser that cannot say counts as light */
+const THEME_MQ = (window.matchMedia ? matchMedia('(prefers-color-scheme: dark)') : null);
+function deviceTheme(){ return THEME_MQ && THEME_MQ.matches ? 'dark' : 'light'; }
+function resolveTheme(pref){ return pref==='auto' ? deviceTheme() : (pref==='light' ? 'light' : 'dark'); }
 /* The browser's address bar / status bar colour, so the page and the chrome around it are one
    surface. Atlas states its ground exactly; the other experiences keep their established values. */
 function syncThemeColor(actual){
@@ -34,16 +37,17 @@ function syncBaseToTheme(){
   else if(actual==='dark' && curBaseKey==='voyager') setBase('dark');
 }
 function applyTheme(pref, syncBase, later){
-  themePref = (pref==='light'||pref==='auto'||pref==='split') ? pref : 'dark';
+  themePref = (pref==='light'||pref==='auto') ? pref : 'dark';
   try{ localStorage.setItem('irn_theme', themePref); }catch(e){}
   const actual = resolveTheme(themePref);
   document.body.classList.toggle('light', actual==='light');
-  document.body.classList.toggle('mixed', themePref==='split');
   syncThemeColor(actual);
   document.querySelectorAll('#themeSeg button').forEach(b=> b.classList.toggle('active', b.dataset.theme===themePref));
   if(syncBase) later ? afterPaint(syncBaseToTheme) : syncBaseToTheme();      // at start-up it must be before the first paint; from a button, after it
 }
-setInterval(()=>{ if(themePref==='auto') applyTheme('auto', true); }, 300000);   // re-check auto theme every 5 min
+/* Auto follows the device the moment it changes (a phone going into dark mode at sunset), not on a timer */
+function onDeviceTheme(){ if(themePref==='auto') applyTheme('auto', true, true); }
+if(THEME_MQ){ if(THEME_MQ.addEventListener) THEME_MQ.addEventListener('change', onDeviceTheme); else if(THEME_MQ.addListener) THEME_MQ.addListener(onDeviceTheme); }
 function setRoutePref(p, rerun){
   routePref = p==='easy' ? 'easy' : 'fast';
   try{ localStorage.setItem('irn_routePref', routePref); }catch(e){}

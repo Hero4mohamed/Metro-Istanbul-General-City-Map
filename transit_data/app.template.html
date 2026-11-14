@@ -130,24 +130,6 @@
   body.paper{--accent-ink:#52BE9D;}
   body.paper.light{--accent-ink:#0F6B4F;}
   body.light .glass,body.light .card,body.light .topbar{box-shadow:0 12px 34px -14px rgba(20,30,55,.35);}
-  /* The fourth theme, "Mixed": a light page whose tabs, Layers card, Trip Planner and announcements stay DARK. The
-     page is the light theme (body.light); those panels (and the phone's bottom tab bar) simply restate the DARK
-     tokens for themselves, so every rule inside them — active tab tints, inputs, hover, text — keeps working with
-     no second set of rules. An element's own declaration beats the value it would inherit, so this also holds
-     under Atlas, Calm and Paper, which restate the tokens on the body. */
-  body.mixed #cardTabs,body.mixed #cardLayers,body.mixed #cardPlanner,body.mixed #announce,body.mixed .mnav{
-    --obsidian:#070A12; --panel:rgba(13,17,27,0.92); --stroke:rgba(255,255,255,0.08);
-    --stroke-2:rgba(255,255,255,0.15); --text:#EEF2F8; --muted:#9AA4B8; --dim:#98A3B8;
-    --accent:#34D399; --accent-2:#2DD4BF; --gold:#FBBF24; --btn-ink:#03130A;
-    --grad-accent:linear-gradient(135deg,#4ADE80,#14B8A6);
-    --surface:rgba(255,255,255,.045); --surface-2:rgba(255,255,255,.08);
-    --track:rgba(4,7,13,.55); --ring:rgba(52,211,153,.28); --svg-hole:#0b0f17; --accent-ink:#34D399;
-    --ok-ink:#7CF0BE; --warn-ink:#F5A623; --danger-ink:#F08287;
-    --gold-ink:#FCD97C; --violet-ink:#DDB9FF; --sky-ink:#38BDF8; --crimson-ink:#FF9AA6;
-    --ok-rgb:52,211,153; --warn-rgb:245,166,35; --danger-rgb:229,72,77;
-    --gold-rgb:251,191,36; --violet-rgb:192,132,252; --sky-rgb:56,189,248; --crimson-rgb:200,16,46;
-    color:var(--text);
-  }
   body.light .locate-fab{box-shadow:0 8px 22px -10px rgba(20,30,55,.4);}
   /* darken pastel "active" text (tuned for dark mode) so it reads on light panels */
   
@@ -1047,9 +1029,56 @@
   .ann-bus .ann-msg{overflow-wrap:anywhere;}
   .ann-moreb{align-self:flex-start;border:none;background:none;color:var(--accent-ink);font:inherit;font-size:var(--fs-6);font-weight:700;cursor:pointer;padding:3px 2px;}
   .ann-moreb:hover{text-decoration:underline;}
-  .bus-row .bn-warn{flex:none;color:var(--warn-ink);font-size:12px;}
-  .bn-item{margin:0 0 6px;padding:7px 9px;border-radius:9px;background:var(--surface);border:1px solid var(--stroke);border-left:3px solid var(--muted);font-size:var(--fs-7);line-height:1.45;color:var(--text);}
-  .bn-hint{margin-top:3px;font-size:var(--fs-6);color:var(--muted);}
+  /* notices on a line (V4.6, 12b-line-notices.js): one block at the top of the line's panel, the same for metro, boat and bus */
+  .lp-notices:empty{display:none;}
+  .lp-notices{margin:0 0 10px;}
+  .ln-box{border:1px solid var(--stroke);border-left:4px solid var(--sc);border-radius:12px;background:var(--surface);padding:9px 10px 10px;margin:0 0 10px;}
+  .ln-head{display:flex;align-items:center;gap:8px;font-size:var(--fs-8);font-weight:800;color:var(--text);margin:0 0 8px;}
+  .ln-mark{flex:none;display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;border-radius:6px;background:var(--sc);font-size:11px;}
+  .ln-list{display:flex;flex-direction:column;gap:7px;}
+  .ln-card{padding:8px 9px;border-radius:9px;background:var(--surface-2);border:1px solid var(--stroke);}
+  .ln-top{display:flex;align-items:center;gap:7px;flex-wrap:wrap;margin:0 0 4px;}
+  .ln-sev{flex:none;font-size:var(--fs-4);font-weight:800;letter-spacing:.5px;text-transform:uppercase;padding:2px 7px;border-radius:var(--r-pill);}
+  .ln-ttl{font-size:var(--fs-8);color:var(--text);}
+  .ln-msg{font-size:var(--fs-7);line-height:1.5;color:var(--text);overflow-wrap:anywhere;}
+  .ln-meta{margin-top:4px;font-size:var(--fs-6);color:var(--muted);}
+  .ln-gen{margin:0 0 10px;border:1px solid var(--stroke);border-radius:12px;background:var(--surface);}
+  .ln-gen>summary{cursor:pointer;list-style:none;padding:8px 10px;font-size:var(--fs-7);font-weight:700;color:var(--text);}
+  .ln-gen>summary::-webkit-details-marker{display:none;}
+  .ln-gen[open]>summary{border-bottom:1px solid var(--stroke);}
+  .ln-gen .ln-list{padding:8px;}
+  .ln-pill{flex:none;display:inline-flex;align-items:center;gap:3px;padding:2px 7px;border-radius:var(--r-pill);font-size:var(--fs-4);font-weight:800;letter-spacing:.3px;white-space:nowrap;}
+  .bus-row .bn-warn,.boat-row .ln-pill,.omni-lrow .ln-pill{margin-inline-start:auto;}
+  /* a line in the search box (V4.6): its own colour as the icon */
+  .omni-line{display:inline-flex;align-items:center;justify-content:center;min-width:22px;height:22px;padding:0 4px;box-sizing:border-box;border-radius:6px;font:800 10px var(--font);letter-spacing:.2px;}
+  .omni-lrow .omni-ico{width:auto;min-width:22px;background:none;border:none;}
+  /* a bus line's panel in two views (V4.6): what to check before getting on, and Info behind it */
+  .bd-main[hidden],.bd-info[hidden],.bd-cs[hidden]{display:none;}
+  .bd-info-btn{display:flex;align-items:center;justify-content:center;gap:7px;width:100%;margin:12px 0 2px;padding:10px;border-radius:12px;border:1px solid var(--stroke-2);
+    background:var(--surface);color:var(--text);font:700 var(--fs-8) var(--font);cursor:pointer;transition:background .15s var(--ease),border-color .15s var(--ease);}
+  .bd-info-btn:hover{background:var(--surface-2);border-color:var(--ring);}
+  .bd-info-head{display:flex;align-items:center;gap:10px;margin:0 0 10px;}
+  .bd-info-head b{min-width:0;font-size:var(--fs-8);color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .bd-back{flex:none;display:inline-flex;align-items:center;gap:5px;padding:6px 12px;border-radius:var(--r-pill);border:1px solid var(--stroke-2);background:var(--surface);
+    color:var(--text);font:700 var(--fs-7) var(--font);cursor:pointer;transition:background .15s var(--ease);}
+  .bd-back:hover{background:var(--surface-2);}
+  .bd-sec{background:var(--surface);border:1px solid var(--stroke);border-radius:12px;padding:9px 10px;margin:0 0 9px;}
+  .bd-sec .bd-rows{background:var(--surface-2);}
+  .bd-sec .bd-stops{background:var(--surface-2);}
+  .bd-sec .seg.bd-dirs{flex-wrap:wrap;}
+  .bd-sec .seg.bd-dirs button{flex:1 1 40%;}
+  .bd-sec .seg.bd-dirs button[data-v="both"]{flex-basis:100%;}
+  .bd-cs-sw{display:flex;gap:5px;margin:2px 0 7px;}
+  .bd-cs-sw button{flex:1;min-width:0;display:flex;align-items:center;gap:5px;padding:6px 8px;border-radius:9px;border:1px solid var(--stroke);background:var(--surface);
+    color:var(--muted);font:650 var(--fs-6) var(--font);cursor:pointer;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;}
+  .bd-cs-sw button.active{color:var(--text);border-color:var(--stroke-2);background:var(--surface-2);}
+  .bd-cs-n{font-size:var(--fs-6);color:var(--dim);margin:0 0 4px;}
+  .bd-cs-l{list-style:none;margin:0;padding:8px 10px;border-radius:10px;background:var(--surface);border:1px solid var(--stroke);font-size:var(--fs-7);line-height:1.7;
+    color:var(--muted);max-height:124px;overflow-y:auto;}
+  .bd-cs-l li{display:inline;}
+  .bd-cs-l li+li::before{content:" › ";color:var(--dim);}
+  html[dir="rtl"] .bd-cs-l li+li::before{content:" ‹ ";}
+  .bd-cs-l li.end{color:var(--text);font-weight:700;}
   
   /* map warning markers for disruptions — clean static signage plate */
   .warn-icon span{display:flex;align-items:center;justify-content:center;width:21px;height:21px;border-radius:7px;
@@ -1259,10 +1288,15 @@
   .ai-hit .n{flex:1;min-width:0;font-size:var(--fs-7);color:var(--text);overflow:hidden;
     text-overflow:ellipsis;white-space:nowrap;}
   .ai-hit .d{flex:none;font-family:var(--mono);font-size:var(--fs-5);color:var(--accent-ink);}
-  /* pulsing ring behind a station-level fault, so it reads as live rather than as a pin */
-  .disr-halo{animation:disrPulse 2.3s ease-in-out infinite;}
+  /* pulsing ring behind a station-level fault, so it reads as live rather than as a pin. It is part of the sign's own element
+     (V4.6): a map zoom moves it with the sign and never scales it */
+  .warn-icon.warn-ringed{display:flex;align-items:center;justify-content:center;}
+  .warn-ring{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);box-sizing:border-box;border-radius:var(--r-round);
+    border:2px solid var(--wc);pointer-events:none;animation:disrPulse 2.3s ease-in-out infinite;}
+  .warn-ring::before{content:"";position:absolute;inset:0;border-radius:inherit;background:var(--wc);opacity:.16;}
+  .warn-ringed span{position:relative;}
   @keyframes disrPulse{0%,100%{opacity:.30;}50%{opacity:1;}}
-  body.calm .disr-halo{animation:none;opacity:.75;}
+  body.calm .warn-ring{animation:none;opacity:.75;}
   .ai-msg .lr-warn{color:var(--warn-ink);font-size:var(--fs-6);margin-top:4px;line-height:1.45;}
   .ai-msg .tt-est{color:var(--dim);font-size:var(--fs-5);}
   .ai-sug{display:flex;flex-wrap:wrap;gap:5px;padding:0 12px 9px;}
@@ -1435,25 +1469,45 @@
   .sp-find input::placeholder{color:var(--dim);}
   .sp-none{display:none;margin:8px 2px 2px;font-size:var(--fs-8);color:var(--dim);}
   .sp-none.show{display:block;}
-  .sp-sec{border-top:1px solid var(--stroke);}
-  .sp-find+.sp-sec{margin-top:6px;}
-  .sp-sec>summary{list-style:none;display:flex;align-items:center;gap:10px;padding:13px 2px;cursor:pointer;font-size:var(--fs-7);font-weight:700;letter-spacing:1px;
-    text-transform:uppercase;color:var(--muted);user-select:none;-webkit-tap-highlight-color:transparent;}
+  /* Settings, fresh (V4.6): each section is a card with an icon tile, a title and one line saying what is in it; a section opens
+     with a short fade; the rows inside are separated by hairlines; the head stays put while the list scrolls under it. Every
+     colour is a token, so the four looks (Atlas, Neon, Calm, Paper) and both themes hold without rules of their own. */
+  #settingsPanel{padding-top:0;}
+  body:not(.mobile) #settingsPanel{width:min(430px,94vw);}
+  #settingsPanel .sp-head{position:sticky;top:0;z-index:2;margin:0 -18px 6px;padding:15px 18px 11px;background:inherit;
+    -webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px);border-bottom:1px solid var(--stroke);}
+  #settingsPanel .sp-head span{font-size:18px;}
+  .sp-sec{margin:0 0 9px;border:1px solid var(--stroke);border-radius:16px;background:var(--surface);overflow:hidden;
+    transition:border-color .18s var(--ease),box-shadow .18s var(--ease);}
+  .sp-find+.sp-sec{margin-top:10px;}
+  .sp-sec[open]{border-color:var(--stroke-2);box-shadow:0 10px 24px -16px rgba(0,0,0,.5);}
+  .sp-sec>summary{list-style:none;display:flex;align-items:center;gap:12px;padding:11px 12px;cursor:pointer;user-select:none;
+    -webkit-tap-highlight-color:transparent;transition:background .15s var(--ease);}
+  .sp-sec>summary:hover{background:var(--surface-2);}
   .sp-sec>summary::-webkit-details-marker{display:none;}
-  .sp-sec>summary::after{content:"▾";margin-left:auto;font-size:var(--fs-5);color:var(--dim);transition:transform .18s var(--ease);}
-  .sp-sec[open]>summary{color:var(--text);}
+  .sp-sec>summary::after{content:"▾";margin-inline-start:auto;font-size:12px;color:var(--dim);transition:transform .2s var(--ease);}
   .sp-sec[open]>summary::after{transform:rotate(180deg);}
-  .sp-sec>summary:active{opacity:.7;}
-  .sp-ico{width:20px;text-align:center;font-size:15px;letter-spacing:0;}
-  .sp-body{padding:2px 0 14px;}
-  .sp-body>.sp-item:last-child{margin-bottom:0;}
-  .sp-item{margin-bottom:12px;}
-  .sp-item.sp-row{margin-bottom:12px;}
+  .sp-sec>summary:active{opacity:.8;}
+  .sp-ico{flex:none;width:34px;height:34px;border-radius:11px;display:flex;align-items:center;justify-content:center;font-size:16px;letter-spacing:0;
+    background:var(--surface-2);border:1px solid var(--stroke);transition:background .18s var(--ease),border-color .18s var(--ease);}
+  .sp-sec[open] .sp-ico{background:rgba(var(--ok-rgb),.14);border-color:rgba(var(--ok-rgb),.38);}
+  .sp-st{display:flex;flex-direction:column;gap:2px;min-width:0;}
+  .sp-st>span{font-size:13px;font-weight:700;color:var(--text);letter-spacing:.2px;}
+  .sp-st>small{font-size:var(--fs-6);color:var(--dim);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .sp-body{padding:0 14px 10px;}
+  .sp-sec[open]>.sp-body{animation:spOpen .22s var(--ease);}
+  @keyframes spOpen{from{opacity:0;transform:translateY(-4px);}to{opacity:1;transform:none;}}
+  .sp-item{margin:0;padding:11px 0;border-top:1px solid var(--stroke);}
+  .sp-item.sp-row{margin:0;}
+  .sp-body>.sp-item:first-child,.sp-sub+.sp-item{border-top:none;}
   .sp-hide{display:none!important;}
+  .sp-sub{margin:12px 0 0;font-size:var(--fs-5);font-weight:800;letter-spacing:1px;text-transform:uppercase;color:var(--dim);}
+  .sp-body>.sp-sub:first-child{margin-top:4px;}
+  .sp-searching .sp-sub{display:none;}
   .sp-label{font-size:var(--fs-7);font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--dim);margin-bottom:10px;}
   .sp-row{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:10px;}
   .sp-row:last-child{margin-bottom:0;}
-  .sp-row>span{font-size:12.5px;font-weight:600;color:var(--text);}
+  .sp-row>span{font-size:13px;font-weight:600;color:var(--text);}
   .settings-panel .seg{margin:0;}
   /* roomier segmented toggles inside settings rows (Dark/Light/Auto, Normal/Large, EN/TR/…) */
   .settings-panel .sp-row .seg{gap:5px;padding:4px;}
@@ -1935,14 +1989,13 @@
   </div>
 
   <details class="sp-sec" data-sec="appearance" open>
-    <summary><span class="sp-ico" aria-hidden="true">🎨</span><span data-i18n="appearance">Appearance</span></summary>
+    <summary><span class="sp-ico" aria-hidden="true">🎨</span><span class="sp-st"><span data-i18n="appearance">Appearance</span><small data-i18n="secAppearanceSub">Theme, colours, text size, language</small></span></summary>
     <div class="sp-body">
       <div class="sp-item sp-row"><span data-i18n="theme">Theme</span>
         <div class="seg" id="themeSeg">
-          <button data-theme="dark" class="active" data-i18n="dark">Dark</button>
           <button data-theme="light" data-i18n="light">Light</button>
-          <button data-theme="auto" data-i18n="themeAuto">Auto</button>
-          <button data-theme="split" data-i18n="themeSplit" data-i18n-title="themeSplitTip" title="Everything light, except the tabs">Mixed</button>
+          <button data-theme="dark" data-i18n="dark">Dark</button>
+          <button data-theme="auto" class="active" data-i18n="themeAuto" data-i18n-title="themeAutoTip" title="Follows your device">Auto</button>
         </div>
       </div>
       <div class="sp-item sp-row sp-col"><span data-i18n="uiStyle">Icon &amp; colour style</span>
@@ -1969,19 +2022,49 @@
       </div>
     </div>
   </details>
-
-  <details class="sp-sec" data-sec="accessibility">
-    <summary><span class="sp-ico" aria-hidden="true">♿</span><span data-i18n="accessibility">Accessibility</span></summary>
+  <details class="sp-sec" data-sec="map">
+    <summary><span class="sp-ico" aria-hidden="true">🗺</span><span class="sp-st"><span data-i18n="mMap">Map</span><small data-i18n="secMapSub">What the map shows, simulation, offline maps</small></span></summary>
     <div class="sp-body">
-      <div class="sp-item sp-row"><span data-i18n="reduceMotion">Reduce motion</span>
-        <button class="sw" id="swMotion" role="switch" aria-label="Reduce motion"><span class="sw-k"></span></button></div>
-      <div class="sp-item sp-row"><span data-i18n="highContrast">High contrast</span>
-        <button class="sw" id="swContrast" role="switch" aria-label="High contrast"><span class="sw-k"></span></button></div>
+      <div class="sp-sub" data-i18n="showOnMap">Show on map</div>
+      <div class="sp-item sp-row"><span data-i18n="liveCarr">Simulated carriages</span>
+        <button class="sw on" id="swTrains" role="switch" aria-checked="true" aria-label="Simulated carriages" data-i18n-aria="liveCarr"><span class="sw-k"></span></button></div>
+      <div class="sp-item sp-row"><span data-i18n="stationMarkers">Station markers</span>
+        <button class="sw on" id="swStations" role="switch" aria-checked="true" aria-label="Station markers" data-i18n-aria="stationMarkers"><span class="sw-k"></span></button></div>
+      <div class="sp-item sp-row"><span data-i18n="exploreAttr">✨ Explore attractions</span>
+        <button class="sw" id="swExplore" role="switch" aria-checked="false" aria-label="Explore attractions" data-i18n-aria="exploreAttr"><span class="sw-k"></span></button></div>
+      <div class="sp-item sp-row"><span data-i18n="simSpeed">Simulation speed</span>
+        <div class="seg" id="speedSeg">
+          <button data-s="1">1×</button>
+          <button data-s="3" class="active">3×</button>
+          <button data-s="8">8×</button>
+        </div>
+      </div>
+      <div class="sp-sub" data-i18n="spMapUse">Turning &amp; offline</div>
+      <div class="sp-item">
+        <div class="sp-row"><span data-i18n="rotateMapLbl">Rotate the map</span>
+          <button class="sw" id="swTurn" role="switch" aria-label="Rotate the map"><span class="sw-k"></span></button></div>
+        <div class="sp-hint" data-i18n="rotateMapHint">Twist with two fingers to turn the map. On a computer: right-click and drag, or hold Shift and use the wheel. The compass button turns north back up.</div>
+      </div>
+      <div class="sp-item sp-row sp-col" id="offlineRow"><span data-i18n="offlineMap">Offline map</span>
+        <div class="off-wrap">
+          <button class="off-btn" id="offSave" data-i18n="offSave">Save this area</button>
+          <button class="off-btn ghost" id="offClear" data-i18n="offClear">Clear</button>
+        </div>
+        <div class="sp-note" id="offNote"></div>
+      </div>
+      <div class="sp-item sp-row sp-col" id="offPacksRow"><span data-i18n="offPacksTitle">Offline maps</span>
+        <div class="sp-note" data-i18n="offPacksIntro">A city kept here opens and works with no connection: its map, lines, stations, trip planner and place search. İstanbul, İzmir and Ankara are kept automatically; the others when you press Download. Service notices, weather, official timetables and the satellite layer still need a connection.</div>
+        <div class="offp-list" id="offPackList"></div>
+      </div>
+      <div class="sp-item">
+        <div class="sp-row"><span data-i18n="offDataLbl">Download maps on mobile data too</span>
+          <button class="sw" id="swOffData" role="switch" aria-checked="false" aria-label="Download maps on mobile data too"><span class="sw-k"></span></button></div>
+        <div class="sp-hint" data-i18n="offDataHint">Off: offline maps come down on Wi-Fi only. A phone that does not say what it is connected to (every iPhone) waits for you to press Download.</div>
+      </div>
     </div>
   </details>
-
   <details class="sp-sec" data-sec="journey">
-    <summary><span class="sp-ico" aria-hidden="true">🧭</span><span data-i18n="journeyPrefs">Journey</span></summary>
+    <summary><span class="sp-ico" aria-hidden="true">🧭</span><span class="sp-st"><span data-i18n="journeyPrefs">Journey</span><small data-i18n="secJourneySub">Routes, walking, units, fare card</small></span></summary>
     <div class="sp-body">
       <div class="sp-item">
         <div class="sp-row"><span data-i18n="preferRoute">Show best route by</span></div>
@@ -2023,36 +2106,17 @@
       </div>
     </div>
   </details>
-
-  <details class="sp-sec" data-sec="map">
-    <summary><span class="sp-ico" aria-hidden="true">🗺</span><span data-i18n="mMap">Map</span></summary>
+  <details class="sp-sec" data-sec="accessibility">
+    <summary><span class="sp-ico" aria-hidden="true">♿</span><span class="sp-st"><span data-i18n="accessibility">Accessibility</span><small data-i18n="secAccessSub">Motion and contrast</small></span></summary>
     <div class="sp-body">
-      <div class="sp-item">
-        <div class="sp-row"><span data-i18n="rotateMapLbl">Rotate the map</span>
-          <button class="sw" id="swTurn" role="switch" aria-label="Rotate the map"><span class="sw-k"></span></button></div>
-        <div class="sp-hint" data-i18n="rotateMapHint">Twist with two fingers to turn the map. On a computer: right-click and drag, or hold Shift and use the wheel. The compass button turns north back up.</div>
-      </div>
-      <div class="sp-item sp-row sp-col" id="offlineRow"><span data-i18n="offlineMap">Offline map</span>
-        <div class="off-wrap">
-          <button class="off-btn" id="offSave" data-i18n="offSave">Save this area</button>
-          <button class="off-btn ghost" id="offClear" data-i18n="offClear">Clear</button>
-        </div>
-        <div class="sp-note" id="offNote"></div>
-      </div>
-      <div class="sp-item sp-row sp-col" id="offPacksRow"><span data-i18n="offPacksTitle">Offline maps</span>
-        <div class="sp-note" data-i18n="offPacksIntro">A city kept here opens and works with no connection: its map, lines, stations, trip planner and place search. İstanbul, İzmir and Ankara are kept automatically; the others when you press Download. Service notices, weather, official timetables and the satellite layer still need a connection.</div>
-        <div class="offp-list" id="offPackList"></div>
-      </div>
-      <div class="sp-item">
-        <div class="sp-row"><span data-i18n="offDataLbl">Download maps on mobile data too</span>
-          <button class="sw" id="swOffData" role="switch" aria-checked="false" aria-label="Download maps on mobile data too"><span class="sw-k"></span></button></div>
-        <div class="sp-hint" data-i18n="offDataHint">Off: offline maps come down on Wi-Fi only. A phone that does not say what it is connected to (every iPhone) waits for you to press Download.</div>
-      </div>
+      <div class="sp-item sp-row"><span data-i18n="reduceMotion">Reduce motion</span>
+        <button class="sw" id="swMotion" role="switch" aria-label="Reduce motion"><span class="sw-k"></span></button></div>
+      <div class="sp-item sp-row"><span data-i18n="highContrast">High contrast</span>
+        <button class="sw" id="swContrast" role="switch" aria-label="High contrast"><span class="sw-k"></span></button></div>
     </div>
   </details>
-
   <details class="sp-sec" data-sec="you">
-    <summary><span class="sp-ico" aria-hidden="true">👤</span><span data-i18n="funStats">You</span></summary>
+    <summary><span class="sp-ico" aria-hidden="true">👤</span><span class="sp-st"><span data-i18n="funStats">You</span><small data-i18n="secYouSub">Saved places, travel passport</small></span></summary>
     <div class="sp-body">
       <div class="sp-item" id="placesGroup">
         <div class="sp-label" data-i18n="places">Saved places</div>
@@ -2067,9 +2131,8 @@
       <div class="sp-item"><button class="btn" id="openPassport">🎫 <span data-i18n="passport">Your travel passport</span></button></div>
     </div>
   </details>
-
   <details class="sp-sec" data-sec="privacy">
-    <summary><span class="sp-ico" aria-hidden="true">🔒</span><span data-i18n="secSearch">Search &amp; privacy</span></summary>
+    <summary><span class="sp-ico" aria-hidden="true">🔒</span><span class="sp-st"><span data-i18n="secSearch">Search &amp; privacy</span><small data-i18n="secPrivacySub">Online look-ups, your data</small></span></summary>
     <div class="sp-body">
       <div class="sp-item">
         <div class="sp-row"><span data-i18n="prefOnline">Online look-ups</span>
@@ -2086,9 +2149,8 @@
       </div>
     </div>
   </details>
-
   <details class="sp-sec" data-sec="app">
-    <summary><span class="sp-ico" aria-hidden="true">📲</span><span data-i18n="secApp">App &amp; data</span></summary>
+    <summary><span class="sp-ico" aria-hidden="true">📲</span><span class="sp-st"><span data-i18n="secApp">App &amp; data</span><small data-i18n="secAppSub">Install, data sources, diagnostics</small></span></summary>
     <div class="sp-body">
       <div class="sp-item sp-row sp-col" id="installRow"><span data-i18n="installTitle">App</span>
         <button class="off-btn" id="instBtn" data-i18n="installApp">Install app</button>
@@ -2118,9 +2180,8 @@
       </div>
     </div>
   </details>
-
   <details class="sp-sec" data-sec="about">
-    <summary><span class="sp-ico" aria-hidden="true">ℹ️</span><span data-i18n="secAbout">About &amp; legal</span></summary>
+    <summary><span class="sp-ico" aria-hidden="true">ℹ️</span><span class="sp-st"><span data-i18n="secAbout">About &amp; legal</span><small data-i18n="secAboutSub">Legal pages, contact, version</small></span></summary>
     <div class="sp-body">
       <div class="sp-item"><div class="sp-note" data-i18n="aboutProject">TurkMaps is a free, non-commercial, open-source project by its author. It is not an official service of any transit operator.</div></div>
       <div class="sp-item sp-links">
@@ -2194,26 +2255,7 @@
         <button data-b="sat" data-i18n="satellite">Satellite</button>
       </div>
     </details>
-    <details class="lyr" open>
-      <summary><span data-i18n="showOnMap">Show on map</span></summary>
-      <div class="row"><span data-i18n="liveCarr">Simulated carriages</span>
-        <label class="switch"><input type="checkbox" id="tglTrains" checked><span class="sl"></span></label>
-      </div>
-      <div class="row"><span data-i18n="stationMarkers">Station markers</span>
-        <label class="switch"><input type="checkbox" id="tglStations" checked><span class="sl"></span></label>
-      </div>
-      <div class="row"><span data-i18n="exploreAttr">✨ Explore attractions</span>
-        <label class="switch"><input type="checkbox" id="tglExplore"><span class="sl"></span></label>
-      </div>
-    </details>
-    <details class="lyr">
-      <summary><span data-i18n="simSpeed">Simulation Speed</span></summary>
-      <div class="seg" id="speedSeg">
-        <button data-s="1">1×</button>
-        <button data-s="3" class="active">3×</button>
-        <button data-s="8">8×</button>
-      </div>
-    </details>
+    <!-- "Show on map" and "Simulation speed" moved to Settings > Map (V4.6) -->
     <!-- Network Lines is a section of Layers, not a card of its own. #cardLines stays as the
          wrapper id because setTab() hides it on the Bus / Weather / Intercity scopes. -->
     <div id="cardLines">
@@ -2417,6 +2459,7 @@
     <div><div class="lp-ref" id="lpRef"></div><div class="lp-name" id="lpName"></div></div>
   </div>
   <div class="lp-kind" id="lpKind"></div>
+  <div class="lp-notices" id="lpNotices"></div>
   <button class="lp-follow" id="lpFollow"></button>
   <div class="lp-stats" id="lpStats"></div>
   <div class="lp-plan" id="lpPlan" style="display:none"></div>

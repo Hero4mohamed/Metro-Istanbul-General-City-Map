@@ -101,7 +101,8 @@ function renderBoatList() {
   el.innerHTML = boatLines.map(l => {
     const st = l.stations || [], ends = st.length ? svgEsc(st[0].name) + ' → ' + svgEsc(st[st.length - 1].name) : '';
     return '<button type="button" class="boat-row" data-ref="' + attrEsc(l.ref) + '"><span class="boat-sw" style="background:' + boatColour.get(l.ref) + '"></span>' +
-      '<span class="boat-t"><b>' + svgEsc(l.ref) + '</b><small>' + ends + ' · ' + svgEsc(t('boatPiers').replace('{n}', st.length)) + '</small></span></button>';
+      '<span class="boat-t"><b>' + svgEsc(l.ref) + '</b><small>' + ends + ' · ' + svgEsc(t('boatPiers').replace('{n}', st.length)) + '</small></span>' +
+      noticePillHTML(lineNotices(l.ref, 'ferry')) + '</button>';
   }).join('');
   const c = document.getElementById('boatCount'); if (c) c.textContent = t('boatCount').replace('{n}', boatLines.length);
 }

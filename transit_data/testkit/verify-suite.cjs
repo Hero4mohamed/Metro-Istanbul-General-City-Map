@@ -362,11 +362,7 @@ const MUTATIONS = [
     expect: 'text on panels, chips and tinted chips passes AA: neon light',
     apply: h => h.replace('--dim:#5C6779', '--dim:#9AA5B5'),
   },
-  {
-    name: 'make the mixed theme\'s dim text too dark',
-    expect: 'the "mixed" theme (dark panels on a light page) passes AA too',
-    apply: h => h.replace('--dim:#98A3B8;', '--dim:#555566;'),
-  },
+
   {
     name: 'make the accent ink too pale for the light theme',
     expect: 'text on panels, chips and tinted chips passes AA: atlas light',
@@ -1174,16 +1170,8 @@ const MUTATIONS = [
     expect: 'the line-panel strip map uses the same station dot',
     apply: h => h.replace('r="8" fill="#fff" stroke="#05070A" stroke-width="3.4"', 'r="8" fill="var(--svg-hole)" stroke="#05070A" stroke-width="3.4"'),
   },
-  {
-    name: 'never mark the body as Mixed',
-    expect: 'the fourth theme, Mixed, is offered, remembered and keeps the tabs, layers, planner and announcements dark',
-    apply: h => h.replace("document.body.classList.toggle('mixed', themePref==='split');", ''),
-  },
-  {
-    name: 'let the Mixed theme resolve to the dark page',
-    expect: 'the fourth theme, Mixed, is offered, remembered and keeps the tabs, layers, planner and announcements dark',
-    apply: h => h.replace("return (pref==='light'||pref==='split')?'light':'dark'; }", "return (pref==='light')?'light':'dark'; }"),
-  },
+
+
   {
     name: 'give every line the same white outline, whatever its colour',
     expect: 'every line colour stays visible on the land, in both tones',
@@ -2176,6 +2164,112 @@ const MUTATIONS = [
     name: 'fresh ferry rows are greyed with the old rail rows',
     expect: 'panel: the ferry rows carry their own word',
     apply: h => h.replace('.ann-body.ann-stale > .ann-item.ann-fresh[data-id]{opacity:1;filter:none;}', ''),
+  },
+  /* ---- V4.6: three themes, a fixed-size warning sign, notices on a line, lines in the search box, the bus panel in two views, Settings ---- */
+  {
+    name: 'Auto follows the time of day instead of the device',
+    expect: 'themes: Auto follows the device',
+    apply: h => h.replace("function resolveTheme(pref){ return pref==='auto' ? deviceTheme() :", "function resolveTheme(pref){ return pref==='auto' ? ((new Date().getHours()>=19||new Date().getHours()<7)?'dark':'light') :"),
+  },
+  {
+    name: 'Auto does not notice the device changing',
+    expect: 'themes: Auto follows the device',
+    apply: h => h.replace("function onDeviceTheme(){ if(themePref==='auto') applyTheme('auto', true, true); }", 'function onDeviceTheme(){}'),
+  },
+  {
+    name: 'a first visit starts on Dark, not Auto',
+    expect: 'themes: Auto follows the device',
+    apply: h => h.replace("return s==='split' ? 'light' : 'auto'; })();", "return s==='split' ? 'light' : 'dark'; })();"),
+  },
+  {
+    name: 'the Mixed theme is offered again',
+    expect: 'themes: Light, Dark and Auto',
+    apply: h => h.replace('<button data-theme="auto" class="active"', '<button data-theme="split" data-i18n="themeSplit">Mixed</button><button data-theme="auto" class="active"'),
+  },
+  {
+    name: 'the warning sign is sized by the zoom again',
+    expect: 'warning sign: the sign and its ring are one fixed size',
+    apply: h => h.replace('const isz = WARN_SIZE;', 'const isz = Math.round(22 * Math.max(0.6, markerScale(z)));'),
+  },
+  {
+    name: 'the warning ring catches the presses meant for the sign',
+    expect: 'warning sign: the sign and its ring are one fixed size',
+    apply: h => h.replace('border:2px solid var(--wc);pointer-events:none;animation:disrPulse', 'border:2px solid var(--wc);animation:disrPulse'),
+  },
+  {
+    name: 'a line\'s notices are listed in no order of severity',
+    expect: 'notices: each kind of line gets its own notices',
+    apply: h => h.replace('return list.slice().sort((a, b) => rank(a) - rank(b));', 'return list.slice();'),
+  },
+  {
+    name: 'a bus line\'s notices are shown on the metro line of the same name',
+    expect: 'notices: each kind of line gets its own notices',
+    apply: h => h.replace('return all.filter(d => !d.mode && d.ref === ref);', 'return all.filter(d => d.ref === ref);'),
+  },
+  {
+    name: 'a boat line does not show the ferry notices that name no line',
+    expect: 'notices: the line panel opens with them',
+    apply: h => h.replace("ferry ? ferryGeneralNotices() : null) : '';", "null) : '';"),
+  },
+  {
+    name: 'the line panel has no place for its notices',
+    expect: 'notices: the line panel opens with them',
+    apply: h => h.replace('<div class="lp-notices" id="lpNotices"></div>', ''),
+  },
+  {
+    name: 'a boat row does not show its notices',
+    expect: 'notices: the line panel opens with them',
+    apply: h => h.replace("noticePillHTML(lineNotices(l.ref, 'ferry')) + '</button>';", "'</button>';"),
+  },
+  {
+    name: 'one letter in the search box fills the list with lines',
+    expect: 'search: a line\'s name finds the line',
+    apply: h => h.replace('else if(k.length >= 2 && r.indexOf(k) === 0) start.push(row);', 'else if(r.indexOf(k) === 0) start.push(row);'),
+  },
+  {
+    name: 'the search box finds no lines',
+    expect: 'search: a line\'s name finds the line',
+    apply: h => h.replace('{ h:t("omniLines"),  items:lines,              row:lineRow },', ''),
+  },
+  {
+    name: 'a line found in the search box drops a pin instead of opening the line',
+    expect: 'search: a line\'s name finds the line',
+    apply: h => h.replace('if(p.bus) openBusRoute(p.lineRef); else if(lineByRef[p.lineRef]) openLine(lineByRef[p.lineRef]);', ''),
+  },
+  {
+    name: 'the bus panel\'s first view carries the departures again',
+    expect: 'bus panel: the first view is live buses',
+    apply: h => h.replace("busFareHTML(ref) + busCompactStopsHTML(dirs)", "busFareHTML(ref) + busScheduleHTML(ref) + busCompactStopsHTML(dirs)"),
+  },
+  {
+    name: 'Info is open from the start',
+    expect: 'bus panel: the first view is live buses',
+    apply: h => h.replace(`'<div class="bd-info" hidden>'`, `'<div class="bd-info">'`),
+  },
+  {
+    name: 'a stop served from both sides of the road is listed twice',
+    expect: 'bus panel: the compact list names each stop once',
+    apply: h => h.replace('if(n && n !== out[out.length - 1]) out.push(n);', 'if(n) out.push(n);'),
+  },
+  {
+    name: 'the direction buttons do not switch the stop list',
+    expect: 'bus panel: the compact list names each stop once',
+    apply: h => h.replace("box.querySelectorAll('.bd-cs').forEach(x => { x.hidden = x.dataset.dir !== i; });", ''),
+  },
+  {
+    name: 'the carriages switch in Settings does nothing',
+    expect: 'settings: "Show on map" and "Simulation speed" moved',
+    apply: h => h.replace("showTrains=!showTrains; setSwitch('swTrains', showTrains); renderBoard();", "setSwitch('swTrains', showTrains);"),
+  },
+  {
+    name: 'the stations switch puts stations on the bus view',
+    expect: 'settings: "Show on map" and "Simulation speed" moved',
+    apply: h => h.replace("(currentTab==='vision' ? plannedStationGroup : null)", 'plannedStationGroup'),
+  },
+  {
+    name: 'the settings head scrolls away with the list',
+    expect: 'settings: every section is a card',
+    apply: h => h.replace('#settingsPanel .sp-head{position:sticky;top:0;', '#settingsPanel .sp-head{position:relative;top:0;'),
   },
   /* ---- offline maps (src/22a-offline.js, V4.4.1); the worker's own mistakes are put back by test/offline-maps.test.cjs itself ---- */
   {

@@ -12,13 +12,14 @@ const H = require('../testkit/helpers.cjs');
 const CONTROLS = ['themeSeg', 'styleSeg', 'textSeg', 'langSeg', 'swMotion', 'swContrast', 'prefSeg', 'paceSeg', 'swAvoidFerry', 'swAvoidBus', 'swStepFree',
   'unitSeg', 'clockSeg', 'cardRow', 'cardSel', 'cardArt', 'cardNote', 'cardCredit', 'offlineRow', 'offSave', 'offClear', 'offNote', 'placesGroup', 'homeVal', 'workVal',
   'openPassport', 'swOnline', 'resetTrips', 'installRow', 'instBtn', 'instNote', 'provRow', 'provList', 'aiKeyRow', 'aiKeyIn', 'aiKeySave', 'aiKeyClear', 'aiKeyNote',
-  'diagRow', 'diagReport', 'diagCopy', 'diagClear', 'diagNote'];
+  'diagRow', 'diagReport', 'diagCopy', 'diagClear', 'diagNote',
+  'swTrains', 'swStations', 'swExplore', 'speedSeg'];   // V4.6: moved here from the Layers card
 const panelHTML = () => { const h = H.html(), a = h.indexOf('<div class="settings-panel glass" id="settingsPanel"'), b = h.indexOf('<div class="near-panel glass"'); assert.ok(a > 0 && b > a); return h.slice(a, b); };
 
 test('settings are eight sections, in this order, with Appearance open to begin with', () => {
   const p = panelHTML();
   const secs = [...p.matchAll(/<details class="sp-sec" data-sec="(\w+)"( open)?>/g)].map(m => m[1] + (m[2] ? '*' : ''));
-  assert.deepStrictEqual(secs, ['appearance*', 'accessibility', 'journey', 'map', 'you', 'privacy', 'app', 'about']);   // V4.3 added About & legal
+  assert.deepStrictEqual(secs, ['appearance*', 'map', 'journey', 'accessibility', 'you', 'privacy', 'app', 'about']);   // V4.3 added About & legal; V4.6 put Map second
   assert.ok(/<input id="spSearch" type="search"/.test(p) && /id="spNone"/.test(p), 'the search box is gone');
 });
 
