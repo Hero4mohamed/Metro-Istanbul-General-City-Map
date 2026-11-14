@@ -25,22 +25,22 @@ function mkSheet(id){
   s.innerHTML='<div class="mgrab"></div>';
   document.body.appendChild(s);
   if(id==='planner') return s;                 // the planner sheet has three heights and its own dragging (setupPlanSheet)
-  // swipe-down to close
-  let y0=null, dy=0;
-  s.addEventListener('touchstart',e=>{ if(s.scrollTop<=0){ y0=e.touches[0].clientY; dy=0; } },{passive:true});
-  s.addEventListener('touchmove',e=>{ if(y0===null) return; dy=e.touches[0].clientY-y0;
-    if(dy>0){ s.style.transform=`translateY(${dy}px)`; } },{passive:true});
-  s.addEventListener('touchend',()=>{ if(y0===null) return;
-    s.style.transform=''; if(dy>90) openSheet(null); y0=null; },{passive:true});
+  /* every other sheet opens at a low height with the map in view above it, and a finger takes it higher or closes it (V4.6.2) */
+  makeDraggable(s, id==='modes' ? 'modes' : 'sheet', () => openSheet(null));
   return s;
 }
 function openSheet(name){
-  for(const k in mSheets) mSheets[k].classList.toggle('open', k===name);
-  /* the planner keeps the map in view and usable, so nothing is dimmed behind it (V4.4.1); the other sheets still dim the map */
-  document.getElementById('mbackdrop').classList.toggle('on', !!name && name!=='planner' && name!=='modes');   // nor behind the kinds-of-transport sheet (V4.5): choosing Boats is about seeing the map
+  for(const k in mSheets){ const on = k===name; if(on && !mSheets[k].classList.contains('open') && mSheets[k].dataset.dragKind) setDragDetent(mSheets[k], 'low', true); mSheets[k].classList.toggle('open', on); }
+  /* No sheet dims the map any more (V4.6.2: "I want to see what is happening in the background"): each opens at a low height with
+     the map above it, undimmed and usable, as the planner has since V4.4.1 */
+  document.getElementById('mbackdrop').classList.remove('on');
+  /* a sheet and a line or station panel are never on screen together: the panel stayed over the Layers sheet (V4.6.2) */
+  if(name && typeof closeAllPanels==='function') closeAllPanels();
+  { const pb=document.getElementById('omniPlan'); if(pb){ pb.classList.toggle('on', name==='planner'); pb.setAttribute('aria-pressed', name==='planner' ? 'true' : 'false'); } }
   document.body.classList.toggle('plan-open', name==='planner'); if(name!=='planner') document.body.classList.remove('plan-full');
   if(name==='planner') setPlanDetent(planRouteShown() ? 'half' : 'compact');
-  for(const k in mNavBtns) mNavBtns[k].classList.toggle('on', (name===null? k==='map' : k===name));
+  for(const k in mNavBtns){ const on = (name===null || name==='modes' || name==='planner') ? k==='map' : k===name; mNavBtns[k].classList.toggle('on', on); if(on) mNavBtns[k].setAttribute('aria-current','page'); else mNavBtns[k].removeAttribute('aria-current'); }
+  { const nav=document.querySelector('.mnav'); if(nav){ const keys=Object.keys(mNavBtns), i=keys.findIndex(k=>mNavBtns[k].classList.contains('on')); nav.dataset.on = String(Math.max(0, i)); } }
   if(navigator.vibrate) try{ navigator.vibrate(8); }catch(e){}
 }
 /* ---------------------------------------------------------------------------
@@ -187,8 +187,8 @@ function setupMobile(){
   const bd=document.createElement('div'); bd.id='mbackdrop'; bd.className='mbackdrop';
   bd.addEventListener('click',()=>openSheet(null)); document.body.appendChild(bd);
   // sheets
-  /* Four sheets, four buttons. Weather is one of the scopes in the Layers sheet (Active / Vision / Buses / Intercity / Weather), so it
-     has no sheet or button of its own. */
+  /* Four sheets, three buttons (V4.6.2): Map (and behind it the kinds of transport), Layers, Alerts; the planner opens from the button
+     beside the search box. Weather and Airports are views in the Layers sheet, with no sheet or button of their own. */
   mSheets={ planner:mkSheet('planner'), layers:mkSheet('layers'), alerts:mkSheet('alerts'), modes:mkSheet('modes') };
   /* V4.5: the kinds of transport live behind the Map button. Its first press is the default map; pressed again there, it opens this
      sheet: Metro & rail (the full map), Buses, Boats. Buses used to be one of the views in the Layers sheet. */
@@ -214,22 +214,31 @@ function setupMobile(){
   document.getElementById('cardPlanner').style.display='';
   setupPlanSheet(mSheets.planner);
   const ann=document.getElementById('announce'); mSheets.alerts.appendChild(ann); ann.classList.remove('collapsed');
-  // bottom navigation
-  const nav=document.createElement('div'); nav.className='mnav glass';
-  const items=[ ['map','🗺','mMap'], ['planner','⇆','mPlanner'], ['layers','◈','mLayers'], ['alerts','📢','mAlerts'] ];
-  items.forEach(([k,icon,key])=>{
-    const b=document.createElement('button');
-    b.innerHTML=`<span class="mi">${icon}</span><span class="ml" data-i18n="${key}">${t(key)}</span>`;
+  /* The bottom bar (V4.6.2): three buttons, Map, Layers and Alerts. The planner moved to the button beside the search box
+     (plannerFromSearch, 18b-sheet-drag.js). Drawn icons in place of emoji, a marker that slides to the button in use, the number of
+     live notices on Alerts, and a press that answers at once. Pressing the button in use again closes its sheet. */
+  const nav=document.createElement('nav'); nav.className='mnav glass'; nav.setAttribute('aria-label', t('ariaMainNav')); nav.setAttribute('data-i18n-aria','ariaMainNav');
+  nav.dataset.on='0';
+  const ind=document.createElement('span'); ind.className='mnav-ind'; ind.setAttribute('aria-hidden','true'); nav.appendChild(ind);
+  const ICON = {
+    map: '<svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round" stroke-linecap="round" aria-hidden="true"><path d="M9 4 3.5 6v14L9 18l6 2 5.5-2V4L15 6 9 4Z"/><path d="M9 4v14M15 6v14"/></svg>',
+    layers: '<svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round" stroke-linecap="round" aria-hidden="true"><path d="M12 3.5 2.5 8.5 12 13.5l9.5-5L12 3.5Z"/><path d="m2.5 12.5 9.5 5 9.5-5"/><path d="m2.5 16.5 9.5 5 9.5-5" opacity=".55"/></svg>',
+    alerts: '<svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round" stroke-linecap="round" aria-hidden="true"><path d="M6 16.5V11a6 6 0 0 1 12 0v5.5l1.5 2h-15l1.5-2Z"/><path d="M10 20.5a2.2 2.2 0 0 0 4 0"/></svg>',
+  };
+  const items=[ ['map','mMap'], ['layers','mLayers'], ['alerts','mAlerts'] ];
+  items.forEach(([k,key])=>{
+    const b=document.createElement('button'); b.type='button'; b.dataset.k=k;
+    b.innerHTML=`<span class="mi">${ICON[k]}</span><span class="ml" data-i18n="${key}">${t(key)}</span>` + (k==='alerts' ? '<span class="mnav-badge" id="mnavBadge" hidden></span>' : '');
     b.addEventListener('click',()=>{
       if(k==='map'){ mapButton(); return; }
-      // the planner only works on the İstanbul network — leave any non-metro scope first
-      if(k==='planner' && (currentTab==='weather'||currentTab==='bus'||currentTab==='boat'||currentTab==='intercity')) setTab('active');
+      if(mSheets[k] && mSheets[k].classList.contains('open')){ openSheet(null); return; }
       openSheet(k);
     });
     mNavBtns[k]=b; nav.appendChild(b);
   });
   document.body.appendChild(nav);
-  mNavBtns.map.classList.add('on');
+  mNavBtns.map.classList.add('on'); mNavBtns.map.setAttribute('aria-current','page');
+  setupPanelDrag();
 
 }
 // toast (used for PWA update notifications)

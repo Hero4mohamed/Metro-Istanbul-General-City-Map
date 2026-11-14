@@ -76,7 +76,7 @@ test('warning sign: the sign and its ring are one fixed size at every zoom, in t
   assert.ok(/<i class="warn-ring" style="--wc:\$\{col\};width:\$\{WARN_RING\}px;height:\$\{WARN_RING\}px"><\/i>/.test(fn), 'the ring is not a fixed-size part of the sign');
   assert.ok(/iconSize:\[box,box\], iconAnchor:\[box\/2,box\/2\]/.test(fn), 'the sign is not centred on its place');
   const m = /const WARN_SIZE = (\d+), WARN_RING = (\d+);/.exec(APP);
-  assert.ok(m && +m[2] > +m[1] + 8, 'the ring is not clearly larger than the sign');
+  assert.ok(m && +m[2] > +m[1] + 5, 'the ring is not clearly larger than the sign');
   assert.ok(/\.warn-ring\{[^}]*pointer-events:none;[^}]*animation:disrPulse/.test(CSS), 'the ring catches presses, or no longer pulses');
   assert.ok(!/color-mix\(/.test(CSS), 'color-mix() is not drawn by older Android browsers');
 });

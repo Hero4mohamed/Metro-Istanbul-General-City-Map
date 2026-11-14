@@ -1158,6 +1158,12 @@
     line-height:1;padding:2px 3px;display:none;}
   .omni-x:hover{color:var(--text);}
   .omni.has-q .omni-x{display:block;}
+  /* planner mode, from the search bar (V4.6.2) */
+  .omni-plan{flex:none;display:flex;align-items:center;justify-content:center;width:30px;height:30px;margin:-5px -6px -5px 2px;border-radius:9px;
+    border:1px solid var(--stroke-2);background:var(--surface-2);color:var(--accent-ink);cursor:pointer;transition:background .15s var(--ease),transform .12s var(--ease);}
+  .omni-plan:hover{background:rgba(var(--ok-rgb),.14);}
+  .omni-plan:active{transform:scale(.9);}
+  .omni-plan.on{background:var(--grad-accent);color:var(--btn-ink);border-color:transparent;}
   .omni-res{position:absolute;top:calc(100% + 7px);left:0;right:0;z-index:1100;display:none;
     max-height:min(52vh,430px);overflow-y:auto;overscroll-behavior:contain;border-radius:13px;
     padding:6px;flex-direction:column;gap:2px;
@@ -1291,9 +1297,39 @@
   /* pulsing ring behind a station-level fault, so it reads as live rather than as a pin. It is part of the sign's own element
      (V4.6): a map zoom moves it with the sign and never scales it */
   .warn-icon.warn-ringed{display:flex;align-items:center;justify-content:center;}
+  /* reminders (V4.6.2, 22b-reminders.js) */
+  .rem-panel{max-width:400px;}
+  .rem-head{margin:0 0 10px;}
+  .rem-line{display:inline-flex;align-items:center;gap:5px;padding:4px 10px;border-radius:var(--r-pill);font:800 12px var(--font);}
+  .rem-f{margin:0 0 12px;}
+  .rem-l{display:block;margin:0 0 6px;font-size:var(--fs-6);font-weight:800;letter-spacing:.8px;text-transform:uppercase;color:var(--dim);}
+  .rem-f select,.rem-f input[type="time"]{width:100%;box-sizing:border-box;padding:9px 11px;border-radius:11px;border:1px solid var(--stroke-2);
+    background:var(--surface);color:var(--text);font:600 13px var(--font);}
+  .rem-seg{flex-wrap:wrap;}
+  .rem-seg button{flex:1 1 auto;min-width:0;padding:7px 8px;}
+  .rem-acts{display:flex;gap:8px;flex-wrap:wrap;margin:4px 0 6px;}
+  .rem-acts .btn{flex:1 1 140px;margin:0;}
+  .rem-note{margin-top:4px;}
+  .rem-mine{margin-top:14px;}
+  .rem-list{display:flex;flex-direction:column;gap:6px;}
+  .rem-row{display:flex;align-items:center;gap:8px;padding:8px 9px;border-radius:11px;border:1px solid var(--stroke);background:var(--surface);}
+  .rem-row.off{opacity:.6;}
+  .rem-row .rem-line{flex:none;padding:2px 8px;font-size:var(--fs-6);}
+  .rem-t{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px;}
+  .rem-t b{font-size:var(--fs-8);color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .rem-t small{font-size:var(--fs-6);color:var(--muted);}
+  .rem-del{flex:none;width:28px;height:28px;border-radius:9px;border:1px solid var(--stroke);background:var(--surface-2);color:var(--muted);cursor:pointer;}
+  .rem-del:hover{color:var(--text);border-color:var(--stroke-2);}
+  .bd-remind{display:flex;align-items:center;justify-content:center;gap:7px;width:100%;margin:12px 0 0;padding:10px;border-radius:12px;border:1px solid var(--stroke-2);
+    background:var(--surface);color:var(--text);font:700 var(--fs-8) var(--font);cursor:pointer;}
+  .bd-remind:hover{background:var(--surface-2);}
+  .bd-remind+.bd-info-btn{margin-top:8px;}
+  /* a pier in the Boats view (V4.6.2): a small white dot with a thin dark rim, one size at every zoom */
+  .pier-dot{display:flex;align-items:center;justify-content:center;pointer-events:none;}
+  .pier-dot i{display:block;box-sizing:border-box;border-radius:var(--r-round);background:#FFFFFF;border:1.4px solid #0B1220;}
   .warn-ring{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);box-sizing:border-box;border-radius:var(--r-round);
-    border:2px solid var(--wc);pointer-events:none;animation:disrPulse 2.3s ease-in-out infinite;}
-  .warn-ring::before{content:"";position:absolute;inset:0;border-radius:inherit;background:var(--wc);opacity:.16;}
+    border:1.5px solid var(--wc);pointer-events:none;animation:disrPulse 2.3s ease-in-out infinite;}
+  .warn-ring::before{content:"";position:absolute;inset:0;border-radius:inherit;background:var(--wc);opacity:.10;}
   .warn-ringed span{position:relative;}
   @keyframes disrPulse{0%,100%{opacity:.30;}50%{opacity:1;}}
   body.calm .warn-ring{animation:none;opacity:.75;}
@@ -1332,20 +1368,40 @@
   body.mobile .omni{order:1;flex:0 0 100%;width:100%;margin-top:9px;}
   body.mobile .topbar .sub,body.mobile .topbar .stats{display:none;}
   body.mobile .topbar .langseg{margin:0;flex:0 0 148px;}
-  body.mobile .mnav{position:fixed;left:10px;right:10px;bottom:calc(10px + env(safe-area-inset-bottom));
-    z-index:1400;display:flex;gap:3px;padding:6px;border-radius:22px;}
-  .mnav button{flex:1;background:none;border:none;color:var(--muted);cursor:pointer;border-radius:16px;
-    display:flex;flex-direction:column;align-items:center;gap:3px;padding:7px 0 6px;transition:all .18s var(--ease);}
-  .mnav button .mi{font-size:17px;line-height:1;}
-  .mnav button .ml{font:650 8.5px var(--font);letter-spacing:.3px;}
-  .mnav button.on{color:var(--ok-ink);background:rgba(var(--ok-rgb),.14);box-shadow:inset 0 0 0 1px rgba(var(--ok-rgb),.35);}
-  .mnav button:active{transform:scale(.93);}
+  /* the bottom bar (V4.6.2): three buttons, a marker that slides under the one in use with a little spring, drawn icons that lift when
+     chosen, a count of live notices on Alerts. Respects reduced motion (the global rule switches the movement off). */
+  body.mobile .mnav{position:fixed;left:14px;right:14px;bottom:calc(10px + env(safe-area-inset-bottom));
+    z-index:1400;display:flex;padding:6px;border-radius:24px;box-shadow:0 14px 34px -14px rgba(0,0,0,.55),inset 0 0 0 1px var(--stroke);}
+  .mnav-ind{position:absolute;top:6px;bottom:6px;left:6px;width:calc((100% - 12px) / 3);border-radius:18px;
+    background:rgba(var(--ok-rgb),.15);box-shadow:inset 0 0 0 1px rgba(var(--ok-rgb),.38);transition:transform .38s cubic-bezier(.34,1.45,.64,1);pointer-events:none;}
+  .mnav[data-on="1"] .mnav-ind{transform:translateX(100%);}
+  .mnav[data-on="2"] .mnav-ind{transform:translateX(200%);}
+  .mnav button{position:relative;flex:1;min-width:0;background:none;border:none;color:var(--muted);cursor:pointer;border-radius:18px;
+    display:flex;flex-direction:column;align-items:center;gap:3px;padding:8px 0 7px;transition:color .2s var(--ease),transform .15s var(--ease);
+    -webkit-tap-highlight-color:transparent;}
+  .mnav button .mi{display:flex;line-height:0;transition:transform .3s cubic-bezier(.34,1.45,.64,1);}
+  .mnav button .ml{font:700 9.5px var(--font);letter-spacing:.3px;}
+  .mnav button.on{color:var(--ok-ink);}
+  .mnav button.on .mi{transform:translateY(-1px) scale(1.12);}
+  .mnav button:active{transform:scale(.92);}
+  .mnav-badge{position:absolute;top:4px;left:calc(50% + 6px);min-width:16px;height:16px;padding:0 4px;box-sizing:border-box;border-radius:var(--r-pill);
+    background:#E5484D;color:#fff;font:800 9px/16px var(--font);text-align:center;box-shadow:0 0 0 2px var(--obsidian);}
+  .mnav-badge[hidden]{display:none;}
   body.mobile .mbackdrop{display:block;position:fixed;inset:0;z-index:1250;background:rgba(3,6,10,.5);
     opacity:0;pointer-events:none;transition:opacity .25s;}
   body.mobile .mbackdrop.on{opacity:1;pointer-events:auto;}
-  body.mobile .msheet{display:block;position:fixed;left:0;right:0;bottom:0;z-index:1300;max-height:80vh;
-    overflow-y:auto;border-radius:24px 24px 0 0;padding:8px 14px calc(88px + env(safe-area-inset-bottom));
-    transform:translateY(105%);transition:transform .32s var(--ease);}
+  body.mobile .msheet{display:block;position:fixed;left:0;right:0;bottom:0;z-index:1300;max-height:55vh;
+    overflow-y:auto;overscroll-behavior:contain;border-radius:24px 24px 0 0;padding:8px 14px calc(88px + env(safe-area-inset-bottom));
+    transform:translateY(105%);transition:transform .32s var(--ease),max-height .28s var(--ease);box-shadow:0 -16px 40px -20px rgba(0,0,0,.6);}
+  body.mobile .msheet.dragging,body.mobile .linep.dragging,body.mobile .station.dragging{transition:none;}
+  /* the grip of a sheet or panel you can drag (V4.6.2): a wide target, a short bar */
+  .sgrab{display:none;}
+  .sgrab-btn{display:block;position:sticky;top:0;z-index:3;width:100%;height:22px;margin:-6px 0 2px;padding:0;border:0;background:none;cursor:grab;touch-action:none;}
+  .sgrab-btn .mgrab,.sgrab-btn .sgrab{display:block;width:42px;height:4.5px;margin:9px auto 0;border-radius:var(--r-pill);background:rgba(255,255,255,.22);transition:width .2s var(--ease),background-color .2s;}
+  body.light .sgrab-btn .mgrab,body.light .sgrab-btn .sgrab{background:rgba(20,30,55,.22);}
+  .dragging>.sgrab-btn .mgrab,.dragging>.sgrab-btn .sgrab{width:58px;background:rgba(var(--ok-rgb),.75);}
+  .sgrab-btn:focus-visible{outline:2px solid var(--accent);outline-offset:-4px;border-radius:12px;}
+  body:not(.mobile) .sgrab-btn{display:none;}
   body.mobile .msheet.open{transform:none;}
   .msheet .mgrab{width:42px;height:4.5px;background:rgba(255,255,255,.22);border-radius:var(--r-pill);margin:4px auto 12px;}
   /* ---- the planner sheet: three heights, the map stays in view (V4.4.1; the logic is in 18-mobile-shell.js) ---- */
@@ -1387,7 +1443,8 @@
   .msheet .ann-body{max-height:none;padding:0;}
   .msheet .wx-list,.msheet .bus-list{max-height:none;}
   body.mobile .station,body.mobile .linep{left:8px;right:8px;width:auto;z-index:1360;
-    bottom:calc(86px + env(safe-area-inset-bottom));max-height:56vh;border-radius:20px;}
+    bottom:calc(86px + env(safe-area-inset-bottom));max-height:44vh;overflow-y:auto;overscroll-behavior:contain;border-radius:20px;
+    padding-top:6px;transition:max-height .28s var(--ease);}
   .mtoast{position:fixed;top:20px;left:50%;transform:translate(-50%,-14px);z-index:1700;
     padding:9px 16px;border-radius:var(--r-pill);font-size:11.5px;font-weight:700;max-width:88vw;text-align:center;
     color:var(--btn-ink);background:var(--grad-accent);box-shadow:0 10px 28px -8px rgba(var(--ok-rgb),.8);
@@ -1946,6 +2003,10 @@
              placeholder="Search anywhere — places, food, hospitals…" autocomplete="off"
              role="combobox" aria-expanded="false" aria-controls="omniRes" />
       <button class="omni-x" id="omniX" data-i18n-title="clear" title="Clear" aria-label="Clear">✕</button>
+      <button class="omni-plan" id="omniPlan" type="button" data-i18n-title="omniPlan" data-i18n-aria="omniPlan" title="Plan a trip" aria-label="Plan a trip" aria-pressed="false">
+        <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <circle cx="6" cy="18.5" r="2.3"/><circle cx="18" cy="5.5" r="2.3"/><path d="M8.3 18.5h6.2a3.5 3.5 0 0 0 0-7h-5a3.5 3.5 0 0 1 0-7h6.2"/></svg>
+      </button>
     </div>
     <div class="omni-res glass" id="omniRes" role="listbox"></div>
   </div>
@@ -2128,6 +2189,11 @@
           <button class="mini" data-place="work" data-act="clear" data-i18n="clear">Clear</button></div>
         <div class="sp-hint" data-i18n="placeHowto">Type a place in “From”, then tap Set.</div>
       </div>
+      <div class="sp-item" id="remRow">
+        <div class="sp-row"><span data-i18n="remList">Reminders</span></div>
+        <div class="rem-list" id="remList"></div>
+        <div class="sp-hint" data-i18n="remListHint">Set one from a line's panel with ⏰ Remind me.</div>
+      </div>
       <div class="sp-item"><button class="btn" id="openPassport">🎫 <span data-i18n="passport">Your travel passport</span></button></div>
     </div>
   </details>
@@ -2226,6 +2292,12 @@
 <div class="settings-panel glass" id="passPanel" role="dialog" aria-modal="true" aria-label="Travel passport" data-i18n-aria="passport">
   <div class="sp-head"><span>🎫 <span data-i18n="passport">Your travel passport</span></span><button class="x" id="passX" aria-label="Close" data-i18n-aria="close">✕</button></div>
   <div id="passBody"></div>
+</div>
+
+<div class="settings-overlay" id="remOverlay"></div>
+<div class="settings-panel glass rem-panel" id="remPanel" role="dialog" aria-modal="true" aria-labelledby="remTitle">
+  <div class="sp-head"><span id="remTitle">⏰ <span data-i18n="remTitle">Remind me</span></span><button class="x" id="remX" aria-label="Close" data-i18n-aria="close">✕</button></div>
+  <div id="remBody"></div>
 </div>
 
 <div class="controls" id="controls">
@@ -2432,6 +2504,7 @@
 </div>
 
 <div class="station glass" id="stn">
+  <div class="sgrab" aria-hidden="true"></div>
   <button class="x" id="stnX">✕</button>
   <div class="st-nm" id="stnNm"></div>
   <div class="st-lines" id="stnLines"></div>
@@ -2453,6 +2526,7 @@
 </div>
 
 <div class="linep glass" id="linp">
+  <div class="sgrab" aria-hidden="true"></div>
   <button class="x" id="linpX">✕</button>
   <div class="lp-head">
     <span class="lp-sw" id="lpSw"></span>
@@ -2461,6 +2535,7 @@
   <div class="lp-kind" id="lpKind"></div>
   <div class="lp-notices" id="lpNotices"></div>
   <button class="lp-follow" id="lpFollow"></button>
+  <button class="lp-follow lp-remind" id="lpRemind" type="button">⏰ <span data-i18n="remBtn">Remind me</span></button>
   <div class="lp-stats" id="lpStats"></div>
   <div class="lp-plan" id="lpPlan" style="display:none"></div>
   <div class="bt" id="lpStripBt" data-i18n="lineMap">Line map</div>

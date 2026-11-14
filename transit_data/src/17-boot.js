@@ -35,7 +35,9 @@ function captureReady(opts){
 function captureEnd(){ if(!animOn){ animOn=true; last=performance.now(); animRaf=requestAnimationFrame(frame); } return true; }
 /* ---- Announcements: live disruptions (faults / closures) + map warning markers ---- */
 const SEV_COLOR = { major:'#E5484D', partial:'#F5A623', minor:'#FFD400' };
-const WARN_SIZE = 22, WARN_RING = 34;      // px, the same at every zoom: the sign, and the ring round a sign pinned to one station
+/* px, the same at every zoom: the sign, and the ring round a sign pinned to one station. V4.6 made them fixed (22 and 34); V4.6.2
+   makes them smaller (asked for: "too big on the screen"), the ring now a thin line just outside the sign rather than a disc round it */
+const WARN_SIZE = 20, WARN_RING = 27;
 const SEV_LABEL = { major:'Major', partial:'Partial', minor:'Minor' };
 const disruptionLayer = L.layerGroup().addTo(map);   // shown on the Active tab only (setTab manages it)
 const hazardRenderer = L.svg({ padding:0.5 });       // SVG so the dash animation (CSS) works
@@ -317,6 +319,8 @@ function renderAnnouncements(){
   const groups = busGroups(bus);
   // the badge counts what the card SHOWS: a notice per rail fault and ferry notice, a row per bus group
   document.getElementById('annCount').textContent = rail.length + ferry.length + groups.length + ops.length;
+  { const mb=document.getElementById('mnavBadge'), n=rail.length + ferry.length + groups.length;   // the bottom bar's Alerts button (V4.6.2): live notices only
+    if(mb){ mb.hidden = !n; mb.textContent = n > 99 ? '99+' : String(n); } }
   const opRows = ops.map((o,i)=>{
     const col = o.color || colorForLine(o.ref);
     const rel = opensRel(o);

@@ -8,12 +8,13 @@ const { test } = require('node:test');
 const assert = require('node:assert');
 const H = require('../testkit/helpers.cjs');
 
-test('the phone has four bottom buttons - Map, Planner, Layers, Alerts - and no sheet of its own for the weather', () => {
+test('the phone has three bottom buttons - Map, Layers, Alerts - the planner opens from the search bar, and the weather has no sheet', () => {
   const s = H.appScript();
   const items = /const items=\[([^\n]*)\];/.exec(s);
   assert.ok(items, 'the list of bottom buttons is gone');
-  const keys = [...items[1].matchAll(/\['(\w+)','[^']*','(\w+)'\]/g)].map(m => m[1]);
-  assert.deepStrictEqual(keys, ['map', 'planner', 'layers', 'alerts'], 'the bottom bar is not Map / Planner / Layers / Alerts');
+  const keys = [...items[1].matchAll(/\['(\w+)','(\w+)'\]/g)].map(m => m[1]);
+  assert.deepStrictEqual(keys, ['map', 'layers', 'alerts'], 'the bottom bar is not Map / Layers / Alerts (V4.6.2: the planner moved to the search bar)');
+  assert.ok(/<button class="omni-plan" id="omniPlan" type="button"/.test(H.html()) && /getElementById\('omniPlan'\); if\(b\) b\.addEventListener\('click', plannerFromSearch\)/.test(s), 'nothing opens the planner any more');
   /* V4.5: a fourth sheet, the kinds of transport (Metro & rail / Buses / Boats), which the MAP button opens when pressed on the default map */
   assert.ok(/mSheets=\{ planner:mkSheet\('planner'\), layers:mkSheet\('layers'\), alerts:mkSheet\('alerts'\), modes:mkSheet\('modes'\) \};/.test(s), 'the phone has a sheet that no button opens, or a button without a sheet');
   assert.ok(/if\(k==='map'\)\{ mapButton\(\); return; \}/.test(s) && /if\(mapIsDefault\(\)\)\{ openSheet\('modes'\); return; \}/.test(s), 'nothing opens the kinds-of-transport sheet');

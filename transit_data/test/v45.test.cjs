@@ -91,7 +91,7 @@ test('map button: anywhere else it brings back the default map; pressed again th
     assert.deepStrictEqual(p.calls, ['sheet:modes'], 'the second press (now on the default map) does not open the kinds of transport');
   }
   assert.ok(/body\.mobile #tabs button\[data-tab="bus"\],body\.mobile #tabs button\[data-tab="boat"\]\{display:none;\}/.test(CSS), 'on a phone Buses and Boats are still in the Layers sheet as well');
-  assert.ok(/classList\.toggle\('on', !!name && name!=='planner' && name!=='modes'\)/.test(fnSource(APP, 'openSheet')), 'the map is dimmed behind the kinds of transport');
+  assert.ok(/getElementById\('mbackdrop'\)\.classList\.remove\('on'\);/.test(fnSource(APP, 'openSheet')), 'the map is dimmed behind the kinds of transport (or, since V4.6.2, behind any sheet)');
 });
 
 /* ---- the glow on the line being looked at ---- */

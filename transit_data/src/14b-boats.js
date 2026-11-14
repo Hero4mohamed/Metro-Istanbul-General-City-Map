@@ -56,6 +56,7 @@ const boatLines = NETWORK.filter(l => l.kind === 'ferry' && isLive(l) && Array.i
 const boatLayer = L.layerGroup();
 const boatColour = new Map(boatLines.map((l, i) => [l.ref, BOAT_COLOURS[i % BOAT_COLOURS.length]]));
 /* every pier once, with the lines that call there (the names the map prints in this tab) */
+const PIER_DOT = 6, PIER_DOT_MULTI = 8;      // px across, the same at every zoom (V4.6.2)
 const boatStations = (function () {
   const by = new Map();
   boatLines.forEach(l => (l.stations || []).forEach(s => { const k = s.lat + ',' + s.lng; let e = by.get(k); if (!e) by.set(k, e = { name: s.name, lat: s.lat, lng: s.lng, lines: new Set() }); e.lines.add(l.ref); }));
@@ -84,9 +85,13 @@ function renderBoats() {
     const hit = L.polyline(ll, { renderer: lineRenderer, color: col, weight: 14, opacity: 0, lineCap: 'round' });
     [hit, core].forEach(pl => { pl.bindTooltip(tip, { sticky: true, className: 'lt' }); pl.on('click', e => { openLine(l); L.DomEvent.stop(e); }); pl.addTo(boatLayer); });
   });
-  /* the piers: one white dot each, a little larger where several lines call */
+  /* the piers: one small white dot each, a little larger where several lines call. ONE size at every zoom (V4.6.2: they were drawn
+     on the map's own canvas, which is scaled while a zoom animates, and looked large and crowded zoomed out); an element of its own
+     is moved by a zoom but never scaled. */
   boatStations.forEach(s => {
-    L.circleMarker([s.lat, s.lng], { renderer: lineRenderer, radius: s.lines.size > 1 ? 4.6 : 3.4, color: '#0B1220', weight: 1.6, fillColor: '#FFFFFF', fillOpacity: 1, interactive: false }).addTo(boatLayer);
+    const d = s.lines.size > 1 ? PIER_DOT_MULTI : PIER_DOT;
+    L.marker([s.lat, s.lng], { icon: L.divIcon({ className: 'pier-dot', html: '<i style="width:' + d + 'px;height:' + d + 'px"></i>', iconSize: [d, d], iconAnchor: [d / 2, d / 2] }),
+      interactive: false, keyboard: false }).addTo(boatLayer);
   });
 }
 /* an opened line stands out among the boats too: called by setLineGlow (12a-line-glow.js) with the line's ref, or null */

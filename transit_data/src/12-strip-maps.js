@@ -158,7 +158,10 @@ function openLine(line){
   /* the line's own notices, first thing under its name (V4.6, 12b-line-notices.js); a boat line also shows the ferry notices
      that name no line. A line that is not running yet has none. */
   { const ferry = line.kind === 'ferry', box = document.getElementById('lpNotices');
-    if(box) box.innerHTML = live ? lineNoticesHTML(lineNotices(line.ref, ferry ? 'ferry' : ''), ferry ? ferryGeneralNotices() : null) : ''; }
+    if(box) box.innerHTML = live ? lineNoticesHTML(lineNotices(line.ref, ferry ? 'ferry' : ''), ferry ? ferryGeneralNotices() : null) : '';
+    /* V4.6.2: a reminder for a stop on this line (22b-reminders.js); a line that is not running yet has no stops to be at */
+    const rb = document.getElementById('lpRemind');
+    if(rb){ rb.style.display = live && (line.stations || []).length >= 2 ? '' : 'none'; rb.dataset.ref = line.ref; rb.dataset.mode = ferry ? 'ferry' : 'rail'; } }
   if(!live){
     /* A line that is not running: its own panel (11a-planned-panel.js). The connectivity and
        expansion blocks are about running lines and are hidden rather than filled with filler. */
@@ -173,6 +176,7 @@ function openLine(line){
     if(stripBt0) stripBt0.style.display = stripHTML0 ? '' : 'none';
     ['lpConnBt','lpConn','lpExpBt','lpExp','lpSrcNote'].forEach(id => { const el=document.getElementById(id); if(el) el.style.display='none'; });
     document.getElementById('linp').classList.add('show');
+    showLineOnMap(line);
     return;
   }
   ['lpConnBt','lpConn','lpExpBt','lpExp','lpSrcNote'].forEach(id => { const el=document.getElementById(id); if(el) el.style.display=''; });
@@ -212,6 +216,13 @@ function openLine(line){
   }
   document.getElementById('linp').classList.add('show');
   if(typeof setLineGlow === 'function') setLineGlow(line);      // the line this panel is about glows on the map (12a-line-glow.js)
+  showLineOnMap(line);
+}
+/* V4.6.2: opening a line also brings it into view, in the part of the map the panel does not cover; on a phone an open sheet steps
+   aside first, so the panel and the line are seen together */
+function showLineOnMap(line){
+  if(IS_MOBILE && document.querySelector('.msheet.open') && typeof openSheet === 'function') openSheet(null);
+  if(typeof fitLineInView === 'function') fitLineInView(line);
 }
 function closeAllPanels(){
   selected=null;

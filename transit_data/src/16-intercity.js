@@ -316,6 +316,7 @@ function busCompactStopsHTML(dirs){
 }
 function busMainHTML(ref, dirs){
   return '<div class="bd-main">' + liveBusHTML(ref) + lineNoticesHTML(lineNotices(ref, 'bus')) + busFareHTML(ref) + busCompactStopsHTML(dirs)
+    + '<button type="button" class="bd-remind" data-remind="' + attrEsc(ref) + '"><span aria-hidden="true">⏰</span> ' + svgEsc(t('remBtn')) + '</button>'
     + '<button type="button" class="bd-info-btn" data-bd="info"><span aria-hidden="true">ⓘ</span> ' + svgEsc(t('busInfo')) + '</button></div>';
 }
 function busInfoHTML(ref, dirs){
@@ -339,8 +340,9 @@ function busShowInfo(box, on){
 (function(){
   const box = document.getElementById('busDetail'); if(!box) return;
   box.addEventListener('click', e => {
-    const b = e.target.closest('[data-bd]'), cs = e.target.closest('[data-csdir]');
+    const b = e.target.closest('[data-bd]'), cs = e.target.closest('[data-csdir]'), rm = e.target.closest('[data-remind]');
     if(b){ busShowInfo(box, b.dataset.bd === 'info'); return; }
+    if(rm){ if(typeof openReminder === 'function') openReminder('bus', rm.dataset.remind); return; }   // V4.6.2 (22b-reminders.js)
     if(cs){
       const i = cs.dataset.csdir;
       box.querySelectorAll('[data-csdir]').forEach(x => { const on = x.dataset.csdir === i; x.classList.toggle('active', on); x.setAttribute('aria-pressed', on ? 'true' : 'false'); });
