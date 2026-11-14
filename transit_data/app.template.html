@@ -1576,6 +1576,19 @@
   .settings-panel .spseg{width:100%;margin-top:3px;}
   .settings-panel .spseg button{flex:1;}
   .sp-hint{font-size:var(--fs-8);color:var(--dim);line-height:1.5;margin-top:8px;}
+  /* V4.6.3 account box (Settings > You, and the Friends sheet) */
+  .acc-form{display:flex;flex-direction:column;gap:8px;}
+  .acc-form p{margin:0;font-size:var(--fs-6);line-height:1.5;color:var(--text);}
+  .acc-in{width:100%;box-sizing:border-box;padding:10px 12px;border-radius:12px;border:1px solid var(--stroke);background:var(--surface-2);color:var(--text);font:inherit;font-size:var(--fs-5);}
+  .acc-in:focus-visible{outline:2px solid var(--accent-ink);outline-offset:1px;}
+  .acc-acts{display:flex;gap:8px;flex-wrap:wrap;} .acc-acts .btn{flex:1 1 130px;margin:0;}
+  .acc-links{display:flex;gap:14px;flex-wrap:wrap;}
+  .acc-link{background:none;border:none;padding:4px 0;color:var(--accent-ink);font:inherit;font-size:var(--fs-6);cursor:pointer;text-decoration:underline;}
+  .acc-msg{font-size:var(--fs-6);line-height:1.45;padding:8px 10px;border-radius:10px;background:var(--surface-2);}
+  .acc-msg.err{color:var(--danger,#E5484D);} .acc-msg.ok{color:var(--ok,#30A46C);}
+  .acc-who{display:flex;flex-direction:column;gap:2px;} .acc-who small{color:var(--dim);font-size:var(--fs-7);}
+  .acc-del{display:flex;flex-direction:column;gap:8px;padding:10px;border-radius:12px;border:1px solid var(--stroke);}
+  .btn.danger{background:var(--danger,#E5484D);color:#fff;}
   .settings-panel .btn{margin-top:2px;}
   /* on a phone a full-screen blur behind a moving sheet is the costliest thing on the page: a darker wash does the same job */
   body.mobile .settings-overlay{backdrop-filter:none;background:rgba(3,6,10,.64);}
@@ -2179,6 +2192,10 @@
   <details class="sp-sec" data-sec="you">
     <summary><span class="sp-ico" aria-hidden="true">👤</span><span class="sp-st"><span data-i18n="funStats">You</span><small data-i18n="secYouSub">Saved places, travel passport</small></span></summary>
     <div class="sp-body">
+      <div class="sp-item" id="accRow">
+        <div class="sp-row"><span data-i18n="accTitle">Account</span></div>
+        <div class="acc-box"></div>
+      </div>
       <div class="sp-item" id="placesGroup">
         <div class="sp-label" data-i18n="places">Saved places</div>
         <div class="sp-place"><span class="sp-p-ico">🏠</span><span class="sp-p-nm" id="homeVal">—</span>

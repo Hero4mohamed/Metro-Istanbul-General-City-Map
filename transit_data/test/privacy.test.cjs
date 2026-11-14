@@ -152,7 +152,7 @@ test('everything the app stores is under the irn_ prefix and no other kind of st
 });
 
 /* ---- forms and consent -------------------------------------------------------------------------------------------------- */
-test('there is no sign-up, contact or payment form: no field asks for an e-mail, phone number, name or address, and the policy forbids submitting forms', () => {
+test('no contact or payment form, and the only sign-up is the optional account box (V4.6.3): no other field asks for an e-mail, phone number, name or address, and the policy forbids submitting forms', () => {
   const html = markup();
   assert.ok(!/<form[\s>]/i.test(html), 'a <form> element appeared: a form needs a consent line and a place in the privacy notice');
   assert.match(csp(), /form-action 'none'/, 'the policy no longer forbids form submission');
@@ -160,9 +160,13 @@ test('there is no sign-up, contact or payment form: no field asks for an e-mail,
   assert.ok(inputs.length > 0, 'found no inputs: has the pattern drifted?');
   for (const i of inputs) {
     const type = (/type="([^"]+)"/.exec(i) || [, 'text'])[1];
-    assert.ok(['text', 'search', 'password', 'range', 'checkbox', 'time', 'date', 'number'].includes(type), 'an input of type ' + type + ' (' + i.slice(0, 60) + ')');
-    assert.ok(!/autocomplete="(?:name|given-name|family-name|email|tel|street-address|postal-code|cc-)/.test(i), 'a field asks the browser to fill personal details: ' + i.slice(0, 80));
-    if (type === 'password') assert.ok(/id="aiKeyIn"/.test(i) && /autocomplete="off"/.test(i), 'the only password field is the optional API key, with autocomplete off');
+    /* V4.6.3: the account box (22c-account.js) asks for an e-mail, a password and a chosen name, only when someone opens it;
+       the privacy notice's section 6 says what happens to them. Nothing else may ask for personal details. */
+    const acc = /class="acc-in acc-(?:email|pw|name)"/.test(i);
+    assert.ok(['text', 'search', 'password', 'range', 'checkbox', 'time', 'date', 'number'].includes(type) || (acc && type === 'email'), 'an input of type ' + type + ' (' + i.slice(0, 60) + ')');
+    if (!acc) assert.ok(!/autocomplete="(?:name|given-name|family-name|email|tel|street-address|postal-code|cc-)/.test(i), 'a field asks the browser to fill personal details: ' + i.slice(0, 80));
+    if (acc) assert.ok(!/autocomplete="(?:name|given-name|family-name|tel|street-address|postal-code|cc-)/.test(i), 'the account box asks for more than an e-mail, a password and a chosen name: ' + i.slice(0, 80));
+    if (type === 'password') assert.ok((/id="aiKeyIn"/.test(i) && /autocomplete="off"/.test(i)) || /class="acc-in acc-pw"/.test(i), 'a password field other than the optional API key and the account box');
   }
 });
 function csp() { return /Content-Security-Policy" content="([^"]+)"/.exec(H.html())[1]; }

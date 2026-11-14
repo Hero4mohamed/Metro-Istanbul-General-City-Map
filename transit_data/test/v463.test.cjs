@@ -104,3 +104,112 @@ test('config: storage and privacy pages name the account data, Google, who can s
   assert.match(en, /3 minutes/); assert.match(en, /8 hours/);
   assert.ok(!/has no accounts/.test(H.i18n ? JSON.stringify(H.i18n()) : H.appScript().match(/privBody:"[^"]*"/)[0]), 'the privacy question still says the app has no accounts');
 });
+
+/* -------------------------------------------------------------- account ---- */
+const vm = require('node:vm');
+const APP = () => H.appScript().replace(/\r\n/g, '\n');
+function region(name) {
+  const s = APP(), a = s.indexOf('/* ==' + name + '-START== */'), b = s.indexOf('/* ==' + name + '-END== */');
+  assert.ok(a > 0 && b > a, 'the ' + name + ' block is missing');
+  return s.slice(a, b);
+}
+const b64u = o => Buffer.from(JSON.stringify(o)).toString('base64').replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+const jwt = claims => b64u({ alg: 'none' }) + '.' + b64u(claims) + '.sig';
+/* A sandbox running the real account code against a fake Firebase. `routes(url, body, method)` returns [status, json]. */
+function accWorld(routes, opts = {}) {
+  const calls = [], store = Object.assign({}, opts.store || {});
+  const ctx = {
+    FIREBASE: opts.noConfig ? null : { apiKey: 'AIzaTESTTESTTESTTESTTESTTESTTEST', projectId: 'turkmaps-test' },
+    localStorage: { getItem: k => (k in store ? store[k] : null), setItem: (k, v) => { store[k] = String(v); }, removeItem: k => { delete store[k]; } },
+    atob: s => Buffer.from(s, 'base64').toString('binary'), TextDecoder, decodeURIComponent, encodeURIComponent,
+    t: k => k, svgEsc: s => (s == null ? '' : '' + s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'),
+    attrEsc: s => (s || '').replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;'),
+    fetch: async (url, o = {}) => {
+      const body = o.body && /json/.test((o.headers || {})['Content-Type'] || '') ? JSON.parse(o.body) : o.body;
+      calls.push({ url, method: o.method || 'GET', body, auth: (o.headers || {}).Authorization });
+      const [status, json] = routes(url, body, o.method || 'GET', calls.length) || [404, {}];
+      return { ok: status >= 200 && status < 300, status, json: async () => json };
+    },
+  };
+  ctx.lsJSON = k => { try { return JSON.parse(ctx.localStorage.getItem(k)); } catch (e) { return null; } };
+  Object.assign(ctx, opts.extra || {});
+  vm.createContext(ctx);
+  vm.runInContext(region('ACCOUNT-PURE') + region('ACCOUNT-CORE') + (opts.more || '')
+    + '\nthis.api = { get acct(){ return acct; }, set acct(v){ acct = v; }, pwOk, pairId, fsEncode, fsDecode, fsDocPath, fsFetch, fsCommit, fsQuery, accSignUp, accSignIn, accRecheckVerified, accDelete, accReady, accViewHTML, idToken };'
+    + (opts.expose || ''), ctx);
+  return { api: ctx.api, calls, store, ctx };
+}
+const signedUp = (verified) => [200, { localId: 'uidA', email: 'a@x.test', idToken: jwt({ email_verified: !!verified }), refreshToken: 'r1', expiresIn: '3600' }];
+const SESSION = verified => ({ irn_account: JSON.stringify({ uid: 'uidA', email: 'a@x.test', name: 'Ayşe', verified, refreshToken: 'r1', idToken: jwt({ email_verified: verified }), idExp: Date.now() + 3600e3 }) });
+const REFRESHED = [200, { id_token: jwt({ email_verified: true }), refresh_token: 'r2', expires_in: '3600' }];
+
+test('account: Firestore values are written and read back with their types; pairs are sorted; passwords need 8 characters', () => {
+  const { api } = accWorld(() => null);
+  const e = api.fsEncode({ a: 'x', n: 3, d: 1.5, b: true, z: null });
+  assert.deepStrictEqual(JSON.parse(JSON.stringify(e)), { fields: { a: { stringValue: 'x' }, n: { integerValue: '3' }, d: { doubleValue: 1.5 }, b: { booleanValue: true }, z: { nullValue: null } } });
+  const d = api.fsDecode({ name: 'projects/p/databases/(default)/documents/profiles/u1', fields: e.fields });
+  assert.deepStrictEqual([d.a, d.n, d.d, d.b, d.z, d._id], ['x', 3, 1.5, true, null, 'u1']);
+  assert.strictEqual(api.pairId('b', 'a'), 'a_b'); assert.strictEqual(api.pairId('a', 'b'), 'a_b');
+  assert.strictEqual(api.pwOk('1234567'), false); assert.strictEqual(api.pwOk('12345678'), true);
+});
+test('account: signing up asks Firebase to email a confirmation link, keeps no password, and writes nothing until confirmed', async () => {
+  const w = accWorld(url => /accounts:signUp/.test(url) ? signedUp(false) : /accounts:sendOobCode/.test(url) ? [200, {}] : null);
+  await w.api.accSignUp('a@x.test', 'correct horse', 'Ayşe');
+  assert.deepStrictEqual(w.calls.map(c => c.url.replace(/\?.*/, '')), ['https://identitytoolkit.googleapis.com/v1/accounts:signUp', 'https://identitytoolkit.googleapis.com/v1/accounts:sendOobCode']);
+  assert.strictEqual(w.calls[1].body.requestType, 'VERIFY_EMAIL');
+  assert.ok(!/correct horse/.test(w.store.irn_account) && !/password/i.test(w.store.irn_account), 'the password is kept on the device');
+  assert.strictEqual(w.api.accReady(), false, 'an unconfirmed account can use Friends');
+  await assert.rejects(w.api.accSignUp('b@x.test', 'short', 'B'), /weak_password/);
+});
+test('account: once the email is confirmed, the name is saved as the only field of the profile', async () => {
+  const w = accWorld(url => /securetoken/.test(url) ? REFRESHED : /:commit/.test(url) ? [200, {}] : null, { store: SESSION(false) });
+  assert.strictEqual(await w.api.accRecheckVerified(), true);
+  const c = w.calls.find(x => /:commit/.test(x.url));
+  assert.ok(c, 'the profile is not saved');
+  assert.strictEqual(c.body.writes.length, 1);
+  assert.match(c.body.writes[0].update.name, /\/documents\/profiles\/uidA$/);
+  assert.deepStrictEqual(Object.keys(c.body.writes[0].update.fields), ['name']);
+  assert.strictEqual(w.api.accReady(), true);
+});
+test('account (RF1): an expired sign-in is renewed once and the request retried once; a second refusal is an error, not a loop', async () => {
+  let n = 0;
+  const w = accWorld(url => /securetoken/.test(url) ? REFRESHED : /:commit/.test(url) ? (++n === 1 ? [401, {}] : [200, {}]) : null, { store: SESSION(true) });
+  await w.api.fsCommit([]);
+  assert.strictEqual(w.calls.filter(c => /securetoken/.test(c.url)).length, 1);
+  assert.strictEqual(w.calls.filter(c => /:commit/.test(c.url)).length, 2);
+  const w2 = accWorld(url => /securetoken/.test(url) ? REFRESHED : /:commit/.test(url) ? [401, { error: { status: 'UNAUTHENTICATED' } }] : null, { store: SESSION(true) });
+  await assert.rejects(w2.api.fsCommit([]));
+  assert.strictEqual(w2.calls.filter(c => /:commit/.test(c.url)).length, 2, 'it retried more than once');
+});
+test('account: deleting signs in again, removes the data (position, friendships, links, profile) BEFORE the account', async () => {
+  const doc = (coll, id) => ({ document: { name: 'projects/turkmaps-test/databases/(default)/documents/' + coll + '/' + id, fields: {} } });
+  const w = accWorld((url, body) => /signInWithPassword/.test(url) ? signedUp(true)
+    : /:runQuery/.test(url) ? [200, body.structuredQuery.from[0].collectionId === 'friendships' ? (body.structuredQuery.where.fieldFilter.field.fieldPath === 'a' ? [doc('friendships', 'uidA_uidB')] : []) : [doc('invites', 'f'.repeat(32))]]
+    : /:commit/.test(url) ? [200, {}] : /accounts:delete/.test(url) ? [200, {}] : null, { store: SESSION(true) });
+  const r = await w.api.accDelete('correct horse');
+  const seq = w.calls.map(c => c.url.replace(/\?.*/, ''));
+  assert.match(seq[0], /accounts:signInWithPassword$/);
+  const iCommit = seq.findIndex(s => /:commit$/.test(s)), iDel = seq.findIndex(s => /accounts:delete$/.test(s));
+  assert.ok(iCommit >= 0 && iDel > iCommit, 'the account is deleted before its data');
+  const commit = w.calls[iCommit].body.writes.map(x => x.delete.replace(/^.*documents\//, ''));
+  assert.deepStrictEqual(commit, ['locations/uidA', 'friendships/uidA_uidB', 'invites/' + 'f'.repeat(32), 'profiles/uidA']);
+  assert.strictEqual(w.api.acct, null); assert.ok(!('irn_account' in w.store), 'the session stays on the device');
+  assert.deepStrictEqual({ ...r }, { friendships: 1, invites: 1 });
+});
+test('account: if deleting the account itself fails, the data is already gone and the app remembers to finish it', async () => {
+  const w = accWorld(url => /signInWithPassword/.test(url) ? signedUp(true) : /:runQuery/.test(url) ? [200, []]
+    : /:commit/.test(url) ? [200, {}] : /accounts:delete/.test(url) ? [500, { error: { message: 'INTERNAL' } }] : null, { store: SESSION(true) });
+  await assert.rejects(w.api.accDelete('correct horse'));
+  assert.ok(w.calls.some(c => /:commit/.test(c.url)), 'the data was not deleted first');
+  assert.strictEqual(JSON.parse(w.store.irn_account).pendingDelete, true, 'the unfinished deletion is forgotten');
+});
+test('account: with no Firebase project set up, nothing is sent and Friends says it is not set up', () => {
+  const w = accWorld(() => [200, {}], { noConfig: true, store: SESSION(true) });
+  assert.strictEqual(w.calls.length, 0); assert.strictEqual(w.api.accReady(), false);
+  assert.match(w.api.accViewHTML(), /accNotSetUp/);
+});
+test('account: the name a person chose is shown escaped, so it cannot inject anything', () => {
+  const w = accWorld(() => null, { extra: { t: k => k + ' {name}' }, store: { irn_account: JSON.stringify({ uid: 'uidA', email: 'a@x.test', name: '<img src=x onerror=alert(1)>', verified: true, refreshToken: 'r', idToken: 'x', idExp: Date.now() + 3e6 }) } });
+  const h = w.api.accViewHTML();
+  assert.ok(!/<img/i.test(h), 'a name injected markup'); assert.match(h, /&lt;img src=x/);
+});
