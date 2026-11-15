@@ -23,7 +23,8 @@ const pair = (x, y) => (x < y ? x + '_' + y : y + '_' + x);
 
 async function signIn(who) {
   const r = await fetch('https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key=' + CFG.apiKey,
-    { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email: who.email, password: who.pw, returnSecureToken: true }) });
+    /* the key only accepts requests from the app's own website, so the sign-in names it as the Referer, as the browser does */
+    { method: 'POST', headers: { 'Content-Type': 'application/json', Referer: 'https://hero4mohamed.github.io/' }, body: JSON.stringify({ email: who.email, password: who.pw, returnSecureToken: true }) });
   const j = await r.json();
   if (!r.ok) throw new Error('sign-in failed for ' + who.email + ': ' + JSON.stringify(j.error && j.error.message));
   const claims = JSON.parse(Buffer.from(j.idToken.split('.')[1], 'base64url').toString());
@@ -97,7 +98,9 @@ async function tidy(u) {
   // as friends
   await expect('B reads A\'s name as a friend', true, get(B, 'profiles/' + A.uid));
   await expect('B reads A\'s position while A shares', true, get(B, 'locations/' + A.uid));
-  await expect('B lists its own friendships', true, query(B, { from: [{ collectionId: 'friendships' }], where: { fieldFilter: { field: { fieldPath: 'b' }, op: 'EQUAL', value: { stringValue: hi } } } }));
+  /* like the app: ask for B's own id in whichever field it is stored (the pair is sorted, so B is "a" or "b") */
+  await expect('B lists its own friendships', true, query(B, { from: [{ collectionId: 'friendships' }], where: { fieldFilter: { field: { fieldPath: B.uid === lo ? 'a' : 'b' }, op: 'EQUAL', value: { stringValue: B.uid } } } }));
+  await expect('B cannot list friendships by asking for A\'s id', false, query(B, { from: [{ collectionId: 'friendships' }], where: { fieldFilter: { field: { fieldPath: A.uid === lo ? 'a' : 'b' }, op: 'EQUAL', value: { stringValue: A.uid } } } }));
   await expect('A shares with an end time already passed: refused', false, commit(A, [upd('locations/' + A.uid, { lat: 41.01, lng: 28.98, acc: 20, approx: false, until: hours(-0.01) }, at)]));
   if (SLOW) {
     console.log('… waiting 190 s without sending (a closed app) …');
