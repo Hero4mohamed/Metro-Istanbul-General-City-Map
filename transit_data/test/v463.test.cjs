@@ -96,7 +96,7 @@ test('config: storage and privacy pages name the account data, Google, who can s
   FB_HOSTS.forEach(h => assert.ok(fb.hosts.includes(h.replace('https://', '')), 'privacy page does not name ' + h));
   const cfg = JSON.parse(H.read('transit_data/legal-config.json'));
   assert.strictEqual(cfg.policyVersion, '3', 'the app will not ask its privacy question again');
-  assert.strictEqual(cfg.appVersion, 'V4.6.3');
+  assert.strictEqual(cfg.appVersion, 'V4.6.3.1');
   const en = H.read('legal/privacy.html'), tr = H.read('legal/privacy.tr.html');
   assert.ok(!/No accounts, no sign-up/.test(en), 'the privacy page still says there are no accounts');
   assert.match(en, /<h2 id="accounts">/); assert.match(tr, /<h2 id="accounts">/);
@@ -519,4 +519,15 @@ test('review fix 3: a position queued but not yet sent when Stop is pressed is n
   const writes = w.commits().flat();
   assert.ok(!writes.some(x => x.update), 'a position was written after Stop was pressed');
   assert.ok(writes.some(x => x.delete), 'Stop did not delete the stored position');
+});
+
+/* ------------------------------------------- V4.6.3.1: Friends switched on ---- */
+test('V4.6.3.1: Friends is switched on with the owner\'s PUBLIC project, and only that (apiKey + projectId)', () => {
+  const m = /const FIREBASE = (\{[^;\n]*\});/.exec(H.appScript());
+  assert.ok(m, 'Friends is switched off: const FIREBASE is null');
+  const cfg = JSON.parse(m[1]);
+  assert.deepStrictEqual(Object.keys(cfg).sort(), ['apiKey', 'projectId']);
+  assert.strictEqual(cfg.projectId, 'turkmaps');
+  assert.match(cfg.apiKey, /^AIza[0-9A-Za-z_-]{35}$/);
+  assert.deepStrictEqual(JSON.parse(fs.readFileSync(path.join(H.ROOT, 'transit_data', 'firebase-config.json'), 'utf8')), cfg, 'the page and firebase-config.json differ');
 });
