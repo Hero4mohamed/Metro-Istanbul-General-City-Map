@@ -232,7 +232,30 @@ const inviteUI = {
   needAccount: () => { if(typeof showToast === 'function') showToast(t('frSignInFirst')); openFriends(); },
 };
 function closeInviteDlg(){ const d = document.getElementById('inviteDlg'), o = document.getElementById('inviteOverlay'); if(d){ d.classList.remove('open'); d._inv = null; } if(o) o.classList.remove('on'); }
-function renderFriends(){ document.querySelectorAll('.fr-box').forEach(b => { b.innerHTML = shareViewHTML() + friendsViewHTML(); }); }
+/* V4.7: the Friends tab is only about sharing your location (and favourites, 22e); the friends list, links and Add friend live in
+   the profile (top right). Signed out, the tab says where to sign in. */
+function shareSignInHTML(){
+  return '<div class="sh-box sh-signin"><p class="sp-hint">' + svgEsc(t('shareSignIn')) + '</p>'
+    + '<button type="button" class="btn" data-prof-open>' + svgEsc(t('profileOpen')) + '</button></div>';
+}
+/* friends whose position you can see right now; a tap flies the map there */
+function sharingNowHTML(){
+  const on = friends.filter(f => f.pos && isFinite(f.pos.lat) && isFinite(f.pos.lng)), now = Date.now();
+  const rows = on.map(f => {
+    const ago = Math.max(0, Math.floor((now - (f.pos.at || now)) / 60e3));
+    const sub = (ago < 1 ? t('frAgoNow') : t('frAgo').replace('{m}', String(ago))) + (f.pos.approx ? ' · ' + t('frApproxTag') : '');
+    return '<button type="button" class="fr-row fr-fly" data-fr-fly="' + attrEsc(f.uid) + '"><span class="fr-av" aria-hidden="true">'
+      + svgEsc((f.name || '?').trim().charAt(0).toUpperCase()) + '</span><span class="fr-nm">' + svgEsc(f.name) + '<small>' + svgEsc(sub) + '</small></span></button>';
+  }).join('');
+  return '<div class="fr-list fr-now"><div class="fr-h">' + svgEsc(t('shareNowTitle')) + '</div>'
+    + (rows || '<p class="sp-hint">' + svgEsc(t('shareNoneNow')) + '</p>') + '</div>';
+}
+function renderShare(){
+  const html = accReady() ? shareViewHTML() + sharingNowHTML() : shareSignInHTML();
+  document.querySelectorAll('.fr-share-box').forEach(b => { b.innerHTML = html; });
+}
+function renderFriendList(){ const html = friendsViewHTML(); document.querySelectorAll('.fr-list-box').forEach(b => { b.innerHTML = html; }); }
+function renderFriends(){ renderShare(); renderFriendList(); }
 /* the "Sharing" sign (on top of the map while you share), and your friends on the map */
 const shareUI = {
   show: s => {
@@ -288,6 +311,14 @@ async function friendsOpened(){ renderAccount(); renderFriends(); if(accReady())
     finally{ b.disabled = false; renderFriends(); }
   });
   const ps = document.getElementById('sharePillStop'); if(ps) ps.addEventListener('click', () => stopSharing('stop'));
+  /* "Sharing now": fly to that friend (on a phone the sheet drops low so the map shows) */
+  document.addEventListener('click', e => {
+    const b = e.target.closest && e.target.closest('[data-fr-fly]'); if(!b) return;
+    const f = friends.find(x => x.uid === b.getAttribute('data-fr-fly'));
+    if(!f || !f.pos || typeof map === 'undefined') return;
+    if(IS_MOBILE && mSheets.friends && mSheets.friends.classList.contains('open')) setDragDetent(mSheets.friends, 'low');
+    try{ map.flyTo([f.pos.lat, f.pos.lng], Math.max(map.getZoom(), 15), { duration: .7 }); }catch(err){}
+  });
   setTimeout(() => { shareBootCleanup(); if(!IS_MOBILE && accReady()) friendsOpened(); }, 1500);
   document.addEventListener('click', async e => {
     const b = e.target.closest('[data-fr]'); if(!b) return;

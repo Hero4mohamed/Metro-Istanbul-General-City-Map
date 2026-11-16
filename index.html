@@ -6,7 +6,7 @@
 <!-- Substituted by build.cjs, which hashes the inline script from the final bytes. Pages
      cannot set headers, so this ships as meta; frame-ancestors and report-uri are
      unavailable that way. -->
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-e2LzitgNj8vIGUS2Ya7MyaPD7Qtw8P7jBkS8gc1xqKk='; style-src 'self' 'unsafe-inline'; font-src 'self' data:; img-src 'self' data: blob: https://server.arcgisonline.com; connect-src 'self' https://server.arcgisonline.com https://tiles.openfreemap.org https://photon.komoot.io https://overpass-api.de https://api.ibb.gov.tr https://openapi.izmir.bel.tr https://turkmaps-relay.turkmaps-relay.workers.dev https://api.open-meteo.com https://air-quality-api.open-meteo.com https://routing.openstreetmap.de https://api.anthropic.com https://identitytoolkit.googleapis.com https://securetoken.googleapis.com https://firestore.googleapis.com; worker-src 'self'; frame-src 'none'; media-src 'none'; manifest-src 'self'; base-uri 'self'; form-action 'none'; object-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-PwF1TS+oEodsXHvJd9xO9zELq1SEtLnF4L6d8oM0t9k='; style-src 'self' 'unsafe-inline'; font-src 'self' data:; img-src 'self' data: blob: https://server.arcgisonline.com; connect-src 'self' https://server.arcgisonline.com https://tiles.openfreemap.org https://photon.komoot.io https://overpass-api.de https://api.ibb.gov.tr https://openapi.izmir.bel.tr https://turkmaps-relay.turkmaps-relay.workers.dev https://api.open-meteo.com https://air-quality-api.open-meteo.com https://routing.openstreetmap.de https://api.anthropic.com https://identitytoolkit.googleapis.com https://securetoken.googleapis.com https://firestore.googleapis.com; worker-src 'self'; frame-src 'none'; media-src 'none'; manifest-src 'self'; base-uri 'self'; form-action 'none'; object-src 'none'">
 <title>TurkMaps · Transit Network Map</title>
 <!-- Leaflet 1.9.4, shipped with the app rather than fetched from a CDN (V4.3): see vendor/README.md -->
 <link rel="stylesheet" href="vendor/leaflet/leaflet.css">
@@ -1627,7 +1627,9 @@
   .acc-del{display:flex;flex-direction:column;gap:8px;padding:10px;border-radius:12px;border:1px solid var(--stroke);}
   .btn.danger{background:var(--danger,#E5484D);color:#fff;}
   .fr-head{font-weight:700;font-size:var(--fs-5);display:flex;gap:8px;align-items:center;margin-bottom:10px;}
-  #friendsBox{display:flex;flex-direction:column;gap:12px;}
+  .fr-share-box,.fr-list-box{display:flex;flex-direction:column;gap:12px;}
+  .fr-fly{width:100%;background:none;border:0;border-radius:10px;color:var(--text);font:inherit;text-align:start;cursor:pointer;padding:6px 4px;}
+  .fr-fly:hover .fr-nm{color:var(--accent-ink);}
   .fr-list{display:flex;flex-direction:column;gap:6px;}
   .fr-h{font-size:var(--fs-7);color:var(--dim);text-transform:uppercase;letter-spacing:.5px;}
   .fr-row{display:flex;align-items:center;gap:10px;padding:6px 0;}
@@ -2401,7 +2403,7 @@
   </div>
   <div class="card glass" id="cardFriends">
     <div class="fr-head"><span aria-hidden="true">👥</span> <span data-i18n="frTitle">Friends</span></div>
-    <div id="friendsBox"><div class="acc-box"></div><div class="fr-box"></div></div>
+    <div class="fr-share-box"></div>
     <div class="fav-box"></div>
   </div>
   <div class="card glass" id="cardLayers">
@@ -2665,7 +2667,7 @@
 
    The report carries the fault, the build, the city, the language and the browser. It never
    carries location, saved places, trip history or the API key. ===== */
-const BUILD = "20261116110546";
+const BUILD = "20261116110843";
 const DIAG_MAX = 20;
 let DIAG = [];
 try { DIAG = JSON.parse(localStorage.getItem("irn_diag") || "[]"); } catch (e) { DIAG = []; }
@@ -2831,7 +2833,7 @@ const I18N = {
     aiAccStepFree:"Step-free", aiAccNot:"Not step-free", aiAccUnknown:"No accessibility data is recorded for this station.",
     aiAccCityOnly:"Lift and escalator data is published for İstanbul only.",
     aiLinesAt:"Lines serving", aiLinesNone:"No lines are recorded at that stop.",
-    routeFrom:"Route from", routeTo:"Route to", nearHere:"What’s nearby", favSave:"Save", favSaved:"Saved", favAdded:"Saved to your favourites", favRemoved:"Removed from your favourites", favDropped:"Saved. Your oldest favourite was removed to make room (200 at most).", favPinName:"Dropped pin", favNameTitle:"Name this place", favTitle:"Favourite places", favGo:"Go", favMore:"More options", favRename:"Rename", favMakeHome:"Make Home", favMakeWork:"Make Work", favRemove:"Remove", favRemoveAsk:"Remove “{name}” from your favourites?", favEmpty:"Tap ☆ Save on a place, a station or a dropped pin (long-press the map) to keep it here. Saved on this device only.",
+    routeFrom:"Route from", routeTo:"Route to", nearHere:"What’s nearby", favSave:"Save", favSaved:"Saved", favAdded:"Saved to your favourites", favRemoved:"Removed from your favourites", favDropped:"Saved. Your oldest favourite was removed to make room (200 at most).", favPinName:"Dropped pin", favNameTitle:"Name this place", shareSignIn:"Sign in, with your email confirmed, to share your location with friends and see theirs.", profileOpen:"Open profile", shareNowTitle:"Sharing with you now", shareNoneNow:"None of your friends is sharing right now.", favTitle:"Favourite places", favGo:"Go", favMore:"More options", favRename:"Rename", favMakeHome:"Make Home", favMakeWork:"Make Work", favRemove:"Remove", favRemoveAsk:"Remove “{name}” from your favourites?", favEmpty:"Tap ☆ Save on a place, a station or a dropped pin (long-press the map) to keep it here. Saved on this device only.",
     min:"Min", stops:"Stops", transfers:"Transfers", favourites:"★ Favourites",
     recentPlans:"Recent plans", clearAll:"clear all", setOrigin:"Set as Origin", setDest:"Set as Destination",
     predArrivals:"Predictive Arrivals", live:"LIVE", connectivity:"Connectivity", expansion:"Expansion Projects",
@@ -3064,7 +3066,7 @@ const I18N = {
     aiAccStepFree:"Basamaksız", aiAccNot:"Basamaksız değil", aiAccUnknown:"Bu istasyon için erişilebilirlik verisi kayıtlı değil.",
     aiAccCityOnly:"Asansör ve yürüyen merdiven verisi yalnızca İstanbul için yayımlanıyor.",
     aiLinesAt:"Şu hatlar geçiyor:", aiLinesNone:"Bu durakta kayıtlı hat yok.",
-    routeFrom:"Buradan", routeTo:"Buraya", nearHere:"Yakında ne var", favSave:"Kaydet", favSaved:"Kaydedildi", favAdded:"Favorilerinize kaydedildi", favRemoved:"Favorilerinizden çıkarıldı", favDropped:"Kaydedildi. Yer açmak için en eski favoriniz silindi (en fazla 200).", favPinName:"Bırakılan iğne", favNameTitle:"Bu yere bir ad verin", favTitle:"Favori yerler", favGo:"Git", favMore:"Diğer seçenekler", favRename:"Yeniden adlandır", favMakeHome:"Ev yap", favMakeWork:"İş yap", favRemove:"Kaldır", favRemoveAsk:"“{name}” favorilerinizden kaldırılsın mı?", favEmpty:"Burada saklamak için bir yerde, bir istasyonda ya da bırakılan bir iğnede (haritaya uzun basın) ☆ Kaydet’e dokunun. Yalnızca bu cihazda saklanır.",
+    routeFrom:"Buradan", routeTo:"Buraya", nearHere:"Yakında ne var", favSave:"Kaydet", favSaved:"Kaydedildi", favAdded:"Favorilerinize kaydedildi", favRemoved:"Favorilerinizden çıkarıldı", favDropped:"Kaydedildi. Yer açmak için en eski favoriniz silindi (en fazla 200).", favPinName:"Bırakılan iğne", favNameTitle:"Bu yere bir ad verin", shareSignIn:"Konumunuzu arkadaşlarınızla paylaşmak ve onlarınkini görmek için e-postanızı onaylayıp giriş yapın.", profileOpen:"Profili aç", shareNowTitle:"Şu an sizinle paylaşanlar", shareNoneNow:"Şu anda konumunu paylaşan arkadaşınız yok.", favTitle:"Favori yerler", favGo:"Git", favMore:"Diğer seçenekler", favRename:"Yeniden adlandır", favMakeHome:"Ev yap", favMakeWork:"İş yap", favRemove:"Kaldır", favRemoveAsk:"“{name}” favorilerinizden kaldırılsın mı?", favEmpty:"Burada saklamak için bir yerde, bir istasyonda ya da bırakılan bir iğnede (haritaya uzun basın) ☆ Kaydet’e dokunun. Yalnızca bu cihazda saklanır.",
     min:"Dk", stops:"Durak", transfers:"Aktarma", favourites:"★ Favoriler",
     recentPlans:"Son planlar", clearAll:"tümünü sil", setOrigin:"Başlangıç yap", setDest:"Varış yap",
     predArrivals:"Tahmini Varışlar", live:"CANLI", connectivity:"Bağlantılar", expansion:"Genişleme Projeleri",
@@ -3479,7 +3481,7 @@ const I18N = {
     aiAccUnknown:"لا بيانات إتاحة مسجّلة لهذه المحطة.",
     aiAccCityOnly:"بيانات المصاعد والسلالم المتحركة منشورة لإسطنبول فقط.",
     aiLinesAt:"الخطوط التي تخدم", aiLinesNone:"لا خطوط مسجّلة عند هذه المحطة.",
-    routeFrom:"مسار من", routeTo:"مسار إلى", nearHere:"ما القريب من هنا", favSave:"حفظ", favSaved:"محفوظ", favAdded:"تم الحفظ في المفضلة", favRemoved:"تمت الإزالة من المفضلة", favDropped:"تم الحفظ. حُذف أقدم مكان مفضل لإفساح المجال (200 كحد أقصى).", favPinName:"دبوس مُسقَط", favNameTitle:"سمِّ هذا المكان", favTitle:"الأماكن المفضلة", favGo:"اذهب", favMore:"خيارات أخرى", favRename:"إعادة التسمية", favMakeHome:"اجعله المنزل", favMakeWork:"اجعله العمل", favRemove:"إزالة", favRemoveAsk:"هل تريد إزالة “{name}” من المفضلة؟", favEmpty:"اضغط ☆ حفظ على مكان أو محطة أو دبوس مُسقَط (اضغط مطولاً على الخريطة) لحفظه هنا. يُحفظ على هذا الجهاز فقط.",
+    routeFrom:"مسار من", routeTo:"مسار إلى", nearHere:"ما القريب من هنا", favSave:"حفظ", favSaved:"محفوظ", favAdded:"تم الحفظ في المفضلة", favRemoved:"تمت الإزالة من المفضلة", favDropped:"تم الحفظ. حُذف أقدم مكان مفضل لإفساح المجال (200 كحد أقصى).", favPinName:"دبوس مُسقَط", favNameTitle:"سمِّ هذا المكان", shareSignIn:"سجّل الدخول بعد تأكيد بريدك الإلكتروني لمشاركة موقعك مع أصدقائك ورؤية مواقعهم.", profileOpen:"فتح الملف الشخصي", shareNowTitle:"يشاركون معك الآن", shareNoneNow:"لا أحد من أصدقائك يشارك موقعه الآن.", favTitle:"الأماكن المفضلة", favGo:"اذهب", favMore:"خيارات أخرى", favRename:"إعادة التسمية", favMakeHome:"اجعله المنزل", favMakeWork:"اجعله العمل", favRemove:"إزالة", favRemoveAsk:"هل تريد إزالة “{name}” من المفضلة؟", favEmpty:"اضغط ☆ حفظ على مكان أو محطة أو دبوس مُسقَط (اضغط مطولاً على الخريطة) لحفظه هنا. يُحفظ على هذا الجهاز فقط.",
     busLines:"خط", busLinesMany:"خطوط", showingFirst:"تُعرض أول",
     noGeom:"لا يوجد رسم لمسار هذا الخط على الخريطة.", loadingGeom:"جارٍ تحميل مسار الخط…",
     routeDrawn:"تم رسم المسار", needNet:"تعذّر جلب المسار (يتطلّب اتصالًا بالإنترنت).",
@@ -3726,7 +3728,7 @@ const I18N = {
     aiAccUnknown:"Aucune donnée d’accessibilité enregistrée pour cette station.",
     aiAccCityOnly:"Les données d’ascenseurs et d’escaliers mécaniques ne sont publiées que pour İstanbul.",
     aiLinesAt:"Lignes desservant", aiLinesNone:"Aucune ligne enregistrée à cet arrêt.",
-    routeFrom:"Itinéraire depuis", routeTo:"Itinéraire vers", nearHere:"Ce qu’il y a à proximité", favSave:"Enregistrer", favSaved:"Enregistré", favAdded:"Ajouté à vos favoris", favRemoved:"Retiré de vos favoris", favDropped:"Enregistré. Votre plus ancien favori a été retiré pour faire de la place (200 au maximum).", favPinName:"Épingle déposée", favNameTitle:"Nommez ce lieu", favTitle:"Lieux favoris", favGo:"Y aller", favMore:"Plus d’options", favRename:"Renommer", favMakeHome:"Définir comme domicile", favMakeWork:"Définir comme travail", favRemove:"Retirer", favRemoveAsk:"Retirer « {name} » de vos favoris ?", favEmpty:"Touchez ☆ Enregistrer sur un lieu, une station ou une épingle déposée (appui long sur la carte) pour le garder ici. Enregistré sur cet appareil uniquement.",
+    routeFrom:"Itinéraire depuis", routeTo:"Itinéraire vers", nearHere:"Ce qu’il y a à proximité", favSave:"Enregistrer", favSaved:"Enregistré", favAdded:"Ajouté à vos favoris", favRemoved:"Retiré de vos favoris", favDropped:"Enregistré. Votre plus ancien favori a été retiré pour faire de la place (200 au maximum).", favPinName:"Épingle déposée", favNameTitle:"Nommez ce lieu", shareSignIn:"Connectez-vous, avec votre e-mail confirmé, pour partager votre position avec vos amis et voir la leur.", profileOpen:"Ouvrir le profil", shareNowTitle:"Partagent avec vous maintenant", shareNoneNow:"Aucun de vos amis ne partage sa position pour le moment.", favTitle:"Lieux favoris", favGo:"Y aller", favMore:"Plus d’options", favRename:"Renommer", favMakeHome:"Définir comme domicile", favMakeWork:"Définir comme travail", favRemove:"Retirer", favRemoveAsk:"Retirer « {name} » de vos favoris ?", favEmpty:"Touchez ☆ Enregistrer sur un lieu, une station ou une épingle déposée (appui long sur la carte) pour le garder ici. Enregistré sur cet appareil uniquement.",
     busLines:"ligne", busLinesMany:"lignes", showingFirst:"affichage des",
     noGeom:"Aucun tracé cartographié pour cette ligne.", loadingGeom:"Chargement du tracé…",
     routeDrawn:"tracé affiché", needNet:"Impossible de récupérer le tracé (connexion requise).",
@@ -17045,7 +17047,30 @@ const inviteUI = {
   needAccount: () => { if(typeof showToast === 'function') showToast(t('frSignInFirst')); openFriends(); },
 };
 function closeInviteDlg(){ const d = document.getElementById('inviteDlg'), o = document.getElementById('inviteOverlay'); if(d){ d.classList.remove('open'); d._inv = null; } if(o) o.classList.remove('on'); }
-function renderFriends(){ document.querySelectorAll('.fr-box').forEach(b => { b.innerHTML = shareViewHTML() + friendsViewHTML(); }); }
+/* V4.7: the Friends tab is only about sharing your location (and favourites, 22e); the friends list, links and Add friend live in
+   the profile (top right). Signed out, the tab says where to sign in. */
+function shareSignInHTML(){
+  return '<div class="sh-box sh-signin"><p class="sp-hint">' + svgEsc(t('shareSignIn')) + '</p>'
+    + '<button type="button" class="btn" data-prof-open>' + svgEsc(t('profileOpen')) + '</button></div>';
+}
+/* friends whose position you can see right now; a tap flies the map there */
+function sharingNowHTML(){
+  const on = friends.filter(f => f.pos && isFinite(f.pos.lat) && isFinite(f.pos.lng)), now = Date.now();
+  const rows = on.map(f => {
+    const ago = Math.max(0, Math.floor((now - (f.pos.at || now)) / 60e3));
+    const sub = (ago < 1 ? t('frAgoNow') : t('frAgo').replace('{m}', String(ago))) + (f.pos.approx ? ' · ' + t('frApproxTag') : '');
+    return '<button type="button" class="fr-row fr-fly" data-fr-fly="' + attrEsc(f.uid) + '"><span class="fr-av" aria-hidden="true">'
+      + svgEsc((f.name || '?').trim().charAt(0).toUpperCase()) + '</span><span class="fr-nm">' + svgEsc(f.name) + '<small>' + svgEsc(sub) + '</small></span></button>';
+  }).join('');
+  return '<div class="fr-list fr-now"><div class="fr-h">' + svgEsc(t('shareNowTitle')) + '</div>'
+    + (rows || '<p class="sp-hint">' + svgEsc(t('shareNoneNow')) + '</p>') + '</div>';
+}
+function renderShare(){
+  const html = accReady() ? shareViewHTML() + sharingNowHTML() : shareSignInHTML();
+  document.querySelectorAll('.fr-share-box').forEach(b => { b.innerHTML = html; });
+}
+function renderFriendList(){ const html = friendsViewHTML(); document.querySelectorAll('.fr-list-box').forEach(b => { b.innerHTML = html; }); }
+function renderFriends(){ renderShare(); renderFriendList(); }
 /* the "Sharing" sign (on top of the map while you share), and your friends on the map */
 const shareUI = {
   show: s => {
@@ -17101,6 +17126,14 @@ async function friendsOpened(){ renderAccount(); renderFriends(); if(accReady())
     finally{ b.disabled = false; renderFriends(); }
   });
   const ps = document.getElementById('sharePillStop'); if(ps) ps.addEventListener('click', () => stopSharing('stop'));
+  /* "Sharing now": fly to that friend (on a phone the sheet drops low so the map shows) */
+  document.addEventListener('click', e => {
+    const b = e.target.closest && e.target.closest('[data-fr-fly]'); if(!b) return;
+    const f = friends.find(x => x.uid === b.getAttribute('data-fr-fly'));
+    if(!f || !f.pos || typeof map === 'undefined') return;
+    if(IS_MOBILE && mSheets.friends && mSheets.friends.classList.contains('open')) setDragDetent(mSheets.friends, 'low');
+    try{ map.flyTo([f.pos.lat, f.pos.lng], Math.max(map.getZoom(), 15), { duration: .7 }); }catch(err){}
+  });
   setTimeout(() => { shareBootCleanup(); if(!IS_MOBILE && accReady()) friendsOpened(); }, 1500);
   document.addEventListener('click', async e => {
     const b = e.target.closest('[data-fr]'); if(!b) return;

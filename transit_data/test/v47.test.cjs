@@ -234,3 +234,85 @@ test('fav list: Go and opening use the planner and the pin, not the network; ano
   assert.match(fnSrc('useSavedPlace'), /goToPlace\(/, 'Home/Work chips do not go through goToPlace');
   assert.match(fnSrc('switchCity'), /extra/, 'switchCity cannot carry the favourite');
 });
+
+/* ------------------------------------------------------------ friends tab ---- */
+const b64u = o => Buffer.from(JSON.stringify(o)).toString('base64').replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+const jwt = claims => b64u({ alg: 'none' }) + '.' + b64u(claims) + '.sig';
+const SESSION = verified => ({ irn_account: JSON.stringify({ uid: 'uidA', email: 'a@x.test', name: 'Ayşe', verified, refreshToken: 'r1', idToken: jwt({ email_verified: verified }), idExp: Date.now() + 3600e3 }) });
+/* the 22d page code (after SHARE-CORE) up to the favourites file */
+function friendsPage() {
+  const s = APP(), a = s.indexOf('/* ==SHARE-CORE-END== */'), b = s.indexOf('FAVOURITE PLACES (V4.7)');
+  assert.ok(a > 0 && b > a, 'the friends page code was not found');
+  return s.slice(a, s.lastIndexOf('/* ====', b));
+}
+/* the real account + friends + sharing code and the Friends page code, against a fake page and a network that says OK */
+function pageWorld(store = {}, o = {}) {
+  const boxes = { '.fr-share-box': [{ innerHTML: '' }], '.fr-list-box': [{ innerHTML: '' }], '.acc-box': [{ innerHTML: '' }] };
+  const timers = { set: 0, cleared: [] }, calls = { load: 0, poll: 0 };
+  const noop = () => {};
+  const ctx = {
+    FIREBASE: { apiKey: 'AIzaTESTTESTTESTTESTTESTTESTTEST', projectId: 'turkmaps-test' },
+    localStorage: { getItem: k => (k in store ? store[k] : null), setItem: (k, v) => { store[k] = String(v); }, removeItem: k => { delete store[k]; } },
+    sessionStorage: { getItem: () => null, setItem: noop, removeItem: noop },
+    atob: s => Buffer.from(s, 'base64').toString('binary'), TextDecoder, decodeURIComponent, encodeURIComponent, Date, Math, JSON, Promise,
+    t: k => k, svgEsc: esc, attrEsc: attr, showToast: noop, IS_MOBILE: !!o.mobile, mSheets: o.mSheets || {},
+    fetch: async () => ({ ok: true, status: 200, json: async () => ({}) }),
+    navigator: {}, location: { hash: '', origin: 'http://x.test', pathname: '/', search: '' }, history: { replaceState: noop },
+    setTimeout: () => 0, setInterval: () => ++timers.set, clearInterval: id => timers.cleared.push(id),
+    document: { querySelectorAll: sel => boxes[sel] || [], querySelector: () => null, getElementById: () => null, addEventListener: noop,
+      documentElement: { style: { setProperty: noop } }, body: { classList: { add: noop, remove: noop, contains: () => false } } },
+  };
+  ctx.lsJSON = k => { try { return JSON.parse(ctx.localStorage.getItem(k)); } catch (e) { return null; } };
+  vm.createContext(ctx);
+  vm.runInContext(['ACCOUNT-PURE', 'ACCOUNT-CORE', 'FRIENDS-PURE', 'FRIENDS-CORE', 'SHARE-PURE', 'SHARE-CORE'].map(region).join('\n')
+    + '\nfunction renderAccount(){ document.querySelectorAll(".acc-box").forEach(b => { b.innerHTML = accViewHTML(); }); }\n'
+    + friendsPage()
+    + '\nthis.api = { get friendPoll(){ return friendPoll; }, setFriends(v){ friends = v; }, renderFriends, startFriendPolling, accSignOut,'
+    + ' get renderShare(){ return typeof renderShare === "function" ? renderShare : null; }, get renderFriendList(){ return typeof renderFriendList === "function" ? renderFriendList : null; } };', ctx);
+  return { api: ctx.api, boxes, timers, ctx, share: () => boxes['.fr-share-box'][0].innerHTML, list: () => boxes['.fr-list-box'][0].innerHTML };
+}
+test('friends tab: signed out it shows the sign-in line and no account form', () => {
+  const w = pageWorld();
+  w.api.renderFriends();
+  assert.match(w.share(), /shareSignIn/, 'no sign-in line');
+  assert.match(w.share(), /data-prof-open/, 'the sign-in line does not open the profile');
+  assert.doesNotMatch(w.share(), /acc-form|accEmail/, 'the account form is in the Friends tab');
+  assert.strictEqual(w.list(), '', 'a signed-out person sees a friends list');
+});
+test('friends tab: signed in it shows Share my location and who is sharing now, not the friends list or Add friend', () => {
+  const w = pageWorld(SESSION(true));
+  w.api.setFriends([{ uid: 'uidB', name: 'Bora', sharing: true, pos: { lat: 41.01, lng: 28.97, at: Date.now() - 120e3, approx: true } },
+    { uid: 'uidC', name: '<i>Cem</i>', sharing: false, pos: null }]);
+  w.api.renderFriends();
+  const s = w.share();
+  assert.match(s, /data-sh="start"/, 'no Share my location');
+  assert.doesNotMatch(s, /data-fr="invite"|frFriends/, 'the friends list or Add friend is still in the Friends tab');
+  assert.match(s, /shareNowTitle/, 'no "sharing now" list');
+  assert.match(s, /data-fr-fly="uidB"[^>]*>[\s\S]*Bora/, 'a sharing friend is not listed to fly to');
+  assert.doesNotMatch(s, /uidC/, 'a friend who is not sharing is listed as sharing');
+  assert.match(w.list(), /data-fr="invite"/, 'Add friend is not in the profile list');
+  assert.ok(w.list().includes('&lt;i&gt;Cem'), 'the profile list does not escape names');
+  w.api.setFriends([]); w.api.renderFriends();
+  assert.match(w.share(), /shareNoneNow/, 'no hint when nobody is sharing');
+});
+test('friends tab: the card holds no account box', () => {
+  const h = H.html(), a = h.indexOf('id="cardFriends"'), b = h.indexOf('id="cardLayers"');
+  assert.ok(a > 0 && b > a);
+  const card = h.slice(a, b);
+  assert.doesNotMatch(card, /acc-box/, 'the account box is still in the Friends card');
+  assert.match(card, /<div class="fr-share-box"><\/div>\s*<div class="fav-box"><\/div>/, 'the Friends card is not sharing + favourites');
+});
+test('friends tab: signing out empties the friends list and stops reading positions', async () => {
+  const w = pageWorld(SESSION(true));
+  w.api.startFriendPolling();
+  const id = w.api.friendPoll;
+  assert.ok(id, 'polling did not start');
+  w.api.setFriends([{ uid: 'uidB', name: 'Bora', pos: { lat: 41, lng: 29, at: Date.now() } }]);
+  w.api.renderFriends();
+  assert.match(w.list(), /Bora/);
+  await w.api.accSignOut();
+  assert.strictEqual(w.api.friendPoll, null, 'positions are still read after signing out');
+  assert.ok(w.timers.cleared.includes(id), 'the 20 s timer was not stopped');
+  assert.strictEqual(w.list(), '', 'the friends list still shows after signing out');
+  assert.match(w.share(), /shareSignIn/);
+});
