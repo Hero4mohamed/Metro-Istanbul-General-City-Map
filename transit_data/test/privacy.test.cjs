@@ -178,7 +178,7 @@ test('"Report a problem" says what it opens, and a report names the app version 
   assert.ok(/id="diagNote"[\s\S]{0,200}data-i18n="diagPrivacy"/.test(html), 'the report button has no disclosure under it');
   const body = fnSource(script(), 'diagReportText');
   assert.ok(/"app: V\d+(?:\.\d+)* build " \+ BUILD/.test(body), 'a report does not say which version of the app it came from');
-  assert.ok(!/geoPos|irn_home|irn_work|irn_history|irn_recent|irn_ai_key|homePlace|workPlace/.test(body), 'a report carries something personal');
+  assert.ok(!/geoPos|irn_home|irn_work|irn_history|irn_recent|irn_ai_key|irn_favplaces|homePlace|workPlace/.test(body), 'a report carries something personal');
 });
 
 /* ---- the legal pages cannot break the offline app ------------------------------------------------------------------------- */

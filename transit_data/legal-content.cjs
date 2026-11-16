@@ -108,6 +108,7 @@ const STORAGE = [
   { key: 'irn_work', en: 'Your Work place: its name and coordinates.', tr: 'İş yeriniz: adı ve koordinatları.', when: 'You set it. Personal.', whenTr: 'Siz ayarladığınızda. Kişisel.', personal: true },
   { key: 'irn_history', en: 'Your recent planned journeys (from, to, time).', tr: 'Son planladığınız yolculuklar (nereden, nereye, saat).', when: 'You plan a journey. Personal.', whenTr: 'Yolculuk planladığınızda. Kişisel.', personal: true },
   { key: 'irn_favourites', en: 'The journeys you starred.', tr: 'Yıldızladığınız yolculuklar.', when: 'You star a journey. Personal.', whenTr: 'Bir yolculuğu yıldızladığınızda. Kişisel.', personal: true },
+  { key: 'irn_favplaces', en: 'Your favourite places: name, coordinates, type and city.', tr: 'Favori yerleriniz: ad, koordinatlar, tür ve şehir.', when: 'You save a place. Personal.', whenTr: 'Bir yeri kaydettiğinizde. Kişisel.', personal: true },
   { key: 'irn_advfavs', en: 'The places you starred in Explore.', tr: 'Keşfet\'te yıldızladığınız yerler.', when: 'You star a place. Personal.', whenTr: 'Bir yeri yıldızladığınızda. Kişisel.', personal: true },
   { key: 'irn_recent', en: 'Your last few searches.', tr: 'Son birkaç aramanız.', when: 'You search. Personal.', whenTr: 'Arama yaptığınızda. Kişisel.', personal: true },
   { key: 'irn_trips', en: 'The count of journeys in your travel passport.', tr: 'Seyahat pasaportunuzdaki yolculuk sayısı.', when: 'You finish a live journey.', whenTr: 'Canlı bir yolculuğu bitirdiğinizde.' },
