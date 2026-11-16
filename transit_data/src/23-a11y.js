@@ -78,6 +78,7 @@ document.addEventListener('keydown', e => {
   if(e.target && (e.target.id === 'omniIn' || e.target.id === 'aiIn')) return;
   const open = (id, cls) => { const x = document.getElementById(id); return !!(x && x.classList.contains(cls)); };
   if(open('settingsPanel', 'open')){ closeSettings(); e.preventDefault(); return; }
+  if(open('profilePanel', 'open')){ closeProfile(); e.preventDefault(); return; }
   if(open('nearPanel', 'open')){ closeNearby(); e.preventDefault(); return; }
   if(open('passPanel', 'open')){ closePassport(); e.preventDefault(); return; }
   if(open('remPanel', 'open')){ closeReminder(); e.preventDefault(); return; }
@@ -92,6 +93,7 @@ document.addEventListener('keydown', e => {
   /* each: the element, the class that means open, whether it is modal (keeps Tab inside), and what takes focus when it opens */
   const DIALOGS = [
     { id: 'settingsPanel', cls: 'open', modal: true,  first: '#settingsX' },
+    { id: 'profilePanel',  cls: 'open', modal: true,  first: '#profileX' },
     { id: 'passPanel',     cls: 'open', modal: true,  first: '#passX' },
     { id: 'remPanel',      cls: 'open', modal: true,  first: '#remX' },
     { id: 'inviteDlg',     cls: 'open', modal: true,  first: '#inviteAccept' },

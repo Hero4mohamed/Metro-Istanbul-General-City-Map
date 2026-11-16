@@ -111,7 +111,9 @@ function dropPin(p, zoom){
     ? near.map(st=>svgEsc(st.name) + " · " + walkMin(st.m) + " min" +
         (st.refs.length ? " (" + st.refs.slice(0,3).map(svgEsc).join(", ") + ")" : "")).join("<br>")
     : "—";
-  pinMarker.bindPopup(
+  /* a function, not a fixed string: Leaflet draws it again each time the pop-up opens, so Save shows the place's state NOW (a fixed
+     string said "Save" again after saving, and a tap then removed the place) and a dropped pin shows the name it was given */
+  pinMarker.bindPopup(() =>
     '<div class="pin-pop"><b>' + svgEsc(p.name) + '</b>' +
     (p.type ? '<div class="pin-type">' + svgEsc((p.ic ? p.ic + " " : "") + p.type + (p.tr ? " · " + p.tr : "")) + '</div>' : "") +
     '<div class="sub">' + (p.ctx ? svgEsc(p.ctx) + " · " : "") + svgEsc(t("aiStops")) + ": <br>" + stopTxt + '</div>' +
@@ -119,7 +121,9 @@ function dropPin(p, zoom){
       '<button data-pin="O">' + svgEsc(t("routeFrom")) + '</button>' +
       '<button data-pin="D">' + svgEsc(t("routeTo")) + '</button>' +
       '<button data-pin="N">' + svgEsc(t("nearHere")) + '</button>' +
-    '</div></div>', {maxWidth:250});
+      (favIsSaved(p) ? '<button data-pin="S" class="fav-on">★ ' + svgEsc(t("favSaved")) + '</button>'
+                     : '<button data-pin="S">☆ ' + svgEsc(t("favSave")) + '</button>') +
+    '</div></div>', {maxWidth:250, className:'attr-pop'});   // the app's themed pop-up: Leaflet's own is white, with the app's light text on it in dark mode
   if(mapUsable()){
     pinMarker.openPopup();
     map.flyTo([p.lat,p.lng], zoom || Math.max(map.getZoom(), 14), {duration:.7});
@@ -140,6 +144,7 @@ document.addEventListener("click", e=>{
   const b = e.target.closest && e.target.closest("[data-pin]"); if(!b || !pinPlace) return;
   const mode = b.getAttribute("data-pin");
   if(mode === "N"){ aiOpen(); aiAsk((lang==="tr"?"yakında ne var ":"what is nearby ") + pinPlace.name, true); return; }
+  if(mode === "S"){ favToggle(pinPlace); return; }   // favourites (22e): saved on this device only
   setPoint(mode, {name:pinPlace.name, lat:pinPlace.lat, lng:pinPlace.lng});
   setTab("active");
   map.closePopup();

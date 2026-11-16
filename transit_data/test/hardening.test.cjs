@@ -122,7 +122,7 @@ test('a problem report cannot carry personal data', () => {
   const fn = /function diagReportText\(\)\{[\s\S]*?\n\}/.exec(code);
   assert.ok(fn, 'diagReportText() not found');
   const body = fn[0];
-  for (const forbidden of ['irn_home', 'irn_work', 'irn_trips', 'irn_ai_key', 'geoPos', 'irn_advfavs']) {
+  for (const forbidden of ['irn_home', 'irn_work', 'irn_trips', 'irn_ai_key', 'geoPos', 'irn_advfavs', 'irn_favplaces']) {
     assert.ok(!body.includes(forbidden),
       'the problem report reads ' + forbidden + ' — reports must never carry location, saved places or the key');
   }

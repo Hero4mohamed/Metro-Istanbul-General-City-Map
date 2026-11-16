@@ -177,7 +177,7 @@
     box-shadow:0 24px 60px -18px rgba(0,0,0,.8),0 2px 8px rgba(0,0,0,.35),inset 0 1px 0 rgba(255,255,255,.07);}
 
   /* Top bar */
-  .topbar{position:fixed;top:14px;left:14px;padding:14px 17px;z-index:1000;max-width:348px;animation:cardIn .5s var(--ease) backwards;}
+  .topbar{position:fixed;top:14px;left:14px;padding:14px 17px;z-index:1000;max-width:384px;animation:cardIn .5s var(--ease) backwards;}
   .topbar h1{position:relative;font-family:var(--display);font-size:15px;letter-spacing:2.1px;font-weight:700;display:flex;align-items:center;gap:6px;cursor:default;}
   .topbar .logo{flex:none;filter:drop-shadow(0 4px 12px rgba(var(--ok-rgb),.35));transition:transform .35s var(--ease);}
   .topbar h1:hover .logo{transform:rotate(-8deg) scale(1.08);}
@@ -1353,19 +1353,59 @@
   .pin-acts button{border:1px solid var(--stroke-2);background:var(--surface);color:var(--text);
     border-radius:8px;padding:5px 8px;font-size:var(--fs-6);font-family:var(--font);cursor:pointer;}
   .pin-acts button:hover{border-color:var(--accent);color:var(--accent-ink);}
+  /* V4.7 favourites: ☆ Save / ★ Saved */
+  .pin-acts button.fav-on,#stnFav.fav-on{color:var(--warn-ink);border-color:rgba(var(--warn-rgb),.6);background:rgba(var(--warn-rgb),.10);}
+  #stnFav{flex:0 0 auto;padding:8px 11px;}
+  #stnFav::before{content:"☆ ";} #stnFav.fav-on::before{content:"★ ";}
+  .fav-dlg{position:fixed;left:50%;top:30%;transform:translate(-50%,-50%);z-index:2600;width:min(320px,calc(100vw - 32px));
+    padding:14px;border-radius:14px;border:1px solid var(--stroke-2);background:var(--surface);color:var(--text);box-shadow:0 12px 40px rgba(0,0,0,.35);}
+  .fav-dlg-t{font-weight:700;margin-bottom:8px;font-size:var(--fs-4,14px);}
+  .fav-dlg input{width:100%;box-sizing:border-box;padding:9px 10px;border-radius:9px;border:1px solid var(--stroke-2);
+    background:var(--surface-2,var(--surface));color:var(--text);font:inherit;font-size:16px;}
+  .fav-dlg-b{display:flex;justify-content:flex-end;gap:8px;margin-top:10px;}
+  .fav-dlg-b button{border:1px solid var(--stroke-2);background:var(--surface);color:var(--text);border-radius:9px;padding:7px 14px;font:inherit;cursor:pointer;}
+  .fav-box{margin-top:12px;padding-top:10px;border-top:1px solid var(--stroke-2);}
+  .fav-h{font-weight:700;font-size:var(--fs-6);letter-spacing:.4px;color:var(--muted);margin-bottom:6px;}
+  .fav-h span{color:var(--warn-ink);}
+  .fav-row{display:flex;flex-wrap:wrap;align-items:center;gap:6px;padding:4px 0;border-bottom:1px solid var(--stroke-1,var(--stroke-2));}
+  .fav-row:last-of-type{border-bottom:0;}
+  .fav-row.fav-other{opacity:.62;}
+  .fav-main{flex:1 1 0;min-width:0;display:flex;align-items:center;gap:9px;background:none;border:0;padding:6px 2px;color:var(--text);
+    font:inherit;text-align:start;cursor:pointer;border-radius:8px;min-height:40px;}
+  .fav-main:hover b{color:var(--accent-ink);}
+  .fav-ic{font-size:18px;width:24px;text-align:center;flex:0 0 24px;}
+  .fav-tx{min-width:0;display:flex;flex-direction:column;}
+  .fav-tx b{font-size:var(--fs-6);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .fav-tx small{font-size:var(--fs-7);color:var(--dim);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .fav-go,.fav-more{flex:0 0 auto;border:1px solid var(--stroke-2);background:var(--surface);color:var(--text);border-radius:9px;
+    min-height:36px;padding:0 12px;font:inherit;font-size:var(--fs-7);font-weight:700;cursor:pointer;}
+  .fav-go:hover,.fav-more:hover{border-color:var(--accent);color:var(--accent-ink);}
+  .fav-more{padding:0 9px;font-size:16px;line-height:1;}
+  .fav-menu{flex:1 0 100%;display:flex;flex-wrap:wrap;gap:6px;padding:2px 0 6px 33px;}
+  .fav-menu[hidden]{display:none;}
+  .fav-menu button{border:1px solid var(--stroke-2);background:var(--surface);color:var(--text);border-radius:8px;padding:6px 10px;
+    font:inherit;font-size:var(--fs-7);cursor:pointer;min-height:34px;}
+  .fav-menu .fav-yes{border-color:rgba(var(--danger-rgb),.6);color:var(--danger-ink);font-weight:700;}
+  .fav-ask{flex:1 0 100%;font-size:var(--fs-7);}
+  .fav-empty{font-size:var(--fs-7);color:var(--dim);padding:6px 0;line-height:1.45;}
+  .fav-dlg-b button.primary{background:var(--accent);border-color:var(--accent);color:var(--on-accent,#fff);font-weight:700;}
 
   /* ============ MOBILE APP SHELL (PWA) ============ */
   .mnav,.msheet,.mbackdrop{display:none;}
   body.mobile .controls,body.mobile .hint{display:none!important;}
   body.mobile .topbar{left:10px;right:10px;max-width:none;top:calc(8px + env(safe-area-inset-top));
     padding:9px 13px;display:flex;align-items:center;gap:10px;}
-  body.mobile .topbar h1{flex:1;font-size:13.5px;letter-spacing:1.8px;}
+  body.mobile .topbar h1{flex:1;font-size:13.5px;letter-spacing:1.8px;min-width:0;}
+  /* a narrow phone (320 px): "· TURKMAPS" shortens rather than pushing Guide (and the profile button with it) onto extra rows */
+  body.mobile .brand-tail{min-width:0;overflow:hidden;text-overflow:ellipsis;}
   /* The mobile header is a single flex row. Left in that row the search bar shoved Settings
      and Help clean off the screen, so it wraps onto a full-width line of its own beneath.
      Only the search bar carries an order, so the title and buttons keep their DOM order on
      the first row and the bar alone drops to the second. */
   body.mobile .topbar{flex-wrap:wrap;}
-  body.mobile .omni{order:1;flex:0 0 100%;width:100%;margin-top:9px;}
+  /* V4.7: the profile button sits at the end of the search row; the search box keeps the rest (never under 150 px, 230 px on a
+     320 px phone) */
+  body.mobile .omni{order:1;flex:1 1 calc(100% - 44px);width:auto;min-width:150px;margin-top:9px;}
   body.mobile .topbar .sub,body.mobile .topbar .stats{display:none;}
   body.mobile .topbar .langseg{margin:0;flex:0 0 148px;}
   /* the bottom bar (V4.6.2): three buttons, a marker that slides under the one in use with a little spring, drawn icons that lift when
@@ -1460,11 +1500,27 @@
     background:var(--surface);color:var(--text);cursor:pointer;display:flex;align-items:center;justify-content:center;opacity:.85;transition:all .2s var(--ease);z-index:3;}
   .settings-btn:hover{opacity:1;color:var(--accent-ink);border-color:var(--ring);transform:rotate(40deg);}
   .settings-btn:active{transform:scale(.9) rotate(40deg);}
-  /* clear BOTH action buttons (settings at right:13 + help at right:49, 32px each) — with only
+  /* clear the THREE buttons (settings at right:13, help at right:49, profile at right:85 (V4.7), 32px each) — with only
      30px the gear sat on top of "TURKMAPS" once the help button was added */
-  .topbar h1{padding-right:72px;}
+  .topbar h1{padding-right:108px;}
   body.mobile .topbar h1{padding-right:4px;}
   body.mobile .settings-btn{position:static;flex:0 0 auto;}
+  /* V4.7 the profile button: your initial when signed in, a person outline when not, an amber dot while the email is unconfirmed */
+  .profile-btn{right:85px;border-radius:var(--r-round);font-family:var(--display);font-weight:800;font-size:14px;}
+  .profile-btn:hover{transform:none;}
+  .profile-btn:active{transform:scale(.92);}
+  .profile-btn.signed{background:var(--accent);border-color:var(--accent);color:var(--on-accent,#fff);opacity:1;}
+  .profile-btn.unconfirmed::after{content:"";position:absolute;top:-2px;right:-2px;width:10px;height:10px;border-radius:var(--r-round);
+    background:var(--warn-ink);border:2px solid var(--surface);}
+  body.mobile #profileBtn{position:relative;top:auto;right:auto;order:1;flex:0 0 34px;width:34px;height:34px;margin-top:9px;}
+  body.mobile.plan-open #profileBtn{display:none;}
+  .profile-panel .prof-head{display:none;}
+  body.mobile #profileBody .prof-head{display:flex;}
+  #profileBody{display:flex;flex-direction:column;gap:14px;}
+  .sp-link{display:flex;width:100%;align-items:center;justify-content:space-between;gap:10px;background:none;border:0;padding:8px 0;
+    color:var(--text);font:inherit;font-weight:700;cursor:pointer;text-align:start;}
+  .sp-link:hover{color:var(--accent-ink);}
+  [dir="rtl"] .sp-link span[aria-hidden]{transform:scaleX(-1);}
   .help-btn{right:49px;font-size:14px;font-weight:800;color:var(--muted);}
   .help-btn:hover{transform:none;color:var(--accent-ink);}
   .help-btn:active{transform:scale(.9);}
@@ -1591,7 +1647,9 @@
   .acc-del{display:flex;flex-direction:column;gap:8px;padding:10px;border-radius:12px;border:1px solid var(--stroke);}
   .btn.danger{background:var(--danger,#E5484D);color:#fff;}
   .fr-head{font-weight:700;font-size:var(--fs-5);display:flex;gap:8px;align-items:center;margin-bottom:10px;}
-  #friendsBox{display:flex;flex-direction:column;gap:12px;}
+  .fr-share-box,.fr-list-box{display:flex;flex-direction:column;gap:12px;}
+  .fr-fly{width:100%;background:none;border:0;border-radius:10px;color:var(--text);font:inherit;text-align:start;cursor:pointer;padding:6px 4px;}
+  .fr-fly:hover .fr-nm{color:var(--accent-ink);}
   .fr-list{display:flex;flex-direction:column;gap:6px;}
   .fr-h{font-size:var(--fs-7);color:var(--dim);text-transform:uppercase;letter-spacing:.5px;}
   .fr-row{display:flex;align-items:center;gap:10px;padding:6px 0;}
@@ -2049,6 +2107,7 @@
     </div>
     <div class="omni-res glass" id="omniRes" role="listbox"></div>
   </div>
+  <button id="profileBtn" class="settings-btn profile-btn" type="button" aria-label="Profile" data-i18n-title="profile" title="Profile" aria-haspopup="dialog"></button>
   <button id="settingsBtn" class="settings-btn" data-i18n-title="settings" title="Settings" aria-label="Settings">
     <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
   </button>
@@ -2080,6 +2139,17 @@
   <a class="priv-link" data-legal="privacy" href="legal/privacy.html" target="_blank" rel="noopener" data-i18n="privRead">Read the privacy notice</a>
 </div>
 
+<!-- V4.7: everything about you (account, friends, friend links) in one place, opened from the top-right button.
+     On a phone #profileBody moves into a sheet of its own (18-mobile-shell.js). -->
+<div class="settings-overlay" id="profileOverlay"></div>
+<div class="settings-panel glass profile-panel" id="profilePanel" role="dialog" aria-modal="true" aria-label="Your profile" data-i18n-aria="profileTitle">
+  <div class="sp-head"><span data-i18n="profileTitle">Your profile</span><button class="x" id="profileX" aria-label="Close" data-i18n-aria="close">✕</button></div>
+  <div id="profileBody">
+    <div class="fr-head prof-head"><span aria-hidden="true">👤</span> <span data-i18n="profileTitle">Your profile</span></div>
+    <div class="acc-box"></div>
+    <div class="fr-list-box"></div>
+  </div>
+</div>
 <div class="settings-overlay" id="settingsOverlay"></div>
 <div class="settings-panel glass" id="settingsPanel" role="dialog" aria-modal="true" aria-label="Settings" data-i18n-aria="settings">
   <div class="sp-head"><span data-i18n="settings">Settings</span><button class="x" id="settingsX" aria-label="Close" data-i18n-aria="close">✕</button></div>
@@ -2219,8 +2289,7 @@
     <summary><span class="sp-ico" aria-hidden="true">👤</span><span class="sp-st"><span data-i18n="funStats">You</span><small data-i18n="secYouSub">Saved places, travel passport</small></span></summary>
     <div class="sp-body">
       <div class="sp-item" id="accRow">
-        <div class="sp-row"><span data-i18n="accTitle">Account</span></div>
-        <div class="acc-box"></div>
+        <button type="button" class="sp-link" data-prof-open><span data-i18n="accAndFriends">Account and friends</span><span aria-hidden="true">›</span></button>
       </div>
       <div class="sp-item" id="placesGroup">
         <div class="sp-label" data-i18n="places">Saved places</div>
@@ -2365,7 +2434,8 @@
   </div>
   <div class="card glass" id="cardFriends">
     <div class="fr-head"><span aria-hidden="true">👥</span> <span data-i18n="frTitle">Friends</span></div>
-    <div id="friendsBox"><div class="acc-box"></div><div class="fr-box"></div></div>
+    <div class="fr-share-box"></div>
+    <div class="fav-box"></div>
   </div>
   <div class="card glass" id="cardLayers">
     <button class="lyr-head" id="layersHead" aria-expanded="true" aria-controls="layersBody">
@@ -2567,6 +2637,7 @@
   <div class="rowbtns">
     <button id="setO" data-i18n="setOrigin">Set as Origin</button>
     <button id="setD" data-i18n="setDest">Set as Destination</button>
+    <button id="stnFav" data-i18n="favSave">Save</button>
   </div>
   <!-- This board is MODELLED from each line's published frequency, not observed from vehicles.
        It used to be badged "LIVE" next to second-by-second countdowns, which is a claim the data

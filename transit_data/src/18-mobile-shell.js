@@ -41,6 +41,7 @@ function openSheet(name){
   if(name==='planner') setPlanDetent(planRouteShown() ? 'half' : 'compact');
   /* V4.6.3: Friends loads when its sheet opens; friends' positions are read only while it is open (or while you share) */
   if(name==='friends' && typeof friendsOpened==='function') friendsOpened();
+  if(name==='profile' && typeof profileOpened==='function') profileOpened();     // V4.7: the profile corner (22f-profile.js)
   if(name!=='friends' && typeof stopFriendPolling==='function') stopFriendPolling();
   for(const k in mNavBtns){ const on = (name===null || name==='modes' || name==='planner') ? k==='map' : k===name; mNavBtns[k].classList.toggle('on', on); if(on) mNavBtns[k].setAttribute('aria-current','page'); else mNavBtns[k].removeAttribute('aria-current'); }
   { const nav=document.querySelector('.mnav'); if(nav){ const keys=Object.keys(mNavBtns), i=keys.findIndex(k=>mNavBtns[k].classList.contains('on')); nav.dataset.on = String(Math.max(0, i)); } }
@@ -192,10 +193,13 @@ function setupMobile(){
   // sheets
   /* Four sheets, three buttons (V4.6.2): Map (and behind it the kinds of transport), Layers, Alerts; the planner opens from the button
      beside the search box. Weather and Airports are views in the Layers sheet, with no sheet or button of their own. */
-  mSheets={ planner:mkSheet('planner'), friends:mkSheet('friends'), layers:mkSheet('layers'), alerts:mkSheet('alerts'), modes:mkSheet('modes') };
+  mSheets={ planner:mkSheet('planner'), friends:mkSheet('friends'), layers:mkSheet('layers'), alerts:mkSheet('alerts'), modes:mkSheet('modes'), profile:mkSheet('profile') };
   /* V4.5: the kinds of transport live behind the Map button. Its first press is the default map; pressed again there, it opens this
      sheet: Metro & rail (the full map), Buses, Boats. Buses used to be one of the views in the Layers sheet. */
   mSheets.modes.classList.add('modes');
+  /* V4.7: the profile (account, friends list, Add friend) is a sheet of its own, opened from the button beside the search box; it has
+     no bottom-bar button */
+  mSheets.profile.appendChild(document.getElementById('profileBody'));
   { const seg=document.createElement('div'); seg.className='mode-seg'; seg.id='modeSeg'; seg.setAttribute('role','tablist'); seg.setAttribute('aria-label', t('modesTitle')); seg.setAttribute('data-i18n-aria','modesTitle');
     const kinds=[ ['active','🚇','modeRail', true], ['bus','🚌','modeBus', !!HAS.bus], ['boat','⛴','modeBoat', boatLines.length>0] ];
     kinds.forEach(([tab,icon,key,has])=>{ if(!has) return;
