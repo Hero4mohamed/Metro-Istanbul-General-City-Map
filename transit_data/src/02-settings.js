@@ -642,7 +642,10 @@ function setPlaceFromOrigin(which){
 }
 function clearPlace(which){ if(which==='home'){ homePlace=null; try{localStorage.removeItem('irn_home');}catch(e){} }
   else { workPlace=null; try{localStorage.removeItem('irn_work');}catch(e){} } showToast(t('placeCleared')); renderPlaces(); }
-function useSavedPlace(which){ const p=which==='home'?homePlace:workPlace; if(!p) return;
+function useSavedPlace(which){ goToPlace(which==='home'?homePlace:workPlace); }
+/* "Go": the place becomes the destination; with a start point already set the route is planned at once, otherwise the
+   planner opens for one (Home/Work chips and favourites, V4.7) */
+function goToPlace(p){ if(!p) return;
   setPlannerTab('trip'); setPoint('D',{name:p.name,lat:p.lat,lng:p.lng}); if(originPt) runRoute();
   else if(IS_MOBILE && typeof openSheet==='function') openSheet('planner'); }
 function renderPlaces(){
@@ -653,6 +656,7 @@ function renderPlaces(){
   if(hc) hc.style.display = homePlace?'':'none';
   if(wc) wc.style.display = workPlace?'':'none';
   if(wrap) wrap.style.display = (homePlace||workPlace)?'':'none';
+  try{ renderFavs(); }catch(e){}   // Home/Work head the favourites list (22e); before that file has run there is no list yet
 }
 
 /* ---- nearest stops to the user's GPS position ---- */

@@ -1364,6 +1364,30 @@
     background:var(--surface-2,var(--surface));color:var(--text);font:inherit;font-size:16px;}
   .fav-dlg-b{display:flex;justify-content:flex-end;gap:8px;margin-top:10px;}
   .fav-dlg-b button{border:1px solid var(--stroke-2);background:var(--surface);color:var(--text);border-radius:9px;padding:7px 14px;font:inherit;cursor:pointer;}
+  .fav-box{margin-top:12px;padding-top:10px;border-top:1px solid var(--stroke-2);}
+  .fav-h{font-weight:700;font-size:var(--fs-6);letter-spacing:.4px;color:var(--muted);margin-bottom:6px;}
+  .fav-h span{color:var(--warn-ink);}
+  .fav-row{display:flex;flex-wrap:wrap;align-items:center;gap:6px;padding:4px 0;border-bottom:1px solid var(--stroke-1,var(--stroke-2));}
+  .fav-row:last-of-type{border-bottom:0;}
+  .fav-row.fav-other{opacity:.62;}
+  .fav-main{flex:1 1 0;min-width:0;display:flex;align-items:center;gap:9px;background:none;border:0;padding:6px 2px;color:var(--text);
+    font:inherit;text-align:start;cursor:pointer;border-radius:8px;min-height:40px;}
+  .fav-main:hover b{color:var(--accent-ink);}
+  .fav-ic{font-size:18px;width:24px;text-align:center;flex:0 0 24px;}
+  .fav-tx{min-width:0;display:flex;flex-direction:column;}
+  .fav-tx b{font-size:var(--fs-6);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .fav-tx small{font-size:var(--fs-7);color:var(--dim);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .fav-go,.fav-more{flex:0 0 auto;border:1px solid var(--stroke-2);background:var(--surface);color:var(--text);border-radius:9px;
+    min-height:36px;padding:0 12px;font:inherit;font-size:var(--fs-7);font-weight:700;cursor:pointer;}
+  .fav-go:hover,.fav-more:hover{border-color:var(--accent);color:var(--accent-ink);}
+  .fav-more{padding:0 9px;font-size:16px;line-height:1;}
+  .fav-menu{flex:1 0 100%;display:flex;flex-wrap:wrap;gap:6px;padding:2px 0 6px 33px;}
+  .fav-menu[hidden]{display:none;}
+  .fav-menu button{border:1px solid var(--stroke-2);background:var(--surface);color:var(--text);border-radius:8px;padding:6px 10px;
+    font:inherit;font-size:var(--fs-7);cursor:pointer;min-height:34px;}
+  .fav-menu .fav-yes{border-color:rgba(var(--danger-rgb),.6);color:var(--danger-ink);font-weight:700;}
+  .fav-ask{flex:1 0 100%;font-size:var(--fs-7);}
+  .fav-empty{font-size:var(--fs-7);color:var(--dim);padding:6px 0;line-height:1.45;}
   .fav-dlg-b button.primary{background:var(--accent);border-color:var(--accent);color:var(--on-accent,#fff);font-weight:700;}
 
   /* ============ MOBILE APP SHELL (PWA) ============ */
@@ -2378,6 +2402,7 @@
   <div class="card glass" id="cardFriends">
     <div class="fr-head"><span aria-hidden="true">👥</span> <span data-i18n="frTitle">Friends</span></div>
     <div id="friendsBox"><div class="acc-box"></div><div class="fr-box"></div></div>
+    <div class="fav-box"></div>
   </div>
   <div class="card glass" id="cardLayers">
     <button class="lyr-head" id="layersHead" aria-expanded="true" aria-controls="layersBody">

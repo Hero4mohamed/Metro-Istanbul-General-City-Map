@@ -48,6 +48,33 @@ function favRename(list, id, name){
   if(!n) return list;
   return list.map(f => f.id === id ? Object.assign({}, f, { name: n }) : f);
 }
+/* The list in the Friends tab: Home and Work first (when set), then favourites newest first. Every piece of text is escaped:
+   names are typed by the person, and the store can be hand-edited. `cityLabel(id)` gives a city's name. */
+function favListHTML(list, home, work, cityId, cityLabel){
+  const row = (id, ic, name, sub, other, menu) =>
+    '<div class="fav-row' + (other ? ' fav-other' : '') + '" data-fav-id="' + attrEsc(id) + '">' +
+      '<button type="button" class="fav-main" data-fav-open="' + attrEsc(id) + '"><span class="fav-ic" aria-hidden="true">' + svgEsc(ic) + '</span>' +
+        '<span class="fav-tx"><b>' + svgEsc(name) + '</b>' + (sub ? '<small>' + svgEsc(sub) + '</small>' : '') + '</span></button>' +
+      '<button type="button" class="fav-go" data-fav-act="go" data-fav-id="' + attrEsc(id) + '">' + svgEsc(t('favGo')) + '</button>' +
+      (menu ? '<button type="button" class="fav-more" data-fav-act="menu" data-fav-id="' + attrEsc(id) + '" aria-expanded="false" aria-label="' + attrEsc(t('favMore')) + '">⋯</button>' +
+        '<div class="fav-menu" hidden>' +
+          ['rename:favRename', 'home:favMakeHome', 'work:favMakeWork', 'remove:favRemove'].map(s => {
+            const [act, key] = s.split(':');
+            return '<button type="button" data-fav-act="' + act + '" data-fav-id="' + attrEsc(id) + '">' + svgEsc(t(key)) + '</button>';
+          }).join('') +
+        '</div>' : '') +
+    '</div><!--row-->';
+  let h = '<div class="fav-h"><span aria-hidden="true">★</span> ' + svgEsc(t('favTitle')) + '</div>';
+  if(home) h += row('home', '🏠', t('homeP'), home.name, false, false);
+  if(work) h += row('work', '💼', t('workP'), work.name, false, false);
+  list.forEach(f => {
+    const other = !!f.city && f.city !== cityId;
+    const sub = [f.ctx, other ? cityLabel(f.city) : ''].filter(Boolean).join(' · ');
+    h += row(f.id, f.ic || '📍', f.name, sub, other, true);
+  });
+  if(!list.length) h += '<div class="fav-empty">' + svgEsc(t('favEmpty')) + '</div>';
+  return h;
+}
 /* ==FAV-PURE-END== */
 
 /* ==FAV-CORE-START== */
@@ -111,7 +138,93 @@ function favRefreshButtons(){
 /* every list and button that shows favourites is told here */
 function favChanged(){
   favRefreshButtons();
+  renderFavs();
 }
+
+/* ---- the list (Friends tab) ---- */
+function renderFavs(){
+  const html = favListHTML(favLoad(), homePlace, workPlace, CITY_ID, id => (CITIES[id] && CITIES[id].label) || id);
+  document.querySelectorAll('.fav-box').forEach(b => { b.innerHTML = html; });
+}
+function favPlaceById(id){
+  if(id === 'home') return homePlace ? Object.assign({ kind: 'place', ic: '🏠', city: CITY_ID }, homePlace) : null;
+  if(id === 'work') return workPlace ? Object.assign({ kind: 'place', ic: '💼', city: CITY_ID }, workPlace) : null;
+  return favLoad().find(f => f.id === id) || null;
+}
+/* see it: the map flies there and the pin opens. A favourite of another city switches city first (the page reloads and
+   opens it once, see the end of this file). */
+function favOpen(f){
+  if(!f) return;
+  if(f.city && f.city !== CITY_ID && CITIES[f.city] && f.id){ switchCity(f.city, { fav: f.id }); return; }
+  if(IS_MOBILE && mSheets.friends && mSheets.friends.classList.contains('open')) setDragDetent(mSheets.friends, 'low');
+  dropPin({ name: f.name, lat: f.lat, lng: f.lng, kind: f.kind, ic: f.ic, ctx: f.ctx, city: f.city }, 16);
+}
+function favMakeHomeWork(which, id){
+  const f = favPlaceById(id); if(!f) return;
+  const rec = { name: f.name, lat: f.lat, lng: f.lng };
+  if(which === 'home'){ homePlace = rec; try{ localStorage.setItem('irn_home', JSON.stringify(rec)); }catch(e){} showToast(t('homeSaved')); }
+  else { workPlace = rec; try{ localStorage.setItem('irn_work', JSON.stringify(rec)); }catch(e){} showToast(t('workSaved')); }
+  renderPlaces(); renderFavs();
+}
+const favMakeHome = id => favMakeHomeWork('home', id);
+const favMakeWork = id => favMakeHomeWork('work', id);
+function favCloseMenus(except){
+  document.querySelectorAll('.fav-box .fav-menu').forEach(m => {
+    if(m === except) return;
+    m.hidden = true;
+    const b = m.parentNode.querySelector('[data-fav-act="menu"]'); if(b) b.setAttribute('aria-expanded', 'false');
+  });
+}
+document.addEventListener('click', e => {
+  const el = e.target.closest && e.target.closest('.fav-box [data-fav-open], .fav-box [data-fav-act]');
+  if(!el){ if(!(e.target.closest && e.target.closest('.fav-menu'))) favCloseMenus(); return; }
+  const open = el.getAttribute('data-fav-open');
+  if(open){ favCloseMenus(); favOpen(favPlaceById(open)); return; }
+  const act = el.getAttribute('data-fav-act'), id = el.getAttribute('data-fav-id'), f = favPlaceById(id);
+  if(act === 'menu'){
+    const m = el.parentNode.querySelector('.fav-menu'); if(!m) return;
+    const show = m.hidden; favCloseMenus(m); m.hidden = !show; el.setAttribute('aria-expanded', show ? 'true' : 'false');
+    if(show){ const first = m.querySelector('button'); if(first) first.focus(); }
+    return;
+  }
+  favCloseMenus();
+  if(!f) return;
+  if(act === 'go'){
+    if(f.city && f.city !== CITY_ID && CITIES[f.city]) favOpen(f);     // another city: go there first, then plan from the pin
+    else goToPlace(f);
+  }
+  else if(act === 'rename') favAskName(f.name, name => { if(name && ('' + name).trim()){ favSave(favRename(favLoad(), id, name)); favChanged(); } });
+  else if(act === 'home') favMakeHome(id);
+  else if(act === 'work') favMakeWork(id);
+  else if(act === 'remove'){
+    // asked once, in the row itself
+    const m = el.parentNode;
+    m.innerHTML = '<span class="fav-ask">' + svgEsc(t('favRemoveAsk').replace('{name}', f.name)) + '</span>' +
+      '<button type="button" class="fav-yes" data-fav-act="remove-yes" data-fav-id="' + attrEsc(id) + '">' + svgEsc(t('favRemove')) + '</button>' +
+      '<button type="button" data-fav-act="remove-no" data-fav-id="' + attrEsc(id) + '">' + svgEsc(t('accCancel')) + '</button>';
+    m.hidden = false;
+    m.querySelector('.fav-yes').focus();
+  }
+  else if(act === 'remove-yes'){ favSave(favRemove(favLoad(), id)); showToast(t('favRemoved')); favChanged(); }
+  else if(act === 'remove-no') renderFavs();
+});
+/* Escape closes an open ⋯ menu first (on the capture phase, before the app's own Escape closes the sheet) */
+document.addEventListener('keydown', function favMenuEscape(e){
+  if(e.key !== 'Escape') return;
+  const open = document.querySelector('.fav-box .fav-menu:not([hidden])');
+  if(open){ e.stopPropagation(); favCloseMenus(); const b = open.parentNode.querySelector('[data-fav-act="menu"]'); if(b) b.focus(); }
+}, true);
+/* the page was opened to show a favourite of this city (after switching city from the list): show it once, then take the
+   favourite out of the address bar so a reload does not show it again */
+(function(){
+  let id = null;
+  try{ id = new URLSearchParams(location.search).get('fav'); }catch(e){}
+  if(!id) { renderFavs(); return; }
+  try{ const u = new URL(location.href); u.searchParams.delete('fav'); history.replaceState(history.state, '', u.pathname + u.search + u.hash); }catch(e){}
+  renderFavs();
+  const f = favLoad().find(x => x.id === id);
+  if(f && f.city === CITY_ID) setTimeout(() => favOpen(f), 900);
+})();
 document.getElementById('stnFav').addEventListener('click', () => { const sp = favStationPlace(); if(sp) favToggle(sp); });
 
 /* the name of a dropped pin: a small dialog, Enter saves, Escape cancels; `cb(null)` on cancel */

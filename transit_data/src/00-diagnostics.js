@@ -74,9 +74,12 @@ function pickCityId(){
 const CITY_ID = pickCityId();
 const CITY = CITIES[CITY_ID];
 const HAS = CITY.has || {};                       // per-city feature flags (bus, ferries, live disruptions…)
-function switchCity(id){
+/* `extra`: more address-bar values for the new page, e.g. { fav: id } to open a favourite there (V4.7) */
+function switchCity(id, extra){
   if(!CITIES[id] || id===CITY_ID) return;
   try{ localStorage.setItem('irn_city', id); }catch(e){}
-  const u = new URL(location.href); u.searchParams.set('city', id); location.replace(u.toString());
+  const u = new URL(location.href); u.searchParams.set('city', id);
+  if(extra) Object.keys(extra).forEach(k => u.searchParams.set(k, extra[k]));
+  location.replace(u.toString());
 }
 "use strict";

@@ -180,3 +180,57 @@ test('fav ui: a cancelled name saves nothing; Save on a saved place removes it',
   assert.deepStrictEqual(plain(w.calls.toast), ['favAdded', 'favRemoved']);
   assert.ok(w.calls.changed >= 2, 'the buttons and list were not told');
 });
+
+/* ------------------------------------------------------------------- list ---- */
+const LABEL = id => ({ istanbul: 'İstanbul', izmir: 'İzmir', ankara: 'Ankara' }[id] || id);
+function listHTML(list, home, work, city = 'istanbul') {
+  const f = favWorld().api.favListHTML;
+  assert.ok(f, 'favListHTML is missing from FAV-PURE');
+  return f(list, home, work, city, LABEL);
+}
+const F = (id, name, extra) => Object.assign({ id, name, lat: 41, lng: 29, kind: 'place', ic: '📍', ctx: 'Kadıköy', city: 'istanbul', saved: 1 }, extra || {});
+test('fav list: Home and Work come first, then favourites newest first', () => {
+  const h = listHTML([F('fb', 'Newer'), F('fa', 'Older')], { name: 'Flat', lat: 41, lng: 29 }, { name: 'Office', lat: 41.1, lng: 29 });
+  const order = ['data-fav-open="home"', 'data-fav-open="work"', 'data-fav-open="fb"', 'data-fav-open="fa"'].map(s => h.indexOf(s));
+  assert.ok(order.every(i => i >= 0), 'a row is missing: ' + order);
+  assert.deepStrictEqual(order.slice().sort((a, b) => a - b), order, 'rows are out of order');
+  assert.ok(h.includes('homeP') && h.includes('Flat') && h.includes('workP') && h.includes('Office'));
+  const noHome = listHTML([F('fa', 'Older')], null, null);
+  assert.ok(!noHome.includes('data-fav-open="home"') && !noHome.includes('data-fav-open="work"'), 'an empty Home/Work row is shown');
+});
+test('fav list: empty shows the how-to hint', () => {
+  assert.match(listHTML([], null, null), /favEmpty/);
+  assert.doesNotMatch(listHTML([F('fa', 'X')], null, null), /favEmpty/);
+});
+test('fav list: a favourite from another city is marked with its city and dimmed', () => {
+  const h = listHTML([F('fz', 'Kordon', { city: 'izmir' }), F('fi', 'Moda')], null, null, 'istanbul');
+  const row = id => { const i = h.indexOf('data-fav-id="' + id + '"'); return h.slice(h.lastIndexOf('<div class="fav-row', i), h.indexOf('</div><!--row-->', i)); };
+  assert.match(row('fz'), /class="fav-row fav-other"/, 'the other city row is not dimmed');
+  assert.ok(row('fz').includes('İzmir'), 'the other city is not named');
+  assert.doesNotMatch(row('fi'), /fav-other/);
+  assert.ok(!row('fi').includes('İstanbul'), 'a favourite of this city names the city for nothing');
+});
+test('fav list: names and districts are escaped', () => {
+  const h = listHTML([F('f1', '<img src=x onerror=alert(1)>', { ctx: '<script>x</script>', ic: '<u>' })], { name: '<i>h</i>', lat: 1, lng: 1 }, null);
+  for (const raw of ['<img', '<script', '<u>', '<i>h']) assert.ok(!h.includes(raw), 'raw HTML in the list: ' + raw);
+  assert.ok(h.includes('&lt;img'), 'the name is not shown at all');
+  const bad = listHTML([F('x" onclick="alert(1)', 'Y')], null, null);
+  assert.ok(!bad.includes('" onclick="'), 'an id breaks out of its attribute');
+});
+test('fav list: every row has Go and a menu with Rename, Make Home, Make Work, Remove', () => {
+  const h = listHTML([F('f1', 'A'), F('f2', 'B')], null, null);
+  for (const id of ['f1', 'f2'])
+    for (const act of ['go', 'menu', 'rename', 'home', 'work', 'remove'])
+      assert.ok(h.includes('data-fav-act="' + act + '" data-fav-id="' + id + '"'), id + ' has no ' + act);
+  assert.ok(/data-fav-act="menu"[^>]*aria-expanded="false"/.test(h), 'the menu button does not say it is closed');
+  const hw = listHTML([], { name: 'Flat', lat: 41, lng: 29 }, null);
+  assert.ok(hw.includes('data-fav-act="go" data-fav-id="home"'), 'Home has no Go');
+});
+test('fav list: Go and opening use the planner and the pin, not the network; another city switches city with the favourite', () => {
+  const src = fnSrc('favOpen') + fnSrc('goToPlace');
+  assert.match(src, /switchCity\([^)]*\{\s*fav:/, 'another city is not switched to with the favourite');
+  assert.match(src, /dropPin\(/); assert.match(src, /setPoint\('D'/);
+  assert.doesNotMatch(src, /fetch\(|XMLHttpRequest/);
+  assert.match(fnSrc('useSavedPlace'), /goToPlace\(/, 'Home/Work chips do not go through goToPlace');
+  assert.match(fnSrc('switchCity'), /extra/, 'switchCity cannot carry the favourite');
+});
