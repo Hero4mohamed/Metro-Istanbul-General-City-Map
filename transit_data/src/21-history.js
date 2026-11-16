@@ -32,6 +32,7 @@ const NAV_LAYERS = [
   { id:'invite',   open:() => navHas('inviteDlg','open'),     close:() => { declineInvite(); closeInviteDlg(); } },   // a friend request (22d-friends.js)       // a reminder being set (22b-reminders.js)
   { id:'finder',   open:() => navHas('stnFinder','open'),     close:() => closeFinder() },       // the list of stations in view (25-map-keyboard.js)
   { id:'settings', open:() => navHas('settingsPanel','open'), close:() => closeSettings() },
+  { id:'profile',  open:() => navHas('profilePanel','open'),  close:() => closeProfile() },     // the profile corner on a computer (22f-profile.js)
   { id:'ai',       open:() => document.body.classList.contains('ai-open'), close:() => aiShut() },
   { id:'omni',     open:() => navHas('omni','open'),          close:() => document.body.click() },   // the search list closes on any click outside it
   { id:'welcome',  open:() => navHas('wcOverlay','show'),     close:() => navClick('wcGo') },
@@ -103,7 +104,7 @@ window.addEventListener('popstate', e => {
   try{ history.replaceState({ irnNav:true, d:0 }, ''); }catch(err){ return; }
   NAV.ready = true;
   const mo = new MutationObserver(navReconcile);
-  ['stn','linp','nearPanel','passPanel','remPanel','stnFinder','settingsPanel','omni','wcOverlay','inviteDlg'].forEach(id => { const e = document.getElementById(id); if(e) mo.observe(e, { attributes:true, attributeFilter:['class'] }); });
+  ['stn','linp','nearPanel','passPanel','remPanel','stnFinder','settingsPanel','omni','wcOverlay','inviteDlg','profilePanel'].forEach(id => { const e = document.getElementById(id); if(e) mo.observe(e, { attributes:true, attributeFilter:['class'] }); });
   document.querySelectorAll('.msheet').forEach(e => mo.observe(e, { attributes:true, attributeFilter:['class'] }));
   mo.observe(document.body, { attributes:true, attributeFilter:['class'] });
   navReconcile();

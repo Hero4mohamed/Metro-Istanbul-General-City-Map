@@ -316,3 +316,86 @@ test('friends tab: signing out empties the friends list and stops reading positi
   assert.strictEqual(w.list(), '', 'the friends list still shows after signing out');
   assert.match(w.share(), /shareSignIn/);
 });
+
+/* ---------------------------------------------------------------- profile ---- */
+const CSS = () => H.appStyle().replace(/\r\n/g, '\n');
+function profileWorld(o = {}) {
+  const cls = () => { const s = new Set(); return { add: c => s.add(c), remove: c => s.delete(c), contains: c => s.has(c), toggle: (c, on) => { if (on === undefined ? !s.has(c) : on) s.add(c); else s.delete(c); return s.has(c); }, s }; };
+  const el = id => ({ id, textContent: '', innerHTML: '', attrs: {}, classList: cls(), setAttribute(k, v) { this.attrs[k] = String(v); }, getAttribute(k) { return this.attrs[k]; } });
+  const els = { profileBtn: el('profileBtn'), profilePanel: el('profilePanel'), profileOverlay: el('profileOverlay') };
+  const calls = { load: 0, poll: 0, sheet: [], acc: 0, list: 0 };
+  const ctx = {
+    acct: o.acct || null, IS_MOBILE: !!o.mobile, mSheets: o.mobile ? { profile: el('sheet_profile') } : {}, t: k => k, svgEsc: esc, attrEsc: attr,
+    accReady: () => !!(o.acct && o.acct.verified), renderAccount: () => { calls.acc++; }, renderFriendList: () => { calls.list++; },
+    loadFriends: async () => { calls.load++; }, startFriendPolling: () => { calls.poll++; }, openSheet: n => calls.sheet.push(n),
+    document: { getElementById: id => els[id] || null }, onAccountChange: () => {},
+  };
+  vm.createContext(ctx);
+  vm.runInContext(region('PROFILE-CORE') + '\nthis.api = { openProfile, closeProfile, profileVisible, renderProfileBtn, profileOpened };', ctx);
+  return { api: ctx.api, els, calls, ctx };
+}
+test('profile: the button is in the top bar with an accessible name, and shows the initial when signed in', () => {
+  const h = H.html(), tb = h.slice(h.indexOf('<div class="topbar glass">'), h.indexOf('<!-- first-visit welcome'));
+  assert.match(tb, /<button id="profileBtn"[^>]*aria-label="Profile"[^>]*data-i18n-aria="profile"/, 'no profile button with a name in the top bar');
+  assert.ok(tb.indexOf('id="profileBtn"') < tb.indexOf('id="settingsBtn"'), 'the profile button is not beside Settings');
+  const w = profileWorld({ acct: { uid: 'u', name: 'ayşe', verified: true } });
+  w.api.renderProfileBtn();
+  assert.strictEqual(w.els.profileBtn.textContent, 'A');
+  assert.ok(!w.els.profileBtn.classList.contains('unconfirmed'));
+  assert.ok(/profile/.test(w.els.profileBtn.attrs['aria-label']) && /ayşe/.test(w.els.profileBtn.attrs['aria-label']), 'the button does not say whose profile');
+  const out = profileWorld();
+  out.api.renderProfileBtn();
+  assert.match(out.els.profileBtn.innerHTML, /<svg/, 'signed out, the button shows no person outline');
+});
+test('profile: an unconfirmed account marks the button', () => {
+  const w = profileWorld({ acct: { uid: 'u', name: 'Bora', verified: false } });
+  w.api.renderProfileBtn();
+  assert.ok(w.els.profileBtn.classList.contains('unconfirmed'), 'an unconfirmed account is not marked');
+  assert.match(w.els.profileBtn.attrs['aria-label'], /profileUnconfirmed/, 'the mark is not said to a screen reader');
+});
+test('profile: the account box and friends list live only in the profile', () => {
+  const h = H.html();
+  assert.strictEqual((h.match(/class="acc-box"/g) || []).length, 1, 'the account box appears more than once');
+  assert.match(h, /<div id="profileBody">[\s\S]*?<div class="acc-box"><\/div>\s*<div class="fr-list-box"><\/div>/, 'the account box and friends list are not in the profile');
+  const you = h.slice(h.indexOf('data-sec="you"'), h.indexOf('id="placesGroup"'));
+  assert.match(you, /data-prof-open[^>]*>[\s\S]*accAndFriends/, 'Settings > You has no way to the profile');
+});
+test('profile: opening it loads friends but does not read their positions', async () => {
+  const w = profileWorld({ acct: { uid: 'u', name: 'Bora', verified: true } });
+  w.api.openProfile(); await w.api.profileOpened();
+  assert.ok(w.els.profilePanel.classList.contains('open') && w.els.profileOverlay.classList.contains('on'), 'the panel did not open');
+  assert.ok(w.api.profileVisible());
+  assert.ok(w.calls.load >= 1 && w.calls.acc >= 1 && w.calls.list >= 1, 'opening the profile did not load and show the friends list');
+  assert.strictEqual(w.calls.poll, 0, 'opening the profile started reading friends\' positions');
+  w.api.closeProfile();
+  assert.ok(!w.api.profileVisible() && !w.els.profileOverlay.classList.contains('on'));
+  const out = profileWorld();
+  await out.api.profileOpened();
+  assert.strictEqual(out.calls.load, 0, 'signed out, the profile asked the server for friends');
+});
+test('profile: on a phone it is a sheet of its own, not a bottom-bar button', () => {
+  const s = APP();
+  assert.match(s, /mSheets=\{ planner:mkSheet\('planner'\), friends:mkSheet\('friends'\), layers:mkSheet\('layers'\), alerts:mkSheet\('alerts'\), modes:mkSheet\('modes'\), profile:mkSheet\('profile'\) \};/);
+  assert.match(s, /const items=\[ \['map','mMap'\], \['friends','mFriends'\], \['layers','mLayers'\], \['alerts','mAlerts'\] \];/, 'the bottom bar changed');
+  assert.match(s, /mSheets\.profile\.appendChild\(document\.getElementById\('profileBody'\)\)/, 'the profile is not moved into its sheet');
+  const os = /function openSheet\(name\)\{[\s\S]*?\n\}/.exec(s)[0];
+  assert.match(os, /if\(name==='profile' && typeof profileOpened==='function'\) profileOpened\(\);/, 'opening the profile sheet does not load it');
+  const w = profileWorld({ mobile: true });
+  w.api.openProfile();
+  assert.deepStrictEqual(plain(w.ctx.__sheets || w.calls.sheet), ['profile']);
+});
+test('profile: on a 320 px phone the search box keeps at least 150 px', () => {
+  const c = CSS();
+  assert.match(c, /body\.mobile \.omni\{[^}]*flex:1 1 calc\(100% - 44px\);[^}]*min-width:150px;/, 'the search box can shrink below 150 px or no longer leaves room for the button');
+  assert.match(c, /body\.mobile #profileBtn\{[^}]*order:1;[^}]*flex:0 0 34px;/, 'the profile button does not sit beside the search box');
+});
+test('profile: Escape and Back close it, and it is a modal dialog for the keyboard', () => {
+  const s = APP();
+  assert.match(s, /\{ id:'profile', +open:\(\) => navHas\('profilePanel','open'\), +close:\(\) => closeProfile\(\) \}/, 'Back does not know the profile');
+  assert.match(s, /\['stn','linp',[^\]]*'profilePanel'[^\]]*\]\.forEach/, 'the profile panel is not watched for Back');
+  assert.match(s, /if\(open\('profilePanel', 'open'\)\)\{ closeProfile\(\); e\.preventDefault\(\); return; \}/, 'Escape does not close the profile');
+  assert.match(s, /\{ id: 'profilePanel', +cls: 'open', modal: true, +first: '#profileX' \}/, 'the profile is not a modal dialog');
+  const h = H.html();
+  assert.match(h, /<div class="settings-panel glass profile-panel" id="profilePanel" role="dialog" aria-modal="true" aria-label="[^"]+" data-i18n-aria="profileTitle">/);
+  assert.match(s, /\[data-prof-open\]/, 'nothing opens the profile from the Friends tab or Settings');
+});

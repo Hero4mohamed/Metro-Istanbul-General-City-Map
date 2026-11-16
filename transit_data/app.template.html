@@ -1401,7 +1401,9 @@
      Only the search bar carries an order, so the title and buttons keep their DOM order on
      the first row and the bar alone drops to the second. */
   body.mobile .topbar{flex-wrap:wrap;}
-  body.mobile .omni{order:1;flex:0 0 100%;width:100%;margin-top:9px;}
+  /* V4.7: the profile button sits at the end of the search row; the search box keeps the rest (never under 150 px, 230 px on a
+     320 px phone) */
+  body.mobile .omni{order:1;flex:1 1 calc(100% - 44px);width:auto;min-width:150px;margin-top:9px;}
   body.mobile .topbar .sub,body.mobile .topbar .stats{display:none;}
   body.mobile .topbar .langseg{margin:0;flex:0 0 148px;}
   /* the bottom bar (V4.6.2): three buttons, a marker that slides under the one in use with a little spring, drawn icons that lift when
@@ -1496,11 +1498,27 @@
     background:var(--surface);color:var(--text);cursor:pointer;display:flex;align-items:center;justify-content:center;opacity:.85;transition:all .2s var(--ease);z-index:3;}
   .settings-btn:hover{opacity:1;color:var(--accent-ink);border-color:var(--ring);transform:rotate(40deg);}
   .settings-btn:active{transform:scale(.9) rotate(40deg);}
-  /* clear BOTH action buttons (settings at right:13 + help at right:49, 32px each) — with only
+  /* clear the THREE buttons (settings at right:13, help at right:49, profile at right:85 (V4.7), 32px each) — with only
      30px the gear sat on top of "TURKMAPS" once the help button was added */
-  .topbar h1{padding-right:72px;}
+  .topbar h1{padding-right:108px;}
   body.mobile .topbar h1{padding-right:4px;}
   body.mobile .settings-btn{position:static;flex:0 0 auto;}
+  /* V4.7 the profile button: your initial when signed in, a person outline when not, an amber dot while the email is unconfirmed */
+  .profile-btn{right:85px;border-radius:var(--r-round);font-family:var(--display);font-weight:800;font-size:14px;}
+  .profile-btn:hover{transform:none;}
+  .profile-btn:active{transform:scale(.92);}
+  .profile-btn.signed{background:var(--accent);border-color:var(--accent);color:var(--on-accent,#fff);opacity:1;}
+  .profile-btn.unconfirmed::after{content:"";position:absolute;top:-2px;right:-2px;width:10px;height:10px;border-radius:var(--r-round);
+    background:var(--warn-ink);border:2px solid var(--surface);}
+  body.mobile #profileBtn{position:relative;order:1;flex:0 0 34px;width:34px;height:34px;margin-top:9px;}
+  body.mobile.plan-open #profileBtn{display:none;}
+  .profile-panel .prof-head{display:none;}
+  body.mobile #profileBody .prof-head{display:flex;}
+  #profileBody{display:flex;flex-direction:column;gap:14px;}
+  .sp-link{display:flex;width:100%;align-items:center;justify-content:space-between;gap:10px;background:none;border:0;padding:8px 0;
+    color:var(--text);font:inherit;font-weight:700;cursor:pointer;text-align:start;}
+  .sp-link:hover{color:var(--accent-ink);}
+  [dir="rtl"] .sp-link span[aria-hidden]{transform:scaleX(-1);}
   .help-btn{right:49px;font-size:14px;font-weight:800;color:var(--muted);}
   .help-btn:hover{transform:none;color:var(--accent-ink);}
   .help-btn:active{transform:scale(.9);}
@@ -2087,6 +2105,7 @@
     </div>
     <div class="omni-res glass" id="omniRes" role="listbox"></div>
   </div>
+  <button id="profileBtn" class="settings-btn profile-btn" type="button" aria-label="Profile" data-i18n-aria="profile" data-i18n-title="profile" title="Profile" aria-haspopup="dialog"></button>
   <button id="settingsBtn" class="settings-btn" data-i18n-title="settings" title="Settings" aria-label="Settings">
     <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
   </button>
@@ -2118,6 +2137,17 @@
   <a class="priv-link" data-legal="privacy" href="legal/privacy.html" target="_blank" rel="noopener" data-i18n="privRead">Read the privacy notice</a>
 </div>
 
+<!-- V4.7: everything about you (account, friends, friend links) in one place, opened from the top-right button.
+     On a phone #profileBody moves into a sheet of its own (18-mobile-shell.js). -->
+<div class="settings-overlay" id="profileOverlay"></div>
+<div class="settings-panel glass profile-panel" id="profilePanel" role="dialog" aria-modal="true" aria-label="Your profile" data-i18n-aria="profileTitle">
+  <div class="sp-head"><span data-i18n="profileTitle">Your profile</span><button class="x" id="profileX" aria-label="Close" data-i18n-aria="close">✕</button></div>
+  <div id="profileBody">
+    <div class="fr-head prof-head"><span aria-hidden="true">👤</span> <span data-i18n="profileTitle">Your profile</span></div>
+    <div class="acc-box"></div>
+    <div class="fr-list-box"></div>
+  </div>
+</div>
 <div class="settings-overlay" id="settingsOverlay"></div>
 <div class="settings-panel glass" id="settingsPanel" role="dialog" aria-modal="true" aria-label="Settings" data-i18n-aria="settings">
   <div class="sp-head"><span data-i18n="settings">Settings</span><button class="x" id="settingsX" aria-label="Close" data-i18n-aria="close">✕</button></div>
@@ -2257,8 +2287,7 @@
     <summary><span class="sp-ico" aria-hidden="true">👤</span><span class="sp-st"><span data-i18n="funStats">You</span><small data-i18n="secYouSub">Saved places, travel passport</small></span></summary>
     <div class="sp-body">
       <div class="sp-item" id="accRow">
-        <div class="sp-row"><span data-i18n="accTitle">Account</span></div>
-        <div class="acc-box"></div>
+        <button type="button" class="sp-link" data-prof-open><span data-i18n="accAndFriends">Account and friends</span><span aria-hidden="true">›</span></button>
       </div>
       <div class="sp-item" id="placesGroup">
         <div class="sp-label" data-i18n="places">Saved places</div>

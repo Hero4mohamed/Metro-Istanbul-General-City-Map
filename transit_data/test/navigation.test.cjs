@@ -17,7 +17,9 @@ test('the phone has four bottom buttons - Map, Friends, Layers, Alerts - the pla
   assert.ok(/<button class="omni-plan" id="omniPlan" type="button"/.test(H.html()) && /getElementById\('omniPlan'\); if\(b\) b\.addEventListener\('click', plannerFromSearch\)/.test(s), 'nothing opens the planner any more');
   /* V4.5: a fourth sheet, the kinds of transport (Metro & rail / Buses / Boats), which the MAP button opens when pressed on the default map */
   /* V4.6.3: a fifth sheet, Friends, with its own bottom button */
-  assert.ok(/mSheets=\{ planner:mkSheet\('planner'\), friends:mkSheet\('friends'\), layers:mkSheet\('layers'\), alerts:mkSheet\('alerts'\), modes:mkSheet\('modes'\) \};/.test(s), 'the phone has a sheet that no button opens, or a button without a sheet');
+  /* V4.7: a sixth sheet, the profile, opened by the round button at the end of the search row (not a bottom button) */
+  assert.ok(/mSheets=\{ planner:mkSheet\('planner'\), friends:mkSheet\('friends'\), layers:mkSheet\('layers'\), alerts:mkSheet\('alerts'\), modes:mkSheet\('modes'\), profile:mkSheet\('profile'\) \};/.test(s), 'the phone has a sheet that no button opens, or a button without a sheet');
+  assert.ok(/getElementById\('profileBtn'\);\s*if\(b\) b\.addEventListener\('click', \(\) => \{ if\(profileVisible\(\)\) closeProfile\(\); else openProfile\(\); \}\);/.test(s), 'nothing opens the profile sheet');
   assert.ok(/if\(k==='map'\)\{ mapButton\(\); return; \}/.test(s) && /if\(mapIsDefault\(\)\)\{ openSheet\('modes'\); return; \}/.test(s), 'nothing opens the kinds-of-transport sheet');
   assert.ok(!/mkSheet\('weather'\)/.test(s) && !/mSheets\.weather/.test(s), 'the weather has its own sheet again');
   assert.ok(!/mWeather/.test(s), 'the dead "Weather" bottom-bar label is still in the language tables');
