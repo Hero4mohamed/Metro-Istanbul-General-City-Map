@@ -13,14 +13,19 @@ function favMeters(a, b){
   return 2 * R * Math.asin(Math.min(1, Math.sqrt(h)));
 }
 function favValid(f){
-  return !!f && typeof f === 'object' && typeof f.name === 'string' && f.name.trim() !== ''
+  return !!f && typeof f === 'object' && typeof f.id === 'string' && f.id !== ''
+    && typeof f.name === 'string' && f.name.trim() !== ''
     && typeof f.lat === 'number' && isFinite(f.lat) && typeof f.lng === 'number' && isFinite(f.lng);
 }
-/* a broken, hand-edited or foreign value never throws: it reads as the valid entries it holds, or none */
+const favStr = v => (typeof v === 'string' ? v : '');
+/* a broken, hand-edited or foreign value never throws: it reads as the valid entries it holds, or none, and every text field is
+   text (an entry with no usable id could be neither opened nor removed, so it is skipped) */
 function favLoad(){
   let v = null;
   try{ v = JSON.parse(localStorage.getItem(FAV_KEY)); }catch(e){ v = null; }
-  return Array.isArray(v) ? v.filter(favValid) : [];
+  if(!Array.isArray(v)) return [];
+  return v.filter(favValid).map(f => Object.assign({}, f, { ic: favStr(f.ic), ctx: favStr(f.ctx), city: favStr(f.city),
+    kind: favStr(f.kind) || 'place' }));
 }
 function favSave(list){ try{ localStorage.setItem(FAV_KEY, JSON.stringify(list)); }catch(e){} }
 const favKeyName = s => ('' + (s || '')).trim().toLowerCase();
@@ -107,11 +112,16 @@ function dropPinAt(ll){
   dropPin({ name: t('favPinName'), lat: ll.lat, lng: ll.lng, kind: 'pin', ic: '📍',
     ctx: ll.lat.toFixed(3) + ', ' + ll.lng.toFixed(3), city: CITY_ID }, Math.max(map.getZoom(), 15));
 }
+/* the menu event: a finger's long press drops a pin. From a mouse it is ignored (macOS and Linux send it when the button goes DOWN,
+   before the drag that turns the map); the mouse's still click comes as "irnstillclick" when its button comes up (07z) */
 function favMapMenu(e){
-  if(turnMoved || !e || !e.latlng) return;            // the right button turned the map: that was not a click
+  if(!e || !e.latlng) return;
+  if(Date.now() - turnMouseAt < 1500) return;
   dropPinAt(e.latlng);
 }
+function favStillClick(e){ if(e && e.latlng) dropPinAt(e.latlng); }
 map.on('contextmenu', favMapMenu);
+map.on('irnstillclick', favStillClick);
 /* ==FAV-CORE-END== */
 
 /* ---- the page: buttons that show ☆ / ★, and the name dialog ---- */
@@ -145,7 +155,7 @@ function favChanged(){
 
 /* ---- the list (Friends tab) ---- */
 function renderFavs(){
-  const html = favListHTML(favLoad(), homePlace, workPlace, CITY_ID, id => (CITIES[id] && CITIES[id].label) || id);
+  const html = favListHTML(favLoad(), homePlace, workPlace, CITY_ID, id => (cityKnown(id) && CITIES[id].label) || id);
   document.querySelectorAll('.fav-box').forEach(b => { b.innerHTML = html; });
 }
 function favPlaceById(id){
@@ -157,7 +167,7 @@ function favPlaceById(id){
    opens it once, see the end of this file). */
 function favOpen(f){
   if(!f) return;
-  if(f.city && f.city !== CITY_ID && CITIES[f.city] && f.id){ switchCity(f.city, { fav: f.id }); return; }
+  if(f.city && f.city !== CITY_ID && cityKnown(f.city) && f.id){ switchCity(f.city, { fav: f.id }); return; }
   if(IS_MOBILE && mSheets.friends && mSheets.friends.classList.contains('open')) setDragDetent(mSheets.friends, 'low');
   dropPin({ name: f.name, lat: f.lat, lng: f.lng, kind: f.kind, ic: f.ic, ctx: f.ctx, city: f.city }, 16);
 }
@@ -192,7 +202,7 @@ document.addEventListener('click', e => {
   favCloseMenus();
   if(!f) return;
   if(act === 'go'){
-    if(f.city && f.city !== CITY_ID && CITIES[f.city]) favOpen(f);     // another city: go there first, then plan from the pin
+    if(f.city && f.city !== CITY_ID && cityKnown(f.city)) favOpen(f);     // another city: go there first, then plan from the pin
     else goToPlace(f);
   }
   else if(act === 'rename') favAskName(f.name, name => { if(name && ('' + name).trim()){ favSave(favRename(favLoad(), id, name)); favChanged(); } });
@@ -221,9 +231,9 @@ document.addEventListener('keydown', function favMenuEscape(e){
 (function(){
   let id = null;
   try{ id = new URLSearchParams(location.search).get('fav'); }catch(e){}
-  if(!id) { renderFavs(); return; }
+  try{ renderFavs(); }catch(e){}       // whatever is in the store, the rest of the app still starts
+  if(!id) return;
   try{ const u = new URL(location.href); u.searchParams.delete('fav'); history.replaceState(history.state, '', u.pathname + u.search + u.hash); }catch(e){}
-  renderFavs();
   const f = favLoad().find(x => x.id === id);
   if(f && f.city === CITY_ID) setTimeout(() => favOpen(f), 900);
 })();
@@ -253,8 +263,14 @@ function favAskName(def, cb){
     finish(b.getAttribute('data-fav-dlg') === 'ok' ? inp.value : null);
   });
   d.addEventListener('keydown', e => {
-    if(e.key === 'Enter'){ e.preventDefault(); finish(inp.value); }
+    // Enter saves from the name box only: on a focused button it does what that button says (Enter on Cancel used to save)
+    if(e.key === 'Enter' && e.target === inp){ e.preventDefault(); finish(inp.value); }
     else if(e.key === 'Escape'){ e.preventDefault(); e.stopPropagation(); finish(null); }
+    else if(e.key === 'Tab'){                                           // a modal dialog: the keyboard stays inside it
+      const f = [...d.querySelectorAll('input, button')], i = f.indexOf(document.activeElement);
+      const n = e.shiftKey ? (i <= 0 ? f.length - 1 : i - 1) : (i === f.length - 1 ? 0 : i + 1);
+      e.preventDefault(); f[n].focus();
+    }
   });
   setTimeout(() => { inp.focus(); inp.select(); }, 0);
 }

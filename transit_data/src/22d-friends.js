@@ -229,7 +229,7 @@ const inviteUI = {
     try{ document.getElementById('inviteAccept').focus(); }catch(e){}
   },
   say: key => { if(typeof showToast === 'function') showToast(t(key)); renderFriends(); },
-  needAccount: () => { if(typeof showToast === 'function') showToast(t('frSignInFirst')); openFriends(); },
+  needAccount: () => { if(typeof showToast === 'function') showToast(t('frSignInFirst')); openProfile(); },   // V4.7: the sign-in form is in the profile
 };
 function closeInviteDlg(){ const d = document.getElementById('inviteDlg'), o = document.getElementById('inviteOverlay'); if(d){ d.classList.remove('open'); d._inv = null; } if(o) o.classList.remove('on'); }
 /* V4.7: the Friends tab is only about sharing your location (and favourites, 22e); the friends list, links and Add friend live in

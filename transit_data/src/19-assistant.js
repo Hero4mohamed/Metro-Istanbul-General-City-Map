@@ -111,7 +111,9 @@ function dropPin(p, zoom){
     ? near.map(st=>svgEsc(st.name) + " · " + walkMin(st.m) + " min" +
         (st.refs.length ? " (" + st.refs.slice(0,3).map(svgEsc).join(", ") + ")" : "")).join("<br>")
     : "—";
-  pinMarker.bindPopup(
+  /* a function, not a fixed string: Leaflet draws it again each time the pop-up opens, so Save shows the place's state NOW (a fixed
+     string said "Save" again after saving, and a tap then removed the place) and a dropped pin shows the name it was given */
+  pinMarker.bindPopup(() =>
     '<div class="pin-pop"><b>' + svgEsc(p.name) + '</b>' +
     (p.type ? '<div class="pin-type">' + svgEsc((p.ic ? p.ic + " " : "") + p.type + (p.tr ? " · " + p.tr : "")) + '</div>' : "") +
     '<div class="sub">' + (p.ctx ? svgEsc(p.ctx) + " · " : "") + svgEsc(t("aiStops")) + ": <br>" + stopTxt + '</div>' +

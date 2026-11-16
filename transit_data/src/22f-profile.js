@@ -43,10 +43,16 @@ function closeProfile(){
   if(p) p.classList.remove('open');
   if(o) o.classList.remove('on');
 }
+/* signed in, confirmed or out: the button follows, and an open profile reloads (its friends list is not the Friends tab's, so the
+   Friends file does not load it when only the profile is open) */
+function profileAccountChanged(){
+  renderProfileBtn();
+  if(profileVisible()) return profileOpened();
+}
 /* ==PROFILE-CORE-END== */
 (function(){
   renderProfileBtn();
-  onAccountChange(() => { renderProfileBtn(); if(profileVisible()) renderFriendList(); });
+  onAccountChange(profileAccountChanged);
   const b = document.getElementById('profileBtn');
   if(b) b.addEventListener('click', () => { if(profileVisible()) closeProfile(); else openProfile(); });
   const x = document.getElementById('profileX'), o = document.getElementById('profileOverlay');

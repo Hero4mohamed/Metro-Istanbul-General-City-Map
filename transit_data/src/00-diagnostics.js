@@ -62,12 +62,14 @@ if (window.top !== window.self) {
 const CITIES = __CITIES_JSON__;
 const INTERCITY_LINES_JSON = __INTERCITY_JSON__;
 const CITY_IDS = Object.keys(CITIES);
+/* is this a city of the app? An own key of CITIES only: CITIES['toString'] is truthy too, and a stored 'toString' once broke every start */
+function cityKnown(id){ return typeof id === 'string' && Object.prototype.hasOwnProperty.call(CITIES, id); }
 function pickCityId(){
   try{
     const q = new URLSearchParams(location.search).get('city');
-    if(q && CITIES[q]) { localStorage.setItem('irn_city', q); return q; }
+    if(cityKnown(q)) { localStorage.setItem('irn_city', q); return q; }
     const s = localStorage.getItem('irn_city');
-    if(s && CITIES[s]) return s;
+    if(cityKnown(s)) return s;
   }catch(e){}
   return 'istanbul';
 }
@@ -76,7 +78,7 @@ const CITY = CITIES[CITY_ID];
 const HAS = CITY.has || {};                       // per-city feature flags (bus, ferries, live disruptions…)
 /* `extra`: more address-bar values for the new page, e.g. { fav: id } to open a favourite there (V4.7) */
 function switchCity(id, extra){
-  if(!CITIES[id] || id===CITY_ID) return;
+  if(!cityKnown(id) || id===CITY_ID) return;
   try{ localStorage.setItem('irn_city', id); }catch(e){}
   const u = new URL(location.href); u.searchParams.set('city', id);
   if(extra) Object.keys(extra).forEach(k => u.searchParams.set(k, extra[k]));

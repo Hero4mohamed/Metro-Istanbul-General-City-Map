@@ -2693,7 +2693,38 @@ const MUTATIONS = [
   {
     name: "turning the map with the right button drops a pin",
     expect: "fav ui: a dropped pin is offered on a long press or a still right-click, never after turning the map",
-    apply: h => h.replace("  if(turnMoved || !e || !e.latlng) return;", "  if(!e || !e.latlng) return;"),
+    apply: h => h.replace("  if(Date.now() - turnMouseAt < 1500) return;", ""),
+  },
+  /* ---- V4.7 final review fixes ---- */
+  {
+    name: "the pin pop-up is fixed HTML again (Save goes stale on reopening)",
+    expect: "fav ui: the pop-up is drawn afresh each time it opens",
+    apply: h => h.replace("pinMarker.bindPopup(() =>", "pinMarker.bindPopup("),
+  },
+  {
+    name: "a favourite without a usable id is accepted",
+    expect: "fav: odd ids, icons, districts or cities in a hand-edited store",
+    apply: h => h.replace("typeof f.id === 'string' && f.id !== ''", "true"),
+  },
+  {
+    name: "a city is looked up with CITIES[id] again (\"toString\" passes)",
+    expect: "fav: a city that does not exist",
+    apply: h => h.replace("return typeof id === 'string' && Object.prototype.hasOwnProperty.call(CITIES, id);", "return !!CITIES[id];"),
+  },
+  {
+    name: "signing in from the open profile leaves its friends list empty",
+    expect: "review: signing in or confirming from the open profile",
+    apply: h => h.replace("  if(profileVisible()) return profileOpened();", ""),
+  },
+  {
+    name: "a still right-click is no longer announced when the button comes up",
+    expect: "mouse: right-drag (or Ctrl + drag) sideways turns the map",
+    apply: h => h.replace("      if(!turnMoved) map.fire('irnstillclick'", "      if(false) map.fire('irnstillclick'"),
+  },
+  {
+    name: "Enter anywhere in the name dialog saves (Enter on Cancel too)",
+    expect: "review: in the name dialog Enter saves only from the name box",
+    apply: h => h.replace("if(e.key === 'Enter' && e.target === inp)", "if(e.key === 'Enter')"),
   },
   {
     name: "favourite names are put in the list unescaped",

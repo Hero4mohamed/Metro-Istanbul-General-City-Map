@@ -12,8 +12,15 @@ function region(name) {
   assert.ok(a > 0 && b > a, 'the ' + name + ' block is missing');
   return s.slice(a, b);
 }
-const esc = s => (s == null ? '' : '' + s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-const attr = s => (s == null ? '' : '' + s).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+/* the app's OWN escapers (review finding C1: a gentler copy here hid a crash on a non-string id) */
+const REAL_ESC = (() => {
+  const lines = APP().split('\n');
+  const pick = p => { const l = lines.find(x => x.trim().startsWith(p)); assert.ok(l, p + ' not found in the app'); return l; };
+  const c = {}; vm.createContext(c);
+  vm.runInContext(pick('const svgEsc = ') + '\n' + pick('const attrEsc = ') + '\nthis.e = { svgEsc, attrEsc };', c);
+  return c.e;
+})();
+const esc = REAL_ESC.svgEsc, attr = REAL_ESC.attrEsc;
 
 /* A sandbox running the real favourites store. `fetch` throws: favourites must never use the network. */
 function favWorld(store = {}, extra = {}) {
@@ -42,6 +49,32 @@ test('fav: entries without a name or coordinates are skipped, the rest kept', ()
   const w = favWorld({ irn_favplaces: JSON.stringify([{ id: 'a', name: '', lat: 1, lng: 1 }, { id: 'b', name: 'X', lat: 'n', lng: 1 },
     null, 5, { id: 'd', name: 'No lng', lat: 41 }, { id: 'c', name: 'Ok', lat: 41, lng: 29 }]) });
   assert.deepStrictEqual(plain(w.api.favLoad().map(f => f.id)), ['c']);
+});
+test('fav: odd ids, icons, districts or cities in a hand-edited store never break the list or stop the app', () => {
+  const w = favWorld({ irn_favplaces: JSON.stringify([
+    { id: 5, name: 'Num', lat: 41, lng: 29 }, { id: {}, name: 'Obj', lat: 41, lng: 29 }, { id: null, name: 'Nul', lat: 41, lng: 29 },
+    { id: '', name: 'Empty', lat: 41, lng: 29 }, { id: 'ok1', name: 'Odd bits', lat: 41, lng: 29, ic: {}, ctx: 7, city: ['x'] },
+    { id: 'ok2', name: 'Proto', lat: 41, lng: 29, city: 'toString' }]) });
+  const list = w.api.favLoad();
+  assert.deepStrictEqual(plain(list.map(f => f.id)), ['ok1', 'ok2'], 'entries without a usable id are kept (they can be neither opened nor removed)');
+  assert.deepStrictEqual(plain([list[0].ic, list[0].ctx, list[0].city]), ['', '', ''], 'non-text icon, district or city is kept as it was');
+  let h = '';
+  assert.doesNotThrow(() => { h = w.api.favListHTML(list, null, null, 'istanbul', LABEL); }, 'the list throws on a hand-edited store (and with it everything after it at start-up)');
+  assert.ok(h.includes('data-fav-id="ok2"'));
+});
+test('fav: a city that does not exist ("toString") never becomes the app\'s city', () => {
+  const s = APP(), ck = fnSrc('cityKnown');
+  assert.match(ck, /Object\.prototype\.hasOwnProperty\.call\(CITIES, id\)/, 'a city is looked up with CITIES[id], which "toString" passes');
+  const ctx = { CITIES: { istanbul: {}, izmir: {} }, CITY_ID: 'istanbul', URL, replaced: [], localStorage: { setItem() {} } };
+  ctx.location = { href: 'http://x.test/?city=istanbul', replace: u => ctx.replaced.push(u) };
+  vm.createContext(ctx);
+  vm.runInContext(ck + fnSrc('switchCity') + '\nswitchCity("toString"); switchCity("__proto__"); switchCity("constructor"); switchCity("izmir", { fav: "f1" });', ctx);
+  assert.deepStrictEqual(plain(ctx.replaced), ['http://x.test/?city=izmir&fav=f1'], 'switchCity accepts a name that is not a city');
+  const pick = fnSrc('pickCityId');
+  assert.strictEqual((pick.match(/cityKnown\(/g) || []).length, 2, 'a stored or linked "toString" still becomes the city at start-up');
+  assert.match(fnSrc('favOpen'), /cityKnown\(f\.city\)/);
+  const fav = s.slice(s.indexOf('FAVOURITE PLACES (V4.7)'), s.indexOf('THE PROFILE CORNER (V4.7)'));
+  assert.doesNotMatch(fav, /CITIES\[f\.city\] &&/, 'a favourite\'s city is still trusted with CITIES[...]');
 });
 test('fav: adding the same place twice keeps one; a different name at the same spot is a new one', () => {
   const w = favWorld(), a = w.api;
@@ -110,9 +143,10 @@ function fnSrc(name) {
 /* run the real dropPin() against a stub Leaflet; returns the pop-up HTML it built */
 function popupFor(p, saved) {
   let html = '';
-  const marker = { addTo() { return this; }, bindPopup(h, o) { html = h; popupFor.opts = o; return this; }, openPopup() {} };
+  const marker = { addTo() { return this; }, bindPopup(h, o) { popupFor.content = h; html = typeof h === 'function' ? h(marker) : h; popupFor.opts = o; return this; }, openPopup() {} };
   const ctx = { L: { marker: () => marker, divIcon: () => ({}) }, map: { removeLayer() {}, getSize: () => ({ x: 0, y: 0 }), getZoom: () => 12 },
-    pinMarker: null, pinPlace: null, nearestStops: () => [], walkMin: m => m, t: k => k, svgEsc: esc, favIsSaved: () => !!saved, isFinite };
+    pinMarker: null, pinPlace: null, nearestStops: () => [], walkMin: m => m, t: k => k, svgEsc: esc,
+    favIsSaved: () => (typeof saved === 'function' ? saved() : !!saved), isFinite };
   vm.createContext(ctx);
   vm.runInContext('var pinMarker = null, pinPlace = null;\n' + fnSrc('mapUsable') + fnSrc('dropPin') + '\ndropPin(' + JSON.stringify(p) + ', 15);', ctx);
   return html;
@@ -126,6 +160,15 @@ test('fav ui: the place pop-up uses the app\'s themed pop-up, so its buttons are
   popupFor({ name: 'Moda', lat: 40.98, lng: 29.02 }, false);
   assert.match(String((popupFor.opts || {}).className || ''), /\battr-pop\b/, 'the pin pop-up is Leaflet\'s white box with light text on it');
 });
+test('fav ui: the pop-up is drawn afresh each time it opens, so Save never shows a stale state', () => {
+  let saved = false;
+  popupFor({ name: 'Moda', lat: 40.98, lng: 29.02 }, () => saved);
+  const c = popupFor.content;
+  assert.strictEqual(typeof c, 'function', 'the pop-up is fixed HTML: saved, closed and reopened, it says Save again and a tap REMOVES the place');
+  assert.match(c(), /data-pin="S"[^>]*>☆ favSave</);
+  saved = true;
+  assert.match(c(), /data-pin="S"[^>]*>★ favSaved</, 'reopened after saving, the pop-up does not say Saved');
+});
 test('fav ui: the station panel has a Save button', () => {
   const h = H.html(), i = h.indexOf('id="stn"'), rb = h.indexOf('class="rowbtns"', i), end = h.indexOf('</div>', rb);
   assert.ok(i > 0 && rb > i, 'no station panel buttons');
@@ -137,29 +180,37 @@ function coreWorld(o = {}) {
   const ctx = {
     localStorage: { getItem: k => (k in store ? store[k] : null), setItem: (k, v) => { store[k] = String(v); }, removeItem: k => { delete store[k]; } },
     fetch: () => { throw new Error('favourites made a network request'); },
-    t: k => k, svgEsc: esc, attrEsc: attr, Math, JSON, Date, CITY_ID: 'istanbul', turnMoved: !!o.turnMoved,
+    t: k => k, svgEsc: esc, attrEsc: attr, Math, JSON, Date, CITY_ID: 'istanbul', turnMouseAt: o.mouseAt || 0,
     map: { on: (ev, fn) => { handlers[ev] = fn; }, getZoom: () => 13 },
     dropPin: (p, z) => calls.drop.push(p), showToast: m => calls.toast.push(m), favChanged: () => { calls.changed++; },
     favAskName: (def, cb) => { calls.ask.push(def); cb(o.answer); },
   };
   vm.createContext(ctx);
   vm.runInContext(region('FAV-PURE') + region('FAV-CORE')
-    + '\nthis.api = { favToggle, favIsSaved, dropPinAt, favLoad, setTurn: v => { turnMoved = v; } };', ctx);
+    + '\nthis.api = { favToggle, favIsSaved, dropPinAt, favLoad, setMouseAt: v => { turnMouseAt = v; } };', ctx);
   return { api: ctx.api, store, calls, handlers, ctx };
 }
 test('fav ui: a dropped pin is offered on a long press or a still right-click, never after turning the map', () => {
-  const w = coreWorld({ turnMoved: true });
-  assert.ok(w.handlers.contextmenu, 'the map does not listen for a long press / right-click');
-  w.handlers.contextmenu({ latlng: { lat: 41.012345, lng: 28.976543 } });
-  assert.strictEqual(w.calls.drop.length, 0, 'turning the map with the right button dropped a pin');
-  w.api.setTurn(false);
-  w.handlers.contextmenu({ latlng: { lat: 41.012345, lng: 28.976543 } });
-  assert.strictEqual(w.calls.drop.length, 1);
+  const LL = { lat: 41.012345, lng: 28.976543 };
+  const w = coreWorld({ mouseAt: Date.now() });
+  assert.ok(w.handlers.contextmenu && w.handlers.irnstillclick, 'the map does not listen for a long press and a still right-click');
+  // macOS and Linux send the menu event when the right button goes DOWN, before any drag: from a mouse it never drops a pin
+  w.handlers.contextmenu({ latlng: LL });
+  assert.strictEqual(w.calls.drop.length, 0, 'a right-button press dropped a pin before the drag that turns the map began (macOS order)');
+  // the mouse decides when its button comes up: a still click drops the pin
+  w.handlers.irnstillclick({ latlng: LL });
+  assert.strictEqual(w.calls.drop.length, 1, 'a still right-click did not drop a pin');
   const p = w.calls.drop[0];
   assert.deepStrictEqual(plain([p.kind, p.ic, p.name, p.ctx, p.city]), ['pin', '📍', 'favPinName', '41.012, 28.977', 'istanbul']);
+  // a finger's long press (no mouse press) still comes as the menu event
+  w.api.setMouseAt(0);
+  w.handlers.contextmenu({ latlng: LL });
+  assert.strictEqual(w.calls.drop.length, 2, 'a long press on a phone no longer drops a pin');
   const s = APP(), a = s.indexOf('L.Map.IrnMouse = '), turn = s.slice(s.indexOf('_onDown: function', a), s.indexOf('_onWheel: function', a));
-  assert.match(turn, /turnMoved = false/, 'a new right-button press does not reset the turn flag');
+  assert.match(turn, /turnMoved = false; turnMouseAt = Date\.now\(\);/, 'a right-button press does not reset the turn flag and note the press');
+  assert.ok(turn.indexOf('if(!turnAllowed(map)') < turn.indexOf('turnMouseAt = Date.now()'), 'with turning switched off a right-click is not left to the menu event');
   assert.match(turn, /this\._mm = ev => \{[^}]*turnMoved = true/, 'turning the map with the mouse does not set the turn flag');
+  assert.match(turn, /this\._mu = ev => \{[\s\S]*if\(!turnMoved\) map\.fire\('irnstillclick'/, 'the still click is not decided when the button comes up');
 });
 test('fav ui: saving a dropped pin asks for its name; the name is stored as typed and shown escaped', () => {
   const w = coreWorld({ answer: '<b>"x"' });
@@ -335,12 +386,15 @@ function profileWorld(o = {}) {
     document: { getElementById: id => els[id] || null }, onAccountChange: () => {},
   };
   vm.createContext(ctx);
-  vm.runInContext(region('PROFILE-CORE') + '\nthis.api = { openProfile, closeProfile, profileVisible, renderProfileBtn, profileOpened };', ctx);
+  vm.runInContext(region('PROFILE-CORE') + '\nthis.api = { openProfile, closeProfile, profileVisible, renderProfileBtn, profileOpened,'
+    + ' get profileAccountChanged(){ return typeof profileAccountChanged === "function" ? profileAccountChanged : null; } };', ctx);
   return { api: ctx.api, els, calls, ctx };
 }
 test('profile: the button is in the top bar with an accessible name, and shows the initial when signed in', () => {
   const h = H.html(), tb = h.slice(h.indexOf('<div class="topbar glass">'), h.indexOf('<!-- first-visit welcome'));
-  assert.match(tb, /<button id="profileBtn"[^>]*aria-label="Profile"[^>]*data-i18n-aria="profile"/, 'no profile button with a name in the top bar');
+  assert.match(tb, /<button id="profileBtn"[^>]*aria-label="Profile"/, 'no profile button with a name in the top bar');
+  // its name is set by renderProfileBtn (with your name and the "not confirmed" state); a language switch must not reset it to plain "Profile"
+  assert.doesNotMatch(tb, /<button id="profileBtn"[^>]*data-i18n-aria=/, 'a language switch resets the profile button\'s name');
   assert.ok(tb.indexOf('id="profileBtn"') < tb.indexOf('id="settingsBtn"'), 'the profile button is not beside Settings');
   const w = profileWorld({ acct: { uid: 'u', name: 'ayşe', verified: true } });
   w.api.renderProfileBtn();
@@ -407,4 +461,35 @@ test('profile: Escape and Back close it, and it is a modal dialog for the keyboa
   const h = H.html();
   assert.match(h, /<div class="settings-panel glass profile-panel" id="profilePanel" role="dialog" aria-modal="true" aria-label="[^"]+" data-i18n-aria="profileTitle">/);
   assert.match(s, /\[data-prof-open\]/, 'nothing opens the profile from the Friends tab or Settings');
+});
+
+/* -------------------------------------------------------- final review fixes ---- */
+test('review: signing in or confirming from the open profile loads the friends list there, on a phone too', async () => {
+  const w = profileWorld({ mobile: true, acct: { uid: 'u', name: 'Bora', verified: true } });
+  assert.ok(w.api.profileAccountChanged, 'no account-change handler for the profile');
+  w.ctx.mSheets.profile.classList.add('open');
+  await w.api.profileAccountChanged();
+  assert.ok(w.calls.load >= 1, 'after signing in from the profile sheet the list says "No friends yet" until it is reopened');
+  assert.strictEqual(w.calls.poll, 0);
+  const closed = profileWorld({ mobile: true, acct: { uid: 'u', name: 'Bora', verified: true } });
+  await closed.api.profileAccountChanged();
+  assert.strictEqual(closed.calls.load, 0, 'the friends list is fetched with the profile closed');
+});
+test('review: a friend link opened while signed out goes to the profile, where the sign-in form is', () => {
+  assert.match(APP(), /needAccount: \(\) => \{[^}]*openProfile\(\); \}/, 'a friend link sends a signed-out person to the Friends tab, which has no sign-in form');
+});
+test('review: in the name dialog Enter saves only from the name box, and Tab stays inside the dialog', () => {
+  const f = fnSrc('favAskName');
+  assert.match(f, /e\.key === 'Enter' && e\.target === inp/, 'Enter on Cancel saves the place');
+  assert.match(f, /e\.key === 'Tab'/, 'Tab leaves the dialog for the page behind it');
+});
+test('review: a language switch redraws the favourites list and the profile button', () => {
+  const r = fnSrc('relocalise');
+  assert.match(r, /renderFavs\(\)/, 'the favourites list stays in the old language');
+  assert.match(r, /renderProfileBtn\(\)/, 'the profile button keeps the old language');
+});
+test('review: the empty favourites hint tells a computer user how to drop a pin too', () => {
+  const s = APP();
+  assert.match(s, /favEmpty:"[^"]*right-click/, 'the English hint names only the phone\'s long press');
+  assert.match(s, /favEmpty:"[^"]*sağ tık/, 'the Turkish hint names only the phone\'s long press');
 });

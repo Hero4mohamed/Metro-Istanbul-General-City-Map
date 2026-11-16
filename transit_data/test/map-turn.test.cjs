@@ -265,12 +265,17 @@ test('lifting the fingers settles the zoom (and the angle onto north if it is wi
 const press = (over) => Object.assign({ button: 0, ctrlKey: false, clientX: 100, clientY: 300, prevented: false, stopped: false, preventDefault() { this.prevented = true; }, stopPropagation() { this.stopped = true; } }, over);
 test('mouse: right-drag (or Ctrl + drag) sideways turns the map, a plain drag is left to Leaflet', () => {
   const w = make(); const down = w.map._container.listeners.mousedown[0];
+  // V4.7: a STILL right/Ctrl click is announced when the button comes up ("irnstillclick", a dropped pin); a turning drag is not
+  const still = []; w.map.mouseEventToLatLng = e => ({ lat: e.clientY, lng: e.clientX });
+  const fire0 = w.map.fire.bind(w.map); w.map.fire = (type, data) => { if (type === 'irnstillclick') still.push(data); return fire0(type, data); };
   const plain = press({ button: 0 }); down(plain); assert.ok(!plain.prevented && !plain.stopped, 'a plain left press was taken from Leaflet\'s dragging');
   const right = press({ button: 2 }); down(right); assert.ok(right.prevented && right.stopped, 'a right press was not taken');
   w.doc.fire('mousemove', { clientX: 200 }); near(w.map.getRotation(), 30, 1e-9, '100 px sideways is 30 degrees');
   w.doc.fire('mouseup', {});
+  assert.strictEqual(still.length, 0, 'a right-drag that turned the map was announced as a still click (it would drop a pin)');
   const ctrl = press({ button: 0, ctrlKey: true }); down(ctrl); assert.ok(ctrl.prevented, 'Ctrl + left press was not taken');
   w.doc.fire('mouseup', {});
+  assert.strictEqual(still.length, 1, 'a still Ctrl click was not announced');
   w.map._irnTurnOn = false; const off = press({ button: 2 }); down(off); assert.ok(!off.prevented, 'a press was taken while turning is switched off');
 });
 test('wheel: Shift + wheel turns the map and is kept from zooming it; a plain wheel is left alone', () => {
