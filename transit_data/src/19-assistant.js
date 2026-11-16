@@ -119,6 +119,8 @@ function dropPin(p, zoom){
       '<button data-pin="O">' + svgEsc(t("routeFrom")) + '</button>' +
       '<button data-pin="D">' + svgEsc(t("routeTo")) + '</button>' +
       '<button data-pin="N">' + svgEsc(t("nearHere")) + '</button>' +
+      (favIsSaved(p) ? '<button data-pin="S" class="fav-on">★ ' + svgEsc(t("favSaved")) + '</button>'
+                     : '<button data-pin="S">☆ ' + svgEsc(t("favSave")) + '</button>') +
     '</div></div>', {maxWidth:250});
   if(mapUsable()){
     pinMarker.openPopup();
@@ -140,6 +142,7 @@ document.addEventListener("click", e=>{
   const b = e.target.closest && e.target.closest("[data-pin]"); if(!b || !pinPlace) return;
   const mode = b.getAttribute("data-pin");
   if(mode === "N"){ aiOpen(); aiAsk((lang==="tr"?"yakında ne var ":"what is nearby ") + pinPlace.name, true); return; }
+  if(mode === "S"){ favToggle(pinPlace); return; }   // favourites (22e): saved on this device only
   setPoint(mode, {name:pinPlace.name, lat:pinPlace.lat, lng:pinPlace.lng});
   setTab("active");
   map.closePopup();

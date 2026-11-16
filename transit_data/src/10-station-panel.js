@@ -62,6 +62,7 @@ function fmtEta(sec){
 }
 function openStation(reg){
   selected = reg;
+  favRefreshButtons();     // ☆ Save / ★ Saved for this station (22e-favourites.js)
   document.getElementById('linp').classList.remove('show');
   document.getElementById('stnNm').textContent = reg.name;
   document.getElementById('stnLines').innerHTML = [...reg.lines]

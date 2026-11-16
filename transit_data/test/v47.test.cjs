@@ -97,3 +97,86 @@ test('fav: saved entries keep their kind, icon, district and city', () => {
   const f = a.favLoad()[0];
   assert.deepStrictEqual(plain([f.kind, f.ic, f.ctx, f.city, f.saved]),['station', '🚉', 'M2', 'istanbul', 77]);
 });
+
+/* ----------------------------------------------------------------- saving ---- */
+/* the source of one top-level `function name(` of the built app, by brace matching */
+function fnSrc(name) {
+  const s = APP(), i = s.indexOf('function ' + name + '(');
+  assert.ok(i >= 0, 'function ' + name + ' not found');
+  let depth = 0, k = s.indexOf('{', s.indexOf(')', i));
+  for (let j = k; j < s.length; j++) { if (s[j] === '{') depth++; else if (s[j] === '}' && --depth === 0) return s.slice(i, j + 1); }
+  throw new Error('unbalanced ' + name);
+}
+/* run the real dropPin() against a stub Leaflet; returns the pop-up HTML it built */
+function popupFor(p, saved) {
+  let html = '';
+  const marker = { addTo() { return this; }, bindPopup(h) { html = h; return this; }, openPopup() {} };
+  const ctx = { L: { marker: () => marker, divIcon: () => ({}) }, map: { removeLayer() {}, getSize: () => ({ x: 0, y: 0 }), getZoom: () => 12 },
+    pinMarker: null, pinPlace: null, nearestStops: () => [], walkMin: m => m, t: k => k, svgEsc: esc, favIsSaved: () => !!saved, isFinite };
+  vm.createContext(ctx);
+  vm.runInContext('var pinMarker = null, pinPlace = null;\n' + fnSrc('mapUsable') + fnSrc('dropPin') + '\ndropPin(' + JSON.stringify(p) + ', 15);', ctx);
+  return html;
+}
+test('fav ui: the place pop-up has Save beside Route from, Route to and Near here', () => {
+  const h = popupFor({ name: 'Moda', lat: 40.98, lng: 29.02 }, false);
+  assert.match(h, /data-pin="O"[\s\S]*data-pin="D"[\s\S]*data-pin="N"[\s\S]*data-pin="S"[^>]*>[^<]*favSave/, 'no Save in the pop-up');
+  assert.match(popupFor({ name: 'Moda', lat: 40.98, lng: 29.02 }, true), /data-pin="S"[^>]*>[^<]*favSaved/, 'a saved place does not say Saved');
+});
+test('fav ui: the station panel has a Save button', () => {
+  const h = H.html(), i = h.indexOf('id="stn"'), rb = h.indexOf('class="rowbtns"', i), end = h.indexOf('</div>', rb);
+  assert.ok(i > 0 && rb > i, 'no station panel buttons');
+  assert.match(h.slice(rb, end), /<button id="stnFav"[^>]*data-i18n="favSave"/, 'no Save button in the station panel');
+});
+/* the real FAV-CORE against stubs; `turnMoved` = did the last right-button gesture turn the map */
+function coreWorld(o = {}) {
+  const store = {}, calls = { drop: [], toast: [], changed: 0, ask: [] }, handlers = {};
+  const ctx = {
+    localStorage: { getItem: k => (k in store ? store[k] : null), setItem: (k, v) => { store[k] = String(v); }, removeItem: k => { delete store[k]; } },
+    fetch: () => { throw new Error('favourites made a network request'); },
+    t: k => k, svgEsc: esc, attrEsc: attr, Math, JSON, Date, CITY_ID: 'istanbul', turnMoved: !!o.turnMoved,
+    map: { on: (ev, fn) => { handlers[ev] = fn; }, getZoom: () => 13 },
+    dropPin: (p, z) => calls.drop.push(p), showToast: m => calls.toast.push(m), favChanged: () => { calls.changed++; },
+    favAskName: (def, cb) => { calls.ask.push(def); cb(o.answer); },
+  };
+  vm.createContext(ctx);
+  vm.runInContext(region('FAV-PURE') + region('FAV-CORE')
+    + '\nthis.api = { favToggle, favIsSaved, dropPinAt, favLoad, setTurn: v => { turnMoved = v; } };', ctx);
+  return { api: ctx.api, store, calls, handlers, ctx };
+}
+test('fav ui: a dropped pin is offered on a long press or a still right-click, never after turning the map', () => {
+  const w = coreWorld({ turnMoved: true });
+  assert.ok(w.handlers.contextmenu, 'the map does not listen for a long press / right-click');
+  w.handlers.contextmenu({ latlng: { lat: 41.012345, lng: 28.976543 } });
+  assert.strictEqual(w.calls.drop.length, 0, 'turning the map with the right button dropped a pin');
+  w.api.setTurn(false);
+  w.handlers.contextmenu({ latlng: { lat: 41.012345, lng: 28.976543 } });
+  assert.strictEqual(w.calls.drop.length, 1);
+  const p = w.calls.drop[0];
+  assert.deepStrictEqual(plain([p.kind, p.ic, p.name, p.ctx, p.city]), ['pin', '📍', 'favPinName', '41.012, 28.977', 'istanbul']);
+  const s = APP(), a = s.indexOf('L.Map.IrnMouse = '), turn = s.slice(s.indexOf('_onDown: function', a), s.indexOf('_onWheel: function', a));
+  assert.match(turn, /turnMoved = false/, 'a new right-button press does not reset the turn flag');
+  assert.match(turn, /this\._mm = ev => \{[^}]*turnMoved = true/, 'turning the map with the mouse does not set the turn flag');
+});
+test('fav ui: saving a dropped pin asks for its name; the name is stored as typed and shown escaped', () => {
+  const w = coreWorld({ answer: '<b>"x"' });
+  const pin = { name: 'favPinName', lat: 41.01, lng: 28.97, kind: 'pin', ic: '📍', ctx: '41.010, 28.970', city: 'istanbul' };
+  assert.strictEqual(w.api.favToggle(pin), true);
+  assert.deepStrictEqual(plain(w.calls.ask), ['favPinName'], 'a dropped pin was saved without asking for a name');
+  assert.strictEqual(w.api.favLoad()[0].name, '<b>"x"');
+  assert.deepStrictEqual(plain(w.calls.toast), ['favAdded']);
+  const h = popupFor({ name: '<b>"x"', lat: 41.01, lng: 28.97 }, true);
+  assert.ok(h.includes('&lt;b&gt;') && !h.includes('<b>"x"'), 'the name is not escaped in the pop-up');
+});
+test('fav ui: a cancelled name saves nothing; Save on a saved place removes it', () => {
+  const w = coreWorld({ answer: null });
+  w.api.favToggle({ name: 'favPinName', lat: 41, lng: 29, kind: 'pin' });
+  assert.strictEqual(w.api.favLoad().length, 0, 'cancelling the name still saved the pin');
+  const place = { name: 'Moda', lat: 40.98, lng: 29.02, kind: 'place', ic: '☕', ctx: 'Kadıköy' };
+  assert.strictEqual(w.api.favToggle(place), true);
+  assert.strictEqual(w.api.favIsSaved(place), true);
+  assert.strictEqual(w.api.favLoad()[0].city, 'istanbul', 'the city was not stored');
+  assert.strictEqual(w.api.favToggle(place), false);
+  assert.strictEqual(w.api.favIsSaved(place), false);
+  assert.deepStrictEqual(plain(w.calls.toast), ['favAdded', 'favRemoved']);
+  assert.ok(w.calls.changed >= 2, 'the buttons and list were not told');
+});

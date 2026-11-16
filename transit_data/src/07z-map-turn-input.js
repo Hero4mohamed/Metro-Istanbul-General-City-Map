@@ -33,6 +33,8 @@ L.Map.include({
 });
 /* the person's setting (Settings > Map): the handlers stay quiet when it is off */
 const turnAllowed = map => map._irnTurnOn !== false;
+/* did the last right-button (or Ctrl) drag turn the map? A STILL right-click offers a dropped pin (22e-favourites.js); a turn does not */
+let turnMoved = false;
 
 L.Map.IrnPinch = L.Handler.extend({
   addHooks: function(){ L.DomEvent.on(this._map._container, 'touchstart', this._onStart, this); },
@@ -111,8 +113,8 @@ L.Map.IrnMouse = L.Handler.extend({
     if(!turnAllowed(map) || !(e.button === 2 || (e.button === 0 && e.ctrlKey))) return;
     e.preventDefault(); e.stopPropagation();
     cancelAnimationFrame(map._irnTween || 0);
-    this._x0 = e.clientX; this._r0 = map.getRotation(); this._dragging = true; this._moved = false;
-    this._mm = ev => { if(!this._dragging) return; this._moved = true; map.setRotation(this._r0 + (ev.clientX - this._x0) * 0.3); };
+    this._x0 = e.clientX; this._r0 = map.getRotation(); this._dragging = true; this._moved = false; turnMoved = false;
+    this._mm = ev => { if(!this._dragging) return; this._moved = true; if(Math.abs(ev.clientX - this._x0) > 3) turnMoved = true; map.setRotation(this._r0 + (ev.clientX - this._x0) * 0.3); };
     this._mu = () => {
       this._dragging = false; document.removeEventListener('mousemove', this._mm, true); document.removeEventListener('mouseup', this._mu, true);
       if(this._moved){

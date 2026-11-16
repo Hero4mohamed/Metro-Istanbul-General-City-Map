@@ -1353,6 +1353,18 @@
   .pin-acts button{border:1px solid var(--stroke-2);background:var(--surface);color:var(--text);
     border-radius:8px;padding:5px 8px;font-size:var(--fs-6);font-family:var(--font);cursor:pointer;}
   .pin-acts button:hover{border-color:var(--accent);color:var(--accent-ink);}
+  /* V4.7 favourites: ☆ Save / ★ Saved */
+  .pin-acts button.fav-on,#stnFav.fav-on{color:var(--warn-ink);border-color:rgba(var(--warn-rgb),.6);background:rgba(var(--warn-rgb),.10);}
+  #stnFav{flex:0 0 auto;padding:8px 11px;}
+  #stnFav::before{content:"☆ ";} #stnFav.fav-on::before{content:"★ ";}
+  .fav-dlg{position:fixed;left:50%;top:30%;transform:translate(-50%,-50%);z-index:2600;width:min(320px,calc(100vw - 32px));
+    padding:14px;border-radius:14px;border:1px solid var(--stroke-2);background:var(--surface);color:var(--text);box-shadow:0 12px 40px rgba(0,0,0,.35);}
+  .fav-dlg-t{font-weight:700;margin-bottom:8px;font-size:var(--fs-4,14px);}
+  .fav-dlg input{width:100%;box-sizing:border-box;padding:9px 10px;border-radius:9px;border:1px solid var(--stroke-2);
+    background:var(--surface-2,var(--surface));color:var(--text);font:inherit;font-size:16px;}
+  .fav-dlg-b{display:flex;justify-content:flex-end;gap:8px;margin-top:10px;}
+  .fav-dlg-b button{border:1px solid var(--stroke-2);background:var(--surface);color:var(--text);border-radius:9px;padding:7px 14px;font:inherit;cursor:pointer;}
+  .fav-dlg-b button.primary{background:var(--accent);border-color:var(--accent);color:var(--on-accent,#fff);font-weight:700;}
 
   /* ============ MOBILE APP SHELL (PWA) ============ */
   .mnav,.msheet,.mbackdrop{display:none;}
@@ -2567,6 +2579,7 @@
   <div class="rowbtns">
     <button id="setO" data-i18n="setOrigin">Set as Origin</button>
     <button id="setD" data-i18n="setDest">Set as Destination</button>
+    <button id="stnFav" data-i18n="favSave">Save</button>
   </div>
   <!-- This board is MODELLED from each line's published frequency, not observed from vehicles.
        It used to be badged "LIVE" next to second-by-second countdowns, which is a claim the data

@@ -6,7 +6,7 @@
 <!-- Substituted by build.cjs, which hashes the inline script from the final bytes. Pages
      cannot set headers, so this ships as meta; frame-ancestors and report-uri are
      unavailable that way. -->
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-/M4EZFdhh/4V9ryWkGL7ylI3nFWKl1CkrV2WK0h3t8g='; style-src 'self' 'unsafe-inline'; font-src 'self' data:; img-src 'self' data: blob: https://server.arcgisonline.com; connect-src 'self' https://server.arcgisonline.com https://tiles.openfreemap.org https://photon.komoot.io https://overpass-api.de https://api.ibb.gov.tr https://openapi.izmir.bel.tr https://turkmaps-relay.turkmaps-relay.workers.dev https://api.open-meteo.com https://air-quality-api.open-meteo.com https://routing.openstreetmap.de https://api.anthropic.com https://identitytoolkit.googleapis.com https://securetoken.googleapis.com https://firestore.googleapis.com; worker-src 'self'; frame-src 'none'; media-src 'none'; manifest-src 'self'; base-uri 'self'; form-action 'none'; object-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-GMM+z8mGbMukBCVvUX3t9ucBoyrR59HiiDQVIlbdY5Q='; style-src 'self' 'unsafe-inline'; font-src 'self' data:; img-src 'self' data: blob: https://server.arcgisonline.com; connect-src 'self' https://server.arcgisonline.com https://tiles.openfreemap.org https://photon.komoot.io https://overpass-api.de https://api.ibb.gov.tr https://openapi.izmir.bel.tr https://turkmaps-relay.turkmaps-relay.workers.dev https://api.open-meteo.com https://air-quality-api.open-meteo.com https://routing.openstreetmap.de https://api.anthropic.com https://identitytoolkit.googleapis.com https://securetoken.googleapis.com https://firestore.googleapis.com; worker-src 'self'; frame-src 'none'; media-src 'none'; manifest-src 'self'; base-uri 'self'; form-action 'none'; object-src 'none'">
 <title>TurkMaps · Transit Network Map</title>
 <!-- Leaflet 1.9.4, shipped with the app rather than fetched from a CDN (V4.3): see vendor/README.md -->
 <link rel="stylesheet" href="vendor/leaflet/leaflet.css">
@@ -1353,6 +1353,18 @@
   .pin-acts button{border:1px solid var(--stroke-2);background:var(--surface);color:var(--text);
     border-radius:8px;padding:5px 8px;font-size:var(--fs-6);font-family:var(--font);cursor:pointer;}
   .pin-acts button:hover{border-color:var(--accent);color:var(--accent-ink);}
+  /* V4.7 favourites: ☆ Save / ★ Saved */
+  .pin-acts button.fav-on,#stnFav.fav-on{color:var(--warn-ink);border-color:rgba(var(--warn-rgb),.6);background:rgba(var(--warn-rgb),.10);}
+  #stnFav{flex:0 0 auto;padding:8px 11px;}
+  #stnFav::before{content:"☆ ";} #stnFav.fav-on::before{content:"★ ";}
+  .fav-dlg{position:fixed;left:50%;top:30%;transform:translate(-50%,-50%);z-index:2600;width:min(320px,calc(100vw - 32px));
+    padding:14px;border-radius:14px;border:1px solid var(--stroke-2);background:var(--surface);color:var(--text);box-shadow:0 12px 40px rgba(0,0,0,.35);}
+  .fav-dlg-t{font-weight:700;margin-bottom:8px;font-size:var(--fs-4,14px);}
+  .fav-dlg input{width:100%;box-sizing:border-box;padding:9px 10px;border-radius:9px;border:1px solid var(--stroke-2);
+    background:var(--surface-2,var(--surface));color:var(--text);font:inherit;font-size:16px;}
+  .fav-dlg-b{display:flex;justify-content:flex-end;gap:8px;margin-top:10px;}
+  .fav-dlg-b button{border:1px solid var(--stroke-2);background:var(--surface);color:var(--text);border-radius:9px;padding:7px 14px;font:inherit;cursor:pointer;}
+  .fav-dlg-b button.primary{background:var(--accent);border-color:var(--accent);color:var(--on-accent,#fff);font-weight:700;}
 
   /* ============ MOBILE APP SHELL (PWA) ============ */
   .mnav,.msheet,.mbackdrop{display:none;}
@@ -2567,6 +2579,7 @@
   <div class="rowbtns">
     <button id="setO" data-i18n="setOrigin">Set as Origin</button>
     <button id="setD" data-i18n="setDest">Set as Destination</button>
+    <button id="stnFav" data-i18n="favSave">Save</button>
   </div>
   <!-- This board is MODELLED from each line's published frequency, not observed from vehicles.
        It used to be badged "LIVE" next to second-by-second countdowns, which is a claim the data
@@ -2627,7 +2640,7 @@
 
    The report carries the fault, the build, the city, the language and the browser. It never
    carries location, saved places, trip history or the API key. ===== */
-const BUILD = "20261116105724";
+const BUILD = "20261116110204";
 const DIAG_MAX = 20;
 let DIAG = [];
 try { DIAG = JSON.parse(localStorage.getItem("irn_diag") || "[]"); } catch (e) { DIAG = []; }
@@ -2790,7 +2803,7 @@ const I18N = {
     aiAccStepFree:"Step-free", aiAccNot:"Not step-free", aiAccUnknown:"No accessibility data is recorded for this station.",
     aiAccCityOnly:"Lift and escalator data is published for İstanbul only.",
     aiLinesAt:"Lines serving", aiLinesNone:"No lines are recorded at that stop.",
-    routeFrom:"Route from", routeTo:"Route to", nearHere:"What’s nearby",
+    routeFrom:"Route from", routeTo:"Route to", nearHere:"What’s nearby", favSave:"Save", favSaved:"Saved", favAdded:"Saved to your favourites", favRemoved:"Removed from your favourites", favDropped:"Saved. Your oldest favourite was removed to make room (200 at most).", favPinName:"Dropped pin", favNameTitle:"Name this place",
     min:"Min", stops:"Stops", transfers:"Transfers", favourites:"★ Favourites",
     recentPlans:"Recent plans", clearAll:"clear all", setOrigin:"Set as Origin", setDest:"Set as Destination",
     predArrivals:"Predictive Arrivals", live:"LIVE", connectivity:"Connectivity", expansion:"Expansion Projects",
@@ -3023,7 +3036,7 @@ const I18N = {
     aiAccStepFree:"Basamaksız", aiAccNot:"Basamaksız değil", aiAccUnknown:"Bu istasyon için erişilebilirlik verisi kayıtlı değil.",
     aiAccCityOnly:"Asansör ve yürüyen merdiven verisi yalnızca İstanbul için yayımlanıyor.",
     aiLinesAt:"Şu hatlar geçiyor:", aiLinesNone:"Bu durakta kayıtlı hat yok.",
-    routeFrom:"Buradan", routeTo:"Buraya", nearHere:"Yakında ne var",
+    routeFrom:"Buradan", routeTo:"Buraya", nearHere:"Yakında ne var", favSave:"Kaydet", favSaved:"Kaydedildi", favAdded:"Favorilerinize kaydedildi", favRemoved:"Favorilerinizden çıkarıldı", favDropped:"Kaydedildi. Yer açmak için en eski favoriniz silindi (en fazla 200).", favPinName:"Bırakılan iğne", favNameTitle:"Bu yere bir ad verin",
     min:"Dk", stops:"Durak", transfers:"Aktarma", favourites:"★ Favoriler",
     recentPlans:"Son planlar", clearAll:"tümünü sil", setOrigin:"Başlangıç yap", setDest:"Varış yap",
     predArrivals:"Tahmini Varışlar", live:"CANLI", connectivity:"Bağlantılar", expansion:"Genişleme Projeleri",
@@ -3438,7 +3451,7 @@ const I18N = {
     aiAccUnknown:"لا بيانات إتاحة مسجّلة لهذه المحطة.",
     aiAccCityOnly:"بيانات المصاعد والسلالم المتحركة منشورة لإسطنبول فقط.",
     aiLinesAt:"الخطوط التي تخدم", aiLinesNone:"لا خطوط مسجّلة عند هذه المحطة.",
-    routeFrom:"مسار من", routeTo:"مسار إلى", nearHere:"ما القريب من هنا",
+    routeFrom:"مسار من", routeTo:"مسار إلى", nearHere:"ما القريب من هنا", favSave:"حفظ", favSaved:"محفوظ", favAdded:"تم الحفظ في المفضلة", favRemoved:"تمت الإزالة من المفضلة", favDropped:"تم الحفظ. حُذف أقدم مكان مفضل لإفساح المجال (200 كحد أقصى).", favPinName:"دبوس مُسقَط", favNameTitle:"سمِّ هذا المكان",
     busLines:"خط", busLinesMany:"خطوط", showingFirst:"تُعرض أول",
     noGeom:"لا يوجد رسم لمسار هذا الخط على الخريطة.", loadingGeom:"جارٍ تحميل مسار الخط…",
     routeDrawn:"تم رسم المسار", needNet:"تعذّر جلب المسار (يتطلّب اتصالًا بالإنترنت).",
@@ -3685,7 +3698,7 @@ const I18N = {
     aiAccUnknown:"Aucune donnée d’accessibilité enregistrée pour cette station.",
     aiAccCityOnly:"Les données d’ascenseurs et d’escaliers mécaniques ne sont publiées que pour İstanbul.",
     aiLinesAt:"Lignes desservant", aiLinesNone:"Aucune ligne enregistrée à cet arrêt.",
-    routeFrom:"Itinéraire depuis", routeTo:"Itinéraire vers", nearHere:"Ce qu’il y a à proximité",
+    routeFrom:"Itinéraire depuis", routeTo:"Itinéraire vers", nearHere:"Ce qu’il y a à proximité", favSave:"Enregistrer", favSaved:"Enregistré", favAdded:"Ajouté à vos favoris", favRemoved:"Retiré de vos favoris", favDropped:"Enregistré. Votre plus ancien favori a été retiré pour faire de la place (200 au maximum).", favPinName:"Épingle déposée", favNameTitle:"Nommez ce lieu",
     busLines:"ligne", busLinesMany:"lignes", showingFirst:"affichage des",
     noGeom:"Aucun tracé cartographié pour cette ligne.", loadingGeom:"Chargement du tracé…",
     routeDrawn:"tracé affiché", needNet:"Impossible de récupérer le tracé (connexion requise).",
@@ -7626,6 +7639,8 @@ L.Map.include({
 });
 /* the person's setting (Settings > Map): the handlers stay quiet when it is off */
 const turnAllowed = map => map._irnTurnOn !== false;
+/* did the last right-button (or Ctrl) drag turn the map? A STILL right-click offers a dropped pin (22e-favourites.js); a turn does not */
+let turnMoved = false;
 
 L.Map.IrnPinch = L.Handler.extend({
   addHooks: function(){ L.DomEvent.on(this._map._container, 'touchstart', this._onStart, this); },
@@ -7704,8 +7719,8 @@ L.Map.IrnMouse = L.Handler.extend({
     if(!turnAllowed(map) || !(e.button === 2 || (e.button === 0 && e.ctrlKey))) return;
     e.preventDefault(); e.stopPropagation();
     cancelAnimationFrame(map._irnTween || 0);
-    this._x0 = e.clientX; this._r0 = map.getRotation(); this._dragging = true; this._moved = false;
-    this._mm = ev => { if(!this._dragging) return; this._moved = true; map.setRotation(this._r0 + (ev.clientX - this._x0) * 0.3); };
+    this._x0 = e.clientX; this._r0 = map.getRotation(); this._dragging = true; this._moved = false; turnMoved = false;
+    this._mm = ev => { if(!this._dragging) return; this._moved = true; if(Math.abs(ev.clientX - this._x0) > 3) turnMoved = true; map.setRotation(this._r0 + (ev.clientX - this._x0) * 0.3); };
     this._mu = () => {
       this._dragging = false; document.removeEventListener('mousemove', this._mm, true); document.removeEventListener('mouseup', this._mu, true);
       if(this._moved){
@@ -9445,6 +9460,7 @@ function fmtEta(sec){
 }
 function openStation(reg){
   selected = reg;
+  favRefreshButtons();     // ☆ Save / ★ Saved for this station (22e-favourites.js)
   document.getElementById('linp').classList.remove('show');
   document.getElementById('stnNm').textContent = reg.name;
   document.getElementById('stnLines').innerHTML = [...reg.lines]
@@ -14667,6 +14683,8 @@ function dropPin(p, zoom){
       '<button data-pin="O">' + svgEsc(t("routeFrom")) + '</button>' +
       '<button data-pin="D">' + svgEsc(t("routeTo")) + '</button>' +
       '<button data-pin="N">' + svgEsc(t("nearHere")) + '</button>' +
+      (favIsSaved(p) ? '<button data-pin="S" class="fav-on">★ ' + svgEsc(t("favSaved")) + '</button>'
+                     : '<button data-pin="S">☆ ' + svgEsc(t("favSave")) + '</button>') +
     '</div></div>', {maxWidth:250});
   if(mapUsable()){
     pinMarker.openPopup();
@@ -14688,6 +14706,7 @@ document.addEventListener("click", e=>{
   const b = e.target.closest && e.target.closest("[data-pin]"); if(!b || !pinPlace) return;
   const mode = b.getAttribute("data-pin");
   if(mode === "N"){ aiOpen(); aiAsk((lang==="tr"?"yakında ne var ":"what is nearby ") + pinPlace.name, true); return; }
+  if(mode === "S"){ favToggle(pinPlace); return; }   // favourites (22e): saved on this device only
   setPoint(mode, {name:pinPlace.name, lat:pinPlace.lat, lng:pinPlace.lng});
   setTab("active");
   map.closePopup();
@@ -17128,6 +17147,100 @@ function favRename(list, id, name){
   return list.map(f => f.id === id ? Object.assign({}, f, { name: n }) : f);
 }
 /* ==FAV-PURE-END== */
+
+/* ==FAV-CORE-START== */
+function favIsSaved(p){ return !!(p && isFinite(p.lat) && isFinite(p.lng) && favFind(favLoad(), p)); }
+/* ☆ Save / ★ Saved: returns whether the place is saved afterwards. A dropped pin is named first (prefilled "Dropped pin");
+   cancelling the name saves nothing. */
+function favToggle(p){
+  if(!p || !isFinite(p.lat) || !isFinite(p.lng)) return false;
+  const have = favFind(favLoad(), p);
+  if(have){
+    favSave(favRemove(favLoad(), have.id)); showToast(t('favRemoved')); favChanged();
+    return false;
+  }
+  const add = name => {
+    const r = favAdd(favLoad(), { name, lat: p.lat, lng: p.lng, kind: p.kind || 'place', ic: p.ic || '', ctx: p.ctx || '',
+      city: p.city || CITY_ID }, Date.now());
+    favSave(r.list);
+    if(p.kind === 'pin') p.name = r.fav.name;         // the pin on the map now carries its new name, so it shows ★ Saved
+    showToast(t(r.dropped ? 'favDropped' : 'favAdded')); favChanged();
+  };
+  if(p.kind === 'pin'){
+    favAskName(p.name, name => { if(name && ('' + name).trim()) add(('' + name).trim()); });
+    return true;
+  }
+  add(p.name);
+  return true;
+}
+/* a long press (phone) or a STILL right-click (computer) on the map drops a pin there, which can then be saved */
+function dropPinAt(ll){
+  dropPin({ name: t('favPinName'), lat: ll.lat, lng: ll.lng, kind: 'pin', ic: '📍',
+    ctx: ll.lat.toFixed(3) + ', ' + ll.lng.toFixed(3), city: CITY_ID }, Math.max(map.getZoom(), 15));
+}
+function favMapMenu(e){
+  if(turnMoved || !e || !e.latlng) return;            // the right button turned the map: that was not a click
+  dropPinAt(e.latlng);
+}
+map.on('contextmenu', favMapMenu);
+/* ==FAV-CORE-END== */
+
+/* ---- the page: buttons that show ☆ / ★, and the name dialog ---- */
+function favStationPlace(){
+  if(!selected) return null;
+  return { name: selected.name, lat: selected.lat, lng: selected.lng, kind: 'station', ic: '🚉',
+    ctx: [...(selected.lines || [])].slice(0, 4).join(', '), city: CITY_ID };
+}
+function favRefreshButtons(){
+  const b = document.getElementById('stnFav'), sp = favStationPlace();
+  if(b && sp){
+    const on = favIsSaved(sp);
+    b.classList.toggle('fav-on', on);
+    b.setAttribute('data-i18n', on ? 'favSaved' : 'favSave');   // a language switch keeps the right word
+    b.textContent = t(on ? 'favSaved' : 'favSave');
+    b.setAttribute('aria-pressed', on ? 'true' : 'false');
+  }
+  document.querySelectorAll('[data-pin="S"]').forEach(x => {
+    const on = favIsSaved(pinPlace);
+    x.classList.toggle('fav-on', on);
+    x.textContent = (on ? '★ ' : '☆ ') + t(on ? 'favSaved' : 'favSave');
+  });
+}
+/* every list and button that shows favourites is told here */
+function favChanged(){
+  favRefreshButtons();
+}
+document.getElementById('stnFav').addEventListener('click', () => { const sp = favStationPlace(); if(sp) favToggle(sp); });
+
+/* the name of a dropped pin: a small dialog, Enter saves, Escape cancels; `cb(null)` on cancel */
+function favAskName(def, cb){
+  const old = document.getElementById('favNameDlg'); if(old) old.remove();
+  const d = document.createElement('div');
+  d.id = 'favNameDlg'; d.className = 'fav-dlg glass'; d.setAttribute('role', 'dialog'); d.setAttribute('aria-modal', 'true');
+  d.setAttribute('aria-labelledby', 'favNameT');
+  d.innerHTML = '<div id="favNameT" class="fav-dlg-t">' + svgEsc(t('favNameTitle')) + '</div>' +
+    '<input id="favNameIn" type="text" maxlength="' + FAV_NAME_MAX + '" autocomplete="off">' +
+    '<div class="fav-dlg-b"><button type="button" data-fav-dlg="cancel">' + svgEsc(t('accCancel')) + '</button>' +
+    '<button type="button" class="primary" data-fav-dlg="ok">' + svgEsc(t('favSave')) + '</button></div>';
+  document.body.appendChild(d);
+  const inp = d.querySelector('input'), back = document.activeElement;
+  inp.value = def || '';
+  let done = false;
+  const finish = v => {
+    if(done) return; done = true; d.remove();
+    if(back && back.focus && document.contains(back)) try{ back.focus(); }catch(e){}
+    cb(v);
+  };
+  d.addEventListener('click', e => {
+    const b = e.target.closest('[data-fav-dlg]'); if(!b) return;
+    finish(b.getAttribute('data-fav-dlg') === 'ok' ? inp.value : null);
+  });
+  d.addEventListener('keydown', e => {
+    if(e.key === 'Enter'){ e.preventDefault(); finish(inp.value); }
+    else if(e.key === 'Escape'){ e.preventDefault(); e.stopPropagation(); finish(null); }
+  });
+  setTimeout(() => { inp.focus(); inp.select(); }, 0);
+}
 /* ===========================================================================
    ACCESSIBILITY (V4.3): names, switch state, keyboard, dialogs
    Four things a person using a screen reader or only a keyboard ran into:
