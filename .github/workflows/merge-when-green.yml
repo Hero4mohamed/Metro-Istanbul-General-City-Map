@@ -1,0 +1,49 @@
+# Merge when green (16 Nov 2026).
+#
+# GitHub's own auto-merge cannot work here: it only waits for REQUIRED checks, and requiring the tests on main would block the six
+# scheduled data jobs that push straight to main as GitHub's bot (a personal repository cannot exempt that bot from a rule; GitHub
+# refused it). So this job does it: when the Tests run on a pull request finishes GREEN, and that pull request carries the label
+# "merge when green", it is merged with a merge commit, on exactly the commit that was tested, and the site is then deployed.
+#
+# Safety (pinned by transit_data/test/merge-when-green.test.cjs):
+#   * only after Tests succeeded on a pull_request run; only an open pull request from THIS repository (not a fork) with the label,
+#     which only someone with write access can add;
+#   * --match-head-commit: if anything was pushed after the tested commit, GitHub refuses the merge;
+#   * the pull request's code is never checked out or run here, and nothing from the event is pasted into the script (env only).
+# A merge made with this job's token starts no other job by itself, so the Pages deploy is started explicitly.
+name: Merge when green
+
+on:
+  workflow_run:
+    workflows: ["Tests"]
+    types: [completed]
+
+permissions:
+  contents: write
+  pull-requests: write
+  actions: write
+
+jobs:
+  merge:
+    if: github.event.workflow_run.event == 'pull_request' && github.event.workflow_run.conclusion == 'success'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Merge the labelled pull request whose tests just passed
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          HEAD_SHA: ${{ github.event.workflow_run.head_sha }}
+          HEAD_BRANCH: ${{ github.event.workflow_run.head_branch }}
+        run: |
+          set -euo pipefail
+          pr=$(gh pr list --repo "$REPO" --state open --head "$HEAD_BRANCH" --label "merge when green" \
+                 --json number,headRefOid,isCrossRepository \
+               | jq -r --arg HEAD_SHA "$HEAD_SHA" '.[] | select(.isCrossRepository == false and .headRefOid == $HEAD_SHA) | .number' \
+               | head -n 1)
+          if [ -z "$pr" ]; then
+            echo "No open, labelled pull request from this repository at $HEAD_SHA: nothing to merge."
+            exit 0
+          fi
+          echo "Merging pull request #$pr at $HEAD_SHA (merge commit)."
+          gh pr merge "$pr" --repo "$REPO" --merge --match-head-commit "$HEAD_SHA"
+          gh workflow run pages.yml --repo "$REPO" --ref main
