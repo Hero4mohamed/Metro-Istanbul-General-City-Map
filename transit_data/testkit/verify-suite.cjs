@@ -2664,6 +2664,67 @@ const MUTATIONS = [
     expect: "review fixes 1-2",
     apply: h => h.replace("if(accReady()){ if(friendsVisible()) friendsOpened(); }", "if(accReady()){ }"),
   },
+  /* ---- V4.7: the profile corner and favourite places (device only) ---- */
+  {
+    name: "saving favourites sends them over the network",
+    expect: "fav: the store makes no network request",
+    apply: h => h.replace("function favSave(list){ try{ localStorage.setItem(FAV_KEY, JSON.stringify(list)); }catch(e){} }", "function favSave(list){ fetch('https://x.test/fav', { method: 'POST', body: JSON.stringify(list) }); try{ localStorage.setItem(FAV_KEY, JSON.stringify(list)); }catch(e){} }"),
+  },
+  {
+    name: "a broken favourites store throws",
+    expect: "fav: a missing, broken or non-array store reads as an empty list",
+    apply: h => h.replace("  try{ v = JSON.parse(localStorage.getItem(FAV_KEY)); }catch(e){ v = null; }", "  v = JSON.parse(localStorage.getItem(FAV_KEY));"),
+  },
+  {
+    name: "the same place is saved twice",
+    expect: "fav: adding the same place twice keeps one",
+    apply: h => h.replace("  return list.find(f => favKeyName(f.name) === n && favMeters(f, p) <= FAV_SAME_M) || null;", "  return null;"),
+  },
+  {
+    name: "Save is gone from the place pop-up",
+    expect: "fav ui: the place pop-up has Save beside Route from, Route to and Near here",
+    apply: h => h.replace(`'<button data-pin="S">☆ '`, `'<button data-pin="X">☆ '`),
+  },
+  {
+    name: "Save is gone from the station panel",
+    expect: "fav ui: the station panel has a Save button",
+    apply: h => h.replace('<button id="stnFav" data-i18n="favSave">Save</button>', ''),
+  },
+  {
+    name: "turning the map with the right button drops a pin",
+    expect: "fav ui: a dropped pin is offered on a long press or a still right-click, never after turning the map",
+    apply: h => h.replace("  if(turnMoved || !e || !e.latlng) return;", "  if(!e || !e.latlng) return;"),
+  },
+  {
+    name: "favourite names are put in the list unescaped",
+    expect: "fav list: names and districts are escaped",
+    apply: h => h.replace(`'<span class="fav-tx"><b>' + svgEsc(name) + '</b>'`, `'<span class="fav-tx"><b>' + name + '</b>'`),
+  },
+  {
+    name: "the account box is back in the Friends card",
+    expect: "friends tab: the card holds no account box",
+    apply: h => h.replace('<div class="fr-share-box"></div>', '<div class="acc-box"></div><div class="fr-share-box"></div>'),
+  },
+  {
+    name: "the friends list stays on screen after signing out",
+    expect: "friends tab: signing out empties the friends list and stops reading positions",
+    apply: h => h.replace("function renderFriends(){ renderShare(); renderFriendList(); }", "function renderFriends(){ renderShare(); }"),
+  },
+  {
+    name: "opening the profile starts reading friends' positions",
+    expect: "profile: opening it loads friends but does not read their positions",
+    apply: h => h.replace("  if(accReady()){ try{ await loadFriends(); renderFriendList(); }catch(e){} }", "  if(accReady()){ try{ await loadFriends(); renderFriendList(); }catch(e){} startFriendPolling(); }"),
+  },
+  {
+    name: "the search box can shrink to nothing beside the profile button",
+    expect: "profile: on a 320 px phone the search box keeps at least 150 px",
+    apply: h => h.replace("min-width:150px;margin-top:9px;}", "min-width:0;margin-top:9px;}"),
+  },
+  {
+    name: "Escape no longer closes the profile",
+    expect: "profile: Escape and Back close it, and it is a modal dialog for the keyboard",
+    apply: h => h.replace("  if(open('profilePanel', 'open')){ closeProfile(); e.preventDefault(); return; }", ""),
+  },
 ];
 
 const original = fs.readFileSync(SRC, 'utf8');

@@ -121,7 +121,7 @@ function dropPin(p, zoom){
       '<button data-pin="N">' + svgEsc(t("nearHere")) + '</button>' +
       (favIsSaved(p) ? '<button data-pin="S" class="fav-on">★ ' + svgEsc(t("favSaved")) + '</button>'
                      : '<button data-pin="S">☆ ' + svgEsc(t("favSave")) + '</button>') +
-    '</div></div>', {maxWidth:250});
+    '</div></div>', {maxWidth:250, className:'attr-pop'});   // the app's themed pop-up: Leaflet's own is white, with the app's light text on it in dark mode
   if(mapUsable()){
     pinMarker.openPopup();
     map.flyTo([p.lat,p.lng], zoom || Math.max(map.getZoom(), 14), {duration:.7});

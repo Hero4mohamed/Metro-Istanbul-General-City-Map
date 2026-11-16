@@ -110,7 +110,7 @@ function fnSrc(name) {
 /* run the real dropPin() against a stub Leaflet; returns the pop-up HTML it built */
 function popupFor(p, saved) {
   let html = '';
-  const marker = { addTo() { return this; }, bindPopup(h) { html = h; return this; }, openPopup() {} };
+  const marker = { addTo() { return this; }, bindPopup(h, o) { html = h; popupFor.opts = o; return this; }, openPopup() {} };
   const ctx = { L: { marker: () => marker, divIcon: () => ({}) }, map: { removeLayer() {}, getSize: () => ({ x: 0, y: 0 }), getZoom: () => 12 },
     pinMarker: null, pinPlace: null, nearestStops: () => [], walkMin: m => m, t: k => k, svgEsc: esc, favIsSaved: () => !!saved, isFinite };
   vm.createContext(ctx);
@@ -121,6 +121,10 @@ test('fav ui: the place pop-up has Save beside Route from, Route to and Near her
   const h = popupFor({ name: 'Moda', lat: 40.98, lng: 29.02 }, false);
   assert.match(h, /data-pin="O"[\s\S]*data-pin="D"[\s\S]*data-pin="N"[\s\S]*data-pin="S"[^>]*>[^<]*favSave/, 'no Save in the pop-up');
   assert.match(popupFor({ name: 'Moda', lat: 40.98, lng: 29.02 }, true), /data-pin="S"[^>]*>[^<]*favSaved/, 'a saved place does not say Saved');
+});
+test('fav ui: the place pop-up uses the app\'s themed pop-up, so its buttons are readable in dark mode', () => {
+  popupFor({ name: 'Moda', lat: 40.98, lng: 29.02 }, false);
+  assert.match(String((popupFor.opts || {}).className || ''), /\battr-pop\b/, 'the pin pop-up is Leaflet\'s white box with light text on it');
 });
 test('fav ui: the station panel has a Save button', () => {
   const h = H.html(), i = h.indexOf('id="stn"'), rb = h.indexOf('class="rowbtns"', i), end = h.indexOf('</div>', rb);
@@ -388,6 +392,11 @@ test('profile: on a 320 px phone the search box keeps at least 150 px', () => {
   const c = CSS();
   assert.match(c, /body\.mobile \.omni\{[^}]*flex:1 1 calc\(100% - 44px\);[^}]*min-width:150px;/, 'the search box can shrink below 150 px or no longer leaves room for the button');
   assert.match(c, /body\.mobile #profileBtn\{[^}]*order:1;[^}]*flex:0 0 34px;/, 'the profile button does not sit beside the search box');
+  // the computer's corner offsets (top:13px; right:85px) would push a relatively placed button onto the search box
+  assert.match(c, /body\.mobile #profileBtn\{[^}]*position:relative;top:auto;right:auto;/, 'on a phone the profile button keeps the computer\'s offsets and covers the search box');
+  // on a 320 px phone the title (230 px) + Settings + Guide did not fit one row: Guide wrapped, and took the profile button's place
+  assert.match(c, /body\.mobile \.topbar h1\{[^}]*min-width:0;/, 'the title cannot shrink, so the buttons wrap onto extra rows on a narrow phone');
+  assert.match(c, /body\.mobile \.brand-tail\{[^}]*overflow:hidden;[^}]*text-overflow:ellipsis;/, 'the "· TURKMAPS" tail cannot shorten on a narrow phone');
 });
 test('profile: Escape and Back close it, and it is a modal dialog for the keyboard', () => {
   const s = APP();

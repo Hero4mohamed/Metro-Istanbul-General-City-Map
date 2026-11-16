@@ -6,7 +6,7 @@
 <!-- Substituted by build.cjs, which hashes the inline script from the final bytes. Pages
      cannot set headers, so this ships as meta; frame-ancestors and report-uri are
      unavailable that way. -->
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-jRGDRKWkrxdvC2Tg93nx5gTcNGs+1TovZoviLJKbNjc='; style-src 'self' 'unsafe-inline'; font-src 'self' data:; img-src 'self' data: blob: https://server.arcgisonline.com; connect-src 'self' https://server.arcgisonline.com https://tiles.openfreemap.org https://photon.komoot.io https://overpass-api.de https://api.ibb.gov.tr https://openapi.izmir.bel.tr https://turkmaps-relay.turkmaps-relay.workers.dev https://api.open-meteo.com https://air-quality-api.open-meteo.com https://routing.openstreetmap.de https://api.anthropic.com https://identitytoolkit.googleapis.com https://securetoken.googleapis.com https://firestore.googleapis.com; worker-src 'self'; frame-src 'none'; media-src 'none'; manifest-src 'self'; base-uri 'self'; form-action 'none'; object-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-oMFUtTk2a1TozwugYqT/DTBskuBrw8oH1x9lKo9ze9Q='; style-src 'self' 'unsafe-inline'; font-src 'self' data:; img-src 'self' data: blob: https://server.arcgisonline.com; connect-src 'self' https://server.arcgisonline.com https://tiles.openfreemap.org https://photon.komoot.io https://overpass-api.de https://api.ibb.gov.tr https://openapi.izmir.bel.tr https://turkmaps-relay.turkmaps-relay.workers.dev https://api.open-meteo.com https://air-quality-api.open-meteo.com https://routing.openstreetmap.de https://api.anthropic.com https://identitytoolkit.googleapis.com https://securetoken.googleapis.com https://firestore.googleapis.com; worker-src 'self'; frame-src 'none'; media-src 'none'; manifest-src 'self'; base-uri 'self'; form-action 'none'; object-src 'none'">
 <title>TurkMaps · Transit Network Map</title>
 <!-- Leaflet 1.9.4, shipped with the app rather than fetched from a CDN (V4.3): see vendor/README.md -->
 <link rel="stylesheet" href="vendor/leaflet/leaflet.css">
@@ -177,7 +177,7 @@
     box-shadow:0 24px 60px -18px rgba(0,0,0,.8),0 2px 8px rgba(0,0,0,.35),inset 0 1px 0 rgba(255,255,255,.07);}
 
   /* Top bar */
-  .topbar{position:fixed;top:14px;left:14px;padding:14px 17px;z-index:1000;max-width:348px;animation:cardIn .5s var(--ease) backwards;}
+  .topbar{position:fixed;top:14px;left:14px;padding:14px 17px;z-index:1000;max-width:384px;animation:cardIn .5s var(--ease) backwards;}
   .topbar h1{position:relative;font-family:var(--display);font-size:15px;letter-spacing:2.1px;font-weight:700;display:flex;align-items:center;gap:6px;cursor:default;}
   .topbar .logo{flex:none;filter:drop-shadow(0 4px 12px rgba(var(--ok-rgb),.35));transition:transform .35s var(--ease);}
   .topbar h1:hover .logo{transform:rotate(-8deg) scale(1.08);}
@@ -1395,7 +1395,9 @@
   body.mobile .controls,body.mobile .hint{display:none!important;}
   body.mobile .topbar{left:10px;right:10px;max-width:none;top:calc(8px + env(safe-area-inset-top));
     padding:9px 13px;display:flex;align-items:center;gap:10px;}
-  body.mobile .topbar h1{flex:1;font-size:13.5px;letter-spacing:1.8px;}
+  body.mobile .topbar h1{flex:1;font-size:13.5px;letter-spacing:1.8px;min-width:0;}
+  /* a narrow phone (320 px): "· TURKMAPS" shortens rather than pushing Guide (and the profile button with it) onto extra rows */
+  body.mobile .brand-tail{min-width:0;overflow:hidden;text-overflow:ellipsis;}
   /* The mobile header is a single flex row. Left in that row the search bar shoved Settings
      and Help clean off the screen, so it wraps onto a full-width line of its own beneath.
      Only the search bar carries an order, so the title and buttons keep their DOM order on
@@ -1510,7 +1512,7 @@
   .profile-btn.signed{background:var(--accent);border-color:var(--accent);color:var(--on-accent,#fff);opacity:1;}
   .profile-btn.unconfirmed::after{content:"";position:absolute;top:-2px;right:-2px;width:10px;height:10px;border-radius:var(--r-round);
     background:var(--warn-ink);border:2px solid var(--surface);}
-  body.mobile #profileBtn{position:relative;order:1;flex:0 0 34px;width:34px;height:34px;margin-top:9px;}
+  body.mobile #profileBtn{position:relative;top:auto;right:auto;order:1;flex:0 0 34px;width:34px;height:34px;margin-top:9px;}
   body.mobile.plan-open #profileBtn{display:none;}
   .profile-panel .prof-head{display:none;}
   body.mobile #profileBody .prof-head{display:flex;}
@@ -2696,7 +2698,7 @@
 
    The report carries the fault, the build, the city, the language and the browser. It never
    carries location, saved places, trip history or the API key. ===== */
-const BUILD = "20261116111227";
+const BUILD = "20261116112452";
 const DIAG_MAX = 20;
 let DIAG = [];
 try { DIAG = JSON.parse(localStorage.getItem("irn_diag") || "[]"); } catch (e) { DIAG = []; }
@@ -14752,7 +14754,7 @@ function dropPin(p, zoom){
       '<button data-pin="N">' + svgEsc(t("nearHere")) + '</button>' +
       (favIsSaved(p) ? '<button data-pin="S" class="fav-on">★ ' + svgEsc(t("favSaved")) + '</button>'
                      : '<button data-pin="S">☆ ' + svgEsc(t("favSave")) + '</button>') +
-    '</div></div>', {maxWidth:250});
+    '</div></div>', {maxWidth:250, className:'attr-pop'});   // the app's themed pop-up: Leaflet's own is white, with the app's light text on it in dark mode
   if(mapUsable()){
     pinMarker.openPopup();
     map.flyTo([p.lat,p.lng], zoom || Math.max(map.getZoom(), 14), {duration:.7});
@@ -17326,6 +17328,8 @@ function favRefreshButtons(){
     b.textContent = t(on ? 'favSaved' : 'favSave');
     b.setAttribute('aria-pressed', on ? 'true' : 'false');
   }
+  const title = document.querySelector('.pin-pop > b');                // a dropped pin just named: its pop-up shows the new name
+  if(title && pinPlace && title.textContent !== pinPlace.name) title.textContent = pinPlace.name;
   document.querySelectorAll('[data-pin="S"]').forEach(x => {
     const on = favIsSaved(pinPlace);
     x.classList.toggle('fav-on', on);

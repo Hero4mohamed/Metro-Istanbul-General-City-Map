@@ -129,6 +129,8 @@ function favRefreshButtons(){
     b.textContent = t(on ? 'favSaved' : 'favSave');
     b.setAttribute('aria-pressed', on ? 'true' : 'false');
   }
+  const title = document.querySelector('.pin-pop > b');                // a dropped pin just named: its pop-up shows the new name
+  if(title && pinPlace && title.textContent !== pinPlace.name) title.textContent = pinPlace.name;
   document.querySelectorAll('[data-pin="S"]').forEach(x => {
     const on = favIsSaved(pinPlace);
     x.classList.toggle('fav-on', on);
