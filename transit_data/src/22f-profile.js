@@ -9,11 +9,22 @@
    ========================================================================== */
 /* ==PROFILE-CORE-START== */
 const PROFILE_OUTLINE = '<svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 20c1.5-3.6 4.5-5.4 8-5.4s6.5 1.8 8 5.4"/></svg>';
+/* the first letter as a person sees it (V4.7.1): a whole emoji (😀, 👩‍💻, 👍🏽) or a letter with its accent, never half of one.
+   charAt(0) gave half an emoji, which shows as a broken box. Phones without Intl.Segmenter still get whole code points. */
+function profileInitial(name){
+  try{
+    if(typeof Intl !== 'undefined' && Intl.Segmenter){
+      const it = new Intl.Segmenter(undefined, { granularity: 'grapheme' }).segment(name)[Symbol.iterator]().next();
+      if(!it.done) return it.value.segment;
+    }
+  }catch(e){}
+  return Array.from(name)[0] || '';
+}
 function renderProfileBtn(){
   const b = document.getElementById('profileBtn'); if(!b) return;
   const name = acct ? ('' + (acct.name || acct.email || '')).trim() : '';
   if(acct && name){
-    const c = name.charAt(0);
+    const c = profileInitial(name);
     b.textContent = (typeof lang !== 'undefined' && lang === 'tr') ? c.toLocaleUpperCase('tr-TR') : c.toUpperCase();
   } else b.innerHTML = PROFILE_OUTLINE;
   b.classList.toggle('signed', !!acct);

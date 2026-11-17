@@ -80,6 +80,17 @@ function favListHTML(list, home, work, cityId, cityLabel){
   if(!list.length) h += '<div class="fav-empty">' + svgEsc(t('favEmpty')) + '</div>';
   return h;
 }
+/* "Remove {name}?" with the name exactly as typed (V4.7.1): String.replace reads "$&", "$1", "$`" in the NAME as patterns */
+function favRemoveAskText(name){ return t('favRemoveAsk').split('{name}').join('' + name); }
+/* Which row gets the keyboard after the list is drawn again (V4.7.1): the same favourite if it is still there (renamed, made
+   Home), else the row that took its place (removed), else the last one; -1 when the list is empty. `ids` are the rows' ids now,
+   `id` and `idx` the row the keyboard was on (idx -1: in the list but on no row). */
+function favFocusIndex(ids, id, idx){
+  if(!ids.length) return -1;
+  const same = id == null ? -1 : ids.indexOf(id);
+  if(same >= 0) return same;
+  return Math.min(Math.max(idx, 0), ids.length - 1);
+}
 /* ==FAV-PURE-END== */
 
 /* ==FAV-CORE-START== */
@@ -154,9 +165,20 @@ function favChanged(){
 }
 
 /* ---- the list (Friends tab) ---- */
+function favRows(box){ return [...box.querySelectorAll('.fav-row')]; }
 function renderFavs(){
+  /* the keyboard was in the list (V4.7.1): it comes back to the same favourite, or the next one, not to the top of the page */
+  const a = document.activeElement, box = a && a.closest ? a.closest('.fav-box') : null;
+  const row = box ? a.closest('.fav-row') : null;
+  const was = box ? { id: row ? row.getAttribute('data-fav-id') : null, idx: row ? favRows(box).indexOf(row) : -1,
+    sel: a.classList.contains('fav-main') ? '.fav-main' : a.classList.contains('fav-go') ? '.fav-go' : '.fav-more' } : null;
   const html = favListHTML(favLoad(), homePlace, workPlace, CITY_ID, id => (cityKnown(id) && CITIES[id].label) || id);
   document.querySelectorAll('.fav-box').forEach(b => { b.innerHTML = html; });
+  if(!was || !document.contains(box)) return;
+  const rows = favRows(box), i = favFocusIndex(rows.map(r => r.getAttribute('data-fav-id')), was.id, was.idx);
+  const to = i >= 0 ? (rows[i].querySelector(was.sel) || rows[i].querySelector('.fav-more') || rows[i].querySelector('.fav-main')) : null;
+  if(to) to.focus();
+  else { box.setAttribute('tabindex', '-1'); box.focus(); }          // nothing left in the list: the list itself, not the page top
 }
 function favPlaceById(id){
   if(id === 'home') return homePlace ? Object.assign({ kind: 'place', ic: '🏠', city: CITY_ID }, homePlace) : null;
@@ -168,7 +190,9 @@ function favPlaceById(id){
 function favOpen(f){
   if(!f) return;
   if(f.city && f.city !== CITY_ID && cityKnown(f.city) && f.id){ switchCity(f.city, { fav: f.id }); return; }
-  if(IS_MOBILE && mSheets.friends && mSheets.friends.classList.contains('open')) setDragDetent(mSheets.friends, 'low');
+  /* on a phone the Friends sheet closes (V4.7.1): even at its low height it covers the middle of the screen, where the map puts the
+     pin, so the pin and its pop-up landed at its top edge, half hidden. The bottom bar brings the list back. */
+  if(IS_MOBILE && mSheets.friends && mSheets.friends.classList.contains('open')) openSheet(null);
   dropPin({ name: f.name, lat: f.lat, lng: f.lng, kind: f.kind, ic: f.ic, ctx: f.ctx, city: f.city }, 16);
 }
 function favMakeHomeWork(which, id){
@@ -181,11 +205,15 @@ function favMakeHomeWork(which, id){
 const favMakeHome = id => favMakeHomeWork('home', id);
 const favMakeWork = id => favMakeHomeWork('work', id);
 function favCloseMenus(except){
+  let asking = false;
   document.querySelectorAll('.fav-box .fav-menu').forEach(m => {
     if(m === except) return;
+    if(m.querySelector('.fav-ask')) asking = true;
     m.hidden = true;
     const b = m.parentNode.querySelector('[data-fav-act="menu"]'); if(b) b.setAttribute('aria-expanded', 'false');
   });
+  // a "Remove …?" question left by a click elsewhere: the row gets its menu back, or its next ⋯ would show the question (V4.7.1)
+  if(asking) renderFavs();
 }
 document.addEventListener('click', e => {
   const el = e.target.closest && e.target.closest('.fav-box [data-fav-open], .fav-box [data-fav-act]');
@@ -211,7 +239,7 @@ document.addEventListener('click', e => {
   else if(act === 'remove'){
     // asked once, in the row itself
     const m = el.parentNode;
-    m.innerHTML = '<span class="fav-ask">' + svgEsc(t('favRemoveAsk').replace('{name}', f.name)) + '</span>' +
+    m.innerHTML = '<span class="fav-ask">' + svgEsc(favRemoveAskText(f.name)) + '</span>' +
       '<button type="button" class="fav-yes" data-fav-act="remove-yes" data-fav-id="' + attrEsc(id) + '">' + svgEsc(t('favRemove')) + '</button>' +
       '<button type="button" data-fav-act="remove-no" data-fav-id="' + attrEsc(id) + '">' + svgEsc(t('accCancel')) + '</button>';
     m.hidden = false;
@@ -220,12 +248,20 @@ document.addEventListener('click', e => {
   else if(act === 'remove-yes'){ favSave(favRemove(favLoad(), id)); showToast(t('favRemoved')); favChanged(); }
   else if(act === 'remove-no') renderFavs();
 });
-/* Escape closes an open ⋯ menu first (on the capture phase, before the app's own Escape closes the sheet) */
+/* Escape closes an open ⋯ menu first (on the capture phase, before the app's own Escape closes the sheet) — but only while the
+   keyboard is in that menu's row. Typed anywhere else (the search box), the Escape is that place's, and a stray menu just closes. */
 document.addEventListener('keydown', function favMenuEscape(e){
   if(e.key !== 'Escape') return;
   const open = document.querySelector('.fav-box .fav-menu:not([hidden])');
-  if(open){ e.stopPropagation(); favCloseMenus(); const b = open.parentNode.querySelector('[data-fav-act="menu"]'); if(b) b.focus(); }
+  if(!open) return;
+  if(!open.parentNode.contains(document.activeElement)){ favCloseMenus(); return; }
+  e.stopPropagation(); favCloseMenus(); const b = open.parentNode.querySelector('[data-fav-act="menu"]'); if(b) b.focus();
 }, true);
+/* the keyboard leaves a ⋯ menu's row (Tab, or a click into the search box): the menu closes (V4.7.1) */
+document.addEventListener('focusin', function favMenuFocusOut(e){
+  const open = document.querySelector('.fav-box .fav-menu:not([hidden])');
+  if(open && !open.parentNode.contains(e.target)) favCloseMenus();
+});
 /* the page was opened to show a favourite of this city (after switching city from the list): show it once, then take the
    favourite out of the address bar so a reload does not show it again */
 (function(){
@@ -239,6 +275,8 @@ document.addEventListener('keydown', function favMenuEscape(e){
 })();
 document.getElementById('stnFav').addEventListener('click', () => { const sp = favStationPlace(); if(sp) favToggle(sp); });
 
+/* Back while the name dialog is open: the same as pressing its Cancel */
+function favNameCancel(){ const b = document.querySelector('#favNameDlg [data-fav-dlg="cancel"]'); if(b) b.click(); }
 /* the name of a dropped pin: a small dialog, Enter saves, Escape cancels; `cb(null)` on cancel */
 function favAskName(def, cb){
   const old = document.getElementById('favNameDlg'); if(old) old.remove();
@@ -250,11 +288,13 @@ function favAskName(def, cb){
     '<div class="fav-dlg-b"><button type="button" data-fav-dlg="cancel">' + svgEsc(t('accCancel')) + '</button>' +
     '<button type="button" class="primary" data-fav-dlg="ok">' + svgEsc(t('favSave')) + '</button></div>';
   document.body.appendChild(d);
+  try{ navReconcile(); }catch(e){}                 // the phone's Back now cancels this dialog first (21-history.js), V4.7.1
   const inp = d.querySelector('input'), back = document.activeElement;
   inp.value = def || '';
   let done = false;
   const finish = v => {
     if(done) return; done = true; d.remove();
+    try{ navReconcile(); }catch(e){}
     if(back && back.focus && document.contains(back)) try{ back.focus(); }catch(e){}
     cb(v);
   };
