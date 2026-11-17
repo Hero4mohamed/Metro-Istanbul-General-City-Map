@@ -2756,6 +2756,52 @@ const MUTATIONS = [
     expect: "profile: Escape and Back close it, and it is a modal dialog for the keyboard",
     apply: h => h.replace("  if(open('profilePanel', 'open')){ closeProfile(); e.preventDefault(); return; }", ""),
   },
+  /* ---- V4.7.1: the small V4.7 fixes ---- */
+  {
+    name: "a name with $& in it is mangled in the remove question",
+    expect: "v4.7.1: the remove question shows the name exactly as typed",
+    apply: h => h.replace("function favRemoveAskText(name){ return t('favRemoveAsk').split('{name}').join('' + name); }", "function favRemoveAskText(name){ return t('favRemoveAsk').replace('{name}', name); }"),
+  },
+  {
+    name: "a stray ⋯ menu swallows Escape typed in the search box",
+    expect: "v4.7.1: Escape typed in the search box is the search box's",
+    apply: h => h.replace("  if(!open.parentNode.contains(document.activeElement)){ favCloseMenus(); return; }", ""),
+  },
+  {
+    name: "a ⋯ menu stays open after the keyboard leaves it",
+    expect: "v4.7.1: moving the keyboard out of a ⋯ menu closes it",
+    apply: h => h.replace("  if(open && !open.parentNode.contains(e.target)) favCloseMenus();", ""),
+  },
+  {
+    name: "a left-over Remove question comes back with the next ⋯",
+    expect: "v4.7.1: a \"Remove …?\" question closed by a click elsewhere",
+    apply: h => h.replace("  if(asking) renderFavs();", ""),
+  },
+  {
+    name: "after a removal the keyboard goes to the row above",
+    expect: "v4.7.1: after the list is redrawn the keyboard stays on the same favourite",
+    apply: h => h.replace("  return Math.min(Math.max(idx, 0), ids.length - 1);", "  return Math.max(0, Math.min(idx - 1, ids.length - 1));"),
+  },
+  {
+    name: "Back does not cancel the name dialog",
+    expect: "v4.7.1: Back closes the name dialog (as Cancel)",
+    apply: h => h.replace("function favNameCancel(){ const b = document.querySelector('#favNameDlg [data-fav-dlg=\"cancel\"]'); if(b) b.click(); }", "function favNameCancel(){}"),
+  },
+  {
+    name: "the profile button shows half an emoji",
+    expect: "v4.7.1: a name starting with an emoji shows the whole emoji",
+    apply: h => h.replace("    const c = profileInitial(name);", "    const c = name.charAt(0);"),
+  },
+  {
+    name: "phones without Intl.Segmenter get half an emoji",
+    expect: "v4.7.1: with no Intl.Segmenter (older phones) an emoji is still whole",
+    apply: h => h.replace("  return Array.from(name)[0] || '';", "  return name.charAt(0);"),
+  },
+  {
+    name: "a favourite opened on a phone lands under the Friends sheet",
+    expect: "v4.7.1: on a phone a favourite opens on the map in full view",
+    apply: h => h.replace("mSheets.friends.classList.contains('open')) openSheet(null);", "mSheets.friends.classList.contains('open')) setDragDetent(mSheets.friends, 'low');"),
+  },
 ];
 
 const original = fs.readFileSync(SRC, 'utf8');

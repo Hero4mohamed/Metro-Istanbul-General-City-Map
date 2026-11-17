@@ -30,6 +30,7 @@ const NAV_LAYERS = [
   { id:'pass',     open:() => navHas('passPanel','open'),     close:() => closePassport() },
   { id:'remind',   open:() => navHas('remPanel','open'),      close:() => closeReminder() },
   { id:'invite',   open:() => navHas('inviteDlg','open'),     close:() => { declineInvite(); closeInviteDlg(); } },   // a friend request (22d-friends.js)       // a reminder being set (22b-reminders.js)
+  { id:'favname',  open:() => !!document.getElementById('favNameDlg'), close:() => favNameCancel() },   // naming a favourite (22e-favourites.js; it tells navReconcile when it opens and closes)
   { id:'finder',   open:() => navHas('stnFinder','open'),     close:() => closeFinder() },       // the list of stations in view (25-map-keyboard.js)
   { id:'settings', open:() => navHas('settingsPanel','open'), close:() => closeSettings() },
   { id:'profile',  open:() => navHas('profilePanel','open'),  close:() => closeProfile() },     // the profile corner on a computer (22f-profile.js)
