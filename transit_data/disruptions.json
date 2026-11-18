@@ -25,6 +25,20 @@
     "messageLang": "en"
   },
   {
+    "id": "t1-pazartekke",
+    "ref": "T1",
+    "source": "metro.istanbul",
+    "scope": "segment",
+    "from": "Pazartekke",
+    "to": "Topkapı",
+    "severity": "partial",
+    "title": "Section affected",
+    "messageTr": "Çekici aracın katener (enerji) teline zarar vermesi nedeniyle seferler Kabataş-Çapa ve Cevizlibağ-Bağcılar istasyonları arasında yapılmaktadır.",
+    "message": "Çekici aracın katener (enerji) teline zarar vermesi nedeniyle seferler Kabataş-Çapa ve Cevizlibağ-Bağcılar istasyonları arasında yapılmaktadır.",
+    "messageLang": "tr",
+    "translatedBy": "none"
+  },
+  {
     "id": "t3-al-m-yor",
     "ref": "T3",
     "source": "metro.istanbul",
