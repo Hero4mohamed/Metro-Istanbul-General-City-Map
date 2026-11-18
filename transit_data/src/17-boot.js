@@ -130,14 +130,15 @@ function renderDisruptionMarkers(){
       const base = (line && KIND[line.kind] && KIND[line.kind].weight) || 4;
       const core = Math.max(1.2, base * ls);                    // the line's own drawn width here
       const sw   = Math.max(1.3, core * 0.5);                   // stripe: half of it, never hairline
+      const s0   = line ? sharedSOnPath(line, 0, coords[0]) : 0;   // where this stretch starts along the line, so a shared track's stripe sits on its own side
       const dash = Math.max(1.6, 2.4*ls).toFixed(1) + ',' + Math.max(2.2, 3.2*ls).toFixed(1);
-      const wash  = L.polyline(coords, { renderer:hazardRenderer, color:col, weight:core+5,
-                              opacity:0.14, lineCap:'round', lineJoin:'round', interactive:false });
-      const stripe= L.polyline(coords, { renderer:hazardRenderer, color:col, weight:sw,
+      const wash  = sharedPolyline(line, 0, coords, { renderer:hazardRenderer, color:col, weight:core+5,
+                              opacity:0.14, lineCap:'round', lineJoin:'round', interactive:false }, s0);
+      const stripe= sharedPolyline(line, 0, coords, { renderer:hazardRenderer, color:col, weight:sw,
                               opacity:0.95, lineCap:'butt', lineJoin:'round',
-                              dashArray:dash, interactive:false });
-      const hit   = L.polyline(coords, { renderer:hazardRenderer, color:col,
-                              weight:Math.max(10, core+8), opacity:0, lineCap:'round' });
+                              dashArray:dash, interactive:false }, s0);
+      const hit   = sharedPolyline(line, 0, coords, { renderer:hazardRenderer, color:col,
+                              weight:Math.max(10, core+8), opacity:0, lineCap:'round' }, s0);
       if(CAN_HOVER) hit.bindTooltip(disrTip(d), { sticky:true, className:'lt' });
       hit.on('click', e=>{ hit.closeTooltip(); pinDisr(d, e.latlng, 8); openDisruption(d); });
       wash.addTo(disruptionLayer); stripe.addTo(disruptionLayer); hit.addTo(disruptionLayer);
