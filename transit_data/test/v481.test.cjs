@@ -137,3 +137,87 @@ test('v4.8.1: an affected section gets the red-and-yellow caution band, with the
   const order = ['aura.addTo', 'red.addTo', 'yellow.addTo', 'seam.addTo', 'hit.addTo'].map(x => b.indexOf(x));
   assert.ok(order.every((x, i) => x > 0 && (i === 0 || x > order[i - 1])), 'drawn glow, red, yellow, the line\'s colour, then the invisible tap line on top');
 });
+
+/* ---- 4. notifications that ring, open the app when tapped, and can be checked from Settings ---- */
+function notifyEnv() {
+  const shown = [], toasts = [];
+  const reg = { showNotification: (title, o) => { shown.push({ title, o }); return Promise.resolve(); } };
+  const ctx = { Notification: { permission: 'granted' }, navigator: { serviceWorker: { ready: Promise.resolve(reg) } },
+    window: {}, location: { pathname: '/app/', search: '?city=istanbul' }, showToast: (m) => toasts.push(m), Date, Math, Promise };
+  ctx.window.Notification = ctx.Notification;
+  vm.createContext(ctx);
+  vm.runInContext(fnSrc('notifyOpts') + '\n' + fnSrc('notify') + '\nthis.api = { notify, notifyOpts };', ctx);
+  return { api: ctx.api, shown, toasts };
+}
+test('v4.8.1: a notification rings each time: its own tag, "alert again", a vibration, and where tapping it goes', async () => {
+  const e = notifyEnv();
+  e.api.notify('T1', 'one'); e.api.notify('T2', 'two', null, 'rem-r1');
+  await new Promise(r => setTimeout(r, 5));
+  assert.strictEqual(e.shown.length, 2);
+  const [a, b] = e.shown.map(x => x.o);
+  assert.ok(a.tag && a.tag !== 'irn-alert' && a.tag !== b.tag, 'every notification has its own tag (one shared tag made each new one replace the last SILENTLY)');
+  assert.strictEqual(b.tag, 'rem-r1', 'a caller can name the tag, so a newer heads-up for the same reminder replaces the older one');
+  assert.ok(a.renotify === true && b.renotify === true, 'a replaced notification still rings');
+  assert.ok(Array.isArray(a.vibrate) && a.vibrate.length >= 1 && a.silent === false, 'it vibrates and is not silent');
+  assert.strictEqual(a.data.url, '/app/?city=istanbul', 'tapping it opens this page of the app');
+  assert.deepStrictEqual(e.toasts, ['one', 'two'], 'the in-app message is still shown as well');
+});
+test('v4.8.1: a reminder and a line alert each name their own tag', () => {
+  const s = APP();
+  assert.ok(/notify\(t\('remNotifyTitle'\)[\s\S]{0,260}?, null, 'rem-' \+ a\.r\.id\)/.test(fnSrc('remTick')), 'a reminder\'s heads-up is tagged by reminder');
+  assert.ok(/notify\('⚠ '\+d\.ref\+' · '\+disTitle\(d\), body, d\.severity==='major'\?'err':null, 'dis-'\+d\.id\)/.test(s), 'a line alert is tagged by its notice');
+});
+
+/* the service worker's tap handler, run against a stand-in for the browser */
+function swTap(windows) {
+  const src = require('fs').readFileSync(path.join(__dirname, '..', '..', 'sw.js'), 'utf8').replace(/\r\n/g, '\n');
+  const i = src.indexOf("self.addEventListener('notificationclick'");
+  assert.ok(i >= 0, 'the service worker has no handler for a tapped notification');
+  let depth = 0, k = src.indexOf('{', i), end = -1;
+  for (let j = k; j < src.length; j++) { if (src[j] === '{') depth++; else if (src[j] === '}' && --depth === 0) { end = src.indexOf(');', j) + 2; break; } }
+  const handlers = {}, opened = [], focused = [];
+  const self = { registration: { scope: 'https://x.test/app/' }, addEventListener: (t, f) => { handlers[t] = f; },
+    clients: { matchAll: async () => windows.map(u => ({ url: u, focus: async () => { focused.push(u); }, navigate: async () => {} })),
+               openWindow: async u => { opened.push(u); } } };
+  const ctx = { self, URL, Promise };
+  vm.createContext(ctx); vm.runInContext(src.slice(i, end), ctx);
+  return async (url) => {
+    let closed = false, wait = null;
+    await handlers.notificationclick({ notification: { data: url === undefined ? undefined : { url }, close: () => { closed = true; } }, waitUntil: p => { wait = p; } });
+    if (wait) await wait;
+    return { closed, opened, focused };
+  };
+}
+test('v4.8.1: tapping a notification closes it and opens TurkMaps (or brings it to the front)', async () => {
+  let r = await swTap([])('/app/?city=istanbul');
+  assert.ok(r.closed, 'the tapped notification is closed');
+  assert.deepStrictEqual(r.opened, ['https://x.test/app/?city=istanbul'], 'the app is opened where the notification points');
+  r = await swTap(['https://x.test/app/?city=ankara'])('/app/?city=istanbul');
+  assert.deepStrictEqual(r.focused, ['https://x.test/app/?city=ankara'], 'an app already open is brought to the front');
+  assert.deepStrictEqual(r.opened, [], 'and no second copy is opened');
+  r = await swTap([])('https://evil.example/');
+  assert.deepStrictEqual(r.opened, ['https://x.test/app/'], 'a link outside the app is never opened: the app itself is');
+  r = await swTap([])(undefined);
+  assert.deepStrictEqual(r.opened, ['https://x.test/app/'], 'a notification with no link opens the app');
+});
+
+test('v4.8.1: Settings says whether notifications are on, can ask for them, and can send a test', () => {
+  const ctx = {}; vm.createContext(ctx);
+  vm.runInContext(fnSrc('notifStateKey') + '\nthis.f = notifStateKey;', ctx);
+  assert.deepStrictEqual(['granted', 'default', 'denied', undefined].map(ctx.f), ['notifOn', 'notifOff', 'notifBlocked', 'notifNone']);
+  const html = require('fs').readFileSync(path.join(__dirname, '..', 'app.template.html'), 'utf8');
+  for (const id of ['notifRow', 'notifState', 'notifAllow', 'notifTest']) assert.ok(html.includes('id="' + id + '"'), 'Settings has #' + id);
+  const i18n = require('fs').readFileSync(path.join(__dirname, '..', 'src', '01-i18n.js'), 'utf8');
+  for (const k of ['notifTitle', 'notifOn', 'notifOff', 'notifBlocked', 'notifNone', 'notifAllow', 'notifTest', 'notifTestTitle', 'notifTestBody', 'notifHint'])
+    assert.strictEqual((i18n.match(new RegExp('(^|[^A-Za-z])' + k + ':"', 'gm')) || []).length, 4, k + ' in all four languages');
+  assert.ok(/notify\(t\('notifTestTitle'\), t\('notifTestBody'\), null, 'test'\)/.test(APP()), 'the test button sends a real notification through the same path as reminders');
+});
+
+test('v4.8.1: the privacy notice says what a notification does when tapped, and what the test is', () => {
+  const s = require('fs').readFileSync(path.join(__dirname, '..', 'legal-content.cjs'), 'utf8');
+  const en = s.slice(s.indexOf('<h2 id="notify">7. Notifications</h2>'), s.indexOf('<h2', s.indexOf('<h2 id="notify">7. Notifications</h2>') + 5));
+  const tr = s.slice(s.indexOf('<h2 id="notify">7. Bildirimler</h2>'), s.indexOf('<h2', s.indexOf('<h2 id="notify">7. Bildirimler</h2>') + 5));
+  assert.ok(/test notification/i.test(en) && /opens TurkMaps/.test(en), 'EN: the test, and tapping opens the app');
+  assert.ok(/deneme bildirimi/i.test(tr) && /TurkMaps.{0,20}açılır/.test(tr), 'TR: the same');
+  assert.ok(/while the app is running/.test(en) && /calendar/.test(en), 'EN still says when reminders can ring and offers the calendar');
+});

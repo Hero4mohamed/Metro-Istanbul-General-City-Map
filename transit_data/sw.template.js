@@ -179,6 +179,21 @@ self.addEventListener('message', e => {
   }
 });
 
+/* V4.8.1: tapping a notification. There was no handler, so a tap did nothing at all: the app did not open and the notification stayed.
+   Now the notification closes and TurkMaps comes forward: a window of the app already open is focused, otherwise the app opens where
+   the notification points. Only pages of the app itself are ever opened; anything else opens the app's own start page. */
+self.addEventListener('notificationclick', e => {
+  e.notification.close();
+  const scope = self.registration.scope;
+  let want = scope;
+  try { const u = new URL((e.notification.data && e.notification.data.url) || scope, scope); if (u.href.startsWith(scope)) want = u.href; } catch (_) { want = scope; }
+  e.waitUntil((async () => {
+    const wins = await self.clients.matchAll({ type: 'window', includeUncontrolled: true });
+    for (const w of wins) { if (w.url && w.url.startsWith(scope) && w.focus) return w.focus(); }
+    if (self.clients.openWindow) return self.clients.openWindow(want);
+  })());
+});
+
 self.addEventListener('fetch', e => {
   if (e.request.method !== 'GET') return;
   const url = new URL(e.request.url);

@@ -2906,6 +2906,27 @@ const MUTATIONS = [
     expect: "v4.8.1: nothing is guessed",
     apply: h => h.replace("    if(a < 0 || b < 0 || a === b) return [];\n    const lo", "    if(a === b) return [];\n    const lo").replace("    if(a < 0 || b < 0 || a === b) return [];\r\n    const lo", "    if(a === b) return [];\r\n    const lo"),
   },
+  /* ---- V4.8.1: notifications that ring (the tap handler lives in sw.js, which these rows cannot reach: its own test runs it) ---- */
+  {
+    name: "every notification shares one tag again, so a new one replaces the last without a sound",
+    expect: "v4.8.1: a notification rings each time",
+    apply: h => h.replace("tag: tag || ('irn-' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6)),", "tag: tag || 'irn-alert',"),
+  },
+  {
+    name: "a replaced notification does not ring",
+    expect: "v4.8.1: a notification rings each time",
+    apply: h => h.replace("    renotify: true, silent: false, vibrate: [180, 80, 180],", "    vibrate: [180, 80, 180],"),
+  },
+  {
+    name: "a reminder's heads-ups lose their own tag",
+    expect: "v4.8.1: a reminder and a line alert each name their own tag",
+    apply: h => h.replace(".replace('{n}', left), null, 'rem-' + a.r.id);", ".replace('{n}', left));"),
+  },
+  {
+    name: "the test button in Settings sends nothing",
+    expect: "v4.8.1: Settings says whether notifications are on, can ask for them, and can send a test",
+    apply: h => h.replace("  if(test) test.addEventListener('click', () => notify(t('notifTestTitle'), t('notifTestBody'), null, 'test'));", ""),
+  },
   {
     name: "the glow/outline stays put while the core moves",
     expect: "wiring: the glow/casing and the core of every non-ferry line are built as shared-aware polylines",

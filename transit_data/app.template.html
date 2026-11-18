@@ -1620,6 +1620,10 @@
   .sp-searching .sp-sub{display:none;}
   .sp-label{font-size:var(--fs-7);font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--dim);margin-bottom:10px;}
   .sp-row{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:10px;}
+  .notif-state{color:var(--dim);font-size:12px;text-align:end;}
+  .notif-state.on{color:rgb(var(--ok-rgb));}
+  .notif-state.off{color:#E5484D;}
+  #notifTest:disabled{opacity:.45;cursor:default;}
   .sp-row:last-child{margin-bottom:0;}
   .sp-row>span{font-size:13px;font-weight:600;color:var(--text);}
   .settings-panel .seg{margin:0;}
@@ -2305,6 +2309,12 @@
         <div class="sp-row"><span data-i18n="remList">Reminders</span></div>
         <div class="rem-list" id="remList"></div>
         <div class="sp-hint" data-i18n="remListHint">Set one from a line's panel with ⏰ Remind me.</div>
+      </div>
+      <div class="sp-item" id="notifRow">
+        <div class="sp-row"><span data-i18n="notifTitle">Notifications</span><small class="notif-state" id="notifState"></small></div>
+        <div class="sp-place"><button class="mini" type="button" id="notifAllow" data-i18n="notifAllow">Allow notifications</button>
+          <button class="mini" type="button" id="notifTest" data-i18n="notifTest">Send a test notification</button></div>
+        <div class="sp-hint" data-i18n="notifHint">Reminders and line alerts ring while TurkMaps is open or was used recently.</div>
       </div>
       <div class="sp-item"><button class="btn" id="openPassport">🎫 <span data-i18n="passport">Your travel passport</span></button></div>
     </div>

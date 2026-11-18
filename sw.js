@@ -2,7 +2,7 @@
    so every deploy activates immediately and the installed app self-updates.
    Strategy: NETWORK-FIRST for the page (updates always win; cached copy only when offline),
    stale-while-revalidate for static assets/CDNs, and NO caching for live data APIs. */
-const VERSION = '20261118220306';
+const VERSION = '20261118221906';
 const SHELL  = 'raynet-shell-' + VERSION;
 const STATIC = 'raynet-static-v1';
 const STATIC_HOSTS = [];     // the page loads no CDN files any more (V4.3): Leaflet and the fonts are shipped with it
@@ -177,6 +177,21 @@ self.addEventListener('message', e => {
     Promise.all([caches.delete(TILES), caches.delete(VEC_TILES)])
       .then(() => reply({ type:"tileStats", count:0, cap:TILE_CAP }));
   }
+});
+
+/* V4.8.1: tapping a notification. There was no handler, so a tap did nothing at all: the app did not open and the notification stayed.
+   Now the notification closes and TurkMaps comes forward: a window of the app already open is focused, otherwise the app opens where
+   the notification points. Only pages of the app itself are ever opened; anything else opens the app's own start page. */
+self.addEventListener('notificationclick', e => {
+  e.notification.close();
+  const scope = self.registration.scope;
+  let want = scope;
+  try { const u = new URL((e.notification.data && e.notification.data.url) || scope, scope); if (u.href.startsWith(scope)) want = u.href; } catch (_) { want = scope; }
+  e.waitUntil((async () => {
+    const wins = await self.clients.matchAll({ type: 'window', includeUncontrolled: true });
+    for (const w of wins) { if (w.url && w.url.startsWith(scope) && w.focus) return w.focus(); }
+    if (self.clients.openWindow) return self.clients.openWindow(want);
+  })());
 });
 
 self.addEventListener('fetch', e => {
