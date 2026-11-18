@@ -163,7 +163,7 @@ NETWORK.forEach(line => {
      twice). Leaflet calls a content function when the tooltip opens, when everything exists. */
   const tip = () => lineTooltip(line);
   const isFerry = line.kind === 'ferry';
-  line.paths.forEach(path => {
+  line.paths.forEach((path, pi) => {
     if(isFerry){
       // subtle: no glow; thin low-opacity dotted core + an invisible wide click target
       const hit = L.polyline(path, { renderer:lineRenderer, color:line.color, weight:9, opacity:0, lineCap:'round' });
@@ -174,9 +174,9 @@ NETWORK.forEach(line => {
       return;
     }
     const gw = wt + (live?7:4);
-    const glow = L.polyline(path, { renderer:lineRenderer, color:line.color, weight:gw,
+    const glow = sharedPolyline(line, pi, path, { renderer:lineRenderer, color:line.color, weight:gw,
                             opacity: live?0.16:0.10, lineCap:'round', lineJoin:'round' });
-    const core = L.polyline(path, { renderer:lineRenderer, color:line.color, weight:wt,
+    const core = sharedPolyline(line, pi, path, { renderer:lineRenderer, color:line.color, weight:wt,
                             opacity: coreOp, lineCap:look ? (look.cap || 'butt') : 'round', lineJoin:'round', dashArray:dash });
     [glow,core].forEach(pl => {
       pl.bindTooltip(tip, { sticky:true, className:'lt' });

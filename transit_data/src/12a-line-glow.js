@@ -33,8 +33,10 @@ function setLineGlow(line){
   if(typeof boatFocus === 'function') boatFocus(line.ref);          // in the Boats tab the other boats step back too (14b-boats.js)
   const paths = (typeof boatPathFor === 'function' && boatPathFor(line)) || line.paths;     // there, a line is drawn on its own lane
   const glowColour = (typeof boatColourFor === 'function' && boatColourFor(line)) || line.color;
-  paths.forEach(path => LINE_GLOW.forEach(g => {
-    const pl = L.polyline(path, { renderer: lineRenderer, color: glowColour, weight: g[0], opacity: g[1], lineCap: 'round', lineJoin: 'round', interactive: false });
+  paths.forEach((path, pi) => LINE_GLOW.forEach(g => {
+    const o = { renderer: lineRenderer, color: glowColour, weight: g[0], opacity: g[1], lineCap: 'round', lineJoin: 'round', interactive: false };
+    /* on a shared track the glow follows the line to its side (a boat's own lane is not the line's path, so it stays as drawn) */
+    const pl = (paths === line.paths && typeof sharedPolyline === 'function') ? sharedPolyline(line, pi, path, o) : L.polyline(path, o);
     pl._glowBase = g[0];
     pl.addTo(lineGlowLayer);
     if(pl.bringToBack) pl.bringToBack();

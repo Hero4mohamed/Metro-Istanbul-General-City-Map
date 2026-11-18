@@ -217,6 +217,8 @@ function drawTrains(now){
     if(closedCache[tr.ref]) continue;                 // line suspended / outside service hours
     const ll = posAt(tr.line, tr.s);
     const p = map.latLngToContainerPoint([ll[0], ll[1]]);
+    const off = sharedTrainOffset(tr.line, tr.s, z);      // on a shared track the train runs on its own line's side
+    if(off){ p.x += off.x; p.y += off.y; }
     if(p.x<-15||p.y<-15||p.x>s.x+15||p.y>s.y+15) continue;
     const dwell = tr.state==="dwell";
     // sleek translucent dot

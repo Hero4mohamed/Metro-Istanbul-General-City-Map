@@ -2802,6 +2802,68 @@ const MUTATIONS = [
     expect: "v4.7.1: on a phone a favourite opens on the map in full view",
     apply: h => h.replace("mSheets.friends.classList.contains('open')) openSheet(null);", "mSheets.friends.classList.contains('open')) setDragDetent(mSheets.friends, 'low');"),
   },
+
+  /* ---- shared-track drawing: two lines on one track drawn side by side ---- */
+  {
+    name: "the side is a fixed sign, so a line drawn the other way lands on the same side",
+    expect: "the two lines always go to opposite sides, whichever way each is drawn",
+    apply: h => h.replace("const sideA = vote > 0 ? -1 : 1, signB = -sideA * (dot < 0 ? -1 : 1);", "const sideA = -1, signB = 1;"),
+  },
+  {
+    name: "no taper where the lines part: the shift stops dead",
+    expect: "the shift tapers to nothing over 150 m where the lines part, but not at a shared terminus",
+    apply: h => h.replace("  if(!run.noEnd && T > 0) w = Math.min(w, (run.s1 - s) / T);", ""),
+  },
+  {
+    name: "the shift never fades, so zoomed in the two real tracks are pushed even further apart",
+    expect: "zoomed out the lines get a full gap; zoomed in far enough, real separation takes over and the shift fades to 0",
+    apply: h => h.replace("const v = Math.max(0, (targetPx - dGeo / mpp) / 2);", "const v = Math.max(0, targetPx / 2);"),
+  },
+  {
+    name: "corners are not capped: a hairpin throws the line far off",
+    expect: "the offset maths: straight shifts exactly, corners are mitred (capped at 1.5x), zero leaves a point alone",
+    apply: h => h.replace("scale = Math.min(SHARED.cap, 1 / Math.max(1e-6, bx * n1[0] + by * n1[1]));", "scale = 1 / Math.max(1e-6, bx * n1[0] + by * n1[1]);"),
+  },
+  {
+    name: "the screen normal points right instead of left",
+    expect: "the offset maths: straight shifts exactly, corners are mitred (capped at 1.5x), zero leaves a point alone",
+    apply: h => h.split("[dy / L, -dx / L]").join("[-dy / L, dx / L]"),
+  },
+  {
+    name: "no vertex at the taper break-points: a 150 m taper becomes as long as the segment",
+    expect: "vertices are added at the taper break-points, and trains read exactly what the drawn line uses",
+    apply: h => h.replace("      if(bp > acc + 0.01 && bp < acc + seg - 0.01){", "      if(false){"),
+  },
+  {
+    name: "a short touch counts as a shared track",
+    expect: "a shared stretch shorter than 500 m is ignored",
+    apply: h => h.replace("  return raw.filter(r => samples[r.e].s - samples[r.b].s >= SHARED.min);", "  return raw;"),
+  },
+  {
+    name: "ferries are pushed side by side too",
+    expect: "lines are only compared when they share at least two station names, and ferries never",
+    apply: h => h.replace("skip: { ferry: 1, intercity: 1, bus: 1 },", "skip: { intercity: 1, bus: 1 },"),
+  },
+  {
+    name: "two branches of one line in one colour are drawn apart as a fat stroke",
+    expect: "two branches of one line in the same colour (M1A/M1B) are left as one line",
+    apply: h => h.replace("  sameColour: false", "  sameColour: true"),
+  },
+  {
+    name: "the Leaflet line computes the shift but never draws it",
+    expect: "the shifting Leaflet line moves its projected points by the shared info",
+    apply: h => h.replace("    if(out !== this._rings[0]) this._rings[0] = out.map(q => L.point(q.x, q.y));", ""),
+  },
+  {
+    name: "the trains stay in the gap between the two shifted lines",
+    expect: "wiring: the selection glow, the disruption stripes and the trains all move with their line",
+    apply: h => h.replace("    const off = sharedTrainOffset(tr.line, tr.s, z);", ""),
+  },
+  {
+    name: "the glow/outline stays put while the core moves",
+    expect: "wiring: the glow/casing and the core of every non-ferry line are built as shared-aware polylines",
+    apply: h => h.replace("const glow = sharedPolyline(line, pi, path, {", "const glow = L.polyline(path, {"),
+  },
 ];
 
 const original = fs.readFileSync(SRC, 'utf8');
