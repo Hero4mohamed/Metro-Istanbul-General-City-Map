@@ -7,14 +7,44 @@ let followedLines = new Set((function(){ const a=lsJSON('irn_follow'); return Ar
 let alertedIds = new Set((function(){ const a=lsJSON('irn_alerted'); return Array.isArray(a)?a:[]; })());
 let curLineRef = null, leaveTimer=null;
 function askNotify(){ try{ if('Notification' in window && Notification.permission==='default') Notification.requestPermission(); }catch(e){} }
-function notify(title, body, kind){
+/* V4.8.1: what a notification is made with. Every notification used to carry the same tag ('irn-alert') and no "alert again", and a
+   phone shows a notification that REPLACES one with the same tag silently: no ding, no vibration. Now each has its own tag (a caller
+   may name one, so a newer heads-up for the same reminder replaces the older one), asks to alert again, vibrates, and carries where
+   tapping it should go (the service worker opens or brings forward the app there: sw.template.js, 'notificationclick'). */
+function notifyOpts(body, tag){
+  return { body: body, icon: 'assets/icon-192.png', badge: 'assets/icon-192.png', tag: tag || ('irn-' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6)),
+    renotify: true, silent: false, vibrate: [180, 80, 180], timestamp: Date.now(), data: { url: location.pathname + location.search } };
+}
+function notify(title, body, kind, tag){
   showToast(body||title, kind);                                   // always show in-app
   try{ if('Notification' in window && Notification.permission==='granted'){
+    const o = notifyOpts(body, tag);
     if(navigator.serviceWorker && navigator.serviceWorker.ready)
-      navigator.serviceWorker.ready.then(reg=>reg.showNotification(title,{body, icon:'assets/icon-192.png', badge:'assets/icon-192.png', tag:'irn-alert'})).catch(()=>{ try{ new Notification(title,{body}); }catch(_){}} );
-    else new Notification(title,{body});
+      navigator.serviceWorker.ready.then(reg=>reg.showNotification(title, o)).catch(()=>{ try{ new Notification(title,{body, tag:o.tag}); }catch(_){}} );
+    else new Notification(title,{body, tag:o.tag});
   } }catch(e){}
 }
+/* Settings > You > Notifications: which words describe the permission now */
+function notifStateKey(perm){ return perm === 'granted' ? 'notifOn' : perm === 'default' ? 'notifOff' : perm === 'denied' ? 'notifBlocked' : 'notifNone'; }
+function notifPerm(){ try{ return ('Notification' in window) ? Notification.permission : undefined; }catch(e){ return undefined; } }
+function renderNotifState(){
+  const st = document.getElementById('notifState'), allow = document.getElementById('notifAllow'), test = document.getElementById('notifTest');
+  if(!st) return;
+  const p = notifPerm();
+  st.textContent = t(notifStateKey(p));
+  st.className = 'notif-state ' + (p === 'granted' ? 'on' : p === 'denied' ? 'off' : '');
+  if(allow) allow.hidden = p !== 'default';               // there is only something to ask while the browser has not been asked
+  if(test) test.disabled = p !== 'granted';
+}
+(function(){
+  const allow = document.getElementById('notifAllow'), test = document.getElementById('notifTest');
+  if(allow) allow.addEventListener('click', () => {
+    try{ const r = Notification.requestPermission(r2 => renderNotifState()); if(r && r.then) r.then(renderNotifState); }catch(e){}
+  });
+  if(test) test.addEventListener('click', () => notify(t('notifTestTitle'), t('notifTestBody'), null, 'test'));
+  document.addEventListener('visibilitychange', () => { if(!document.hidden) renderNotifState(); });   // changed in the phone's settings meanwhile
+  renderNotifState();
+})();
 function toggleFollow(){
   const ref=curLineRef; if(!ref) return;
   if(followedLines.has(ref)) followedLines.delete(ref); else { followedLines.add(ref); askNotify(); }
@@ -36,7 +66,7 @@ function checkDisruptionAlerts(silent){
       alertedIds.add(d.id);
       // plain text here, so the "shown in Turkish" label is a prefix rather than a badge
       const body=(disUntranslated(d)?'['+t('trOnlyTag')+'] ':'')+disMsg(d);
-      if(!silent) notify('⚠ '+d.ref+' · '+disTitle(d), body, d.severity==='major'?'err':null);
+      if(!silent) notify('⚠ '+d.ref+' · '+disTitle(d), body, d.severity==='major'?'err':null, 'dis-'+d.id);
     }
   }
   alertedIds = new Set([...alertedIds].filter(id=>active.has(id)));   // clear resolved so they re-alert if they recur

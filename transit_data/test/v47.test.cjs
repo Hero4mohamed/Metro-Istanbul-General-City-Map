@@ -143,7 +143,7 @@ function fnSrc(name) {
 /* run the real dropPin() against a stub Leaflet; returns the pop-up HTML it built */
 function popupFor(p, saved) {
   let html = '';
-  const marker = { addTo() { return this; }, bindPopup(h, o) { popupFor.content = h; html = typeof h === 'function' ? h(marker) : h; popupFor.opts = o; return this; }, openPopup() {} };
+  const marker = { addTo() { return this; }, on() { return this; }, isPopupOpen() { return true; }, bindPopup(h, o) { popupFor.content = h; html = typeof h === 'function' ? h(marker) : h; popupFor.opts = o; return this; }, openPopup() {} };
   const ctx = { L: { marker: () => marker, divIcon: () => ({}) }, map: { removeLayer() {}, getSize: () => ({ x: 0, y: 0 }), getZoom: () => 12 },
     pinMarker: null, pinPlace: null, nearestStops: () => [], walkMin: m => m, t: k => k, svgEsc: esc,
     favIsSaved: () => (typeof saved === 'function' ? saved() : !!saved), isFinite };

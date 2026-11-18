@@ -37,6 +37,7 @@ const NAV_LAYERS = [
   { id:'ai',       open:() => document.body.classList.contains('ai-open'), close:() => aiShut() },
   { id:'omni',     open:() => navHas('omni','open'),          close:() => document.body.click() },   // the search list closes on any click outside it
   { id:'welcome',  open:() => navHas('wcOverlay','show'),     close:() => navClick('wcGo') },
+  { id:'pin',      open:() => typeof pinMarker !== 'undefined' && !!pinMarker, close:() => removePin() },          // a place pin on the map (19-assistant.js): Back takes it away (V4.8.1)
 ];
 function navCloseEntry(e){
   if(e.id === 'scope'){ NAV.undoing = true; try{ setTab(e.from); }finally{ NAV.undoing = false; } return; }

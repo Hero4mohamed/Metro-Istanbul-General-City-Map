@@ -173,7 +173,7 @@ function remTick(){
     a.r.fired = { due: String(a.due), b: a.covers }; changed = true;
     const left = Math.max(1, Math.round((a.due - now) / 60000));
     notify(t('remNotifyTitle').replace('{line}', a.r.label).replace('{head}', a.r.head),
-      t('remNotifyBody').replace('{stop}', a.r.stop).replace('{time}', remClock(a.r.time)).replace('{n}', left));
+      t('remNotifyBody').replace('{stop}', a.r.stop).replace('{time}', remClock(a.r.time)).replace('{n}', left), null, 'rem-' + a.r.id);
   });
   // a one-off whose time has gone is switched off, and kept in the list until it is removed
   reminders.forEach(r => { if(r.on && r.days === 'once' && remNextDue(r, now) === null){ r.on = false; changed = true; } });

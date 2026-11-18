@@ -489,27 +489,27 @@ test('the uniform radii are tokens, not repeated literals', () => {
    line on the map. You could see that something was wrong and could no longer see what it was
    wrong on: a suspended B2 read as an orange line matching nothing in the legend.
 
-   Width is the entire contract. These tests hold the marking narrower than the thing it marks. */
-test('the disruption marking is narrower than the line it marks', () => {
-  const src = H.appScript();
-  const stripe = src.match(/const sw\s+= Math\.max\([\d.]+, core \* ([\d.]+)\);/);
-  assert.ok(stripe, 'the hazard stripe no longer derives its width from the line it marks');
-  assert.ok(parseFloat(stripe[1]) <= 0.6,
-    'the stripe is ' + stripe[1] + ' of the line\'s own width — at that ratio it covers what it marks');
+   V4.8.1 (19 Nov 2026): the owner asked for the red-and-yellow caution band back. It returns keeping the lesson above: the
+   line's OWN colour runs down the middle of the band, so you can still see which line the fault is on. These tests now hold that. */
+test('the caution band still says which line it is on: the line\'s own colour runs down its middle', () => {
+  const src = H.appScript().replace(/\r\n/g, '\n');
   const core = src.match(/const core = Math\.max\([\d.]+, base \* ls\);/);
   assert.ok(core, 'the marking no longer measures itself against the line\'s drawn weight');
-  // the wash exists to give a thin stripe presence when zoomed out; as a fill it would be a band
-  const wash = src.match(/color:col, weight:core\+(\d+),\s*\n?\s*opacity:([\d.]+)/);
-  assert.ok(wash, 'the soft wash under the stripe is gone');
-  assert.ok(parseFloat(wash[2]) <= 0.2,
-    'the wash is at ' + wash[2] + ' opacity — that is a caution band again, not a wash');
+  const seamW = src.match(/const seamW\s*= Math\.max\([\d.]+, core \* ([\d.]+)\);/);
+  assert.ok(seamW, 'the band has no strip of the line\'s own colour any more');
+  assert.ok(parseFloat(seamW[1]) >= 0.5, 'the line\'s colour down the middle is ' + seamW[1] + ' of its width — too thin to tell which line it is');
+  assert.ok(/const seam\s*= sharedPolyline\(line, 0, coords, \{ renderer:hazardRenderer, color:line\.color, weight:seamW,\s*\n\s*opacity:1,/.test(src),
+    'the strip down the middle is not in the line\'s own colour, fully opaque');
+  assert.ok(src.indexOf('yellow.addTo(disruptionLayer); seam.addTo(disruptionLayer)') > 0, 'the line\'s colour is drawn UNDER the yellow, so it is hidden');
 });
 
-test('the opaque caution band does not come back', () => {
-  const src = H.appScript();
-  assert.ok(!/#F5C518/.test(src), 'the opaque yellow caution infill is back over the line');
-  assert.ok(!/#D42A2A/.test(src), 'the red casing is back over the line');
-  assert.ok(!/weight:gw\+3\.4/.test(src), 'the band is being drawn wider than the line again');
+test('the caution band is red and yellow, and only a little wider than the line', () => {
+  const src = H.appScript().replace(/\r\n/g, '\n');
+  assert.ok(/const yellow= sharedPolyline\(line, 0, coords, \{ renderer:hazardRenderer, color:'#F5C518'/.test(src), 'the yellow band is gone');
+  assert.ok(/const red\s*= sharedPolyline\(line, 0, coords, \{ renderer:hazardRenderer, color:'#D42A2A'/.test(src), 'the red casing is gone');
+  const yel = src.match(/const yelW = core \+ ([\d.]+);/), red = src.match(/const redW = yelW \+ ([\d.]+);/);
+  assert.ok(yel && red, 'the band no longer sizes itself from the line');
+  assert.ok(parseFloat(yel[1]) + parseFloat(red[1]) <= 6, 'the band is ' + (parseFloat(yel[1]) + parseFloat(red[1])) + ' px wider than the line: it swallows the map around it');
 });
 
 test('a suspended line is dashed, and gets its own dash back', () => {

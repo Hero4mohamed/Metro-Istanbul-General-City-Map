@@ -231,7 +231,7 @@ test('wiring: the selection glow, the disruption stripes and the trains all move
   const glow = fnSrc('setLineGlow');
   assert.ok(/sharedPolyline\(line, pi, path,/.test(glow) && /paths === line\.paths/.test(glow), 'the selection glow (boat lanes excepted)');
   const s = APP(), bands = s.slice(s.indexOf('bands.forEach(coords=>{'), s.indexOf('// warning marker(s)'));
-  for (const v of ['wash', 'stripe', 'hit']) assert.ok(new RegExp('const ' + v + '\\s*= sharedPolyline\\(line, 0, coords,').test(bands), 'disruption ' + v);
+  for (const v of ['aura', 'red', 'yellow', 'seam', 'hit']) assert.ok(new RegExp('const ' + v + '\\s*= sharedPolyline\\(line, 0, coords,').test(bands), 'disruption ' + v);
   const trains = fnSrc('drawTrains');
   assert.ok(/sharedTrainOffset\(tr\.line, tr\.s, z\)/.test(trains), 'drawTrains asks for the offset at the train\'s own distance');
   assert.ok(trains.indexOf('sharedTrainOffset') > trains.indexOf('latLngToContainerPoint') && trains.indexOf('sharedTrainOffset') < trains.indexOf('tctx.arc'), 'and applies it before drawing');

@@ -102,10 +102,16 @@ function dropPin(p, zoom){
   // map that simply has no size on screen would cost the user their reply.
   if(!p || !isFinite(p.lat) || !isFinite(p.lng)) return;
   try{
-  if(pinMarker){ map.removeLayer(pinMarker); pinMarker = null; }
+  if(pinMarker){ const old = pinMarker; pinMarker = null; map.removeLayer(old); }
   pinPlace = p;
-  pinMarker = L.marker([p.lat,p.lng], {icon:L.divIcon({className:"pin-ic",
+  const mk = pinMarker = L.marker([p.lat,p.lng], {icon:L.divIcon({className:"pin-ic",
       html:'<div class="pin-d"></div>', iconSize:[15,15], iconAnchor:[7,14]}), zIndexOffset:900}).addTo(map);
+  /* V4.8.1: the pin belongs to its pop-up. It used to stay on the map for good (only another pin replaced it), so the only way to
+     clear it was to reload the app. Now it goes when its pop-up closes (a tap elsewhere on the map, the pop-up's ×, Escape), with
+     Back (21-history.js) and with the search box's ✕. Checked a moment later, so a pop-up Leaflet closes and opens again in the
+     same moment keeps its pin. */
+  mk.on('popupclose', () => setTimeout(() => { if(pinMarker === mk && !mk.isPopupOpen()) removePin(); }, 0));
+  try{ navReconcile(); }catch(e){}
   const near = nearestStops(p.lat, p.lng, 2);
   const stopTxt = near.length
     ? near.map(st=>svgEsc(st.name) + " · " + walkMin(st.m) + " min" +
@@ -129,6 +135,13 @@ function dropPin(p, zoom){
     map.flyTo([p.lat,p.lng], zoom || Math.max(map.getZoom(), 14), {duration:.7});
   }
   }catch(e){ /* pin is cosmetic — never let it break the answer */ }
+}
+/* take the place pin off the map (its pop-up closed, Back, the search box's ✕); a pin that is already gone is fine */
+function removePin(){
+  const m = pinMarker;
+  pinMarker = null; pinPlace = null;
+  if(m){ try{ map.removeLayer(m); }catch(e){} }
+  try{ navReconcile(); }catch(e){}
 }
 /* Attraction chips are rebuilt as innerHTML all over the app and used to carry inline
    onclick handlers. A strict Content-Security-Policy forbids those, so they are delegated. */
@@ -347,7 +360,7 @@ document.addEventListener("click", e=>{
     clearTimeout(tmr); tmr = setTimeout(()=>run(q), q.trim() ? (GAZ.G ? 60 : 200) : 0);
   });
   inp.addEventListener("focus", ()=>{ gazLoad(); if(!inp.value.trim()) run(""); else open(); });
-  xb.addEventListener("click", ()=>{ inp.value=""; wrap.classList.remove("has-q"); inp.focus(); run(""); });
+  xb.addEventListener("click", ()=>{ removePin(); inp.value=""; wrap.classList.remove("has-q"); inp.focus(); run(""); });   // clearing the search clears its pin too (V4.8.1)
 
   res.addEventListener("click", e=>{
     const chip = e.target.closest(".omni-chip");
