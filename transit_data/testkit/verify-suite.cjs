@@ -1303,20 +1303,26 @@ const MUTATIONS = [
     expect: 'the fault set is re-derived while the page is open, and the memo cleared with it',
     apply: h => h.replace('  clearTimingMemo();              // the suspension answer the router and the sim cache', ''),
   },
+  /* V4.8.1: the caution band is back at the owner's request; what these rows guard now is that it still says WHICH line */
   {
-    name: 'fatten the marking back over the line it marks',
-    expect: 'the disruption marking is narrower than the line it marks',
-    apply: h => h.replace('  const sw   = Math.max(1.3, core * 0.5);', '  const sw   = Math.max(1.3, core * 1.8);'),
+    name: 'paint the strip down the middle of the caution band dark instead of the line\'s colour',
+    expect: 'the caution band still says which line it is on',
+    apply: h => h.replace('renderer:hazardRenderer, color:line.color, weight:seamW,', "renderer:hazardRenderer, color:'#7a5c00', weight:seamW,"),
   },
   {
-    name: 'turn the soft wash back into a solid caution band',
-    expect: 'the disruption marking is narrower than the line it marks',
-    apply: h => h.replace('                              opacity:0.14, lineCap:', '                              opacity:0.95, lineCap:'),
+    name: 'thin the line\'s colour in the caution band to a hairline',
+    expect: 'the caution band still says which line it is on',
+    apply: h => h.replace('const seamW= Math.max(1.2, core * 0.6);', 'const seamW= Math.max(1, core * 0.18);'),
   },
   {
-    name: 'bring back the red-cased yellow caution band',
-    expect: 'the opaque caution band does not come back',
-    apply: h => h.replace('color:col, weight:core+5,', "color:'#F5C518', weight:core+5,"),
+    name: 'draw the line\'s colour under the yellow, where it cannot be seen',
+    expect: 'the caution band still says which line it is on',
+    apply: h => h.replace('yellow.addTo(disruptionLayer); seam.addTo(disruptionLayer);', 'seam.addTo(disruptionLayer); yellow.addTo(disruptionLayer);'),
+  },
+  {
+    name: 'make the caution band swallow the map around it',
+    expect: 'the caution band is red and yellow, and only a little wider than the line',
+    apply: h => h.replace('const redW = yelW + 3;', 'const redW = yelW + 12;'),
   },
   {
     name: 'clear a recovered line to no dash instead of its own',
@@ -2858,6 +2864,47 @@ const MUTATIONS = [
     name: "the trains stay in the gap between the two shifted lines",
     expect: "wiring: the selection glow, the disruption stripes and the trains all move with their line",
     apply: h => h.replace("    const off = sharedTrainOffset(tr.line, tr.s, z);", ""),
+  },
+  /* ---- V4.8.1: the place pin goes away; sections named only in a notice's words ---- */
+  {
+    name: "the place pin stays on the map after its pop-up closes",
+    expect: "v4.8.1: closing a pin's pop-up takes the pin off the map",
+    apply: h => h.replace("  mk.on('popupclose', () => setTimeout(() => { if(pinMarker === mk && !mk.isPopupOpen()) removePin(); }, 0));", ""),
+  },
+  {
+    name: "a pop-up Leaflet closes and reopens loses its pin",
+    expect: "v4.8.1: a pop-up that closes and opens again in the same moment keeps its pin",
+    apply: h => h.replace("if(pinMarker === mk && !mk.isPopupOpen()) removePin();", "if(pinMarker === mk) removePin();"),
+  },
+  {
+    name: "an old pin's pop-up closing takes the new pin away",
+    expect: "v4.8.1: a new pin replaces the old one, and the old one's closing does not take the new one away",
+    apply: h => h.replace("if(pinMarker === mk && !mk.isPopupOpen()) removePin();", "if(!mk.isPopupOpen()) removePin();"),
+  },
+  {
+    name: "Back leaves the place pin on the map",
+    expect: "v4.8.1: Back takes the pin away, and the search box's ✕ does too",
+    apply: h => h.replace("  { id:'pin',      open:() => typeof pinMarker !== 'undefined' && !!pinMarker, close:() => removePin() },", ""),
+  },
+  {
+    name: "clearing the search leaves its pin behind",
+    expect: "v4.8.1: Back takes the pin away, and the search box's ✕ does too",
+    apply: h => h.replace('xb.addEventListener("click", ()=>{ removePin(); inp.value="";', 'xb.addEventListener("click", ()=>{ inp.value="";'),
+  },
+  {
+    name: "a notice's words are ignored, so M7 shows one station and no section",
+    expect: 'v4.8.1: a notice that is not a "segment" is drawn as the sections its words name',
+    apply: h => h.replace("    const secs = noticeSections(line.stations, d.messageTr);", "    const secs = [];"),
+  },
+  {
+    name: "the normal stretch is marked instead of the affected ends",
+    expect: "v4.8.1: a normal stretch in the middle leaves two affected ends",
+    apply: h => h.replace("    if(lo > 0) out.push([0, lo]);", "    if(lo > 0) out.push([lo, hi]);"),
+  },
+  {
+    name: "a station the line does not have is guessed at",
+    expect: "v4.8.1: nothing is guessed",
+    apply: h => h.replace("    if(a < 0 || b < 0 || a === b) return [];\n    const lo", "    if(a === b) return [];\n    const lo").replace("    if(a < 0 || b < 0 || a === b) return [];\r\n    const lo", "    if(a === b) return [];\r\n    const lo"),
   },
   {
     name: "the glow/outline stays put while the core moves",

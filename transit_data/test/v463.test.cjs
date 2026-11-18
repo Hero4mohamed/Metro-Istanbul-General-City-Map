@@ -96,7 +96,7 @@ test('config: storage and privacy pages name the account data, Google, who can s
   FB_HOSTS.forEach(h => assert.ok(fb.hosts.includes(h.replace('https://', '')), 'privacy page does not name ' + h));
   const cfg = JSON.parse(H.read('transit_data/legal-config.json'));
   assert.strictEqual(cfg.policyVersion, '3', 'the app will not ask its privacy question again');
-  assert.strictEqual(cfg.appVersion, 'V4.8');     // V4.8: shared-track drawing
+  assert.strictEqual(cfg.appVersion, 'V4.8.1');   // V4.8.1: pins go away; the caution band is back
   const en = H.read('legal/privacy.html'), tr = H.read('legal/privacy.tr.html');
   assert.ok(!/No accounts, no sign-up/.test(en), 'the privacy page still says there are no accounts');
   assert.match(en, /<h2 id="accounts">/); assert.match(tr, /<h2 id="accounts">/);

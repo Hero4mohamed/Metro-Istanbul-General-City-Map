@@ -50,7 +50,46 @@ function disruptionPaths(d){
     const b = line.stations.find(s=>fold(s.name)===fold(d.to));
     if(a && b && a._s!=null && b._s!=null) return [ subPath(line, a._s, b._s) ];
   }
+  /* V4.8.1: a notice can name its stretches only in its words. Metro İstanbul tagged the M7 fault of 18 Nov 2026 with ONE station
+     (Mecidiyeköy) while its text said "normal between Nurtepe and Mahmutbey, a shuttle between Nurtepe and Kağıthane": the affected
+     section, Nurtepe to Yıldız, was in the words and nowhere else, so the map showed a ring at one station and no section. */
+  if(d.scope!=='segment' && d.messageTr){
+    const secs = noticeSections(line.stations, d.messageTr);
+    if(secs.length) return secs.map(p => subPath(line, line.stations[p[0]]._s, line.stations[p[1]]._s));
+  }
   if(d.scope==='line' && line.coords) return [ line.coords ];
+  return [];
+}
+/* the index of a station named in a notice: its exact name, or the first word(s) of a longer one ("Oruç Reis" for "Oruç Reis - Yüzyıl") */
+function noticeStationIndex(stations, word){
+  const w = fold(word || '').replace(/[.,;:]+$/, '');
+  if(!w) return -1;
+  let i = stations.findIndex(st => fold(st.name) === w);
+  if(i < 0) i = stations.findIndex(st => { const n = fold(st.name); return n.startsWith(w) && /^[\s-]/.test(n.slice(w.length)); });
+  return i;
+}
+/* The sections a Turkish notice names in words, as [from, to] station indexes along the line:
+   - "A-B arasında normal işletme" (normal between A and B): everything OUTSIDE A..B is affected, one section per side;
+   - otherwise "C-D arasında (ise) mekik" (a shuttle between C and D): C..D is affected.
+   Nothing is guessed: an unknown station name, or no such words, gives no section. */
+function noticeSections(stations, text){
+  if(!Array.isArray(stations) || stations.length < 2 || !text) return [];
+  const t = String(text), last = stations.length - 1;
+  const nm = /([^\s,]+)\s*[-–]\s*([^\s,]+)\s+arasında\s+normal\s+işletme/i.exec(t);
+  if(nm){
+    const a = noticeStationIndex(stations, nm[1]), b = noticeStationIndex(stations, nm[2]);
+    if(a < 0 || b < 0 || a === b) return [];
+    const lo = Math.min(a, b), hi = Math.max(a, b), out = [];
+    if(lo > 0) out.push([0, lo]);
+    if(hi < last) out.push([hi, last]);
+    return out;
+  }
+  const sh = /([^\s,]+)\s*[-–]\s*([^\s,]+)\s+arasında\s+(?:ise\s+)?mekik/i.exec(t);
+  if(sh){
+    const a = noticeStationIndex(stations, sh[1]), b = noticeStationIndex(stations, sh[2]);
+    if(a < 0 || b < 0 || a === b) return [];
+    return [[Math.min(a, b), Math.max(a, b)]];
+  }
   return [];
 }
 function disruptionPoints(d){
@@ -111,14 +150,12 @@ function renderDisruptionMarkers(){
   activeDisruptions().forEach(d=>{
     const col = SEV_COLOR[d.severity] || SEV_COLOR.major;
     const line = lineByRef[d.ref];
-    /* The affected stretch is MARKED, not replaced. The old overlay was a red-cased yellow
-       caution band 8.1px over a 3.5px line — 2.3x its width, fully opaque — so a disrupted B2
-       stopped being blue and started being an orange line that matched nothing in the legend.
-       You could see that something was wrong and no longer see what it was wrong on.
-       So: a soft wash to give the section presence at any zoom, and a dashed severity stripe
-       down the centre at half the line's width, leaving its own colour showing either side.
-       Dashed is already this map's word for "not in normal service" (planned lines use it).
-       Thin lines are hard to hit, so an invisible wide polyline carries the tooltip. */
+    /* V4.8.1: the red-and-yellow CAUTION BAND is back on an affected section, at the owner's request ("a kind of yellow and red
+       construction glow to show this section is closed"). It was replaced in September because, fully opaque and 2.3x the line's
+       width, it hid WHICH line was disrupted (a blue B2 read as an orange line). So it comes back keeping what that lesson was
+       about: the line's OWN colour runs down the middle of the band, at least half the line's width, so the band still says whose
+       line it is. Drawn as: a soft red glow, the red casing, the yellow band, the line's colour, and an invisible wide line on top
+       that carries the tooltip (thin lines are hard to hit). */
     /* A line suspended end to end is already dashed end to end (applyServiceStyling). Running a
        stripe down the whole of it as well would double the ink and answer a question nobody
        asked: "where" is the entire line. The stripe is for SECTIONS, where the extent is the
@@ -129,19 +166,23 @@ function renderDisruptionMarkers(){
       const ls   = lineScale(z);
       const base = (line && KIND[line.kind] && KIND[line.kind].weight) || 4;
       const core = Math.max(1.2, base * ls);                    // the line's own drawn width here
-      const sw   = Math.max(1.3, core * 0.5);                   // stripe: half of it, never hairline
-      const s0   = line ? sharedSOnPath(line, 0, coords[0]) : 0;   // where this stretch starts along the line, so a shared track's stripe sits on its own side
-      const dash = Math.max(1.6, 2.4*ls).toFixed(1) + ',' + Math.max(2.2, 3.2*ls).toFixed(1);
-      const wash  = sharedPolyline(line, 0, coords, { renderer:hazardRenderer, color:col, weight:core+5,
-                              opacity:0.14, lineCap:'round', lineJoin:'round', interactive:false }, s0);
-      const stripe= sharedPolyline(line, 0, coords, { renderer:hazardRenderer, color:col, weight:sw,
-                              opacity:0.95, lineCap:'butt', lineJoin:'round',
-                              dashArray:dash, interactive:false }, s0);
+      const yelW = core + 2.4;                                  // the yellow band, a little wider than the line
+      const redW = yelW + 3;                                    // its red casing
+      const seamW= Math.max(1.2, core * 0.6);                   // the line's own colour down the middle: which line this is
+      const s0   = line ? sharedSOnPath(line, 0, coords[0]) : 0;   // where this stretch starts along the line, so a shared track's band sits on its own side
+      const aura  = sharedPolyline(line, 0, coords, { renderer:hazardRenderer, color:'#D42A2A', weight:redW+7,
+                              opacity:0.18, lineCap:'round', lineJoin:'round', interactive:false }, s0);    // the glow
+      const red   = sharedPolyline(line, 0, coords, { renderer:hazardRenderer, color:'#D42A2A', weight:redW,
+                              opacity:0.95, lineCap:'round', lineJoin:'round', interactive:false }, s0);
+      const yellow= sharedPolyline(line, 0, coords, { renderer:hazardRenderer, color:'#F5C518', weight:yelW,
+                              opacity:1, lineCap:'round', lineJoin:'round', interactive:false }, s0);
+      const seam  = sharedPolyline(line, 0, coords, { renderer:hazardRenderer, color:line.color, weight:seamW,
+                              opacity:1, lineCap:'round', lineJoin:'round', interactive:false }, s0);
       const hit   = sharedPolyline(line, 0, coords, { renderer:hazardRenderer, color:col,
-                              weight:Math.max(10, core+8), opacity:0, lineCap:'round' }, s0);
+                              weight:Math.max(10, redW+4), opacity:0, lineCap:'round' }, s0);
       if(CAN_HOVER) hit.bindTooltip(disrTip(d), { sticky:true, className:'lt' });
       hit.on('click', e=>{ hit.closeTooltip(); pinDisr(d, e.latlng, 8); openDisruption(d); });
-      wash.addTo(disruptionLayer); stripe.addTo(disruptionLayer); hit.addTo(disruptionLayer);
+      aura.addTo(disruptionLayer); red.addTo(disruptionLayer); yellow.addTo(disruptionLayer); seam.addTo(disruptionLayer); hit.addTo(disruptionLayer);
     });
     // warning marker(s): one fixed screen size
     disruptionPoints(d).forEach(p=>{
