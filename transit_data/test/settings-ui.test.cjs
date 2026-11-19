@@ -12,7 +12,7 @@ const H = require('../testkit/helpers.cjs');
 const CONTROLS = ['themeSeg', 'styleSeg', 'textSeg', 'langSeg', 'swMotion', 'swContrast', 'prefSeg', 'paceSeg', 'swAvoidFerry', 'swAvoidBus', 'swStepFree',
   'unitSeg', 'clockSeg', 'cardRow', 'cardSel', 'cardArt', 'cardNote', 'cardCredit', 'offlineRow', 'offSave', 'offClear', 'offNote', 'placesGroup', 'homeVal', 'workVal',
   'openPassport', 'swOnline', 'resetTrips', 'installRow', 'instBtn', 'instNote', 'provRow', 'provList', 'aiKeyRow', 'aiKeyIn', 'aiKeySave', 'aiKeyClear', 'aiKeyNote',
-  'diagRow', 'diagReport', 'diagCopy', 'diagClear', 'diagNote',
+  'fbRow', 'fbKind', 'fbText', 'fbTech', 'fbSend', 'fbCopy', 'fbNote', 'diagClear', 'diagNote',   // V4.8.2: Diagnostics became Send feedback
   'swTrains', 'swStations', 'swExplore', 'speedSeg'];   // V4.6: moved here from the Layers card
 const panelHTML = () => { const h = H.html(), a = h.indexOf('<div class="settings-panel glass" id="settingsPanel"'), b = h.indexOf('<div class="near-panel glass"'); assert.ok(a > 0 && b > a); return h.slice(a, b); };
 

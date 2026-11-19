@@ -323,9 +323,9 @@ const MUTATIONS = [
     apply: h => h.replace('<div class="priv-btns">', '<form action="https://example.com/join"></form><div class="priv-btns">'),
   },
   {
-    name: 'drop the disclosure under Report a problem',
-    expect: '"Report a problem" says what it opens',
-    apply: h => h.replace('data-i18n="diagPrivacy"', 'data-i18n="diagPrivacyX"'),
+    name: 'drop the disclosure under Send feedback',
+    expect: '"Send feedback" says what it opens',
+    apply: h => h.replace('data-i18n="fbPrivacy"', 'data-i18n="fbPrivacyX"'),
   },
   {
     name: 'let a report forget which version of the app it came from',
@@ -2931,6 +2931,83 @@ const MUTATIONS = [
     name: "the glow/outline stays put while the core moves",
     expect: "wiring: the glow/casing and the core of every non-ferry line are built as shared-aware polylines",
     apply: h => h.replace("const glow = sharedPolyline(line, pi, path, {", "const glow = L.polyline(path, {"),
+  },
+  /* ---- V4.8.2: feedback by email (19-assistant.js) ---- */
+  {
+    name: "feedback always carries the technical details",
+    expect: "v4.8.2: technical details only when ticked",
+    apply: h => h.replace("(o.tech ? '\\n\\n-- Technical details --\\n' + o.tech : '')", "('\\n\\n-- Technical details --\\n' + o.tech)"),
+  },
+  {
+    name: "what the person typed goes into the email address unencoded",
+    expect: "v4.8.2: feedback is an email to the app's address",
+    apply: h => h.replace("'&body=' + encodeURIComponent(b)", "'&body=' + b"),
+  },
+  {
+    name: "an unknown kind gives a subject ending in undefined",
+    expect: "v4.8.2: feedback is an email to the app's address",
+    apply: h => h.replace("FEEDBACK_KINDS[o.kind] || FEEDBACK_KINDS.other", "FEEDBACK_KINDS[o.kind]"),
+  },
+  {
+    name: "a long message is never shortened, so some email apps refuse it",
+    expect: "v4.8.2: technical details only when ticked",
+    apply: h => h.replace("const FEEDBACK_MAX = 1900;", "const FEEDBACK_MAX = 1e9;"),
+  },
+  {
+    name: "a shortened message does not say it was shortened",
+    expect: "v4.8.2: technical details only when ticked",
+    apply: h => h.replace("cut = true;", "cut = false;"),
+  },
+  {
+    name: "Send adds the technical details whether ticked or not",
+    expect: "v4.8.2: Send feedback sits in Settings",
+    apply: h => h.replace("tech: document.getElementById('fbTech').checked ? diagReportText() : '' });", "tech: diagReportText() });"),
+  },
+  {
+    name: "Send by email opens nothing",
+    expect: "v4.8.2: Send feedback sits in Settings",
+    apply: h => h.replace("location.href = m.href;", ""),
+  },
+  {
+    name: "the technical-details box starts ticked",
+    expect: "v4.8.2: Send feedback sits in Settings",
+    apply: h => h.replace('<input type="checkbox" id="fbTech">', '<input type="checkbox" id="fbTech" checked>'),
+  },
+  {
+    name: "Report a problem under the notices does nothing when tapped",
+    expect: "v4.8.2: \"Report a problem\" under the notices",
+    apply: h => h.replace("e.preventDefault(); openFeedback();", "e.preventDefault();"),
+  },
+  {
+    name: "the feedback form is opened with its section still closed",
+    expect: "v4.8.2: \"Report a problem\" under the notices",
+    apply: h => h.replace("const sec = document.querySelector('.sp-sec[data-sec=\"app\"]'); if(sec) sec.open = true;", ""),
+  },
+  /* ---- V4.8.2: the owner's developer options (22g-devmode.js) ---- */
+  {
+    name: "a long pause between taps still counts",
+    expect: "v4.8.2: seven quick taps on the version line",
+    apply: h => h.replace("now - st.last <= DEV_GAP_MS ? st.n + 1 : 1", "st ? st.n + 1 : 1"),
+  },
+  {
+    name: "six taps switch the developer options",
+    expect: "v4.8.2: seven quick taps on the version line",
+    apply: h => h.replace("n >= DEV_TAPS ?", "n >= DEV_TAPS - 1 ?"),
+  },
+  {
+    name: "the developer options are on for everyone",
+    expect: "v4.8.2: the developer options are off for everyone",
+    apply: h => h.replace("function devOn(){ return lsStr(DEV_KEY) === '1'; }", "function devOn(){ return true; }"),
+  },
+  {
+    name: "the assistant orb shows for everyone",
+    expect: "v4.8.2: the developer options are off for everyone",
+    apply: h => h.replace("html:not(.dev-on) #aiOrb,", "html:not(.dev-on) #aiOrbX,"),
+  },
+  {
+    name: "a pin's Near here still opens the hidden assistant",
+    expect: "v4.8.2: the developer options are off for everyone",
+    apply: h => h.replace('html:not(.dev-on) [data-pin="N"]', 'html:not(.dev-on) [data-pin="Z"]'),
   },
 ];
 
