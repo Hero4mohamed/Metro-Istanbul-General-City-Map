@@ -329,7 +329,7 @@ const MUTATIONS = [
   },
   {
     name: 'let a report forget which version of the app it came from',
-    expect: '"Report a problem" says what it opens',
+    expect: '"Send feedback" says what it opens',
     apply: h => h.replace(/"app: V[\d.]+ build "/, '"build: "'),
   },
   {
