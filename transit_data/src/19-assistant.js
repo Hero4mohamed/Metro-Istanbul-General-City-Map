@@ -1202,7 +1202,52 @@ function renderProvenance(){
 window.PROVENANCE_READY = true;
 renderProvenance();
 
-/* ---- diagnostics: show what was recorded, and let the user send it if they choose ---- */
+/* ---- feedback (V4.8.2): what the owner asked for ("I wanna hear from the people") ----
+   The person's own email app opens with the message ready, addressed to the app's contact address (legal-config.json). The app
+   sends nothing itself, needs no server and no key, and works inside the Android app. Technical details (diagReportText below)
+   are added only when the person ticks the box. It replaces a "Report a problem" that opened a public GitHub page. */
+/* ==FEEDBACK-PURE-START== */
+const FEEDBACK_KINDS = { problem: 'Problem', idea: 'Idea', complaint: 'Complaint', other: 'Other' };   // English: the inbox sorts by subject
+const FEEDBACK_MAX = 1900;            // a mailto: longer than about 2000 characters is cut or refused by some email apps
+/* o: { to, version, kind, text, tech } → { to, subject, body, href, cut } */
+function feedbackMail(o){
+  const subject = 'TurkMaps ' + o.version + ' – ' + (FEEDBACK_KINDS[o.kind] || FEEDBACK_KINDS.other);
+  const full = String(o.text || '').trim() + (o.tech ? '\n\n-- Technical details --\n' + o.tech : '');
+  const make = b => 'mailto:' + o.to + '?subject=' + encodeURIComponent(subject) + '&body=' + encodeURIComponent(b);
+  let body = full, href = make(body), cut = false;
+  while(href.length > FEEDBACK_MAX && body.length > 1){
+    const over = href.length - FEEDBACK_MAX;
+    body = body.slice(0, Math.max(1, body.length - 1 - Math.max(10, Math.ceil(over / 6)))) + '…';   // an encoded character is up to 6 long
+    href = make(body); cut = true;
+  }
+  return { to: o.to, subject: subject, body: body, href: href, cut: cut, full: full };
+}
+/* ==FEEDBACK-PURE-END== */
+let fbKind = 'problem';
+function feedbackNote(key){ const n = document.getElementById('fbNote'); if(n) n.textContent = key ? t(key).replace('{to}', '__CONTACT_EMAIL__') : ''; }
+/* Send by email (or, with copy, put the whole message on the clipboard for people with no email app) */
+async function feedbackSend(copy){
+  const ta = document.getElementById('fbText');
+  if(!ta || !ta.value.trim()){ feedbackNote('fbEmpty'); if(ta) ta.focus(); return; }
+  const m = feedbackMail({ to: '__CONTACT_EMAIL__', version: '__APP_VERSION__', kind: fbKind, text: ta.value,
+    tech: document.getElementById('fbTech').checked ? diagReportText() : '' });
+  if(copy){
+    const txt = 'To: ' + m.to + '\nSubject: ' + m.subject + '\n\n' + m.full;
+    try{ await navigator.clipboard.writeText(txt); feedbackNote('fbCopied'); }catch(e){ window.prompt(t('fbCopy'), txt); }
+    return;
+  }
+  location.href = m.href;
+  feedbackNote(m.cut ? 'fbCut' : 'fbOpened');
+}
+/* Settings › App & data, at the form (the "Report a problem" link under the notices comes here) */
+function openFeedback(){
+  openSettings();
+  const sec = document.querySelector('.sp-sec[data-sec="app"]'); if(sec) sec.open = true;
+  const ta = document.getElementById('fbText');
+  if(ta) setTimeout(() => { try{ ta.scrollIntoView({ block: 'center' }); ta.focus(); }catch(e){} }, 250);
+}
+
+/* ---- technical details for feedback: what was recorded on this device, never anything personal ---- */
 function diagReportText(){
   const env = [
     "app: __APP_VERSION__ build " + BUILD,
@@ -1214,12 +1259,12 @@ function diagReportText(){
     "sw: " + (navigator.serviceWorker && navigator.serviceWorker.controller ? "active" : "none"),
     "ua: " + navigator.userAgent,
   ].join("\n");
+  /* the newest errors last, and only the last five: an email address can only carry so much (feedbackMail cuts the rest) */
   const faults = DIAG.length
-    ? DIAG.map(d => "- [" + d.t + "] " + d.kind + (d.n > 1 ? " (x" + d.n + ")" : "") +
-        ": " + d.msg + (d.at ? "\n      " + d.at : "")).join("\n")
-    : "(no faults recorded)";
-  return "### What happened\n\n<!-- what were you doing? -->\n\n### Faults recorded\n\n" +
-         faults + "\n\n### Environment\n\n```\n" + env + "\n```\n";
+    ? DIAG.slice(-5).map(d => "- [" + d.t + "] " + d.kind + (d.n > 1 ? " (x" + d.n + ")" : "") +
+        ": " + d.msg + (d.at ? " @ " + d.at : "")).join("\n")
+    : "(no errors recorded)";
+  return env + "\nrecent errors:\n" + faults;
 }
 function refreshDiagRow(){
   const note = document.getElementById("diagNote");
@@ -1229,25 +1274,20 @@ function refreshDiagRow(){
     : t("diagNone");
 }
 (function(){
-  const rep = document.getElementById("diagReport"),
-        cp  = document.getElementById("diagCopy"),
-        cl  = document.getElementById("diagClear");
-  if (!rep) return;
-  const REPO = "https://github.com/Hero4mohamed/Metro-Istanbul-General-City-Map";
-  rep.addEventListener("click", () => {
-    // GitHub caps the URL; the body is trimmed and the full text stays copyable
-    const body = diagReportText().slice(0, 5500);
-    const url = REPO + "/issues/new?title=" + encodeURIComponent("Problem report" +
-      (DIAG.length ? ": " + DIAG[DIAG.length - 1].msg.slice(0, 60) : "")) +
-      "&body=" + encodeURIComponent(body);
-    window.open(url, "_blank", "noopener");
+  const send = document.getElementById("fbSend"),
+        cp   = document.getElementById("fbCopy"),
+        kind = document.getElementById("fbKind"),
+        cl   = document.getElementById("diagClear");
+  if (!send) return;
+  send.addEventListener("click", () => feedbackSend(false));
+  if (cp) cp.addEventListener("click", () => feedbackSend(true));
+  if (kind) kind.addEventListener("click", e => {
+    const b = e.target.closest("button[data-k]"); if (!b) return;
+    fbKind = b.dataset.k;
+    kind.querySelectorAll("button[data-k]").forEach(x => { const on = x === b; x.classList.toggle("active", on); x.setAttribute("aria-pressed", String(on)); });
   });
-  if (cp) cp.addEventListener("click", async () => {
-    const txt = diagReportText();
-    try { await navigator.clipboard.writeText(txt); cp.textContent = t("diagCopied"); }
-    catch (e) { window.prompt(t("diagCopy"), txt); }
-    setTimeout(() => { cp.textContent = t("diagCopy"); }, 1800);
-  });
+  const ta = document.getElementById("fbText");
+  if (ta) ta.addEventListener("input", () => feedbackNote(""));
   if (cl) cl.addEventListener("click", () => {
     DIAG = []; diagSave(); refreshDiagRow();
   });

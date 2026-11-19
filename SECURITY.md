@@ -11,7 +11,7 @@ this repository). That keeps the attack surface small, but not zero, and a repor
 Please **do not open a public issue** for a security problem. Use either:
 
 - GitHub's private reporting: **Security → Report a vulnerability** on this repository, or
-- e-mail **mohamedyounis248@gmail.com** with "SECURITY" in the subject.
+- e-mail **transportengist@gmail.com** with "SECURITY" in the subject.
 
 Say what you found, how to reproduce it (a URL, steps, a screenshot), and what you think the impact is. You will get an answer
 within a week; this is a personal project, so a fix date cannot be promised, but anything that exposes a visitor's data or lets

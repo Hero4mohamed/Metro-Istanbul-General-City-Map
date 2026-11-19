@@ -1254,6 +1254,17 @@
   /* ---------- assistant orb + panel ---------- */
   /* the Android app (Google Play) has no Claude layer, so the box for the key is not shown (00a-play-build.js adds .play-app) */
   .play-app #aiKeyRow{display:none !important;}
+  /* V4.8.2: the owner's developer options (22g-devmode.js adds .dev-on): data sources, the key box and the assistant ("Ask the map",
+     still being developed, and the pin's "Near here" that opens it) are hidden from everyone else */
+  html:not(.dev-on) #provRow, html:not(.dev-on) #aiKeyRow, html:not(.dev-on) #aiOrb, html:not(.dev-on) #aiPanel,
+  html:not(.dev-on) [data-pin="N"]{display:none !important;}
+  /* V4.8.2: the feedback form */
+  .fb-kind{margin:6px 0;}
+  .fb-text{width:100%;box-sizing:border-box;min-height:84px;resize:vertical;margin:4px 0 6px;border:1px solid var(--stroke-2);background:var(--surface);
+    border-radius:9px;padding:8px 10px;color:var(--text);font:inherit;font-size:var(--fs-8);line-height:1.4;}
+  .fb-text:focus{outline:none;border-color:var(--accent);}
+  .fb-tech{display:flex;gap:8px;align-items:flex-start;font-size:var(--fs-7);color:var(--dim);margin-bottom:6px;cursor:pointer;}
+  .fb-tech input{margin-top:2px;flex:0 0 auto;}
   .ai-orb{position:fixed;left:var(--gutter);top:calc(var(--rail-top) + var(--rail-step));
     z-index:1200;width:44px;height:44px;border-radius:var(--r-round);border:1px solid var(--stroke-2);
     background:var(--panel);cursor:pointer;display:flex;align-items:center;justify-content:center;
@@ -2338,7 +2349,7 @@
     </div>
   </details>
   <details class="sp-sec" data-sec="app">
-    <summary><span class="sp-ico" aria-hidden="true">📲</span><span class="sp-st"><span data-i18n="secApp">App &amp; data</span><small data-i18n="secAppSub">Install, data sources, diagnostics</small></span></summary>
+    <summary><span class="sp-ico" aria-hidden="true">📲</span><span class="sp-st"><span data-i18n="secApp">App &amp; data</span><small data-i18n="secAppSub">Install, send feedback</small></span></summary>
     <div class="sp-body">
       <div class="sp-item sp-row sp-col" id="installRow"><span data-i18n="installTitle">App</span>
         <button class="off-btn" id="instBtn" data-i18n="installApp">Install app</button>
@@ -2357,14 +2368,25 @@
         </div>
         <div class="sp-note" id="aiKeyNote"></div>
       </div>
-      <div class="sp-item sp-row sp-col" id="diagRow"><span data-i18n="diagLabel">Diagnostics</span>
-        <div class="off-wrap">
-          <button class="off-btn" id="diagReport" data-i18n="diagReport">Report a problem</button>
-          <button class="off-btn ghost" id="diagCopy" data-i18n="diagCopy">Copy report</button>
-          <button class="off-btn ghost" id="diagClear" data-i18n="diagClear">Clear</button>
+      <!-- V4.8.2: feedback by the person's own email app, to the app's contact address (it was a public GitHub page) -->
+      <div class="sp-item sp-row sp-col" id="fbRow"><span data-i18n="fbLabel">Send feedback</span>
+        <div class="sp-note" data-i18n="fbIntro">Tell us about a problem, an idea, or anything you would like changed. We read every message.</div>
+        <div class="seg fb-kind" id="fbKind" role="group" aria-label="Kind of feedback" data-i18n-aria="fbKindAria">
+          <button type="button" data-k="problem" class="active" aria-pressed="true" data-i18n="fbKindProblem">Problem</button>
+          <button type="button" data-k="idea" aria-pressed="false" data-i18n="fbKindIdea">Idea</button>
+          <button type="button" data-k="complaint" aria-pressed="false" data-i18n="fbKindComplaint">Complaint</button>
+          <button type="button" data-k="other" aria-pressed="false" data-i18n="fbKindOther">Other</button>
         </div>
+        <textarea id="fbText" class="fb-text" rows="4" maxlength="1500" placeholder="What happened, or what would you change?" data-i18n-ph="fbPh" aria-label="Your message" data-i18n-aria="fbAria"></textarea>
+        <label class="fb-tech"><input type="checkbox" id="fbTech"> <span data-i18n="fbTech">Add technical details (app version, city, language, screen, browser and recent errors)</span></label>
+        <div class="off-wrap">
+          <button class="off-btn" id="fbSend" data-i18n="fbSend">Send by email</button>
+          <button class="off-btn ghost" id="fbCopy" data-i18n="fbCopy">Copy</button>
+          <button class="off-btn ghost" id="diagClear" data-i18n="diagClear">Clear error log</button>
+        </div>
+        <div class="sp-note" id="fbNote" role="status" aria-live="polite"></div>
         <div class="sp-note" id="diagNote"></div>
-        <div class="sp-hint" data-i18n="diagPrivacy">Report a problem opens a public GitHub page with the fault log and your browser's name already typed in. Read it before you post; you need a GitHub account. The app itself sends nothing.</div>
+        <div class="sp-hint" data-i18n="fbPrivacy">Send by email opens your own email app with the message ready, addressed to __CONTACT_EMAIL__. Nothing leaves your phone until you press send there. We see your email address so we can reply.</div>
       </div>
     </div>
   </details>
