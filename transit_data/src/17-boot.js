@@ -381,8 +381,9 @@ function renderAnnouncements(){
            ${groups.length > ANN_BUS_SHOWN ? `<button class="ann-moreb" id="annBusMore">${_annBusAll ? t('annLess') : t('annMore').replace('{n}', groups.length - ANN_BUS_SHOWN)}</button>` : ''}</div>` : '')
     + (opRows ? `<div class="ann-sub">🚈 ${t('openHdr')}</div>${opRows}<div class="ann-note">${t('openFoot')}</div>` : '')
     + `<div class="ann-foot">${annAgeHTML(ages, stale)}${t('annFoot')} <a href="https://www.metro.istanbul/SeferDurumlari/SeferDetaylari" target="_blank" rel="noopener">metro.istanbul ↗</a>
-       · <a href="https://github.com/Hero4mohamed/Metro-Istanbul-General-City-Map/issues/new" target="_blank" rel="noopener">🐞 ${t('reportProblem')}</a>
+       · <a href="#feedback" data-fb-open>🐞 ${t('reportProblem')}</a>
        ${(ferry.length || groups.length || (CITY_ID === 'istanbul' && HAS.bus)) ? `<div>${t('annFootExtra')}</div>` : ''}</div>`;
+  body.querySelectorAll('[data-fb-open]').forEach(el => el.addEventListener('click', e => { e.preventDefault(); openFeedback(); }));   // V4.8.2: the feedback form, not a public GitHub page
   body.querySelectorAll('.ann-item[data-id]').forEach(el => el.addEventListener('click', ()=>{
     const d = live.find(x=>x.id===el.dataset.id); if(d) openDisruption(d);
   }));

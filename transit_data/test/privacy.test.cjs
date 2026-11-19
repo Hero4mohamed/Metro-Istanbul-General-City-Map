@@ -173,9 +173,9 @@ test('no contact or payment form, and the only sign-up is the optional account b
 function csp() { return /Content-Security-Policy" content="([^"]+)"/.exec(H.html())[1]; }
 
 /* ---- reports: what leaves the device, and only by the person's own hand ---------------------------------------------------- */
-test('"Report a problem" says what it opens, and a report names the app version but carries nothing personal', () => {
+test('"Send feedback" says what it opens, and its technical details name the app version but carry nothing personal', () => {
   const html = markup();
-  assert.ok(/id="diagNote"[\s\S]{0,200}data-i18n="diagPrivacy"/.test(html), 'the report button has no disclosure under it');
+  assert.ok(/id="diagNote"[\s\S]{0,200}data-i18n="fbPrivacy"/.test(html), 'the feedback buttons have no disclosure under them');   // V4.8.2
   const body = fnSource(script(), 'diagReportText');
   assert.ok(/"app: V\d+(?:\.\d+)* build " \+ BUILD/.test(body), 'a report does not say which version of the app it came from');
   assert.ok(!/geoPos|irn_home|irn_work|irn_history|irn_recent|irn_ai_key|irn_favplaces|homePlace|workPlace/.test(body), 'a report carries something personal');
