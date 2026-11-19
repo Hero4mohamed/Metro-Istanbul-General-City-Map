@@ -89,9 +89,11 @@ test('v4.8.1: Back takes the pin away, and the search box\'s ✕ does too', () =
 
 /* ---- 2. sections named only in a notice's words ---- */
 function notice() {
-  const ctx = { Map, Math };
+  const ctx = { Map, Math, String, Array };
   vm.createContext(ctx);
-  vm.runInContext([foldSrc(), fnSrc('noticeStationIndex'), fnSrc('noticeSections'), 'this.api = { noticeSections };'].join('\n'), ctx);
+  /* since V4.9 noticeSections() merges the stretches read by the planner's code (07b-notice-routing.js, NOTICE-ROUTE-PURE) */
+  const s = APP(), a = s.indexOf('/* ==NOTICE-ROUTE-PURE-START== */'), b = s.indexOf('/* ==NOTICE-ROUTE-PURE-END== */');
+  vm.runInContext([foldSrc(), fnSrc('noticeStationIndex'), s.slice(a, b), fnSrc('noticeSections'), 'this.api = { noticeSections };'].join('\n'), ctx);
   return ctx.api;
 }
 const M7 = require(path.join(__dirname, '..', 'lines.json')).find(l => l.ref === 'M7').stations;

@@ -501,19 +501,22 @@ function waitAt(ref, isBus, atMin, refId){
    means the eight searches behind one request share the work, since only the line penalty
    differs between them. */
 let _blkSig = null;
-function markBlocked(avoid, noLine, susp){
+function markBlocked(avoid, noLine, susp, nodes){
+  /* V4.9: `nodes` are single stations a notice closes ('REF#index', 07b-notice-routing.js) */
   const sig = (avoid ? [...avoid].sort().join(',') : '') + '|' +
               (noLine ? [...noLine].sort().join(',') : '') + '|' +
-              (susp ? [...susp].sort().join(',') : '');
-  if(sig === _blkSig) return sig !== '||';
+              (susp ? [...susp].sort().join(',') : '') + '|' +
+              (nodes ? [...nodes].sort().join(',') : '');
+  if(sig === _blkSig) return sig !== '|||';
   for(const k in nodeMeta){
     const m = nodeMeta[k];
     m._blk = !!((avoid && avoid.has(nodeMode(k))) ||
                 (susp && susp.size && susp.has(m.ref)) ||
-                (noLine && noLine.has(m.ref)));
+                (noLine && noLine.has(m.ref)) ||
+                (nodes && nodes.size && nodes.has(k)));
   }
   _blkSig = sig;
-  return sig !== '||';
+  return sig !== '|||';
 }
 function suspendedRefs(){
   const out = new Set();
@@ -541,9 +544,12 @@ function routeXY(o, d, penalty, startMin){
   // a mode switched off for this trip, or a specific line the traveller chose to avoid
   const noLine = tripAvoidLines.size ? tripAvoidLines : null;
   ensureRefIds();
-  const susp = suspendedRefs();
+  /* V4.9: what the operators' notices close (whole lines, stations, track), under the stale rule (07b-notice-routing.js).
+     Lines suspended end to end used to come from suspendedRefs() whatever the notices' age; they now follow the same rule. */
+  const nr = noticeRoutingNow();
+  const nrEdges = nr.edges.size ? nr.edges : null;
   const t0 = (startMin != null) ? startMin : searchStartMin();
-  const anyBlocked = markBlocked(avoid, noLine, susp);
+  const anyBlocked = markBlocked(avoid, noLine, nr.lines, nr.nodes);
   const blocked = anyBlocked ? (k=>{ const m=nodeMeta[k]; return !!(m && m._blk); }) : (()=>false);
   // Settings → Prefer step-free: bias away from boarding/alighting/transferring at a
   // station we KNOW has no elevator (stepFree===false). A soft penalty, never a block.
@@ -589,6 +595,7 @@ function routeXY(o, d, penalty, startMin){
          and at 780,000 relaxations a redundant hash lookup is not a rounding error. */
       const vm=nodeMeta[e.to];
       if(anyBlocked && vm && vm._blk) continue;
+      if(nrEdges && nrEdges.has(u + '>' + e.to)) continue;           // track a notice closes (V4.9)
       let nd=du+e.w;
       if(vm.ref!==um.ref){                       // this edge is a CHANGE of vehicle
         // the wait depends on WHEN you get here, which is what makes the search time-dependent

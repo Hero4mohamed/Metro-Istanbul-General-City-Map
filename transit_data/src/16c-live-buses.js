@@ -193,10 +193,20 @@ function liveBusShow(){
   else text = (n === 1 ? t('liveBusOne') : t('liveBusMany').replace('{n}', n))
             + (standing ? ' · ' + t(me.src.kind === 'relay' ? 'liveBusQuietN' : 'liveBusStanding').replace('{n}', standing) : '')
             + (me.unplaced ? ' · ' + t('liveBusUnplaced').replace('{n}', me.unplaced) : '');
+  if(me.status === 'ok' || me.status === 'busy' || me.status === 'error') text += liveBusAgeText(me.src.kind, me.last, now);   // V4.9: how fresh, on screen (it was only in a tooltip, which a phone never shows)
   strip.className = 'lb-strip ' + (me.status === 'ok' ? 'on' : me.status === 'loading' ? '' : 'off');
   strip.querySelector('.lb-t').textContent = text;
   if(me.last) strip.title = t('liveBusAt').replace('{t}', new Date(me.last).toLocaleTimeString(lang, { hour:'2-digit', minute:'2-digit', second:'2-digit' }));
 }
+/* V4.9: how fresh the live buses are, said on the strip. İstanbul's answers come through our relay at a known time: "updated 40 s
+   ago". İzmir's feed carries no times at all, so no age can honestly be given; its buses are the ones seen moving, and it says so. */
+function liveBusAgeText(kind, lastMs, nowMs){
+  if(kind === 'izmir') return ' · ' + t('liveBusSeen');
+  if(typeof lastMs !== 'number' || !isFinite(lastMs)) return '';
+  const s = Math.max(0, Math.round((nowMs - lastMs) / 1000));
+  return ' · ' + t('liveBusAgo').replace('{age}', s < 60 ? t('ageSec').replace('{n}', Math.max(1, s)) : ageWords(Math.round(s / 60)));
+}
+setInterval(() => { if(liveBus && !document.hidden) liveBusShow(); }, 15000);   // keep "updated … ago" true between answers
 /* back on screen, or back on line: ask at once instead of waiting out the gap */
 document.addEventListener('visibilitychange', () => { if(!document.hidden && liveBus) liveBusAgain(300); });
 window.addEventListener('online', () => { if(liveBus) liveBusAgain(300); });

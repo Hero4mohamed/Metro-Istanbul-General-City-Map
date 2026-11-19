@@ -604,10 +604,39 @@ function fareRowHTML(fe, cmpRows){
   html += fareCompareHTML(cmpRows);
   return html;
 }
+/* the name of station i of a line, and an operator's words as a quote (route warnings, V4.9) */
+function nrStationName(ref, i){ const l = lineByRef[ref]; return (l && l.stations[i] && l.stations[i].name) || ''; }
+function nrQuote(d){ return ' <i>“' + svgEsc(disMsg(d)) + '”</i>'; }
 function renderRouteWarnings(it){
   const el=document.getElementById('rWarn'); if(!el) return;
   el.innerHTML='';
   const seen=new Set(); let html='';
+  /* V4.9: what the operators' notices close or change (07b-notice-routing.js). First what this route AVOIDED (a closed stretch on
+     a line it uses, or near where it starts or ends), then, on each rail leg, the stretches it rides through that are only
+     reduced, not listed as running, or closed by a notice too old to trust. Each quotes the operator. */
+  const nr = noticeRoutingNow(), said = new Set();
+  const rides = (it.steps||[]).filter(s => s.type==='ride' && !s.bus);
+  const ends = rides.length ? [[rides[0].fromLat, rides[0].fromLng], [rides[rides.length-1].toLat, rides[rides.length-1].toLng]] : [];
+  nr.avoided.forEach(av => {
+    const line = lineByRef[av.ref]; if(!line) return;
+    const near = ends.some(e => e[0] != null && line.stations.slice(av.a, av.b + 1).some(st => metersBetween(e, [st.lat, st.lng]) < 1500));
+    if(!near && !rides.some(s => s.ref === av.ref)) return;
+    html += '<div class="rw closed">⛔ <span><b>' + svgEsc(av.ref) + '</b> ' + svgEsc(t('nrAvoid').replace('{from}', nrStationName(av.ref, av.a)).replace('{to}', nrStationName(av.ref, av.b))) + nrQuote(av.d) + '</span></div>';
+  });
+  rides.forEach(s => stretchHits(nr.warn, s.ref, s.fromIdx, s.toIdx).forEach(w => {
+    const key = w.d.id + '|' + w.kind; if(said.has(key)) return; said.add(key);
+    const from = nrStationName(w.ref, w.a), to = nrStationName(w.ref, w.b);
+    if(w.kind === 'reduced') html += '<div class="rw notice">⚠ <span><b>' + svgEsc(w.ref) + '</b> ' + svgEsc(t('nrReduced')) + nrQuote(w.d) + '</span></div>';
+    else if(w.kind === 'unmentioned') html += '<div class="rw closed">⚠ <span><b>' + svgEsc(w.ref) + '</b> ' + svgEsc(t('nrUnlisted').replace('{from}', from).replace('{to}', to)) + nrQuote(w.d) + '</span></div>';
+    else if(w.kind === 'closedStale'){
+      const a = typeof annAges === 'function' ? annAges(Date.now()).rail : null;
+      html += '<div class="rw closed">⚠ <span><b>' + svgEsc(w.ref) + '</b> ' + svgEsc(t('nrClosedStale').replace('{from}', from).replace('{to}', to).replace('{age}', a ? ageWords(a.mins) : '?')) + nrQuote(w.d) + '</span></div>';
+    }
+  }));
+  if(html && typeof annAges === 'function'){                  // V4.9: how old the notices quoted above are
+    const a = annAges(Date.now()).rail;
+    if(a) html += '<div class="rw-age">' + svgEsc(annAgeText(a)) + '</div>';
+  }
   (it.steps||[]).forEach(s=>{
     if(s.type!=='ride' || seen.has(s.ref)) return;
     // buses and ferries have notices of their own: say so on the leg they affect, in the trip, where it is read
