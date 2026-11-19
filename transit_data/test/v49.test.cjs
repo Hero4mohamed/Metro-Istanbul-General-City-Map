@@ -68,6 +68,8 @@ test('v4.9: a closed stretch blocks its inner stations, the track inside it, and
   assert.strictEqual(r.avoided.length, 1, 'and it is listed as avoided, to say so in the results');
   const two = plain(api.noticeRouting([{ id: 'y', ref: 'M7', scope: 'segment', from: 'Çağlayan', to: 'Mecidiyeköy', severity: 'major' }], lineOf, false));
   assert.deepStrictEqual([two.nodes.length, two.edges.length], [0, 2], 'two neighbouring stations: no inner station, but the track between them is cut');
+  const head = plain(api.noticeRouting([{ id: 'z', ref: 'M7', scope: 'segment', from: M7[0].name, to: M7[2].name, severity: 'major' }], lineOf, false));
+  assert.deepStrictEqual(head.nodes.sort(), ['M7#0', 'M7#1'], 'a stretch from the FIRST station: that end is unreachable too, the far edge still served');
 });
 
 test('v4.9: shuttle and not-listed stretches are never blocked, only warned about', () => {
@@ -115,6 +117,34 @@ test('v4.9: the route says what it avoided and warns on the leg it affects', () 
   const i18n = require('fs').readFileSync(path.join(__dirname, '..', 'src', '01-i18n.js'), 'utf8');
   for (const k of ['nrReduced', 'nrUnlisted', 'nrClosedStale', 'nrAvoid'])
     assert.strictEqual((i18n.match(new RegExp('(^|[^A-Za-z])' + k + ':"', 'gm')) || []).length, 4, k + ' in all four languages');
+  /* and what it actually draws, run for real: a ride on M7 with one stretch avoided and one not listed as running */
+  const html = warningsFor({ avoided: [{ d: NOTE, ref: 'M7', a: idx('Çağlayan'), b: idx('Fulya') }],
+                             warn: [{ d: NOTE, ref: 'M7', kind: 'unmentioned', a: idx('Kağıthane'), b: idx('Yıldız') }] },
+                           [{ type: 'ride', ref: 'M7', fromIdx: idx('Nurtepe'), toIdx: idx('Yıldız') }]);
+  assert.ok(/<div class="rw closed">⛔ <span><b>M7<\/b> nrAvoid Çağlayan–Fulya <i>“the operator's words”<\/i>/.test(html), 'it says what it avoided, quoting the operator: ' + html);
+  assert.ok(/<div class="rw closed">⚠ <span><b>M7<\/b> nrUnlisted Kağıthane–Yıldız/.test(html), 'a stretch the notice leaves out is RED (the owner\'s decision), not amber');
+  assert.strictEqual(warningsFor({ avoided: [], warn: [] }, [{ type: 'ride', ref: 'M7', fromIdx: 0, toIdx: 3 }]), '', 'nothing to say: nothing drawn');
+});
+/* renderRouteWarnings run in a sandbox: the notices' verdict (nr) and the trip's legs in, the warnings' HTML out */
+const NOTE = { id: 'n1', ref: 'M7' };
+function warningsFor(nr, steps) {
+  const el = { innerHTML: null };
+  const ctx = { Math, String, Set, Date, document: { getElementById: id => id === 'rWarn' ? el : null },
+    lineByRef: { M7: M7L }, noticeRoutingNow: () => nr, metersBetween: () => 9e9,
+    t: k => k === 'nrAvoid' || k === 'nrUnlisted' ? k + ' {from}–{to}' : k, svgEsc: s => String(s), disMsg: () => 'the operator\'s words',
+    annAges: () => ({ rail: { mins: 125, stale: false } }), annAgeText: a => 'notices ' + a.mins + ' min old', ageWords: m => m + ' min',
+    noticesForRide: () => [], lineClosedNow: () => null, lineTiming: () => ({ hours: '24 hours' }), nowIstanbulMin: () => 600 };
+  vm.createContext(ctx);
+  vm.runInContext([region('NOTICE-ROUTE-PURE'), fnSrc('nrStationName'), fnSrc('nrQuote'), fnSrc('renderRouteWarnings'),
+    'this.run = it => { renderRouteWarnings(it); return document.getElementById("rWarn").innerHTML; };'].join('\n'), ctx);
+  return ctx.run({ steps: steps });
+}
+test('v4.9: the stale rule is read from the notices\' real age, and an unknown age blocks as usual', () => {
+  const run = ages => { const ctx = { Date, annAges: ages }; vm.createContext(ctx); vm.runInContext(fnSrc('noticesStale') + '\nthis.f = noticesStale;', ctx); return ctx.f(); };
+  assert.strictEqual(run(() => ({ rail: { mins: 600, stale: true } })), true, 'past 8 h: stale, so nothing is avoided');
+  assert.strictEqual(run(() => ({ rail: { mins: 30, stale: false } })), false);
+  assert.strictEqual(run(() => ({})), false, 'no rail age known');
+  assert.strictEqual(run(() => { throw new Error('not ready'); }), false, 'the panel not ready yet');
 });
 
 /* ---- part 2: how fresh each live source is, said on screen ---- */
@@ -137,6 +167,9 @@ test('v4.9: the live-bus strip says how fresh İstanbul\'s buses are, and says �
 });
 test('v4.9: route warnings that quote notices say how old the notices are', () => {
   assert.ok(/html \+= '<div class="rw-age">' \+ svgEsc\(annAgeText\(a\)\) \+ '<\/div>';/.test(fnSrc('renderRouteWarnings')));
+  const html = warningsFor({ avoided: [], warn: [{ d: NOTE, ref: 'M7', kind: 'reduced', a: idx('Nurtepe'), b: idx('Kağıthane') }] },
+                           [{ type: 'ride', ref: 'M7', fromIdx: idx('Nurtepe'), toIdx: idx('Yıldız') }]);
+  assert.ok(html.endsWith('<div class="rw-age">notices 125 min old</div>'), 'under the quotes, how old they are: ' + html);
   const i18n = require('fs').readFileSync(path.join(__dirname, '..', 'src', '01-i18n.js'), 'utf8');
   for (const k of ['liveBusAgo', 'liveBusSeen', 'ageSec'])
     assert.strictEqual((i18n.match(new RegExp('(^|[^A-Za-z])' + k + ':"', 'gm')) || []).length, 4, k + ' in all four languages');

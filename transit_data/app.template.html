@@ -149,6 +149,20 @@
   img,svg{-webkit-user-drag:none;user-drag:none;}
   ::selection{background:rgba(var(--ok-rgb),.32);color:#fff;}
   #map{position:fixed;inset:0;background:var(--obsidian);}
+  /* V4.9: the Environment tab's 3D view sits exactly over the map; the panels stay above it */
+  #envMap{position:fixed;inset:0;background:var(--obsidian);}
+  #envMap[hidden]{display:none;}
+  /* the 2D map is paused under it; hidden too, since Leaflet's marker layers (z-index 400+) would stack above a plain fixed box */
+  body.env-on #map{visibility:hidden;}
+  #cardEnv .seg{margin:6px 0;}
+  #cardEnv .env-row .seg{margin:0;flex:0 0 128px;}
+  .env-row{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:8px;font-size:var(--fs-8);}
+  .env-badge{display:inline-block;margin:4px 0;padding:2px 8px;border-radius:999px;font-size:var(--fs-7);font-weight:700;background:rgba(var(--warn-rgb),.16);color:#F5C36A;}
+  #envHour{width:100%;margin:6px 0 2px;}
+  .env-perf{font-variant-numeric:tabular-nums;}
+  .env-credit small{display:block;font-size:var(--fs-6);line-height:1.45;color:var(--dim);margin-top:4px;}
+  .env-credit summary{cursor:pointer;font-size:var(--fs-7);color:var(--dim);}
+  .env-pop .maplibregl-popup-content{background:var(--surface);color:var(--text);font-size:var(--fs-8);padding:6px 9px;border-radius:9px;}
   #trainCanvas{position:fixed;inset:0;pointer-events:none;z-index:450;}
 
   /* unified slim scrollbars */
@@ -2057,6 +2071,7 @@
 <a href="#cardPlanner" class="skip-link" data-i18n="skipToPlanner">Skip to trip planner</a>
 <div class="print-sheet" id="printSheet"></div>
 <div id="map"></div>
+<div id="envMap" hidden></div>
 <!-- keyboard and screen-reader access to the stations drawn on the map (25-map-keyboard.js): help text, announcements, and a list -->
 <div id="mapHelp" class="sr-only" data-i18n="mapKeys">N and P step through the stations in view, Enter opens the one chosen, L lists them all.</div>
 <div id="mapLive" class="sr-only" role="status" aria-live="polite"></div>
@@ -2441,6 +2456,7 @@
       <button data-tab="intercity" role="tab" aria-selected="false" data-i18n="tabIntercity">🚄 Intercity</button>
       <button data-tab="weather" role="tab" aria-selected="false" data-i18n="tabWeather">☀ Weather</button>
       <button data-tab="airport" role="tab" aria-selected="false" data-i18n="tabAirport">✈ Airports</button>
+      <button data-tab="env" role="tab" aria-selected="false" data-i18n="tabEnv">⛰ Environment</button>
     </div>
   </div>
   <div class="card glass" id="cardFriends">
@@ -2521,6 +2537,11 @@
     <div class="sp-note" data-i18n="airIntro">Choose an airport, then departures or arrivals. The live table opens on the airport's own website.</div>
     <div class="air-list" id="airList"></div>
     <div class="air-board" id="airBoard" hidden></div>
+  </div>
+
+  <div class="card glass" id="cardEnv" style="display:none;">
+    <div class="sec"><span data-i18n="envTitle">Environment</span></div>
+    <div id="envBody"></div>
   </div>
 
   <div class="card glass" id="cardIntercity" style="display:none;">
