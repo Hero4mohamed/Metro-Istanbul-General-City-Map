@@ -34,5 +34,36 @@
     "messageTr": "Hat bakım ve ray yenileme çalışmaları nedeniyle hattımız işletmeye kapalıdır. Çalışma süresince İETT’ye ait elektrikli araçlar ile hizmet verilecektir.",
     "message": "Due to maintenance and track renewal works, our line is closed to service. For the duration of the works, service will be provided by İETT electric vehicles.",
     "messageLang": "en"
+  },
+  {
+    "id": "ferry-2231",
+    "mode": "ferry",
+    "ref": null,
+    "scope": "note",
+    "severity": "minor",
+    "title": "Ferry notice",
+    "message": "Elverişsiz hava koşulları sebebiyle Aşiyan-Üsküdar ve Aşiyan-Anadolu Hisarı-Küçüksu-Aşiyan Ring Hattı seferleri ikinci bir duyuruya kadar Bebek-Üsküdar ve Bebek-Küçüksu-Anadolu Hisarı-Bebek olarak yapılacaktır. Sefer tarifesi aşağıda belirtilmiştir.",
+    "messageTr": "Elverişsiz hava koşulları sebebiyle Aşiyan-Üsküdar ve Aşiyan-Anadolu Hisarı-Küçüksu-Aşiyan Ring Hattı seferleri ikinci bir duyuruya kadar Bebek-Üsküdar ve Bebek-Küçüksu-Anadolu Hisarı-Bebek olarak yapılacaktır. Sefer tarifesi aşağıda belirtilmiştir.",
+    "messageLang": "tr",
+    "translatedBy": "none",
+    "source": "sehirhatlari.istanbul",
+    "url": "https://sehirhatlari.istanbul/tr/duyurular/asiyan-seferleri-duyurusu-2231",
+    "published": "2026-11-15",
+    "until": "2026-11-22"
+  },
+  {
+    "id": "ferry-3788",
+    "mode": "ferry",
+    "ref": null,
+    "scope": "note",
+    "severity": "minor",
+    "title": "Seasonal timetable",
+    "message": "The summer timetable of Şehir Hatları AŞ, an affiliate of İstanbul Metropolitan Municipality, is ending. The newly arranged winter timetable will apply between 7 September 2026 and 27 June 2027. Şehir Hatları, Europe’s largest public sea transport provider, which has provided sea transport in İstanbul for 175 years, since the Şirket-i Hayriye, is switching to the winter timetable from Monday 7 September.",
+    "messageTr": "İstanbul Büyükşehir Belediyesi iştiraki Şehir Hatları AŞ’nin yaz tarifesi sona eriyor. Yeni düzenlenen kış tarifesi 7 Eylül 2026 ile 27 Haziran 2027 tarihleri arasında uygulanacak. Avrupa’nın en büyük toplu deniz ulaşım sağlayıcısı olan ve Şirket-i Hayriye’den bu yana 175 yıldır İstanbul’da deniz ulaşımı hizmeti veren Şehir Hatları, 7 Eylül Pazartesi gününden itibaren kış tarifesine geçiyor.",
+    "messageLang": "en",
+    "source": "sehirhatlari.istanbul",
+    "url": "https://sehirhatlari.istanbul/tr/duyurular/sehir-hatlari-kis-tarifesine-geciyor-3788",
+    "published": "2026-09-03",
+    "until": "2027-06-27"
   }
 ]
