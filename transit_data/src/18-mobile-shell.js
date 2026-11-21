@@ -30,6 +30,7 @@ function mkSheet(id){
   return s;
 }
 function openSheet(name){
+  const wasAlerts = !!(mSheets.alerts && mSheets.alerts.classList.contains('open'));
   for(const k in mSheets){ const on = k===name; if(on && !mSheets[k].classList.contains('open') && mSheets[k].dataset.dragKind) setDragDetent(mSheets[k], 'low', true); mSheets[k].classList.toggle('open', on); }
   /* No sheet dims the map any more (V4.6.2: "I want to see what is happening in the background"): each opens at a low height with
      the map above it, undimmed and usable, as the planner has since V4.4.1 */
@@ -46,6 +47,8 @@ function openSheet(name){
   for(const k in mNavBtns){ const on = (name===null || name==='modes' || name==='planner') ? k==='map' : k===name; mNavBtns[k].classList.toggle('on', on); if(on) mNavBtns[k].setAttribute('aria-current','page'); else mNavBtns[k].removeAttribute('aria-current'); }
   { const nav=document.querySelector('.mnav'); if(nav){ const keys=Object.keys(mNavBtns), i=keys.findIndex(k=>mNavBtns[k].classList.contains('on')); nav.dataset.on = String(Math.max(0, i)); } }
   if(navigator.vibrate) try{ navigator.vibrate(8); }catch(e){}
+  /* V4.8.3: opening Alerts marks what is in it as seen (the badge drops); leaving it ends the visit's NEW tags */
+  if((name==='alerts' || wasAlerts) && typeof renderAnnouncements==='function') renderAnnouncements();
 }
 /* ---------------------------------------------------------------------------
    THE PLANNER SHEET HAS THREE HEIGHTS (V4.4.1)

@@ -40,8 +40,11 @@ B2 Halkalı–Bahçeşehir is running again, so its hand-written works notice mu
   section stays collapsed as today; opening the card counts as seeing it (its header says how many are new).
 - **On the card:** rows that were new when you opened it get a small **NEW** tag for that visit; the bus section header
   reads e.g. "🚌 Bus notices · 42 · 3 new". The card header keeps the total.
-- **Storage:** `localStorage` key `irn_ann_seen`: the fingerprints of notices currently live and seen, pruned to the
-  live set on every refresh (it cannot grow without bound). If storage is unavailable the badge behaves as today
+- **Storage:** `localStorage` key `irn_ann_seen`: the seen fingerprints. *Changed during the build (21 Nov):* the list
+  is rewritten only when the card is opened (live first, then older ones, cut at 2,000), never while it is closed. Pruning
+  to "what is live" on every refresh threw away every seen bus notice at start-up, because the card is drawn before
+  İETT's notices arrive (a reload showed 99+ again). Consequence: a notice that blinks out of a feed and comes back
+  unchanged is not new; changed, it is. If storage is unavailable the badge behaves as today
   (counts everything). Clearing site data resets it: everything counts as new once.
 - **First run after the update:** everything live is unseen once, so the first number is the full count; one look at
   Alerts brings it to 0.

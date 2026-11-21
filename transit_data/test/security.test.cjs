@@ -25,7 +25,8 @@ function noticeWorld() {
   const s = script();
   const ctx = vm.createContext({
     SEV_COLOR: { major: '#E5484D', partial: '#F5A623', minor: '#FFD400' }, BUS_COLOR: '#00AA55', colorForLine: () => '#123456', inkOn: () => '#fff', sevLabel: x => String(x), t: k => k,
-    disTitle: d => d.title, disMsg: d => d.message, disTrTag: () => '', untilText: d => d.until || '' });
+    disTitle: d => d.title, disMsg: d => d.message, disTrTag: () => '', untilText: d => d.until || '',
+    annIsNew: () => true });          // V4.8.3: every row carries its NEW tag here, so the tag's path is checked too
   vm.runInContext([constLine(s, 'svgEsc'), constLine(s, 'attrEsc'), fnSource(s, 'disrTip'), fnSource(s, 'annRowHTML'), fnSource(s, 'annBusGroupHTML')].join('\n'), ctx);
   return ctx;
 }

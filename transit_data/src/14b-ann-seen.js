@@ -13,11 +13,18 @@
    line's cancelled departures are one notice whose id and list change with every new departure.
 
    Only fields stored on the notice are used, never the translated text on screen: switching the
-   language must not make anything "new". The list lives in localStorage (irn_ann_seen), is pruned to
-   the notices that are still live on every render so it cannot grow without end, and never leaves
-   the device. Without storage the badge counts everything, as it did before.
+   language must not make anything "new". The list lives in localStorage (irn_ann_seen) and never
+   leaves the device. Without storage the badge counts everything, as it did before.
+
+   The list is only rewritten when you open the card, never while it is closed: the card is first drawn
+   before İETT's bus notices arrive, and trimming the list to "what is live right now" at that moment
+   threw away every bus notice you had seen (a reload showed 99+ again). When you open it, what is live
+   goes first and older fingerprints follow, cut at ANN_SEEN_MAX, so it cannot grow without end. A
+   notice that drops out of a feed for a moment and comes back unchanged is therefore not new; one that
+   comes back changed is.
    =========================================================================== */
 /* ==ANNSEEN-PURE-START== */
+const ANN_SEEN_MAX = 2000;         // fingerprints kept: a bad day has a few hundred notices, each about 30 characters
 function annFingerprint(d) {
   d = d || {};
   const v = [d.message, d.messageTr, d.severity, d.until, d.from, d.to, d.stations, d.tpl].map(function (x) { return x === undefined ? null : x; });
@@ -33,8 +40,8 @@ function annSeenStep(live, seen, cardOpen) {
   const known = {};
   seen.forEach(function (f) { known[f] = 1; });
   const fresh = fps.filter(function (f) { return !known[f]; });
-  if (cardOpen) return { seen: fps.slice(), fresh: fresh, badge: 0 };
-  return { seen: seen.filter(function (f) { return have[f]; }), fresh: fresh, badge: fresh.length };
+  if (cardOpen) return { seen: fps.concat(seen.filter(function (f) { return !have[f]; })).slice(0, ANN_SEEN_MAX), fresh: fresh, badge: 0 };
+  return { seen: seen.slice(), fresh: fresh, badge: fresh.length };
 }
 function annParseSeen(raw) {
   let v;
@@ -42,3 +49,22 @@ function annParseSeen(raw) {
   return Array.isArray(v) ? v.filter(function (x) { return typeof x === 'string'; }) : [];
 }
 /* ==ANNSEEN-PURE-END== */
+
+/* The device side: where the list is kept, and whether the card is being looked at. */
+const annVisitNew = new Set();     // what was new while the card was open this time: those rows carry a NEW tag until it closes
+function annSeenLoad() {
+  try { return annParseSeen(localStorage.getItem('irn_ann_seen')); } catch (e) { return null; }   // null: no storage, count everything
+}
+function annSeenSave(seen) {
+  try { localStorage.setItem('irn_ann_seen', JSON.stringify(seen)); } catch (e) {}
+}
+/* On a phone the card lives in the Alerts sheet; on a wide screen it is the Announcements card, open unless collapsed.
+   18-mobile-shell.js declares mSheets after this file runs, so a render before it exists finds no sheet. */
+function annCardOpen() {
+  let sheet = null;
+  try { sheet = mSheets && mSheets.alerts; } catch (e) { sheet = null; }
+  if (sheet) return sheet.classList.contains('open');
+  const ann = document.getElementById('announce');
+  return !!ann && !ann.classList.contains('collapsed') && ann.offsetParent !== null;
+}
+function annIsNew(d) { return annVisitNew.has(annFingerprint(d)); }

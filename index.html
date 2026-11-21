@@ -6,7 +6,7 @@
 <!-- Substituted by build.cjs, which hashes the inline script from the final bytes. Pages
      cannot set headers, so this ships as meta; frame-ancestors and report-uri are
      unavailable that way. -->
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-++mjiXhW1D30BTlqGjbwRxlitZCG9bubeZJKJmBQ5gE='; style-src 'self' 'unsafe-inline'; font-src 'self' data:; img-src 'self' data: blob: https://server.arcgisonline.com; connect-src 'self' https://server.arcgisonline.com https://tiles.openfreemap.org https://photon.komoot.io https://overpass-api.de https://api.ibb.gov.tr https://openapi.izmir.bel.tr https://turkmaps-relay.turkmaps-relay.workers.dev https://api.open-meteo.com https://air-quality-api.open-meteo.com https://routing.openstreetmap.de https://api.anthropic.com https://identitytoolkit.googleapis.com https://securetoken.googleapis.com https://firestore.googleapis.com; worker-src 'self'; frame-src 'none'; media-src 'none'; manifest-src 'self'; base-uri 'self'; form-action 'none'; object-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-Ofo8cLqfbx1CxT6IiR5YpQpkyUPBOMr+qXdO3sNuuFk='; style-src 'self' 'unsafe-inline'; font-src 'self' data:; img-src 'self' data: blob: https://server.arcgisonline.com; connect-src 'self' https://server.arcgisonline.com https://tiles.openfreemap.org https://photon.komoot.io https://overpass-api.de https://api.ibb.gov.tr https://openapi.izmir.bel.tr https://turkmaps-relay.turkmaps-relay.workers.dev https://api.open-meteo.com https://air-quality-api.open-meteo.com https://routing.openstreetmap.de https://api.anthropic.com https://identitytoolkit.googleapis.com https://securetoken.googleapis.com https://firestore.googleapis.com; worker-src 'self'; frame-src 'none'; media-src 'none'; manifest-src 'self'; base-uri 'self'; form-action 'none'; object-src 'none'">
 <title>TurkMaps · Transit Network Map</title>
 <!-- Leaflet 1.9.4, shipped with the app rather than fetched from a CDN (V4.3): see vendor/README.md -->
 <link rel="stylesheet" href="vendor/leaflet/leaflet.css">
@@ -973,6 +973,9 @@
   .ann-row1{display:flex;align-items:center;gap:6px;margin-bottom:4px;flex-wrap:wrap;}
   .ann-line{font-size:var(--fs-5);font-weight:800;color:#fff;padding:2px 7px;border-radius:6px;flex:none;box-shadow:0 2px 6px rgba(0,0,0,.3);}
   .ann-sev{font-size:var(--fs-3);font-weight:800;color:#fff;padding:2px 7px;border-radius:var(--r-pill);flex:none;text-transform:uppercase;letter-spacing:.6px;}
+  /* V4.8.3: what was new when you opened the card, for that visit */
+  .ann-new{font-size:var(--fs-3);font-weight:800;background:var(--accent);color:var(--btn-ink);padding:2px 7px;border-radius:var(--r-pill);flex:none;text-transform:uppercase;letter-spacing:.6px;}
+  .ann-new-n{color:var(--accent-ink);font-weight:800;}
   .ann-ttl{font-size:11px;font-weight:700;color:var(--text);}
   .ann-msg{font-size:var(--fs-7);color:var(--muted);line-height:1.45;}
   .ann-until{font-size:var(--fs-6);color:var(--gold-ink);margin-top:4px;font-weight:600;}
@@ -2730,7 +2733,7 @@
 
    The report carries the fault, the build, the city, the language and the browser. It never
    carries location, saved places, trip history or the API key. ===== */
-const BUILD = "20261121135021";
+const BUILD = "20261121135531";
 const DIAG_MAX = 20;
 let DIAG = [];
 try { DIAG = JSON.parse(localStorage.getItem("irn_diag") || "[]"); } catch (e) { DIAG = []; }
@@ -2979,7 +2982,7 @@ const I18N = {
     icBook:"Book & live times · TCDD ↗",
     sevMajor:"Major", sevPartial:"Partial", sevMinor:"Minor",
     "ttl:Service suspended":"Service suspended", "ttl:Section affected":"Section affected", "ttl:Service notice":"Service notice",
-    annRailSub:"Rail", annBusSub:"Bus notices", annFerrySub:"Ferry notices", annMore:"Show {n} more", annLess:"Show fewer",
+    annRailSub:"Rail", annBusSub:"Bus notices", annFerrySub:"Ferry notices", annMore:"Show {n} more", annLess:"Show fewer", annNew:"New", annNNew:"{n} new",
     annFootExtra:"Bus notices are read live from İETT; ferry notices come from Şehir Hatları.",
     "ttl:Detour":"Detour", "ttl:Delays":"Delays", "ttl:Terminal change":"Terminal change", "ttl:Trips cancelled":"Trips cancelled",
     "ttl:Timetable change":"Timetable change", "ttl:Extra trips":"Extra trips", "ttl:Ferry notice":"Ferry notice", "ttl:Seasonal timetable":"Seasonal timetable",
@@ -3218,7 +3221,7 @@ const I18N = {
     icBook:"Bilet & canlı saatler · TCDD ↗",
     sevMajor:"Büyük", sevPartial:"Kısmi", sevMinor:"Hafif",
     "ttl:Service suspended":"Seferler durduruldu", "ttl:Section affected":"Etkilenen kesim", "ttl:Service notice":"Servis bildirimi",
-    annRailSub:"Raylı sistem", annBusSub:"Otobüs duyuruları", annFerrySub:"Vapur duyuruları", annMore:"{n} tane daha göster", annLess:"Daha az göster",
+    annRailSub:"Raylı sistem", annBusSub:"Otobüs duyuruları", annFerrySub:"Vapur duyuruları", annMore:"{n} tane daha göster", annLess:"Daha az göster", annNew:"Yeni", annNNew:"{n} yeni",
     annFootExtra:"Otobüs duyuruları İETT'den canlı okunur; vapur duyuruları Şehir Hatları'ndan alınır.",
     "ttl:Detour":"Güzergâh değişikliği", "ttl:Delays":"Gecikmeler", "ttl:Terminal change":"Son durak değişikliği", "ttl:Trips cancelled":"İptal edilen seferler",
     "ttl:Timetable change":"Sefer saati değişikliği", "ttl:Extra trips":"Ek seferler", "ttl:Ferry notice":"Vapur duyurusu", "ttl:Seasonal timetable":"Mevsimlik tarife",
@@ -3400,7 +3403,7 @@ const I18N = {
     icBook:"الحجز والمواعيد المباشرة · TCDD ↗",
     sevMajor:"كبير", sevPartial:"جزئي", sevMinor:"طفيف",
     "ttl:Service suspended":"الخدمة متوقفة", "ttl:Section affected":"قسم متأثر", "ttl:Service notice":"إشعار خدمة",
-    annRailSub:"السكك الحديدية", annBusSub:"إشعارات الحافلات", annFerrySub:"إشعارات العبّارات", annMore:"عرض {n} إضافية", annLess:"عرض أقل",
+    annRailSub:"السكك الحديدية", annBusSub:"إشعارات الحافلات", annFerrySub:"إشعارات العبّارات", annMore:"عرض {n} إضافية", annLess:"عرض أقل", annNew:"جديد", annNNew:"{n} جديد",
     annFootExtra:"إشعارات الحافلات تُقرأ مباشرة من İETT، وإشعارات العبّارات من Şehir Hatları.",
     "ttl:Detour":"تحويل المسار", "ttl:Delays":"تأخيرات", "ttl:Terminal change":"تغيير المحطة الأخيرة", "ttl:Trips cancelled":"رحلات ملغاة",
     "ttl:Timetable change":"تغيير في الجدول", "ttl:Extra trips":"رحلات إضافية", "ttl:Ferry notice":"إشعار عبّارات", "ttl:Seasonal timetable":"جدول موسمي",
@@ -3650,7 +3653,7 @@ const I18N = {
     icBook:"Réserver &amp; horaires en direct · TCDD ↗",
     sevMajor:"Majeure", sevPartial:"Partielle", sevMinor:"Mineure",
     "ttl:Service suspended":"Service suspendu", "ttl:Section affected":"Section affectée", "ttl:Service notice":"Avis de service",
-    annRailSub:"Rail", annBusSub:"Avis bus", annFerrySub:"Avis bateaux", annMore:"Afficher {n} de plus", annLess:"Afficher moins",
+    annRailSub:"Rail", annBusSub:"Avis bus", annFerrySub:"Avis bateaux", annMore:"Afficher {n} de plus", annLess:"Afficher moins", annNew:"Nouveau", annNNew:"{n} nouveau(x)",
     annFootExtra:"Les avis bus sont lus en direct auprès d’İETT ; les avis bateaux viennent de Şehir Hatları.",
     "ttl:Detour":"Déviation", "ttl:Delays":"Retards", "ttl:Terminal change":"Changement de terminus", "ttl:Trips cancelled":"Départs supprimés",
     "ttl:Timetable change":"Changement d’horaires", "ttl:Extra trips":"Départs supplémentaires", "ttl:Ferry notice":"Avis bateaux", "ttl:Seasonal timetable":"Horaires saisonniers",
@@ -12351,11 +12354,18 @@ busDataPromise.then(function () { deriveBusNotices(); });
    line's cancelled departures are one notice whose id and list change with every new departure.
 
    Only fields stored on the notice are used, never the translated text on screen: switching the
-   language must not make anything "new". The list lives in localStorage (irn_ann_seen), is pruned to
-   the notices that are still live on every render so it cannot grow without end, and never leaves
-   the device. Without storage the badge counts everything, as it did before.
+   language must not make anything "new". The list lives in localStorage (irn_ann_seen) and never
+   leaves the device. Without storage the badge counts everything, as it did before.
+
+   The list is only rewritten when you open the card, never while it is closed: the card is first drawn
+   before İETT's bus notices arrive, and trimming the list to "what is live right now" at that moment
+   threw away every bus notice you had seen (a reload showed 99+ again). When you open it, what is live
+   goes first and older fingerprints follow, cut at ANN_SEEN_MAX, so it cannot grow without end. A
+   notice that drops out of a feed for a moment and comes back unchanged is therefore not new; one that
+   comes back changed is.
    =========================================================================== */
 /* ==ANNSEEN-PURE-START== */
+const ANN_SEEN_MAX = 2000;         // fingerprints kept: a bad day has a few hundred notices, each about 30 characters
 function annFingerprint(d) {
   d = d || {};
   const v = [d.message, d.messageTr, d.severity, d.until, d.from, d.to, d.stations, d.tpl].map(function (x) { return x === undefined ? null : x; });
@@ -12371,8 +12381,8 @@ function annSeenStep(live, seen, cardOpen) {
   const known = {};
   seen.forEach(function (f) { known[f] = 1; });
   const fresh = fps.filter(function (f) { return !known[f]; });
-  if (cardOpen) return { seen: fps.slice(), fresh: fresh, badge: 0 };
-  return { seen: seen.filter(function (f) { return have[f]; }), fresh: fresh, badge: fresh.length };
+  if (cardOpen) return { seen: fps.concat(seen.filter(function (f) { return !have[f]; })).slice(0, ANN_SEEN_MAX), fresh: fresh, badge: 0 };
+  return { seen: seen.slice(), fresh: fresh, badge: fresh.length };
 }
 function annParseSeen(raw) {
   let v;
@@ -12380,6 +12390,25 @@ function annParseSeen(raw) {
   return Array.isArray(v) ? v.filter(function (x) { return typeof x === 'string'; }) : [];
 }
 /* ==ANNSEEN-PURE-END== */
+
+/* The device side: where the list is kept, and whether the card is being looked at. */
+const annVisitNew = new Set();     // what was new while the card was open this time: those rows carry a NEW tag until it closes
+function annSeenLoad() {
+  try { return annParseSeen(localStorage.getItem('irn_ann_seen')); } catch (e) { return null; }   // null: no storage, count everything
+}
+function annSeenSave(seen) {
+  try { localStorage.setItem('irn_ann_seen', JSON.stringify(seen)); } catch (e) {}
+}
+/* On a phone the card lives in the Alerts sheet; on a wide screen it is the Announcements card, open unless collapsed.
+   18-mobile-shell.js declares mSheets after this file runs, so a render before it exists finds no sheet. */
+function annCardOpen() {
+  let sheet = null;
+  try { sheet = mSheets && mSheets.alerts; } catch (e) { sheet = null; }
+  if (sheet) return sheet.classList.contains('open');
+  const ann = document.getElementById('announce');
+  return !!ann && !ann.classList.contains('collapsed') && ann.offsetParent !== null;
+}
+function annIsNew(d) { return annVisitNew.has(annFingerprint(d)); }
 /* ===========================================================================
    THE BOATS TAB (V4.5)
    On the default map the ferry lines are quiet dotted lanes, and lines that share a stretch of sea share one lane (V4.4.1): right for
@@ -14350,7 +14379,7 @@ function annRowHTML(d){
   return `<div class="ann-item" data-id="${attrEsc(d.id)}" style="border-left-color:${col};cursor:pointer">
       <div class="ann-row1">
         <span class="ann-line" style="background:${chipCol};color:${inkOn(chipCol)}">${d.ref ? glyph + svgEsc(d.ref) : '📣'}</span>
-        <span class="ann-sev" style="background:${col};color:${inkOn(col)}">${sevLabel(d.severity)}</span>
+        <span class="ann-sev" style="background:${col};color:${inkOn(col)}">${sevLabel(d.severity)}</span>${annIsNew(d) ? `<span class="ann-new">${t('annNew')}</span>` : ''}
         <span class="ann-ttl">${svgEsc(disTitle(d))}</span>
       </div>
       <div class="ann-msg">${disTrTag(d)}${svgEsc(disMsg(d))}</div>
@@ -14380,7 +14409,7 @@ function annBusGroupHTML(g){
     ? svgEsc(t('nTripsSummary').replace('{n}', g.items.reduce((n, x) => n + x.tpl.n, 0)).replace('{k}', g.items.length))
     : disTrTag(d) + svgEsc(disMsg(d));
   return `<div class="ann-item ann-bus" data-key="${attrEsc(g.key)}" style="border-left-color:${col}">
-      <div class="ann-row1"><span class="ann-sev" style="background:${col};color:${inkOn(col)}">${sevLabel(d.severity)}</span><span class="ann-ttl">${svgEsc(disTitle(d))}</span></div>
+      <div class="ann-row1"><span class="ann-sev" style="background:${col};color:${inkOn(col)}">${sevLabel(d.severity)}</span>${g.items.some(annIsNew) ? `<span class="ann-new">${t('annNew')}</span>` : ''}<span class="ann-ttl">${svgEsc(disTitle(d))}</span></div>
       <div class="ann-chips">${chips}${more>0?`<span class="ann-more-n">+${more}</span>`:''}</div>
       <div class="ann-msg">${msg}</div></div>`;
 }
@@ -14444,8 +14473,14 @@ function renderAnnouncements(){
   const groups = busGroups(bus);
   // the badge counts what the card SHOWS: a notice per rail fault and ferry notice, a row per bus group
   document.getElementById('annCount').textContent = rail.length + ferry.length + groups.length + ops.length;
-  { const mb=document.getElementById('mnavBadge'), n=rail.length + ferry.length + groups.length;   // the bottom bar's Alerts button (V4.6.2): live notices only
-    if(mb){ mb.hidden = !n; mb.textContent = n > 99 ? '99+' : String(n); } }
+  /* the bottom bar's Alerts button (V4.6.2) counts only what you have not seen yet (V4.8.3, 14b-ann-seen.js): every single
+     notice, so a new cancelled departure on a bus line you have already seen counts again; opening the card marks them seen */
+  const annOpen = annCardOpen(), step = annSeenStep(rail.concat(ferry, bus), annSeenLoad(), annOpen);
+  if(step.seen) annSeenSave(step.seen);
+  if(annOpen) step.fresh.forEach(f => annVisitNew.add(f)); else annVisitNew.clear();
+  { const mb=document.getElementById('mnavBadge');
+    if(mb){ mb.hidden = !step.badge; mb.textContent = step.badge > 99 ? '99+' : String(step.badge); } }
+  const busNew = bus.filter(annIsNew).length;
   const opRows = ops.map((o,i)=>{
     const col = o.color || colorForLine(o.ref);
     const rel = opensRel(o);
@@ -14467,7 +14502,7 @@ function renderAnnouncements(){
   body.innerHTML = (stale.bar ? `<div class="ann-stalebar" role="status">⚠ ${t(stale.bar)}</div>` : '')
     + (nothing ? `<div class="ann-none">${t('annNone')}</div>` : rail.map(annRowHTML).join(''))
     + (ferry.length ? `<div class="ann-sub">⛴ ${t('annFerrySub')} · ${ferry.length}</div>${ferry.map(ferryRow).join('')}` : '')
-    + (groups.length ? `<button class="ann-sec" id="annBusSec" aria-expanded="${_annBusOpen}">🚌 ${t('annBusSub')} · ${groups.length}<span class="ann-caret"></span></button>
+    + (groups.length ? `<button class="ann-sec" id="annBusSec" aria-expanded="${_annBusOpen}">🚌 ${t('annBusSub')} · ${groups.length}${busNew ? ` · <span class="ann-new-n">${t('annNNew').replace('{n}', busNew)}</span>` : ''}<span class="ann-caret"></span></button>
          <div class="ann-busbox" id="annBusBox"${_annBusOpen?'':' hidden'}>${(_annBusAll ? groups : groups.slice(0, ANN_BUS_SHOWN)).map(annBusGroupHTML).join('')}
            ${groups.length > ANN_BUS_SHOWN ? `<button class="ann-moreb" id="annBusMore">${_annBusAll ? t('annLess') : t('annMore').replace('{n}', groups.length - ANN_BUS_SHOWN)}</button>` : ''}</div>` : '')
     + (opRows ? `<div class="ann-sub">🚈 ${t('openHdr')}</div>${opRows}<div class="ann-note">${t('openFoot')}</div>` : '')
@@ -14491,8 +14526,10 @@ function renderAnnouncements(){
   if(moreB) moreB.addEventListener('click', ()=>{ _annBusAll = !_annBusAll; renderAnnouncements(); });
   body.querySelectorAll('.ann-chip').forEach(b => b.addEventListener('click', e => { e.stopPropagation(); openBusRoute(b.dataset.ref); }));
 }
-document.getElementById('annHead').addEventListener('click', ()=>
-  document.getElementById('announce').classList.toggle('collapsed'));
+document.getElementById('annHead').addEventListener('click', ()=>{
+  document.getElementById('announce').classList.toggle('collapsed');
+  renderAnnouncements();          // V4.8.3: an expanded card is a card being read, so what is in it is now seen
+});
 
 /* ---- Putting the network back online -------------------------------------------------------
    Faults end in two ways, and neither of them was reaching the map.
@@ -14584,6 +14621,7 @@ function mkSheet(id){
   return s;
 }
 function openSheet(name){
+  const wasAlerts = !!(mSheets.alerts && mSheets.alerts.classList.contains('open'));
   for(const k in mSheets){ const on = k===name; if(on && !mSheets[k].classList.contains('open') && mSheets[k].dataset.dragKind) setDragDetent(mSheets[k], 'low', true); mSheets[k].classList.toggle('open', on); }
   /* No sheet dims the map any more (V4.6.2: "I want to see what is happening in the background"): each opens at a low height with
      the map above it, undimmed and usable, as the planner has since V4.4.1 */
@@ -14600,6 +14638,8 @@ function openSheet(name){
   for(const k in mNavBtns){ const on = (name===null || name==='modes' || name==='planner') ? k==='map' : k===name; mNavBtns[k].classList.toggle('on', on); if(on) mNavBtns[k].setAttribute('aria-current','page'); else mNavBtns[k].removeAttribute('aria-current'); }
   { const nav=document.querySelector('.mnav'); if(nav){ const keys=Object.keys(mNavBtns), i=keys.findIndex(k=>mNavBtns[k].classList.contains('on')); nav.dataset.on = String(Math.max(0, i)); } }
   if(navigator.vibrate) try{ navigator.vibrate(8); }catch(e){}
+  /* V4.8.3: opening Alerts marks what is in it as seen (the badge drops); leaving it ends the visit's NEW tags */
+  if((name==='alerts' || wasAlerts) && typeof renderAnnouncements==='function') renderAnnouncements();
 }
 /* ---------------------------------------------------------------------------
    THE PLANNER SHEET HAS THREE HEIGHTS (V4.4.1)
