@@ -368,7 +368,7 @@ function renderAnnouncements(){
   if(annOpen) step.fresh.forEach(f => annVisitNew.add(f)); else annVisitNew.clear();
   { const mb=document.getElementById('mnavBadge');
     if(mb){ mb.hidden = !step.badge; mb.textContent = step.badge > 99 ? '99+' : String(step.badge); } }
-  const busNew = bus.filter(annIsNew).length;
+  const busNew = groups.filter(g => g.items.some(annIsNew)).length;   // the header beside it counts groups, so "N new" does too
   const opRows = ops.map((o,i)=>{
     const col = o.color || colorForLine(o.ref);
     const rel = opensRel(o);

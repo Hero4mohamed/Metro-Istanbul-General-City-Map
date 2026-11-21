@@ -33,6 +33,13 @@ B2 Halkalı–Bahçeşehir is running again, so its hand-written works notice mu
   affected stations). Bus notices already have ids that include a hash of their text (and one per line for cancelled
   departures, whose hash covers the list of departures), so a new cancellation on the same line is a new fingerprint.
   Rail and ferry ids stay the same when the text changes, which is why the text is part of the fingerprint.
+  *Changed after the final review (22 Nov):* (1) a line's "Trips cancelled" notice is remembered one departure at a time
+  (`bus:REF:trip:HH:MM FROM`); the notice is unseen when any of its departures is. Remembering the whole notice made it
+  "new" every few minutes, because departures that have left drop out of its id and list. (2) The fingerprint uses the
+  Turkish text when there is one, not the English as well: the scraper can re-translate the English on any run.
+  (3) On a wide screen the card is "open" when it is on screen (`getClientRects`), not by `offsetParent` (always null for
+  the fixed card). On a phone, a card folded inside the Alerts sheet is not open. (4) The bus header's "N new" counts
+  groups, like the number beside it.
 - **What is counted:** every individual live notice the card is built from: rail, ferry, and each bus notice (not
   bus groups). "Opening soon" lines are not notices and are not counted (as today).
 - **Seen:** when the Alerts card is opened (bottom-bar Alerts on a phone, the card on a wide screen), every notice in it

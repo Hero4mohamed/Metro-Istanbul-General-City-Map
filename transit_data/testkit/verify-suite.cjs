@@ -3013,17 +3013,48 @@ const MUTATIONS = [
   {
     name: "opening Alerts does not mark anything seen",
     expect: "v4.8.3: opening Alerts marks everything seen and the badge goes to 0",
-    apply: h => h.replace("if (cardOpen) return { seen: fps.concat(", "if (false) return { seen: fps.concat("),
+    apply: h => h.replace("if (cardOpen) return { seen: keys.concat(", "if (false) return { seen: keys.concat("),
   },
   {
     name: "a reworded notice keeps its old fingerprint, so a change is never new",
     expect: "v4.8.3: a notice's fingerprint changes when its text changes and not otherwise",
-    apply: h => h.replace("const v = [d.message, d.messageTr,", "const v = [d.messageTr,"),
+    apply: h => h.replace("const v = [text, d.severity,", "const v = [d.severity,"),
   },
   {
     name: "the seen list is trimmed to what is live while the card is closed (a reload shows 99+ again)",
     expect: "v4.8.3: a feed that has not arrived yet does not unsee its notices",
-    apply: h => h.replace("return { seen: seen.slice(), fresh: fresh, badge: fresh.length };", "return { seen: seen.filter(function (f) { return have[f]; }), fresh: fresh, badge: fresh.length };"),
+    apply: h => h.replace("return { seen: seen.slice(), fresh: fresh, badge: badge };", "return { seen: seen.filter(function (f) { return have[f]; }), fresh: fresh, badge: badge };"),
+  },
+  /* final review (22 Nov 2026) */
+  {
+    name: "a cancelled-trips notice is remembered whole, so it turns new as its departures leave",
+    expect: "v4.8.3: a cancelled-trips notice does not turn new just because one of its departures has left",
+    apply: h => h.replace("if (p && p.k === 'trips' && Array.isArray(p.list) && p.list.length) return", "if (false) return"),
+  },
+  {
+    name: "a re-translated English text makes a rail notice new",
+    expect: "v4.8.3: a new English wording of the same Turkish notice is not new",
+    apply: h => h.replace("const text = d.messageTr != null ? d.messageTr : d.message;", "const text = [d.message, d.messageTr];"),
+  },
+  {
+    name: "the wide-screen card is tested with offsetParent (always null for a fixed card)",
+    expect: "v4.8.3: on a wide screen the expanded Announcements card counts as open (it is position:fixed)",
+    apply: h => h.replace("return !!ann && !folded && ann.getClientRects().length > 0;", "return !!ann && !folded && ann.offsetParent !== null;"),
+  },
+  {
+    name: "a card folded inside the Alerts sheet still marks everything seen",
+    expect: "v4.8.3: on a phone a card folded inside the open Alerts sheet does not mark anything seen",
+    apply: h => h.replace("if (sheet) return sheet.classList.contains('open') && !folded;", "if (sheet) return sheet.classList.contains('open');"),
+  },
+  {
+    name: "the bus section's \"N new\" counts notices beside a count of groups",
+    expect: "v4.8.3: the bus section's \"N new\" counts groups, like the number beside it",
+    apply: h => h.replace("const busNew = groups.filter(g => g.items.some(annIsNew)).length;", "const busNew = bus.filter(annIsNew).length;"),
+  },
+  {
+    name: "a trips row is tagged NEW only by its whole-notice fingerprint",
+    expect: "v4.8.3: a trips row carries NEW when only its newest departure is unseen",
+    apply: h => h.replace("function annIsNew(d) { return annKeys(d).some(function (k) { return annVisitNew.has(k); }); }", "function annIsNew(d) { return annVisitNew.has(annFingerprint(d)); }"),
   },
   {
     name: "the seen list has no cap",
@@ -3053,7 +3084,9 @@ const problems = [];
 
 console.log('Mutation check - each row must FAIL the named test.\n');
 
-for (const m of MUTATIONS) {
+/* MUT_ONLY=<text>: run only the rows whose name contains it (a quick look at new rows; the full run takes over an hour). */
+const ONLY = process.env.MUT_ONLY || '';
+for (const m of MUTATIONS.filter(x => !ONLY || x.name.includes(ONLY))) {
   const mutated = m.apply(original);
   if (mutated === original) {
     console.log('  ??  ' + m.name);
