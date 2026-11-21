@@ -99,7 +99,7 @@ function world(over) {
     fetch: url => { let done; const p = new Promise(r => { done = r; }); asked.push({ url, answer: (json, status) => done({ ok: (status || 200) === 200, status: status || 200, json: async () => json }) }); return p; },
   }, over || {});
   vm.createContext(ctx);
-  vm.runInContext(PURE + '\nvar liveBus = null, liveBusGroup = null;\n' + ['liveBusStop', 'liveBusStart', 'liveBusAgain', 'liveBusPoll', 'liveBusShow'].map(n => fnSource(APP, n)).join('\n'), ctx);
+  vm.runInContext(PURE + '\nvar liveBus = null, liveBusGroup = null;\n' + ['liveBusStop', 'liveBusStart', 'liveBusAgain', 'liveBusPoll', 'liveBusShow', 'liveBusAgeText', 'ageWords'].map(n => fnSource(APP, n)).join('\n'), ctx);
   const settle = async () => { for (let i = 0; i < 6; i++) await new Promise(r => setImmediate(r)); };
   return { ctx, timers, asked, drawn, strip, settle, live: () => vm.runInContext('liveBus', ctx) };
 }
@@ -118,7 +118,7 @@ test('live buses: nothing is asked while the page is hidden or offline, or once 
   w.asked[0].answer(answer([rec(1701, 38.42465667, 27.13232833)])); await w.settle();
   assert.strictEqual(w.drawn.length, 1, 'the bus the service sent is not on the map');
   assert.deepStrictEqual(Array.from(w.drawn[0].ll), [38.42465667, 27.13232833]);
-  assert.strictEqual(w.strip.text.textContent, 'liveBusOne');
+  assert.strictEqual(w.strip.text.textContent, 'liveBusOne · liveBusSeen', 'İzmir (no times in its feed): seen moving, never an age');
   w.ctx.currentTab = 'active';                        // the view was left without the tab code stopping it
   w.timers[w.timers.length - 1].fn(); await w.settle();
   assert.strictEqual(w.asked.length, 1, 'the service is still asked after the bus view was left');
@@ -201,7 +201,7 @@ test('live buses (İstanbul): "no feed" is said plainly and clears the map; "war
   w.timers[w.timers.length - 1].fn(); await w.settle();
   w.asked[1].answer(relayAnswer(Date.now(), [{ id: 'M4882', lat: 41.009539, lng: 28.65715, t: Date.now() - 9000, to: 'SÖĞÜTLÜÇEŞME' }])); await w.settle();
   assert.deepStrictEqual(w.drawn.map(d => Array.from(d.ll)), [[41.009539, 28.65715]]);
-  assert.strictEqual(w.strip.text.textContent, 'liveBusOne'); assert.strictEqual(w.timers[w.timers.length - 1].ms, P.LIVE_BUS_EVERY);
+  assert.strictEqual(w.strip.text.textContent, 'liveBusOne · liveBusAgo', 'İstanbul (relay): how fresh, on screen'); assert.strictEqual(w.timers[w.timers.length - 1].ms, P.LIVE_BUS_EVERY);
   w.timers[w.timers.length - 1].fn(); await w.settle();
   w.asked[2].answer({ error: 'no-feed' }, 503); await w.settle();
   assert.strictEqual(w.strip.text.textContent, 'liveBusOff', 'with nobody feeding the relay the strip does not say that live buses are not running');

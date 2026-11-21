@@ -2899,12 +2899,14 @@ const MUTATIONS = [
   {
     name: "the normal stretch is marked instead of the affected ends",
     expect: "v4.8.1: a normal stretch in the middle leaves two affected ends",
-    apply: h => h.replace("    if(lo > 0) out.push([0, lo]);", "    if(lo > 0) out.push([lo, hi]);"),
+    /* V4.9: the normal-stretch reading moved into noticeTextStretches (07b), which noticeSections now uses */
+    apply: h => h.replace("if(normal[0] > 0) rest.push([0, normal[0]]);", "if(normal[0] > 0) rest.push([normal[0], normal[1]]);"),
   },
   {
     name: "a station the line does not have is guessed at",
     expect: "v4.8.1: nothing is guessed",
-    apply: h => h.replace("    if(a < 0 || b < 0 || a === b) return [];\n    const lo", "    if(a === b) return [];\n    const lo").replace("    if(a < 0 || b < 0 || a === b) return [];\r\n    const lo", "    if(a === b) return [];\r\n    const lo"),
+    /* V4.9: two station names → a stretch is now noticePair (07b) */
+    apply: h => h.replace("return a < 0 || b < 0 || a === b ? null :", "return a === b ? null :"),
   },
   /* ---- V4.8.1: notifications that ring (the tap handler lives in sw.js, which these rows cannot reach: its own test runs it) ---- */
   {
@@ -2931,6 +2933,139 @@ const MUTATIONS = [
     name: "the glow/outline stays put while the core moves",
     expect: "wiring: the glow/casing and the core of every non-ferry line are built as shared-aware polylines",
     apply: h => h.replace("const glow = sharedPolyline(line, pi, path, {", "const glow = L.polyline(path, {"),
+  },
+  /* ---- V4.9: the planner respects closed sections (07b-notice-routing.js + routeXY) ---- */
+  {
+    name: "words that say trains do not run are read as a mere shuttle",
+    expect: "v4.9: only words that say trains do NOT run",
+    apply: h => h.replace("if(p) out.push({ kind: 'closed'", "if(p) out.push({ kind: 'reduced'"),
+  },
+  {
+    name: "the stations inside a closed stretch can still be used",
+    expect: "v4.9: a closed stretch blocks its inner stations",
+    apply: h => h.replace("for(let k = s.a + 1; k < s.b; k++) nodes.push", "for(let k = s.a + 1; k < s.a; k++) nodes.push"),
+  },
+  {
+    name: "the end of the line inside a closed stretch can still be reached",
+    expect: "v4.9: a closed stretch blocks its inner stations",
+    apply: h => h.replace("if(s.a === 0) nodes.push(d.ref + '#0');", ""),
+  },
+  {
+    name: "the track inside a closed stretch is not cut",
+    expect: "v4.9: a closed stretch blocks its inner stations",
+    apply: h => h.replace("for(let k = s.a; k < s.b; k++){ edges.push", "for(let k = s.a; k < s.a; k++){ edges.push"),
+  },
+  {
+    name: "a shuttle stretch is blocked like a closed one",
+    expect: "v4.9: shuttle and not-listed stretches are never blocked",
+    apply: h => h.replace("if(s.kind !== 'closed'){ warn.push", "if(s.kind === 'unmentioned'){ warn.push"),
+  },
+  {
+    name: "an old notice still blocks a stretch",
+    expect: "v4.9: old notices block nothing",
+    apply: h => h.replace("if(stale){ warn.push({ d: d, ref: d.ref, kind: 'closedStale'", "if(false){ warn.push({ d: d, ref: d.ref, kind: 'closedStale'"),
+  },
+  {
+    name: "an old notice still suspends a whole line",
+    expect: "v4.9: old notices block nothing",
+    apply: h => h.replace("if(stale) warn.push({ d: d, ref: d.ref, kind: 'lineStale'", "if(false) warn.push({ d: d, ref: d.ref, kind: 'lineStale'"),
+  },
+  {
+    name: "a leg that only ends at the edge of a stretch is warned as if it rode through",
+    expect: "v4.9: a warning belongs to a leg only when",
+    apply: h => h.replace("Math.max(lo, w.a) < Math.min(hi, w.b)", "Math.max(lo, w.a) <= Math.min(hi, w.b)"),
+  },
+  {
+    name: "the router rides track a notice closes",
+    expect: "v4.9: the router uses the notices",
+    apply: h => h.replace("if(nrEdges && nrEdges.has(u + '>' + e.to)) continue;", ""),
+  },
+  {
+    name: "the router boards at stations a notice closes",
+    expect: "v4.9: the router uses the notices",
+    apply: h => h.replace("markBlocked(avoid, noLine, nr.lines, nr.nodes)", "markBlocked(avoid, noLine, nr.lines, new Set())"),
+  },
+  {
+    name: "the notices' age is ignored, so an old notice keeps blocking",
+    expect: "v4.9: the stale rule is read from the notices' real age",
+    apply: h => h.replace("return !!(a && a.rail && a.rail.stale);", "return false;"),
+  },
+  {
+    name: "the route does not say what it avoided",
+    expect: "v4.9: the route says what it avoided",
+    apply: h => h.replace("html += '<div class=\"rw closed\">⛔", "if(false) html += '<div class=\"rw closed\">⛔"),
+  },
+  {
+    name: "a stretch the notice leaves out is shown amber, not red",
+    expect: "v4.9: the route says what it avoided",
+    apply: h => h.replace("else if(w.kind === 'unmentioned') html += '<div class=\"rw closed\">", "else if(w.kind === 'unmentioned') html += '<div class=\"rw notice\">"),
+  },
+  /* ---- V4.9: freshness on screen ---- */
+  {
+    name: "route warnings no longer say how old the notices are",
+    expect: "v4.9: route warnings that quote notices say how old",
+    apply: h => h.replace("if(a) html += '<div class=\"rw-age\">'", "if(false) html += '<div class=\"rw-age\">'"),
+  },
+  {
+    name: "the live-bus strip no longer says how fresh it is",
+    expect: "v4.9: the live-bus strip says how fresh",
+    apply: h => h.replace("text += liveBusAgeText(me.src.kind, me.last, now);", ""),
+  },
+  /* ---- V4.9: the Environment tab (16e-environment.js) ---- */
+  {
+    name: "the sun is put in the north",
+    expect: "v4.9 env: the sun over İstanbul",
+    apply: h => h.replace("(azS / rad + 180)", "(azS / rad)"),
+  },
+  {
+    name: "the night light is as bright as the day's",
+    expect: "v4.9 env: sun lighting points",
+    apply: h => h.replace("intensity: day ? 0.5 : 0.15", "intensity: 0.5"),
+  },
+  {
+    name: "terrain is fetched deeper than the street tiles go",
+    expect: "v4.9 env: terrain comes from AWS Terrain Tiles",
+    apply: h => h.replace("const ENV_DEM_MAXZOOM = 14;", "const ENV_DEM_MAXZOOM = 15;"),
+  },
+  {
+    name: "hill shading shares the terrain's source again",
+    expect: "v4.9 env: the three presets",
+    apply: h => h.replace("source: 'dem-hs',", "source: 'dem',"),
+  },
+  {
+    name: "Light (the flat preset) gets 3D terrain too",
+    expect: "v4.9 env: the three presets",
+    apply: h => h.replace("if(o.preset !== 'light') s.terrain", "s.terrain"),
+  },
+  {
+    name: "parts of a building are buried inside its outline",
+    expect: "v4.9 env: 3D buildings are honest",
+    apply: h => h.replace("filter: ['!=', ['get', 'hide_3d'], true],", ""),
+  },
+  {
+    name: "the 5 m default height is drawn like a real height",
+    expect: "v4.9 env: 3D buildings are honest",
+    apply: h => h.replace("['==', ['get', 'render_height'], 5]", "['==', ['get', 'render_height'], -1]"),
+  },
+  {
+    name: "the lines are drawn lat,lng (into the sea off Africa)",
+    expect: "v4.9 env: the city",
+    apply: h => h.replace("p.map(q => [q[1], q[0]])", "p.map(q => [q[0], q[1]])"),
+  },
+  {
+    name: "the main basemap keeps running under the 3D view",
+    expect: "v4.9 env: one heavy map at a time",
+    apply: h => h.replace("try{ map.removeLayer(curBase); }catch(e){}", ""),
+  },
+  {
+    name: "the train animation stays paused after leaving the tab",
+    expect: "v4.9 env: one heavy map at a time",
+    apply: h => h.replace("captureEnd();                                  // the train", "// the train"),
+  },
+  {
+    name: "leaving the tab leaves the 3D view open",
+    expect: "v4.9 env: an Environment tab",
+    apply: h => h.replace("if(prevTab==='env' && t!=='env' && typeof envClose==='function') envClose();", ""),
   },
   /* ---- V4.8.2: feedback by email (19-assistant.js) ---- */
   {
