@@ -163,3 +163,13 @@ test('v4.8.3: the seen list cannot grow without end', () => {
   assert.ok(r.seen.includes(k.fp(A)) && r.seen.includes(k.fp(B)), 'what is live now must be kept');
   assert.strictEqual(r.seen[0], k.fp(A), 'live notices come first, so the cap drops the oldest');
 });
+
+/* ---- B2 and the version ---- */
+test('v4.8.3: the B2 works notice is gone (B2 runs again)', () => {
+  const manual = JSON.parse(fs.readFileSync(path.join(ROOT, 'transit_data', 'disruptions-manual.json'), 'utf8'));
+  assert.ok(Array.isArray(manual), 'disruptions-manual.json must stay a list');
+  assert.ok(!manual.some(e => e && e.ref === 'B2'), 'the B2 works notice is still there; the owner says B2 runs again');
+});
+test('v4.8.3: the app says V4.8.3', () => {
+  assert.strictEqual(JSON.parse(fs.readFileSync(path.join(ROOT, 'transit_data', 'legal-config.json'), 'utf8')).appVersion, 'V4.8.3');
+});

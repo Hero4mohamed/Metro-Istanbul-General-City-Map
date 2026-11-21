@@ -6,7 +6,7 @@
 <!-- Substituted by build.cjs, which hashes the inline script from the final bytes. Pages
      cannot set headers, so this ships as meta; frame-ancestors and report-uri are
      unavailable that way. -->
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-Ofo8cLqfbx1CxT6IiR5YpQpkyUPBOMr+qXdO3sNuuFk='; style-src 'self' 'unsafe-inline'; font-src 'self' data:; img-src 'self' data: blob: https://server.arcgisonline.com; connect-src 'self' https://server.arcgisonline.com https://tiles.openfreemap.org https://photon.komoot.io https://overpass-api.de https://api.ibb.gov.tr https://openapi.izmir.bel.tr https://turkmaps-relay.turkmaps-relay.workers.dev https://api.open-meteo.com https://air-quality-api.open-meteo.com https://routing.openstreetmap.de https://api.anthropic.com https://identitytoolkit.googleapis.com https://securetoken.googleapis.com https://firestore.googleapis.com; worker-src 'self'; frame-src 'none'; media-src 'none'; manifest-src 'self'; base-uri 'self'; form-action 'none'; object-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-wmmA5EWv90vvY6JaMYtsL6fgiOQNwunWnNnJuZFqeos='; style-src 'self' 'unsafe-inline'; font-src 'self' data:; img-src 'self' data: blob: https://server.arcgisonline.com; connect-src 'self' https://server.arcgisonline.com https://tiles.openfreemap.org https://photon.komoot.io https://overpass-api.de https://api.ibb.gov.tr https://openapi.izmir.bel.tr https://turkmaps-relay.turkmaps-relay.workers.dev https://api.open-meteo.com https://air-quality-api.open-meteo.com https://routing.openstreetmap.de https://api.anthropic.com https://identitytoolkit.googleapis.com https://securetoken.googleapis.com https://firestore.googleapis.com; worker-src 'self'; frame-src 'none'; media-src 'none'; manifest-src 'self'; base-uri 'self'; form-action 'none'; object-src 'none'">
 <title>TurkMaps · Transit Network Map</title>
 <!-- Leaflet 1.9.4, shipped with the app rather than fetched from a CDN (V4.3): see vendor/README.md -->
 <link rel="stylesheet" href="vendor/leaflet/leaflet.css">
@@ -2733,7 +2733,7 @@
 
    The report carries the fault, the build, the city, the language and the browser. It never
    carries location, saved places, trip history or the API key. ===== */
-const BUILD = "20261121135531";
+const BUILD = "20261121135848";
 const DIAG_MAX = 20;
 let DIAG = [];
 try { DIAG = JSON.parse(localStorage.getItem("irn_diag") || "[]"); } catch (e) { DIAG = []; }
@@ -16405,7 +16405,7 @@ function feedbackNote(key){ const n = document.getElementById('fbNote'); if(n) n
 async function feedbackSend(copy){
   const ta = document.getElementById('fbText');
   if(!ta || !ta.value.trim()){ feedbackNote('fbEmpty'); if(ta) ta.focus(); return; }
-  const m = feedbackMail({ to: 'transportengist@gmail.com', version: 'V4.8.2', kind: fbKind, text: ta.value,
+  const m = feedbackMail({ to: 'transportengist@gmail.com', version: 'V4.8.3', kind: fbKind, text: ta.value,
     tech: document.getElementById('fbTech').checked ? diagReportText() : '' });
   if(copy){
     const txt = 'To: ' + m.to + '\nSubject: ' + m.subject + '\n\n' + m.full;
@@ -16426,7 +16426,7 @@ function openFeedback(){
 /* ---- technical details for feedback: what was recorded on this device, never anything personal ---- */
 function diagReportText(){
   const env = [
-    "app: V4.8.2 build " + BUILD,
+    "app: V4.8.3 build " + BUILD,
     "city: " + CITY_ID,
     "lang: " + lang,
     "screen: " + innerWidth + "x" + innerHeight + " dpr" + (devicePixelRatio || 1),
@@ -16698,7 +16698,7 @@ function syncLegalLinks(){
 (function(){
   syncLegalLinks();
   const build = document.getElementById('aboutBuild');
-  if(build) build.textContent = 'V4.8.2' + ' · ' + BUILD;
+  if(build) build.textContent = 'V4.8.3' + ' · ' + BUILD;
 
   /* ---- the one-time question ---- */
   const box = document.getElementById('privNotice');

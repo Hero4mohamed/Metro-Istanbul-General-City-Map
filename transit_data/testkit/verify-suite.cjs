@@ -3009,6 +3009,42 @@ const MUTATIONS = [
     expect: "v4.8.2: the developer options are off for everyone",
     apply: h => h.replace('html:not(.dev-on) [data-pin="N"]', 'html:not(.dev-on) [data-pin="Z"]'),
   },
+  /* ---- V4.8.3: the Alerts badge counts only what you have not seen (14b-ann-seen.js, 17-boot.js) ---- */
+  {
+    name: "opening Alerts does not mark anything seen",
+    expect: "v4.8.3: opening Alerts marks everything seen and the badge goes to 0",
+    apply: h => h.replace("if (cardOpen) return { seen: fps.concat(", "if (false) return { seen: fps.concat("),
+  },
+  {
+    name: "a reworded notice keeps its old fingerprint, so a change is never new",
+    expect: "v4.8.3: a notice's fingerprint changes when its text changes and not otherwise",
+    apply: h => h.replace("const v = [d.message, d.messageTr,", "const v = [d.messageTr,"),
+  },
+  {
+    name: "the seen list is trimmed to what is live while the card is closed (a reload shows 99+ again)",
+    expect: "v4.8.3: a feed that has not arrived yet does not unsee its notices",
+    apply: h => h.replace("return { seen: seen.slice(), fresh: fresh, badge: fresh.length };", "return { seen: seen.filter(function (f) { return have[f]; }), fresh: fresh, badge: fresh.length };"),
+  },
+  {
+    name: "the seen list has no cap",
+    expect: "v4.8.3: the seen list cannot grow without end",
+    apply: h => h.replace(".slice(0, ANN_SEEN_MAX), fresh: fresh, badge: 0 }", ", fresh: fresh, badge: 0 }"),
+  },
+  {
+    name: "the badge counts bus groups, not each bus notice",
+    expect: "v4.8.3: the badge counts each bus notice, not each bus group",
+    apply: h => h.replace("annSeenStep(rail.concat(ferry, bus), annSeenLoad(), annOpen)", "annSeenStep(rail.concat(ferry, groups.map(g => g.d)), annSeenLoad(), annOpen)"),
+  },
+  {
+    name: "the bottom-bar badge counts every notice again",
+    expect: "v4.8.3: the bottom-bar badge shows the unseen count, not the total",
+    apply: h => h.replace("mb.hidden = !step.badge; mb.textContent = step.badge > 99 ? '99+' : String(step.badge);", "mb.hidden = !live.length; mb.textContent = String(live.length);"),
+  },
+  {
+    name: "a damaged seen list crashes instead of reading as empty",
+    expect: "v4.8.3: a damaged seen list is read as empty",
+    apply: h => h.replace("return Array.isArray(v) ? v.filter(function (x) { return typeof x === 'string'; }) : [];", "return v;"),
+  },
 ];
 
 const original = fs.readFileSync(SRC, 'utf8');
@@ -3029,7 +3065,12 @@ for (const m of MUTATIONS) {
 
   let out = '';
   try {
-    out = execFileSync(process.execPath, ['--test', ...SUITES], {
+    /* --test-reporter=tap: the "not ok N - name" lines below are TAP. Node 26 prints its "spec" format even when the output is
+       piped, so without asking for TAP every row read as "not caught" (21 Nov 2026: 0 of 579 caught, the suite itself fine). */
+    /* --test-timeout / --test-force-exit: a mutation can leave a test waiting on a promise that never settles
+       ("a double press starts two location watches" did). With no limit the whole run stopped there for hours
+       (21 Nov 2026). Now that test fails as "not ok … test timed out" - which is a catch - and the run goes on. */
+    out = execFileSync(process.execPath, ['--test', '--test-reporter=tap', '--test-timeout=60000', '--test-force-exit', ...SUITES], {
       cwd: ROOT,
       env: { ...process.env, RAYNET_HTML: TMP },
       encoding: 'utf8',
