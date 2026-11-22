@@ -90,6 +90,8 @@ const MUTATIONS = [
     name: 'stop showing bus and ferry notices on the trip legs they affect',
     expect: 'a trip leg on a line with a notice says so',
     apply: h => h.replace('const ns = noticesForRide(s);', 'const ns = [];'),
+  },
+  {   /* these two rows shared one object from #12 until 22 Nov 2026, so the one above never ran */
     name: 'announce "ferries may be held back" at a light breeze',
     expect: 'hints fire at their thresholds and not below them',
     apply: h => h.replace("if (mx >= 55) out.push({ k: 'ferry'", "if (mx >= 5) out.push({ k: 'ferry'"),
