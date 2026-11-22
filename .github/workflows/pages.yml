@@ -42,7 +42,7 @@ jobs:
       # application — a corrupted script and a runtime throw — and both reached main because
       # nothing checked the built artifact before it was published. No install step: the suite
       # uses Node's built-in test runner and has no dependencies.
-      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: '20'
       - name: Verify the built artifact
