@@ -36,36 +36,14 @@
     "messageLang": "en"
   },
   {
-    "id": "tf1-al-m-yor",
-    "ref": "TF1",
-    "source": "metro.istanbul",
-    "scope": "line",
-    "severity": "minor",
-    "title": "Service notice",
-    "messageTr": "Hava muhalefeti nedeniyle seferler yapılamamaktadır.",
-    "message": "Due to adverse weather, services cannot operate.",
-    "messageLang": "en"
-  },
-  {
-    "id": "tf2-al-m-yor",
-    "ref": "TF2",
-    "source": "metro.istanbul",
-    "scope": "line",
-    "severity": "minor",
-    "title": "Service notice",
-    "messageTr": "Hava muhalefeti nedeniyle seferler yapılamamaktadır.",
-    "message": "Due to adverse weather, services cannot operate.",
-    "messageLang": "en"
-  },
-  {
     "id": "ferry-2231",
     "mode": "ferry",
     "ref": null,
     "scope": "note",
     "severity": "minor",
     "title": "Ferry notice",
-    "message": "Elverişsiz hava koşulları sebebiyle Aşiyan-Anadolu Hisarı-Küçüksu Ring Hattı Bebek-Küçüksu-Anadolu Hisarı-Bebek olarak yapılacaktır. Sefer tarifesi aşağıda belirtilmiştir.",
-    "messageTr": "Elverişsiz hava koşulları sebebiyle Aşiyan-Anadolu Hisarı-Küçüksu Ring Hattı Bebek-Küçüksu-Anadolu Hisarı-Bebek olarak yapılacaktır. Sefer tarifesi aşağıda belirtilmiştir.",
+    "message": "Aşiyan-Üsküdar ve Aşiyan-Anadolu Hisarı-Küçüksu-Aşiyan Ring Hattı seferlerimiz normal tarifesinde Aşiyan iskelesinden yapılmaya başlamıştır.",
+    "messageTr": "Aşiyan-Üsküdar ve Aşiyan-Anadolu Hisarı-Küçüksu-Aşiyan Ring Hattı seferlerimiz normal tarifesinde Aşiyan iskelesinden yapılmaya başlamıştır.",
     "messageLang": "tr",
     "translatedBy": "none",
     "source": "sehirhatlari.istanbul",
