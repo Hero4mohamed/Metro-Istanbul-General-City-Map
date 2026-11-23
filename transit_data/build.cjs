@@ -276,12 +276,13 @@ const CSP = [
   "style-src 'self' 'unsafe-inline'",
   "font-src 'self' data:",
   // all three basemaps come from Esri; card art and marker icons are data: URIs
-  "img-src 'self' data: blob: https://server.arcgisonline.com",
+  "img-src 'self' data: blob: https://server.arcgisonline.com https://elevation-tiles-prod.s3.amazonaws.com",   // V4.9: terrain tiles (Environment tab)
   // every host the app fetches from, including tiles (the offline save uses fetch, not <img>)
   ["connect-src 'self'",
    'https://server.arcgisonline.com', 'https://tiles.openfreemap.org',
    'https://photon.komoot.io', 'https://overpass-api.de', 'https://api.ibb.gov.tr', 'https://openapi.izmir.bel.tr', 'https://turkmaps-relay.turkmaps-relay.workers.dev',
    'https://api.open-meteo.com', 'https://air-quality-api.open-meteo.com', 'https://routing.openstreetmap.de',
+   'https://elevation-tiles-prod.s3.amazonaws.com',      // V4.9: terrain tiles for the Environment tab (AWS Terrain Tiles, keyless)
    'https://api.anthropic.com',
    // V4.6.3: accounts (Identity Toolkit), keeping you signed in (Secure Token), friends and shared locations (Firestore)
    'https://identitytoolkit.googleapis.com', 'https://securetoken.googleapis.com', 'https://firestore.googleapis.com'].join(' '),

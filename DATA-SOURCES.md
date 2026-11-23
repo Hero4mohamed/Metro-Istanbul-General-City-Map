@@ -90,6 +90,16 @@ What each host is sent is written, for people, in `legal/privacy.html` (and `.tr
   gets the two ends of each walking leg of a planned trip, which can also be the person's own
   position. (Before V4.3 both were on by default and the routing call was not mentioned
   anywhere, and this section claimed no location was transmitted: that was wrong.)
+- **Only while the Environment tab is open (V4.9):** **AWS Terrain Tiles**
+  (`elevation-tiles-prod.s3.amazonaws.com`, Terrarium PNG, an AWS open dataset made by Mapzen/Tilezen, no key) gets
+  requests for the terrain tiles of the area on screen. Checked 19 Nov 2026: HTTP 200 with `Access-Control-Allow-Origin: *`;
+  the `elevation-tiles-prod-eu` mirror answered 403 and is not used. The tiles blend many sources, so the app shows the
+  maker's whole required credit list (`tilezen/joerd/docs/attribution.md`): Mapzen; ArcticDEM; Australia (Geoscience
+  Australia); Austria (DGM Österreich); Canada (Open Government Licence – Canada); Europe (Copernicus EU-DEM); Global
+  ETOPO1 (NOAA); Mexico (INEGI); New Zealand (LINZ); Norway (Kartverket); United Kingdom (Environment Agency); United
+  States 3DEP and global GMTED2010 and SRTM (USGS). The exact wording is in the credits page and in the tab's own
+  "Terrain credit". The 3D buildings come from the OpenFreeMap tiles above (`building` layer, `render_height`), not from a
+  new service.
 - **Only if the person pastes their own Anthropic API key:** their assistant questions and the
   key go to `api.anthropic.com`. The key is stored only in that browser and is never committed,
   bundled or sent anywhere else.

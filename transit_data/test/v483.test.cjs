@@ -229,6 +229,10 @@ test('v4.8.3: the B2 works notice is gone (B2 runs again)', () => {
   assert.ok(Array.isArray(manual), 'disruptions-manual.json must stay a list');
   assert.ok(!manual.some(e => e && e.ref === 'B2'), 'the B2 works notice is still there; the owner says B2 runs again');
 });
-test('v4.8.3: the app says V4.8.3', () => {
-  assert.strictEqual(JSON.parse(fs.readFileSync(path.join(ROOT, 'transit_data', 'legal-config.json'), 'utf8')).appVersion, 'V4.8.3');
+/* V4.9 merged on top of V4.8.3, so the version moved on; this test now only pins that it never goes BACK below V4.8.3. */
+test('v4.8.3: the app says V4.8.3 or later', () => {
+  const v = JSON.parse(fs.readFileSync(path.join(ROOT, 'transit_data', 'legal-config.json'), 'utf8')).appVersion;
+  const n = String(v).replace(/^V/, '').split('.').map(Number), base = [4, 8, 3];
+  let cmp = 0; for (let i = 0; i < 3 && !cmp; i++) cmp = (n[i] || 0) - base[i];
+  assert.ok(cmp >= 0, 'the app version ' + v + ' is older than V4.8.3');
 });

@@ -70,27 +70,19 @@ function noticeStationIndex(stations, word){
 }
 /* The sections a Turkish notice names in words, as [from, to] station indexes along the line:
    - "A-B arasında normal işletme" (normal between A and B): everything OUTSIDE A..B is affected, one section per side;
-   - otherwise "C-D arasında (ise) mekik" (a shuttle between C and D): C..D is affected.
+   - "C-D arasında (ise) mekik" (a shuttle between C and D): C..D is affected;
+   - "E-F arasında seferler yapılamamaktadır" (no trains between E and F; V4.9): E..F is affected.
    Nothing is guessed: an unknown station name, or no such words, gives no section. */
 function noticeSections(stations, text){
-  if(!Array.isArray(stations) || stations.length < 2 || !text) return [];
-  const t = String(text), last = stations.length - 1;
-  const nm = /([^\s,]+)\s*[-–]\s*([^\s,]+)\s+arasında\s+normal\s+işletme/i.exec(t);
-  if(nm){
-    const a = noticeStationIndex(stations, nm[1]), b = noticeStationIndex(stations, nm[2]);
-    if(a < 0 || b < 0 || a === b) return [];
-    const lo = Math.min(a, b), hi = Math.max(a, b), out = [];
-    if(lo > 0) out.push([0, lo]);
-    if(hi < last) out.push([hi, last]);
-    return out;
+  /* V4.9: the same reading the planner uses (07b-notice-routing.js), merged: the map's band covers every affected stretch, of
+     whatever kind; the planner tells the kinds apart. */
+  const iv = noticeTextStretches(stations, text).map(s => [s.a, s.b]).sort((x, y) => x[0] - y[0] || x[1] - y[1]), out = [];
+  for(const p of iv){
+    const top = out[out.length - 1];
+    if(top && p[0] <= top[1]) top[1] = Math.max(top[1], p[1]);
+    else out.push([p[0], p[1]]);
   }
-  const sh = /([^\s,]+)\s*[-–]\s*([^\s,]+)\s+arasında\s+(?:ise\s+)?mekik/i.exec(t);
-  if(sh){
-    const a = noticeStationIndex(stations, sh[1]), b = noticeStationIndex(stations, sh[2]);
-    if(a < 0 || b < 0 || a === b) return [];
-    return [[Math.min(a, b), Math.max(a, b)]];
-  }
-  return [];
+  return out;
 }
 function disruptionPoints(d){
   if(d.mode === 'bus') return [];

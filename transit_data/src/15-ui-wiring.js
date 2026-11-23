@@ -27,7 +27,9 @@ function setTab(t){
   busLayer.clearLayers(); map.removeLayer(weatherLayer); map.removeLayer(boatLayer);
   if(typeof liveBusStop === 'function') liveBusStop();        // live buses belong to the open bus line only
   map.removeLayer(disruptionLayer);                          // hazard overlays belong to Active only
-  const hideCore = (t==='bus' || t==='boat' || t==='weather' || t==='intercity' || t==='airport');
+  if(prevTab==='env' && t!=='env' && typeof envClose==='function') envClose();   // V4.9: leaving the 3D view frees it and brings the basemap back
+  const hideCore = (t==='bus' || t==='boat' || t==='weather' || t==='intercity' || t==='airport' || t==='env');
+  const ce = document.getElementById('cardEnv'); if(ce) ce.style.display = (t==='env') ? '' : 'none';
   document.getElementById('cardLines').style.display   = hideCore ? 'none' : '';
   document.getElementById('cardPlanner').style.display = hideCore ? 'none' : '';
   /* The weather card is tall (a scene, a day, a week, every district) and the right column is one scroll. Showing the
@@ -76,6 +78,9 @@ function setTab(t){
     ghostGroup.addTo(map);
     boatLayer.addTo(map); renderBoats(); renderBoatList();
     if(prevTab !== 'boat') fitBoats();
+  } else if(t==='env'){
+    /* the 3D view of its own (16e-environment.js) opens over the map, where the map is looking */
+    if(typeof envOpen === 'function') envOpen();
   } else { // bus directory
     ghostGroup.addTo(map);                                   // rail/ferry context behind buses
     if(!busListBuilt){ renderBusList(''); busListBuilt = true; }
