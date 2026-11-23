@@ -14,6 +14,19 @@
     "messageLang": "en"
   },
   {
+    "id": "t1-laleli-istanbul",
+    "ref": "T1",
+    "source": "metro.istanbul",
+    "scope": "segment",
+    "from": "Laleli-İstanbul ü.",
+    "to": "Haseki",
+    "severity": "partial",
+    "title": "Section affected",
+    "messageTr": "Geçici bir süre için seferler Kabataş-Beyazıt ve Fındıkzade-Bağcılar istasyonları arasında yapılmaktadır.",
+    "message": "Temporary bir süre for trains Kabataş-Beyazıt and operate between Fındıkzade and Bağcılar.",
+    "messageLang": "en"
+  },
+  {
     "id": "t3-al-m-yor",
     "ref": "T3",
     "source": "metro.istanbul",
