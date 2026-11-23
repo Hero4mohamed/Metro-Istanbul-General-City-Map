@@ -90,6 +90,8 @@ const MUTATIONS = [
     name: 'stop showing bus and ferry notices on the trip legs they affect',
     expect: 'a trip leg on a line with a notice says so',
     apply: h => h.replace('const ns = noticesForRide(s);', 'const ns = [];'),
+  },
+  {   /* these two rows shared one object from #12 until 22 Nov 2026, so the one above never ran */
     name: 'announce "ferries may be held back" at a light breeze',
     expect: 'hints fire at their thresholds and not below them',
     apply: h => h.replace("if (mx >= 55) out.push({ k: 'ferry'", "if (mx >= 5) out.push({ k: 'ferry'"),
@@ -3009,6 +3011,73 @@ const MUTATIONS = [
     expect: "v4.8.2: the developer options are off for everyone",
     apply: h => h.replace('html:not(.dev-on) [data-pin="N"]', 'html:not(.dev-on) [data-pin="Z"]'),
   },
+  /* ---- V4.8.3: the Alerts badge counts only what you have not seen (14b-ann-seen.js, 17-boot.js) ---- */
+  {
+    name: "opening Alerts does not mark anything seen",
+    expect: "v4.8.3: opening Alerts marks everything seen and the badge goes to 0",
+    apply: h => h.replace("if (cardOpen) return { seen: keys.concat(", "if (false) return { seen: keys.concat("),
+  },
+  {
+    name: "a reworded notice keeps its old fingerprint, so a change is never new",
+    expect: "v4.8.3: a notice's fingerprint changes when its text changes and not otherwise",
+    apply: h => h.replace("const v = [text, d.severity,", "const v = [d.severity,"),
+  },
+  {
+    name: "the seen list is trimmed to what is live while the card is closed (a reload shows 99+ again)",
+    expect: "v4.8.3: a feed that has not arrived yet does not unsee its notices",
+    apply: h => h.replace("return { seen: seen.slice(), fresh: fresh, badge: badge };", "return { seen: seen.filter(function (f) { return have[f]; }), fresh: fresh, badge: badge };"),
+  },
+  /* final review (22 Nov 2026) */
+  {
+    name: "a cancelled-trips notice is remembered whole, so it turns new as its departures leave",
+    expect: "v4.8.3: a cancelled-trips notice does not turn new just because one of its departures has left",
+    apply: h => h.replace("if (p && p.k === 'trips' && Array.isArray(p.list) && p.list.length) return", "if (false) return"),
+  },
+  {
+    name: "a re-translated English text makes a rail notice new",
+    expect: "v4.8.3: a new English wording of the same Turkish notice is not new",
+    apply: h => h.replace("const text = d.messageTr != null ? d.messageTr : d.message;", "const text = [d.message, d.messageTr];"),
+  },
+  {
+    name: "the wide-screen card is tested with offsetParent (always null for a fixed card)",
+    expect: "v4.8.3: on a wide screen the expanded Announcements card counts as open (it is position:fixed)",
+    apply: h => h.replace("return !!ann && !folded && ann.getClientRects().length > 0;", "return !!ann && !folded && ann.offsetParent !== null;"),
+  },
+  {
+    name: "a card folded inside the Alerts sheet still marks everything seen",
+    expect: "v4.8.3: on a phone a card folded inside the open Alerts sheet does not mark anything seen",
+    apply: h => h.replace("if (sheet) return sheet.classList.contains('open') && !folded;", "if (sheet) return sheet.classList.contains('open');"),
+  },
+  {
+    name: "the bus section's \"N new\" counts notices beside a count of groups",
+    expect: "v4.8.3: the bus section's \"N new\" counts groups, like the number beside it",
+    apply: h => h.replace("const busNew = groups.filter(g => g.items.some(annIsNew)).length;", "const busNew = bus.filter(annIsNew).length;"),
+  },
+  {
+    name: "a trips row is tagged NEW only by its whole-notice fingerprint",
+    expect: "v4.8.3: a trips row carries NEW when only its newest departure is unseen",
+    apply: h => h.replace("function annIsNew(d) { return annKeys(d).some(function (k) { return annVisitNew.has(k); }); }", "function annIsNew(d) { return annVisitNew.has(annFingerprint(d)); }"),
+  },
+  {
+    name: "the seen list has no cap",
+    expect: "v4.8.3: the seen list cannot grow without end",
+    apply: h => h.replace(".slice(0, ANN_SEEN_MAX), fresh: fresh, badge: 0 }", ", fresh: fresh, badge: 0 }"),
+  },
+  {
+    name: "the badge counts bus groups, not each bus notice",
+    expect: "v4.8.3: the badge counts each bus notice, not each bus group",
+    apply: h => h.replace("annSeenStep(rail.concat(ferry, bus), annSeenLoad(), annOpen)", "annSeenStep(rail.concat(ferry, groups.map(g => g.d)), annSeenLoad(), annOpen)"),
+  },
+  {
+    name: "the bottom-bar badge counts every notice again",
+    expect: "v4.8.3: the bottom-bar badge shows the unseen count, not the total",
+    apply: h => h.replace("mb.hidden = !step.badge; mb.textContent = step.badge > 99 ? '99+' : String(step.badge);", "mb.hidden = !live.length; mb.textContent = String(live.length);"),
+  },
+  {
+    name: "a damaged seen list crashes instead of reading as empty",
+    expect: "v4.8.3: a damaged seen list is read as empty",
+    apply: h => h.replace("return Array.isArray(v) ? v.filter(function (x) { return typeof x === 'string'; }) : [];", "return v;"),
+  },
 ];
 
 const original = fs.readFileSync(SRC, 'utf8');
@@ -3017,7 +3086,10 @@ const problems = [];
 
 console.log('Mutation check - each row must FAIL the named test.\n');
 
-for (const m of MUTATIONS) {
+/* MUT_ONLY=<text>: run only the rows whose name contains it (a quick look at new rows; the full run takes over an hour). */
+const ONLY = process.env.MUT_ONLY || '';
+const ROW_LIMIT_MS = 10 * 60 * 1000;   // one row's whole-suite run; a normal one takes 5-20 s
+for (const m of MUTATIONS.filter(x => !ONLY || x.name.includes(ONLY))) {
   const mutated = m.apply(original);
   if (mutated === original) {
     console.log('  ??  ' + m.name);
@@ -3029,8 +3101,18 @@ for (const m of MUTATIONS) {
 
   let out = '';
   try {
-    out = execFileSync(process.execPath, ['--test', ...SUITES], {
+    /* --test-reporter=tap: the "not ok N - name" lines below are TAP. Node 26 prints its "spec" format even when the output is
+       piped, so without asking for TAP every row read as "not caught" (21 Nov 2026: 0 of 579 caught, the suite itself fine). */
+    /* --test-timeout / --test-force-exit: a mutation can leave a test waiting on a promise that never settles
+       ("a double press starts two location watches" did). With no limit the whole run stopped there for hours
+       (21 Nov 2026). Now that test fails as "not ok … test timed out" - which is a catch - and the run goes on.
+       Only on Node 22+: on GitHub's Node 20 the same two flags made "let a swatch also activate its chip" hang for the
+       whole 6-hour job limit (PR #48, 22 Nov 2026), and without them Node 20 had always run that row in seconds. */
+    const hangGuard = +process.versions.node.split('.')[0] >= 22 ? ['--test-timeout=60000', '--test-force-exit'] : [];
+    out = execFileSync(process.execPath, ['--test', '--test-reporter=tap', ...hangGuard, ...SUITES], {
       cwd: ROOT,
+      /* the last line of defence: one row may never hold the whole run (a full suite takes well under a minute) */
+      timeout: ROW_LIMIT_MS, killSignal: 'SIGKILL',
       env: { ...process.env, RAYNET_HTML: TMP },
       encoding: 'utf8',
       stdio: ['ignore', 'pipe', 'pipe'],
@@ -3047,6 +3129,12 @@ for (const m of MUTATIONS) {
     out = (e.stdout || '') + (e.stderr || '');
     // A non-zero exit is the NORMAL case here: the suite is supposed to fail. Losing the output
     // is not, and it looks identical to "not caught" unless we say so.
+    if (e.code === 'ETIMEDOUT' || (e.signal === 'SIGKILL' && !out.includes('not ok'))) {
+      console.log('  ??  ' + m.name);
+      console.log('      TIMED OUT - the suite ran for over ' + ROW_LIMIT_MS / 60000 + ' minutes on this break and was stopped.');
+      problems.push(m.name + ' (timed out)');
+      continue;
+    }
     if (e.code === 'ENOBUFS' || /maxBuffer/i.test(String(e.message || ''))) {
       console.log('  ??  ' + m.name);
       console.log('      UNREADABLE - the suite\'s output overran the buffer, so this row proves nothing.');
