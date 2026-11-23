@@ -1,16 +1,5 @@
 [
   {
-    "id": "b2-works-2026",
-    "ref": "B2",
-    "scope": "line",
-    "severity": "major",
-    "title": "Service suspended",
-    "message": "B2 Halkalı–Bahçeşehir is not operating due to engineering works.",
-    "messageTr": "B2 Halkalı–Bahçeşehir hattı altyapı çalışmaları nedeniyle çalışmamaktadır.",
-    "until": "2026-08-31",
-    "source": "manual"
-  },
-  {
     "id": "m7-mecidiyek-y",
     "ref": "M7",
     "source": "metro.istanbul",
