@@ -3088,6 +3088,7 @@ console.log('Mutation check - each row must FAIL the named test.\n');
 
 /* MUT_ONLY=<text>: run only the rows whose name contains it (a quick look at new rows; the full run takes over an hour). */
 const ONLY = process.env.MUT_ONLY || '';
+const ROW_LIMIT_MS = 10 * 60 * 1000;   // one row's whole-suite run; a normal one takes 5-20 s
 for (const m of MUTATIONS.filter(x => !ONLY || x.name.includes(ONLY))) {
   const mutated = m.apply(original);
   if (mutated === original) {
@@ -3104,9 +3105,14 @@ for (const m of MUTATIONS.filter(x => !ONLY || x.name.includes(ONLY))) {
        piped, so without asking for TAP every row read as "not caught" (21 Nov 2026: 0 of 579 caught, the suite itself fine). */
     /* --test-timeout / --test-force-exit: a mutation can leave a test waiting on a promise that never settles
        ("a double press starts two location watches" did). With no limit the whole run stopped there for hours
-       (21 Nov 2026). Now that test fails as "not ok … test timed out" - which is a catch - and the run goes on. */
-    out = execFileSync(process.execPath, ['--test', '--test-reporter=tap', '--test-timeout=60000', '--test-force-exit', ...SUITES], {
+       (21 Nov 2026). Now that test fails as "not ok … test timed out" - which is a catch - and the run goes on.
+       Only on Node 22+: on GitHub's Node 20 the same two flags made "let a swatch also activate its chip" hang for the
+       whole 6-hour job limit (PR #48, 22 Nov 2026), and without them Node 20 had always run that row in seconds. */
+    const hangGuard = +process.versions.node.split('.')[0] >= 22 ? ['--test-timeout=60000', '--test-force-exit'] : [];
+    out = execFileSync(process.execPath, ['--test', '--test-reporter=tap', ...hangGuard, ...SUITES], {
       cwd: ROOT,
+      /* the last line of defence: one row may never hold the whole run (a full suite takes well under a minute) */
+      timeout: ROW_LIMIT_MS, killSignal: 'SIGKILL',
       env: { ...process.env, RAYNET_HTML: TMP },
       encoding: 'utf8',
       stdio: ['ignore', 'pipe', 'pipe'],
@@ -3123,6 +3129,12 @@ for (const m of MUTATIONS.filter(x => !ONLY || x.name.includes(ONLY))) {
     out = (e.stdout || '') + (e.stderr || '');
     // A non-zero exit is the NORMAL case here: the suite is supposed to fail. Losing the output
     // is not, and it looks identical to "not caught" unless we say so.
+    if (e.code === 'ETIMEDOUT' || (e.signal === 'SIGKILL' && !out.includes('not ok'))) {
+      console.log('  ??  ' + m.name);
+      console.log('      TIMED OUT - the suite ran for over ' + ROW_LIMIT_MS / 60000 + ' minutes on this break and was stopped.');
+      problems.push(m.name + ' (timed out)');
+      continue;
+    }
     if (e.code === 'ENOBUFS' || /maxBuffer/i.test(String(e.message || ''))) {
       console.log('  ??  ' + m.name);
       console.log('      UNREADABLE - the suite\'s output overran the buffer, so this row proves nothing.');
