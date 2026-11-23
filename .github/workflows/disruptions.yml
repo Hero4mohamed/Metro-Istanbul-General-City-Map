@@ -39,6 +39,7 @@ jobs:
         with:
           node-version: '20'
       - name: Scrape official status (+ X if token provided)
+        id: scrape
         env:
           X_BEARER_TOKEN:    ${{ secrets.X_BEARER_TOKEN }}     # optional; skipped when unset
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}  # optional; LLM translation fallback
@@ -46,13 +47,28 @@ jobs:
           # Optional: without the secret the ferry page is asked directly, as before, and the rail notices are unaffected.
           RELAY_URL:         https://turkmaps-relay.turkmaps-relay.workers.dev
           RELAY_FETCH_TOKEN: ${{ secrets.RELAY_FETCH_TOKEN }}
-        run: node transit_data/scrape-disruptions.cjs
+        # Exit 2 means only "the sources could not be read": GitHub's servers cannot reach metro.istanbul, and the ferry
+        # site turns them away, while the laptop (later the A02) publishes the notices from Turkey. Counting that as a
+        # failure emailed the owner on every run (22 Nov 2026), so it is a warning and a quiet stop. Any other exit code
+        # (a bug, a crash) still fails the job and still sends the email.
+        run: |
+          set +e
+          node transit_data/scrape-disruptions.cjs
+          code=$?
+          if [ "$code" -eq 2 ]; then
+            echo "::warning::The official sources could not be read from GitHub's servers; disruptions.json left as it is (the laptop publishes the notices)."
+            echo "reached=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          exit "$code"
       # The scraper feeds the live panel directly. It has shipped a zero-length segment that
       # drew no caution band, and a half-translated Turkish/English sentence; the suite checks
       # for both, so it runs before the result is committed.
       - name: Verify the scraped data
+        if: steps.scrape.outputs.reached != 'false'
         run: npm test
       - name: Commit if changed
+        if: steps.scrape.outputs.reached != 'false'
         id: commit
         run: |
           if git diff --quiet -- transit_data/disruptions.json transit_data/disruptions-status.json; then

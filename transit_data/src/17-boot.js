@@ -259,7 +259,7 @@ function annRowHTML(d){
   return `<div class="ann-item" data-id="${attrEsc(d.id)}" style="border-left-color:${col};cursor:pointer">
       <div class="ann-row1">
         <span class="ann-line" style="background:${chipCol};color:${inkOn(chipCol)}">${d.ref ? glyph + svgEsc(d.ref) : '📣'}</span>
-        <span class="ann-sev" style="background:${col};color:${inkOn(col)}">${sevLabel(d.severity)}</span>
+        <span class="ann-sev" style="background:${col};color:${inkOn(col)}">${sevLabel(d.severity)}</span>${annIsNew(d) ? `<span class="ann-new">${t('annNew')}</span>` : ''}
         <span class="ann-ttl">${svgEsc(disTitle(d))}</span>
       </div>
       <div class="ann-msg">${disTrTag(d)}${svgEsc(disMsg(d))}</div>
@@ -289,7 +289,7 @@ function annBusGroupHTML(g){
     ? svgEsc(t('nTripsSummary').replace('{n}', g.items.reduce((n, x) => n + x.tpl.n, 0)).replace('{k}', g.items.length))
     : disTrTag(d) + svgEsc(disMsg(d));
   return `<div class="ann-item ann-bus" data-key="${attrEsc(g.key)}" style="border-left-color:${col}">
-      <div class="ann-row1"><span class="ann-sev" style="background:${col};color:${inkOn(col)}">${sevLabel(d.severity)}</span><span class="ann-ttl">${svgEsc(disTitle(d))}</span></div>
+      <div class="ann-row1"><span class="ann-sev" style="background:${col};color:${inkOn(col)}">${sevLabel(d.severity)}</span>${g.items.some(annIsNew) ? `<span class="ann-new">${t('annNew')}</span>` : ''}<span class="ann-ttl">${svgEsc(disTitle(d))}</span></div>
       <div class="ann-chips">${chips}${more>0?`<span class="ann-more-n">+${more}</span>`:''}</div>
       <div class="ann-msg">${msg}</div></div>`;
 }
@@ -353,8 +353,14 @@ function renderAnnouncements(){
   const groups = busGroups(bus);
   // the badge counts what the card SHOWS: a notice per rail fault and ferry notice, a row per bus group
   document.getElementById('annCount').textContent = rail.length + ferry.length + groups.length + ops.length;
-  { const mb=document.getElementById('mnavBadge'), n=rail.length + ferry.length + groups.length;   // the bottom bar's Alerts button (V4.6.2): live notices only
-    if(mb){ mb.hidden = !n; mb.textContent = n > 99 ? '99+' : String(n); } }
+  /* the bottom bar's Alerts button (V4.6.2) counts only what you have not seen yet (V4.8.3, 14b-ann-seen.js): every single
+     notice, so a new cancelled departure on a bus line you have already seen counts again; opening the card marks them seen */
+  const annOpen = annCardOpen(), step = annSeenStep(rail.concat(ferry, bus), annSeenLoad(), annOpen);
+  if(step.seen) annSeenSave(step.seen);
+  if(annOpen) step.fresh.forEach(f => annVisitNew.add(f)); else annVisitNew.clear();
+  { const mb=document.getElementById('mnavBadge');
+    if(mb){ mb.hidden = !step.badge; mb.textContent = step.badge > 99 ? '99+' : String(step.badge); } }
+  const busNew = groups.filter(g => g.items.some(annIsNew)).length;   // the header beside it counts groups, so "N new" does too
   const opRows = ops.map((o,i)=>{
     const col = o.color || colorForLine(o.ref);
     const rel = opensRel(o);
@@ -376,7 +382,7 @@ function renderAnnouncements(){
   body.innerHTML = (stale.bar ? `<div class="ann-stalebar" role="status">⚠ ${t(stale.bar)}</div>` : '')
     + (nothing ? `<div class="ann-none">${t('annNone')}</div>` : rail.map(annRowHTML).join(''))
     + (ferry.length ? `<div class="ann-sub">⛴ ${t('annFerrySub')} · ${ferry.length}</div>${ferry.map(ferryRow).join('')}` : '')
-    + (groups.length ? `<button class="ann-sec" id="annBusSec" aria-expanded="${_annBusOpen}">🚌 ${t('annBusSub')} · ${groups.length}<span class="ann-caret"></span></button>
+    + (groups.length ? `<button class="ann-sec" id="annBusSec" aria-expanded="${_annBusOpen}">🚌 ${t('annBusSub')} · ${groups.length}${busNew ? ` · <span class="ann-new-n">${t('annNNew').replace('{n}', busNew)}</span>` : ''}<span class="ann-caret"></span></button>
          <div class="ann-busbox" id="annBusBox"${_annBusOpen?'':' hidden'}>${(_annBusAll ? groups : groups.slice(0, ANN_BUS_SHOWN)).map(annBusGroupHTML).join('')}
            ${groups.length > ANN_BUS_SHOWN ? `<button class="ann-moreb" id="annBusMore">${_annBusAll ? t('annLess') : t('annMore').replace('{n}', groups.length - ANN_BUS_SHOWN)}</button>` : ''}</div>` : '')
     + (opRows ? `<div class="ann-sub">🚈 ${t('openHdr')}</div>${opRows}<div class="ann-note">${t('openFoot')}</div>` : '')
@@ -400,8 +406,10 @@ function renderAnnouncements(){
   if(moreB) moreB.addEventListener('click', ()=>{ _annBusAll = !_annBusAll; renderAnnouncements(); });
   body.querySelectorAll('.ann-chip').forEach(b => b.addEventListener('click', e => { e.stopPropagation(); openBusRoute(b.dataset.ref); }));
 }
-document.getElementById('annHead').addEventListener('click', ()=>
-  document.getElementById('announce').classList.toggle('collapsed'));
+document.getElementById('annHead').addEventListener('click', ()=>{
+  document.getElementById('announce').classList.toggle('collapsed');
+  renderAnnouncements();          // V4.8.3: an expanded card is a card being read, so what is in it is now seen
+});
 
 /* ---- Putting the network back online -------------------------------------------------------
    Faults end in two ways, and neither of them was reaching the map.

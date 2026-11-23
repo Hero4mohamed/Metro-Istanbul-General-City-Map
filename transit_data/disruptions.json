@@ -1,16 +1,5 @@
 [
   {
-    "id": "b2-works-2026",
-    "ref": "B2",
-    "scope": "line",
-    "severity": "major",
-    "title": "Service suspended",
-    "message": "B2 Halkalı–Bahçeşehir is not operating due to engineering works.",
-    "messageTr": "B2 Halkalı–Bahçeşehir hattı altyapı çalışmaları nedeniyle çalışmamaktadır.",
-    "until": "2026-08-31",
-    "source": "manual"
-  },
-  {
     "id": "m7-mecidiyek-y",
     "ref": "M7",
     "source": "metro.istanbul",
@@ -42,14 +31,14 @@
     "scope": "note",
     "severity": "minor",
     "title": "Ferry notice",
-    "message": "Elverişsiz hava koşulları sebebiyle Aşiyan-Üsküdar ve Aşiyan-Anadolu Hisarı-Küçüksu-Aşiyan Ring Hattı seferleri ikinci bir duyuruya kadar Bebek-Üsküdar ve Bebek-Küçüksu-Anadolu Hisarı-Bebek olarak yapılacaktır. Sefer tarifesi aşağıda belirtilmiştir.",
-    "messageTr": "Elverişsiz hava koşulları sebebiyle Aşiyan-Üsküdar ve Aşiyan-Anadolu Hisarı-Küçüksu-Aşiyan Ring Hattı seferleri ikinci bir duyuruya kadar Bebek-Üsküdar ve Bebek-Küçüksu-Anadolu Hisarı-Bebek olarak yapılacaktır. Sefer tarifesi aşağıda belirtilmiştir.",
+    "message": "Aşiyan-Üsküdar ve Aşiyan-Anadolu Hisarı-Küçüksu-Aşiyan Ring Hattı seferlerimiz normal tarifesinde Aşiyan iskelesinden yapılmaya başlamıştır.",
+    "messageTr": "Aşiyan-Üsküdar ve Aşiyan-Anadolu Hisarı-Küçüksu-Aşiyan Ring Hattı seferlerimiz normal tarifesinde Aşiyan iskelesinden yapılmaya başlamıştır.",
     "messageLang": "tr",
     "translatedBy": "none",
     "source": "sehirhatlari.istanbul",
     "url": "https://sehirhatlari.istanbul/tr/duyurular/asiyan-seferleri-duyurusu-2231",
-    "published": "2026-11-15",
-    "until": "2026-11-22"
+    "published": "2026-11-21",
+    "until": "2026-11-28"
   },
   {
     "id": "ferry-3788",

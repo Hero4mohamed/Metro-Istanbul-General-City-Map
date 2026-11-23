@@ -120,6 +120,23 @@ test('the status file ships, is valid, and the GitHub job commits it with the no
   assert.ok(/git diff --quiet -- transit_data\/disruptions\.json transit_data\/disruptions-status\.json/.test(wf), 'the job would not notice a status-only change');
 });
 
+/* GitHub's servers cannot reach metro.istanbul (and since 22 Nov 2026 the ferry site turns them away), so the job "failed"
+   on every run and emailed the owner although the laptop publishes the notices. The scraper exits 2 for exactly that case
+   ("could not read the sources"): the job must take it as a warning and stop, and still fail on anything else. */
+test('GitHub\'s notices job: sources out of reach (exit 2) is a warning, any other failure still fails', () => {
+  const wf = fs.readFileSync(path.join(DIR, '..', '.github', 'workflows', 'disruptions.yml'), 'utf8');
+  const step = wf.slice(wf.indexOf('- name: Scrape official status'), wf.indexOf('- name: Verify the scraped data'))
+    .split('\n').filter(l => !/^\s*#/.test(l)).join('\n');                 // the comments between the steps are not the step
+  assert.ok(/id: scrape/.test(step), 'the scrape step needs an id the later steps can read');
+  assert.ok(/set \+e/.test(step) && /node transit_data\/scrape-disruptions\.cjs/.test(step), 'the step must catch the scraper\'s exit code');
+  assert.ok(/if \[ "\$code" -eq 2 \][\s\S]*::warning::[\s\S]*reached=false[\s\S]*exit 0/.test(step), 'exit 2 must become a warning and a quiet stop');
+  assert.ok(/exit "\$code"\s*$/.test(step.trim()), 'any other exit code must still fail the job');
+  for (const name of ['Verify the scraped data', 'Commit if changed']) {
+    const s = wf.slice(wf.indexOf('- name: ' + name));
+    assert.ok(/^\s+if: steps\.scrape\.outputs\.reached != 'false'/m.test(s.split('\n').slice(1, 3).join('\n')), name + ' must be skipped when nothing was read');
+  }
+});
+
 /* ---- V4.5.2: the ferry page can be read without the rail page (GitHub's job, through the relay), so each has its own age ---- */
 const ISO = ms => new Date(ms).toISOString();
 
