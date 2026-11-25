@@ -1,5 +1,32 @@
 [
   {
+    "id": "f1-al-m-yor",
+    "ref": "F1",
+    "source": "metro.istanbul",
+    "scope": "line",
+    "severity": "major",
+    "title": "Service suspended",
+    "messageTr": "İstanbul Valiliği'nin aldığı karar doğrultusunda ikinci bir duyuruya kadar işletmeye kapalı olacaktır.",
+    "message": "İstanbul Valiliği'nin aldığı karar doğrultusunda ikinci bir duyuruya kadar işletmeye kapalı olacaktır.",
+    "messageLang": "tr",
+    "translatedBy": "none"
+  },
+  {
+    "id": "m2-taksim",
+    "ref": "M2",
+    "source": "metro.istanbul",
+    "scope": "stations",
+    "stations": [
+      "Taksim"
+    ],
+    "severity": "major",
+    "title": "Service suspended",
+    "messageTr": "İstanbul Valiliği'nin aldığı karar doğrultusunda ikinci bir duyuruya kadar Taksim istasyonu işletmeye kapalı olacaktır.",
+    "message": "İstanbul Valiliği'nin aldığı karar doğrultusunda ikinci bir duyuruya kadar Taksim istasyonu işletmeye kapalı olacaktır.",
+    "messageLang": "tr",
+    "translatedBy": "none"
+  },
+  {
     "id": "m7-mecidiyek-y",
     "ref": "M7",
     "source": "metro.istanbul",
