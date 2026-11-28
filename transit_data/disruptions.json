@@ -51,5 +51,22 @@
     "url": "https://sehirhatlari.istanbul/tr/duyurular/sehir-hatlari-kis-tarifesine-geciyor-3788",
     "published": "2026-09-03",
     "until": "2027-06-27"
+  },
+  {
+    "id": "ferry-3828",
+    "mode": "ferry",
+    "ref": null,
+    "scope": "note",
+    "severity": "minor",
+    "title": "Timetable change",
+    "message": "Maltepe-Adalar Hattı’nda gerçekleştirilen saat düzenlemesi kapsamında, 08.20 Maltepe kalkışlı Maltepe-Büyükada-Heybeliada seferlerinin hareket saatleri 10 dakika erkene alınmıştır. Bu kapsamda, 30 Kasım 2026 Pazartesi gününden itibaren Maltepe kalkış saati 08.10, Büyükada kalkış saati 08.30, Heybeliada varış saati ise 08.45 olarak güncellenecektir. Ayrıca, Kınalıada-Burgazada-Heybeliada-Büyükada-Maltepe seferinin hareket saatleri de 10 dakika erkene alınmıştır.",
+    "messageTr": "Maltepe-Adalar Hattı’nda gerçekleştirilen saat düzenlemesi kapsamında, 08.20 Maltepe kalkışlı Maltepe-Büyükada-Heybeliada seferlerinin hareket saatleri 10 dakika erkene alınmıştır. Bu kapsamda, 30 Kasım 2026 Pazartesi gününden itibaren Maltepe kalkış saati 08.10, Büyükada kalkış saati 08.30, Heybeliada varış saati ise 08.45 olarak güncellenecektir. Ayrıca, Kınalıada-Burgazada-Heybeliada-Büyükada-Maltepe seferinin hareket saatleri de 10 dakika erkene alınmıştır.",
+    "messageLang": "tr",
+    "translatedBy": "none",
+    "source": "sehirhatlari.istanbul",
+    "url": "https://sehirhatlari.istanbul/tr/duyurular/maltepeadalar-hatti-sefer-saat-duzenlemeleri-3828",
+    "published": "2026-11-28",
+    "until": "2026-11-30",
+    "starts": "2026-11-30"
   }
 ]
